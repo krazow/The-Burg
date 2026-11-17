@@ -1,6 +1,6 @@
 # The Burg: To-do
 
-_Last updated: November 16, 2026_
+_Last updated: November 17, 2026_
 
 This is the project's working to-do list: what's been done, what's next, and in what order. Every open item has a
 matching **GitHub issue** with a priority label (**P1 – now**, **P2 – soon**, **P3 – later**). The issues are the
@@ -23,19 +23,17 @@ added, finished or re-prioritized, both change in the same session.
 | 1 | **Review and merge the maps PR** (your action) | The map is finished and tested; merging it puts the current game on `main` before releases start. | [PR #1](https://github.com/krazow/The-Burg/pull/1) |
 | 2 | **Review and merge the release kit + QA PR** (your action, after #1) | Built and passing locally. Merging closes #2, #3 and #4. | [PR #15](https://github.com/krazow/The-Burg/pull/15) |
 | 3 | **One-time GitHub settings** (your action) | Settings → Pages → Source: **GitHub Actions**; Settings → Actions → General → Workflow permissions: **Read and write**. | [#2](https://github.com/krazow/The-Burg/issues/2) |
-| 4 | **First beta release and tester invite** | `/release now` → https://krazow.github.io/The-Burg/beta/. Gets the game in front of real players. | [#5](https://github.com/krazow/The-Burg/issues/5) |
-| 5 | **Fix the difficulty and event tuning** found by the first balance report | Careless play scores a median of 78, and inheritances and layoffs repeat too often. Worth fixing before many testers play. | [#7](https://github.com/krazow/The-Burg/issues/7), [#16](https://github.com/krazow/The-Burg/issues/16) |
+| 4 | **Review and merge the balance PR** (your action, after #15) | Rising costs, 401(k), family life, a fairer Life Score and event tuning. Merging closes #6, #7 and #16. | [PR #17](https://github.com/krazow/The-Burg/pull/17) |
+| 5 | **First beta release and tester invite** | `/release now` → https://krazow.github.io/The-Burg/beta/. Gets the game in front of real players. | [#5](https://github.com/krazow/The-Burg/issues/5) |
 
 - [ ] Merge maps PR — [PR #1](https://github.com/krazow/The-Burg/pull/1)
 - [ ] Merge release kit + QA suites — [PR #15](https://github.com/krazow/The-Burg/pull/15) (closes [#2](https://github.com/krazow/The-Burg/issues/2), [#3](https://github.com/krazow/The-Burg/issues/3), [#4](https://github.com/krazow/The-Burg/issues/4))
 - [ ] One-time Pages and workflow-permission settings — [#2](https://github.com/krazow/The-Burg/issues/2)
+- [ ] Merge balance fixes — [PR #17](https://github.com/krazow/The-Burg/pull/17) (closes [#6](https://github.com/krazow/The-Burg/issues/6), [#7](https://github.com/krazow/The-Burg/issues/7), [#16](https://github.com/krazow/The-Burg/issues/16))
 - [ ] First beta release — [#5](https://github.com/krazow/The-Burg/issues/5)
 
 ## Soon: P2
 
-- [ ] **Lifetime economy:** savings reach $1–4M in simulations; add rising costs, investing, family costs — [#6](https://github.com/krazow/The-Burg/issues/6)
-- [ ] **Difficulty:** careless bots score a median of 78 (target ≤ 60); tune with the simulation suite — [#7](https://github.com/krazow/The-Burg/issues/7)
-- [ ] **Event tuning:** an inheritance about every 3 years in Lifetime, layoffs about every 2 years, a few events almost never seen — [#16](https://github.com/krazow/The-Burg/issues/16)
 - [ ] **Events happen at places on the map** — [#8](https://github.com/krazow/The-Burg/issues/8)
 - [ ] **Manual play-test pass on real phones** (iPhone and Android install, offline, resume) — [#9](https://github.com/krazow/The-Burg/issues/9)
 - [ ] **Accessibility pass** (contrast, keyboard and screen readers on the maps, reduced motion) — [#10](https://github.com/krazow/The-Burg/issues/10)
@@ -66,8 +64,8 @@ Three layers, from cheapest to most human:
 
 **Status:** suites 1 and 2 are built and pass locally in about 16 seconds (smoke 5 checks, gameplay 11 checks,
 simulation 65 games / about 22,000 weeks). They go live with [PR #15](https://github.com/krazow/The-Burg/pull/15).
-The first balance report is summarized in [#6](https://github.com/krazow/The-Burg/issues/6),
-[#7](https://github.com/krazow/The-Burg/issues/7) and [#16](https://github.com/krazow/The-Burg/issues/16).
+The first balance report led to the fixes in [PR #17](https://github.com/krazow/The-Burg/pull/17); the simulation now also checks
+that careless play stays at or below 60 and good play at or above 70.
 
 ---
 
@@ -83,3 +81,4 @@ The first balance report is summarized in [#6](https://github.com/krazow/The-Bur
 | Nov 16, 2026 | Set up this to-do list and its GitHub issues (#2–#14) with priority labels. | `TODO.md` |
 | Nov 16, 2026 | **Release kit adopted** (release.json, VERSION, CHANGELOG, release + CI workflows, `/release` command); kit checks, beta/production builds and site check pass locally. | [PR #15](https://github.com/krazow/The-Burg/pull/15) |
 | Nov 16, 2026 | **QA suites built:** smoke, gameplay walkthrough and bot play-test simulation with a balance report. The first report filed [#16](https://github.com/krazow/The-Burg/issues/16) and updated [#6](https://github.com/krazow/The-Burg/issues/6) and [#7](https://github.com/krazow/The-Burg/issues/7). | [PR #15](https://github.com/krazow/The-Burg/pull/15) |
+| Nov 17, 2026 | **Balance fixes** (#6, #7, #16): prices rise 3%/yr and pay 2.5%/yr, 401(k) with match, kids/college/trip events, partner income, rescaled Life Score, job-based layoffs, one inheritance per game. Careless play: median 78 → 58; good play: 85. | [PR #17](https://github.com/krazow/The-Burg/pull/17) |
