@@ -1,6 +1,6 @@
 # The Burg: To-do
 
-_Last updated: November 17, 2026 (0.1.0-beta.1 released)_
+_Last updated: November 17, 2026 (5 save slots merged)_
 
 This is the project's working to-do list: what's been done, what's next, and in what order. Every open item has a
 matching **GitHub issue** with a priority label (**P1 – now**, **P2 – soon**, **P3 – later**). The issues are the
@@ -20,10 +20,11 @@ added, finished or re-prioritized, both change in the same session.
 
 | # | Item | Why it's next | Issue |
 |---|---|---|---|
-| 1 | **Try the beta and invite testers** (your action) | 0.1.0-beta.1 is live at https://krazow.github.io/The-Burg/beta/. Play it on your phone, share the link, and collect feedback. | [#5](https://github.com/krazow/The-Burg/issues/5) |
-| 2 | **Promote to production** | When the beta looks good, type `/release promote` to put 0.1.0 live at https://krazow.github.io/The-Burg/. | [#5](https://github.com/krazow/The-Burg/issues/5) |
+| 1 | **Cut the next beta** with save slots | Save slots are merged to `main` but not released yet. `/release now` makes 0.1.0-beta.2 with them. | [#5](https://github.com/krazow/The-Burg/issues/5) |
+| 2 | **Try the beta, invite testers, then promote** (your action, then `/release promote`) | When the beta looks good, type `/release promote` to put 0.1.0 live at https://krazow.github.io/The-Burg/. | [#5](https://github.com/krazow/The-Burg/issues/5) |
 | 3 | **Delete the merged branches** (your action, optional) | `map-navigation`, `release-kit` and `balance` are merged. Delete them on GitHub's Branches page. | — |
 
+- [ ] Next beta with save slots (`/release now`)
 - [ ] Try the beta and invite testers — [#5](https://github.com/krazow/The-Burg/issues/5)
 - [ ] `/release promote` 0.1.0 — [#5](https://github.com/krazow/The-Burg/issues/5)
 - [ ] Delete merged branches
@@ -38,7 +39,7 @@ added, finished or re-prioritized, both change in the same session.
 
 - [ ] **More local content:** town-specific events, seasonal jobs — [#11](https://github.com/krazow/The-Burg/issues/11)
 - [ ] **Real river shapes on the region map** — [#12](https://github.com/krazow/The-Burg/issues/12)
-- [ ] **Save backup and multiple save slots** — [#13](https://github.com/krazow/The-Burg/issues/13)
+- [ ] **Save backup** (export/import a save to move it between devices) — [#13](https://github.com/krazow/The-Burg/issues/13)
 - [ ] **Windows and Android builds through the kit** — [#14](https://github.com/krazow/The-Burg/issues/14)
 
 ---
@@ -80,3 +81,4 @@ that careless play stays at or below 60 and good play at or above 70.
 | Nov 17, 2026 | **Balance fixes** (#6, #7, #16): prices rise 3%/yr and pay 2.5%/yr, 401(k) with match, kids/college/trip events, partner income, rescaled Life Score, job-based layoffs, one inheritance per game. Careless play: median 78 → 58; good play: 85. | [PR #17](https://github.com/krazow/The-Burg/pull/17) |
 | Nov 17, 2026 | **Merged** the maps ([PR #1](https://github.com/krazow/The-Burg/pull/1)), release kit + QA ([PR #15](https://github.com/krazow/The-Burg/pull/15)) and balance fixes ([PR #17](https://github.com/krazow/The-Burg/pull/17)) after QA passed on each. CI on `main` passes. Closed #2, #3, #4, #6, #7 and #16. | `main` |
 | Nov 17, 2026 | **First beta: 0.1.0-beta.1.** QA, build, Pages deploy and the live smoke test all passed. Live at https://krazow.github.io/The-Burg/beta/. | [pre-release](https://github.com/krazow/The-Burg/releases/tag/v0.1.0-beta.1) |
+| Nov 17, 2026 | **Save and load up to 5 games:** each life auto-saves to its own slot; title list with Continue/Delete; Menu → Save a copy (checkpoint) and Load; full slots ask which to replace; 0.1.0 saves move into slot 1. QA passed (gameplay now 16 checks). | [PR #18](https://github.com/krazow/The-Burg/pull/18) |
