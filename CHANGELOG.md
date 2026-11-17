@@ -3,6 +3,12 @@
 Release notes for The Burg. `/release now` turns the Unreleased section into a dated `## X.Y.Z (YYYY-MM-DD)`
 entry for every release, and the GitHub release notes are taken from it.
 
+## Unreleased
+
+### Changed
+- The Menu now starts with **💾 Save game** and **📂 Load game**. Save game saves to this life's own slot or a copy to
+  any other slot; Load game lists every saved life, with the one you're playing marked.
+
 ## 0.1.0 (2026-11-17)
 
 The first release of The Burg.

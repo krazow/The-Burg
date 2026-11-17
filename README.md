@@ -22,7 +22,7 @@ Home and Jobs each have a **📋 List / 🗺️ Map** toggle, and the game remem
 
 ## Scoring
 
-Your Life Score blends average happiness (30%), average health (20%), community standing (20%) and net worth against a target for the game length (30%). You can keep up to 5 lives going: each auto-saves to its own slot after every turn, and the Menu can save a copy to another slot (a checkpoint) or load a different life.
+Your Life Score blends average happiness (30%), average health (20%), community standing (20%) and net worth against a target for the game length (30%). You can keep up to 5 lives going: each auto-saves to its own slot after every turn, and the Menu's 💾 Save game and 📂 Load game save to this slot or a copy to another (a checkpoint), or switch to a different life.
 
 ## Testing
 
