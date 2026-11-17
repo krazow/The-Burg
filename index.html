@@ -359,13 +359,14 @@ function askReplace(name, len){
 // Menu: save a copy of this life to another slot (a checkpoint you can go back to)
 function saveCopySheet(){
   save();
-  sheet(`<h2>Save a copy</h2><p class="muted">Copies ${esc(S.name)}'s life as it is right now into another slot. You keep playing this one; load the copy any time to go back to this moment.</p>
+  sheet(`<h2>Save game</h2><p class="muted">Save to <b>this life's slot</b>, or save a copy to <b>another slot</b> as a checkpoint: you keep playing this life, and can load the copy later to go back to this moment.</p>
     <div class="slots">${slots().map((g,i) => i === S.slot
-      ? slotCard(g, i, '<span class="tag cur">Playing</span>')
+      ? slotCard(g, i, `<div class="slotbtns"><span class="tag cur">Playing</span><button class="sm" data-copy="${i}">Save</button></div>`)
       : slotCard(g, i, `<button class="sm" data-copy="${i}">${g ? 'Replace' : 'Save here'}</button>`)).join('')}</div>
     <button class="btn ghost" id="no">Cancel</button>`);
   document.querySelectorAll('[data-copy]').forEach(b => b.onclick = () => {
     const i = +b.dataset.copy, old = slots()[i];
+    if (i === S.slot) { save(); closeSheet(); toast(`Saved to slot ${i+1}`); return; }
     const go = () => {
       const c = clone(S); c.slot = i; c.savedAt = Date.now(); c.copyNote = `Copy · ${dateLabel().replace('Week of ','')}`;
       writeSlot(i, c); closeSheet(); toast(`Copy saved to slot ${i+1}`);
@@ -380,10 +381,10 @@ function saveCopySheet(){
 // Menu: switch to another saved life (this one is saved first)
 function loadSheet(){
   save();
-  const all = slots(), others = all.map((g,i) => [g,i]).filter(([g,i]) => g && i !== S.slot);
-  sheet(`<h2>Load a game</h2><p class="muted">${esc(S.name)}'s life is saved in slot ${S.slot+1}.</p>
-    ${others.length ? `<div class="slots">${others.map(([g,i]) => slotCard(g, i, `<button class="sm" data-load="${i}">Load</button>`)).join('')}</div>`
-      : '<p>No other saved lives yet. Use “Save a copy” to make a checkpoint, or start a new life from the title screen.</p>'}
+  const all = slots(), lives = all.map((g,i) => [g,i]).filter(([g]) => g);
+  sheet(`<h2>Load game</h2><p class="muted">${esc(S.name)}'s life is saved first, so you can come back to it.</p>
+    <div class="slots">${lives.map(([g,i]) => slotCard(g, i, i === S.slot ? '<span class="tag cur">Playing</span>' : `<button class="sm" data-load="${i}">Load</button>`)).join('')}</div>
+    ${lives.length < 2 ? '<p>No other saved lives yet. Use 💾 Save game to save a copy to another slot, or start a new life from the title screen.</p>' : ''}
     <button class="btn ghost" id="no">Cancel</button>`);
   document.querySelectorAll('[data-load]').forEach(b => b.onclick = () => { loadSlot(+b.dataset.load); toast(`Loaded ${S.name}'s life`); });
   $('#no').onclick = closeSheet;
@@ -394,7 +395,7 @@ function showHelp(){
    <p>Work anywhere from Waitsburg to Richland. Farther jobs pay more, but gas costs money and the drive on Highway 12 wears you down.</p>
    <p>Take classes to unlock better jobs. Rent or buy a home, upgrade your truck, and handle whatever life in the Burg throws at you.</p>
    <p>Your <b>Life Score</b> blends happiness, health, community standing and net worth.</p>
-   <p>You can keep up to <b>5 lives</b> going. Each one saves automatically to its own slot, and the Menu can save a copy to another slot (a checkpoint) or load a different life.</p>
+   <p>You can keep up to <b>5 lives</b> going. Each one saves itself after every week. In the Menu, <b>💾 Save game</b> saves to this life's slot or a copy to another slot (a checkpoint), and <b>📂 Load game</b> switches lives.</p>
    <button class="btn primary" id="ok">Got it</button>`);
   $('#ok').onclick = closeSheet;
 }
@@ -622,14 +623,14 @@ function renderLog(){
 
 function showMenu(){
   sheet(`<h2>Menu</h2>
-    <p class="muted">${esc(S.name)}'s life saves automatically to slot ${S.slot+1} after every turn.</p>
-    <button class="btn ghost" id="copy">💾 Save a copy to another slot</button>
-    <button class="btn ghost" id="load">📂 Load another game</button>
+    <button class="btn primary" id="save">💾 Save game</button>
+    <button class="btn primary" id="load">📂 Load game</button>
+    <p class="muted" style="margin-top:12px">${esc(S.name)}'s life is in slot ${S.slot+1} and also saves itself after every week.</p>
     <button class="btn ghost" id="help">How to play</button>
     <button class="btn ghost" id="title">Back to title screen</button>
     <button class="btn ghost" id="retireNow">End this life now (see score)</button>
     <button class="btn ghost" id="close">Close</button>`);
-  $('#copy').onclick = saveCopySheet;
+  $('#save').onclick = saveCopySheet;
   $('#load').onclick = loadSheet;
   $('#help').onclick = showHelp;
   $('#title').onclick = () => { save(); closeSheet(); S = null; renderTitle(); };

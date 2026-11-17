@@ -104,9 +104,18 @@ await t.check('the game saves to its slot, and Continue picks up the same week a
   assert(after.turn === before.turn && Math.round(after.money) === Math.round(before.money) && after.jobId === before.jobId, 'save did not round-trip');
 });
 
-await t.check('Menu → Save a copy puts a checkpoint in another slot, and play continues in the original', async () => {
+await t.check('Menu → Save game saves to this life\'s own slot', async () => {
   await page.click('[data-tab=menu]');
-  await page.click('#copy');
+  await page.click('#save');
+  await page.evaluate(() => { S.money += 1; });
+  await page.click(`${open} [data-copy="0"]`);
+  assert(Math.round((await page.evaluate(() => slots()))[0].money) === Math.round((await S()).money), 'Save did not write slot 1');
+  assert(!(await page.$(open)), 'the sheet should close after saving');
+});
+
+await t.check('Menu → Save game to another slot makes a checkpoint, and play continues in the original', async () => {
+  await page.click('[data-tab=menu]');
+  await page.click('#save');
   await page.click('[data-copy="1"]');
   const slots = await page.evaluate(() => slots());
   assert(slots[0] && slots[1] && slots[1].slot === 1 && slots[1].turn === slots[0].turn, 'copy not saved to slot 2');
@@ -116,7 +125,7 @@ await t.check('Menu → Save a copy puts a checkpoint in another slot, and play 
   assert(after[0].turn === after[1].turn + 1, 'the copy should stay at the checkpoint while the original moves on');
 });
 
-await t.check('Menu → Load another game switches to the copy, saving the current life first', async () => {
+await t.check('Menu → Load game switches to the copy, saving the current life first', async () => {
   const cur = await S();
   await page.click('[data-tab=menu]');
   await page.click('#load');
