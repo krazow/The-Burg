@@ -24,6 +24,27 @@ Home and Jobs each have a **📋 List / 🗺️ Map** toggle, and the game remem
 
 Your Life Score blends average happiness (30%), average health (20%), community standing (20%) and net worth against a target for the game length (30%). The game auto-saves after every turn.
 
+## Testing
+
+`npm test` runs three suites in a real browser (Playwright). CI runs them on every pull request and release.
+
+- **Smoke** (`tests/smoke.test.mjs`): the app opens cleanly, the service worker installs, and it opens offline.
+- **Gameplay** (`tests/gameplay.test.mjs`): taps through the core loop: start a game, get hired, end weeks,
+  answer an event, skip ahead, save and continue, both maps, and the ending screen.
+- **Play-test simulation** (`tests/sim.test.mjs`): five bot players (homebody, commuter, student, hustler,
+  careless) play full games at every length. It fails on errors or impossible values, and writes a balance report
+  to `test-results/balance-report.md` (and the Actions job summary). Use `SIM_SCALE=3` for more games.
+
+The dice are seeded, so a failing run fails the same way every time. On a machine without Playwright's own browser,
+set `CHROME_PATH` to an installed Chrome.
+
+## Releasing
+
+Releases use the shared [Krazow release kit](https://github.com/krazow/release-kit). In a Claude chat on this
+repo, type `/release now` to publish a beta at https://krazow.github.io/The-Burg/beta/, then `/release promote`
+to put it live at https://krazow.github.io/The-Burg/. Pushing to `main` doesn't change the live game.
+`VERSION` holds the version, and `CHANGELOG.md` the release notes.
+
 ## Running it
 
 It's a static site with no build step. Serve the folder over HTTP (for example with GitHub Pages) and open `index.html`. On a phone, use "Add to Home Screen" to install it. The service worker (`sw.js`) caches the app so it works offline.

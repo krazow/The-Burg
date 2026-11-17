@@ -832,13 +832,18 @@ const EVENTS = [
 ];
 
 /* ---------- ending ---------- */
-function finish(reason){
+// Life Score: average happiness 30%, average health 20%, community 20%, net worth vs. the length's target 30%
+function lifeScore(){
   const L = LENGTHS[S.len];
   const mp = Math.max(1, S.monthsPlayed);
   const avgH = S.happySum ? S.happySum/mp : S.happy, avgHe = S.healthSum ? S.healthSum/mp : S.health;
   const nw = netWorth(), wealth = clamp(nw / L.target * 100);
   const score = Math.round(avgH*0.3 + avgHe*0.2 + S.community*0.2 + wealth*0.3);
   const title = score >= 85 ? 'Legend of the Burg' : score >= 70 ? 'Pillar of the Community' : score >= 55 ? 'Solid Waitsburger' : score >= 40 ? 'Getting By on Main Street' : 'Tumbleweed';
+  return { score, title, avgH, avgHe, nw, wealth };
+}
+function finish(reason){
+  const { score, title, avgH, avgHe, nw, wealth } = lifeScore();
   const best = store.get(BEST_KEY) || {};
   const isBest = !best[S.len] || score > best[S.len];
   if (isBest) { best[S.len] = score; store.set(BEST_KEY, best); }

@@ -1,0 +1,30 @@
+{
+  "id": "theburg",
+  "name": "The Burg",
+  "description": "A life sim set in Waitsburg, WA: work, bills, Highway 12 and small-town life, one week at a time.",
+  "site": ".",
+  "app": ".",
+  "exclude": [],
+  "sw": "sw.js",
+  "version": [
+    {
+      "file": "index.html",
+      "pattern": "const APP_VERSION = '([^']*)'"
+    }
+  ],
+  "android": {
+    "enabled": false
+  },
+  "windows": {
+    "enabled": false
+  },
+  "ios": {
+    "enabled": false
+  },
+  "macos": {
+    "enabled": false
+  },
+  "extras": {
+    "enabled": false
+  }
+}
