@@ -103,6 +103,15 @@ nav button.on{color:var(--barn)}
 @keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 .toast{position:fixed;left:50%;top:calc(var(--safe-t) + 14px);transform:translateX(-50%);background:var(--soil);color:#fff;padding:10px 16px;border-radius:12px;z-index:30;font-size:14px;max-width:90%;text-align:center}
+.maptog{display:flex;gap:6px;margin:2px 0 10px}.maptog button{flex:1;border:1.5px solid var(--barn);background:#fff;color:var(--barn);border-radius:999px;padding:7px 10px;font-size:14px;font-weight:700}
+.maptog button.on{background:var(--barn);color:#fff}
+.maptabs{display:flex;gap:6px;margin-bottom:6px}.maptabs button{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:7px 4px;font-size:13px;font-weight:700;color:var(--muted)}
+.maptabs button.on{border-color:var(--soil);color:var(--soil);background:#f6efdf}
+.mapsvg{display:block;width:100%;height:auto;border-radius:12px;border:1.5px solid var(--line);touch-action:manipulation}
+.mapsvg .mlbl{font-size:9px;fill:#6b5a49;font-style:italic}.mapsvg .mwlbl text{font-size:9px;fill:#3f7491;font-style:italic}
+.mapsvg .mtown{font-size:9.5px;font-weight:800;fill:#3d2b1f;paint-order:stroke;stroke:#fffaf0;stroke-width:3px;pointer-events:none}
+.mpin{cursor:pointer;outline:none}.mpin:focus-visible circle{stroke:var(--barn);stroke-width:3}
+.mapcap{font-size:13px;color:var(--muted);margin:6px 2px 8px}.mapdet{margin:4px 0 0;background:#fffaf0}
 .score{font-size:64px;font-weight:800;text-align:center;color:var(--barn);font-family:Georgia,serif}
 </style>
 </head>
@@ -328,12 +337,13 @@ function render(){
   </div></nav>`;
   document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
     if (b.dataset.tab === 'menu') return showMenu();
-    tab = b.dataset.tab; render(); window.scrollTo(0,0);
+    tab = b.dataset.tab; MAPSIDE = null; MAPSEL = null; render(); window.scrollTo(0,0);
   });
   if ($('#end')) $('#end').onclick = endTurn;
   if ($('#ff4')) $('#ff4').onclick = () => playWeeks(4);
   if ($('#ff13')) $('#ff13').onclick = () => playWeeks(13);
   ({home:renderHome, jobs:renderJobs, life:renderLife, log:renderLog})[tab]();
+  document.querySelectorAll('[data-apply]').forEach(b => b.onclick = () => apply(b.dataset.apply));
 }
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const statColor = v => v >= 60 ? 'var(--sage)' : v >= 35 ? 'var(--wheat-d)' : 'var(--barn)';
@@ -359,12 +369,12 @@ function renderHome(){
   </div>
   ${!j && !S.retired ? `<div class="card warn">💼 No paycheck coming in. Apply for a job on the Jobs tab.</div>` : ''}
   ${S.money < -15000 ? `<div class="card warn">⚠️ Your debt is getting dangerous. Below -$40,000 you'll have to leave town.</div>` : ''}
-  <div class="card"><h3>This week's focus</h3>
-    <div class="focus">${Object.entries(FOCUS).map(([k,f]) => {
+  <div class="card"><h3>This week's focus</h3>${mapToggle()}
+    ${prefs().mapView ? mapBlock('T') : `<div class="focus">${Object.entries(FOCUS).map(([k,f]) => {
       const dis = (f.needsJob && (!j || S.retired)) || (f.study && S.edu >= 3);
       return `<button class="fbtn ${S.focus===k?'on':''}" data-f="${k}" ${dis?'disabled':''}>
         <span class="ic">${f.ic}</span><b>${f.name}</b><small>${f.study && S.edu<3 ? `${wk(TUITION[S.edu])} · ${S.studyProg}/${STUDY_NEED[S.edu]} weeks` : f.desc}${f.cost?` (${wk(f.cost)})`:''}</small></button>`;
-    }).join('')}</div>
+    }).join('')}</div>`}
   </div>
   ${S.last ? `<div class="card"><h3>Last week</h3>${S.last.lines.map(([l,v]) => `<div class="kv"><span>${l}</span><span style="color:${v<0?'var(--barn)':'var(--sage)'}">${v>0?'+':''}${fmt(v)}</span></div>`).join('')}
     <div class="kv"><span><b>Net</b></span><span><b>${S.last.net>=0?'+':''}${fmt(S.last.net)}</b></span></div></div>` : ''}
@@ -372,26 +382,28 @@ function renderHome(){
   document.querySelectorAll('.fbtn').forEach(b => b.onclick = () => { S.focus = b.dataset.f; save(); renderHome(); });
 }
 
+function jobRow(x){
+  const c = CITIES[x.city], cur = S.jobId === x.id && !S.retired;
+  const btn = cur ? `<span class="tag cur">Current</span>`
+    : S.edu < x.edu ? `<button class="sm" disabled>Needs ${['','cert','assoc.','degree'][x.edu]}</button>`
+    : `<button class="sm" data-apply="${x.id}" ${S.applied?'disabled':''}>Apply</button>`;
+  return `<div class="kv job"><div><div class="t">${x.title}</div>
+    <div class="s">${c.name}${c.miles?` · ${c.miles} mi · ~${wk(commuteCost(c.miles))} gas`:' · no commute'} · ${EDU[x.edu].replace(' diploma','')}</div></div>
+    <div style="text-align:right"><div class="pay">${wk(x.pay*(cur?S.raise:1))}</div>${btn}</div></div>`;
+}
 function renderJobs(){
   const j = job();
   const list = JOBS.filter(x => jobCity === 'all' || x.city === jobCity);
-  $('#main').innerHTML = `
+  const mapOn = !!prefs().mapView;
+  $('#main').innerHTML = `${mapToggle()}
+  ${mapOn ? `<div class="card"><h3>Job board <span class="tag">${S.applied ? 'Applied this week' : '1 application per week'}</span></h3>${mapBlock('R')}</div>` : `
   <div class="chips">${[['all','All towns'], ...Object.entries(CITIES).map(([k,c]) => [k,c.name])].map(([k,l]) =>
     `<button class="chip ${jobCity===k?'on':''}" data-c="${k}">${l}</button>`).join('')}</div>
   ${jobCity!=='all' ? `<div class="card muted">${CITIES[jobCity].blurb}</div>` : ''}
   <div class="card">
-    <h3>Job board <span class="tag">${S.applied ? 'Applied this turn' : '1 application per turn'}</span></h3>
-    ${list.map(x => {
-      const c = CITIES[x.city], cur = S.jobId === x.id && !S.retired;
-      const gas = commuteCost(c.miles);
-      const btn = cur ? `<span class="tag cur">Current</span>`
-        : S.edu < x.edu ? `<button class="sm" disabled>Needs ${['','cert','assoc.','degree'][x.edu]}</button>`
-        : `<button class="sm" data-apply="${x.id}" ${S.applied?'disabled':''}>Apply</button>`;
-      return `<div class="kv job"><div><div class="t">${x.title}</div>
-        <div class="s">${c.name}${c.miles?` · ${c.miles} mi · ~${wk(gas)} gas`:' · no commute'} · ${EDU[x.edu].replace(' diploma','')}</div></div>
-        <div style="text-align:right"><div class="pay">${wk(x.pay*(cur?S.raise:1))}</div>${btn}</div></div>`;
-    }).join('')}
-  </div>
+    <h3>Job board <span class="tag">${S.applied ? 'Applied this week' : '1 application per week'}</span></h3>
+    ${list.map(jobRow).join('')}
+  </div>`}
   ${j && !S.retired ? `<button class="btn ghost" id="quit">Quit my job</button>` : ''}
   ${LENGTHS[S.len].turns===Infinity && age()>=62 && !S.retired ? `<button class="btn primary" id="retire">Retire (Social Security ${wk(SS_PAY)})</button>` : ''}`;
   document.querySelectorAll('.chip').forEach(b => b.onclick = () => { jobCity = b.dataset.c; renderJobs(); });
@@ -820,13 +832,18 @@ const EVENTS = [
 ];
 
 /* ---------- ending ---------- */
-function finish(reason){
+// Life Score: average happiness 30%, average health 20%, community 20%, net worth vs. the length's target 30%
+function lifeScore(){
   const L = LENGTHS[S.len];
   const mp = Math.max(1, S.monthsPlayed);
   const avgH = S.happySum ? S.happySum/mp : S.happy, avgHe = S.healthSum ? S.healthSum/mp : S.health;
   const nw = netWorth(), wealth = clamp(nw / L.target * 100);
   const score = Math.round(avgH*0.3 + avgHe*0.2 + S.community*0.2 + wealth*0.3);
   const title = score >= 85 ? 'Legend of the Burg' : score >= 70 ? 'Pillar of the Community' : score >= 55 ? 'Solid Waitsburger' : score >= 40 ? 'Getting By on Main Street' : 'Tumbleweed';
+  return { score, title, avgH, avgHe, nw, wealth };
+}
+function finish(reason){
+  const { score, title, avgH, avgHe, nw, wealth } = lifeScore();
   const best = store.get(BEST_KEY) || {};
   const isBest = !best[S.len] || score > best[S.len];
   if (isBest) { best[S.len] = score; store.set(BEST_KEY, best); }
@@ -844,6 +861,207 @@ function finish(reason){
     <button class="btn primary" id="again">Play again</button>`);
   $('#again').onclick = () => { closeSheet(); S = null; renderTitle(); };
 }
+
+/* ============================================================
+   🗺️ MAPS: a tappable map as an alternative to the lists
+   ("Map" in the List/Map toggle on Home and Jobs; the choice is remembered).
+   Two panels:
+   - 'T' Waitsburg: a stylized town map. Tap a place to make it this week's focus.
+   - 'R' The region: the six towns on real coordinates, with the rivers and US-12.
+     Tap a town for its drive, gas and jobs. Your truck drives the commute after each week.
+   ============================================================ */
+const PREF_KEY = 'theburg.prefs';
+const prefs = () => store.get(PREF_KEY) || {};
+const setPref = (k, v) => { const p = prefs(); p[k] = v; store.set(PREF_KEY, p); };
+let MAPSIDE = null, MAPSEL = null, MAPANIM = -1;
+
+/* ---- region map: a lon/lat box projected flat (x scaled by cos(lat)) ---- */
+const RBB = { w:-119.42, e:-117.80, s:45.95, n:46.47 };
+// stretched north-south 1.5x so the Tri-Cities and the river bends have room on a phone screen
+const RW = 400, RH = Math.round(1.5 * RW * (RBB.n - RBB.s) / ((RBB.e - RBB.w) * Math.cos(46.21 * Math.PI / 180)));
+const rxy = (lat, lon) => [(lon - RBB.w) / (RBB.e - RBB.w) * RW, (RBB.n - lat) / (RBB.n - RBB.s) * RH];
+const TOWNLL = {
+  waitsburg:[46.2704,-118.1536], dayton:[46.3207,-117.9722], wallawalla:[46.0646,-118.3430],
+  pasco:[46.2396,-119.1006], kennewick:[46.2112,-119.1372], richland:[46.2857,-119.2845]
+};
+const TOWNIC = { waitsburg:'🏡', dayton:'🚂', wallawalla:'🍷', pasco:'🚆', kennewick:'🛍️', richland:'🔬' };
+// approximate courses, traced from town and landmark coordinates
+const RIVERS = [
+  { n:'Columbia River', w:5, pts:[[46.48,-119.37],[46.40,-119.30],[46.33,-119.26],[46.27,-119.23],[46.235,-119.15],[46.22,-119.07],[46.18,-119.01],[46.12,-118.96],[46.07,-118.93],[46.00,-118.96],[45.95,-119.06]] },
+  { n:'Snake River',    w:4, pts:[[46.48,-118.47],[46.40,-118.66],[46.31,-118.79],[46.25,-118.88],[46.22,-118.96],[46.20,-119.03]] },
+  { n:'Yakima River',   w:2.5, pts:[[46.32,-119.42],[46.29,-119.35],[46.26,-119.29],[46.245,-119.25]] },
+  { n:'Walla Walla R.', w:2, pts:[[46.06,-118.30],[46.05,-118.45],[46.043,-118.60],[46.05,-118.75],[46.07,-118.91]] },
+  { n:'Touchet River',  w:2, pts:[[46.30,-117.86],[46.33,-117.95],[46.30,-118.05],[46.272,-118.15],[46.30,-118.30],[46.22,-118.42],[46.12,-118.55],[46.043,-118.67]] }
+];
+// US-12 from Dayton through Waitsburg, Walla Walla and Wallula to Pasco
+const US12 = [[46.3207,-117.9722],[46.30,-118.06],[46.2704,-118.1536],[46.14,-118.155],[46.0646,-118.3430],[46.05,-118.59],[46.043,-118.67],[46.085,-118.905],[46.20,-119.01],[46.2396,-119.1006]];
+const SPUR = { kennewick:[[46.2396,-119.1006],[46.2112,-119.1372]], richland:[[46.2396,-119.1006],[46.265,-119.19],[46.2857,-119.2845]] };
+const LANDMARKS = [
+  { k:'bluewood', ic:'⛷️', ll:[46.083,-117.851], name:'Bluewood ski area', desc:'Up the Touchet past Dayton. Powder days happen here in the winter.' }
+];
+
+function commuteRoute(city){
+  const iw = 2;                                      // Waitsburg's index on US-12
+  if (city === 'waitsburg') return [];
+  if (city === 'dayton') return US12.slice(0, iw + 1).reverse();
+  const toPasco = US12.slice(iw);
+  if (city === 'wallawalla') return US12.slice(iw, 5);
+  if (city === 'pasco') return toPasco;
+  return toPasco.concat(SPUR[city].slice(1));
+}
+const pathD = pts => pts.map((p,i) => `${i?'L':'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join('');
+
+// push overlapping pins apart (the Tri-Cities sit close together), keeping them near their real spots
+function spread(pts, min, w, h){
+  const ks = Object.keys(pts), home = {}; ks.forEach(k => home[k] = pts[k].slice());
+  for (let it = 0; it < 200; it++) {
+    for (let i = 0; i < ks.length; i++) for (let j = i+1; j < ks.length; j++) {
+      const a = pts[ks[i]], b = pts[ks[j]]; let dx = b[0]-a[0], dy = b[1]-a[1], d = Math.hypot(dx, dy);
+      if (d >= min) continue; if (d < 0.01) { dx = 1; dy = 1; d = 1.4; }
+      const p = (min - d) / 2, ux = dx/d, uy = dy/d; a[0] -= ux*p; a[1] -= uy*p; b[0] += ux*p; b[1] += uy*p;
+    }
+    ks.forEach(k => { const p = pts[k]; p[0] += (home[k][0]-p[0])*0.02; p[1] += (home[k][1]-p[1])*0.02;
+      p[0] = Math.max(18, Math.min(w-18, p[0])); p[1] = Math.max(18, Math.min(h-18, p[1])); });
+  }
+  return pts;
+}
+
+function regionSVG(){
+  const pins = {}; Object.keys(TOWNLL).forEach(k => pins[k] = rxy(...TOWNLL[k]));
+  LANDMARKS.forEach(l => pins[l.k] = rxy(...l.ll));
+  spread(pins, 34, RW, RH);
+  const j = S.retired ? null : job(), work = j ? j.city : null;
+  let s = `<svg class="mapsvg" viewBox="0 0 ${RW} ${RH}" role="group" aria-label="Map of the region around Waitsburg">
+    <rect width="${RW}" height="${RH}" fill="#ecdca8"/>
+    <path d="M0 ${RH*.55} C${RW*.2} ${RH*.45} ${RW*.35} ${RH*.62} ${RW*.55} ${RH*.5} S${RW*.85} ${RH*.4} ${RW} ${RH*.48} V${RH} H0Z" fill="#e3cd8c" opacity=".7"/>
+    <path d="M${RW*.78} ${RH} C${RW*.85} ${RH*.7} ${RW*.93} ${RH*.62} ${RW} ${RH*.55} V${RH}Z" fill="#9fb48a" opacity=".75"/>
+    <text x="${RW*.9}" y="${RH*.9}" class="mlbl" text-anchor="middle">Blue Mtns.</text>`;
+  for (const r of RIVERS) s += `<path d="${pathD(r.pts.map(p => rxy(...p)))}" fill="none" stroke="#6fa3c0" stroke-width="${r.w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  s += `<g class="mwlbl">${[['Columbia R.',46.40,-119.24],['Snake R.',46.38,-118.62],['Walla Walla R.',46.02,-118.55],['Touchet R.',46.17,-118.40]]
+        .map(([t,la,lo]) => { const [x,y] = rxy(la,lo); return `<text x="${x.toFixed(0)}" y="${y.toFixed(0)}" text-anchor="middle">${t}</text>`; }).join('')}</g>`;
+  const road = pts => `<path d="${pathD(pts.map(p => rxy(...p)))}" fill="none" stroke="#fffaf0" stroke-width="5" stroke-linejoin="round"/><path d="${pathD(pts.map(p => rxy(...p)))}" fill="none" stroke="#9b2f1f" stroke-width="2" stroke-dasharray="7 4" stroke-linejoin="round"/>`;
+  s += road(US12) + road(SPUR.kennewick) + road(SPUR.richland);
+  { const [x,y] = rxy(46.14,-118.60); s += `<g transform="translate(${x.toFixed(0)} ${(y-10).toFixed(0)})"><rect x="-13" y="-8" width="26" height="14" rx="3" fill="#fff" stroke="#9b2f1f"/><text y="3" text-anchor="middle" font-size="9" font-weight="800" fill="#9b2f1f">12</text></g>`; }
+  s += `<text x="8" y="14" class="mlbl" font-weight="700">N ↑</text><text x="${RW-6}" y="${RH-5}" class="mlbl" text-anchor="end" font-size="7.5">Rivers and roads approximate · not to scale</text>`;
+  // commute route + the truck
+  if (work && work !== 'waitsburg') {
+    const route = commuteRoute(work).map(p => rxy(...p)); route[0] = pins.waitsburg; route[route.length-1] = pins[work];
+    const d = pathD(route), anim = MAPANIM !== S.turn;
+    s += `<path d="${d}" fill="none" stroke="#3d2b1f" stroke-width="2.5" stroke-dasharray="2 4" stroke-linecap="round" opacity=".6"/>`;
+    const end = pins[work];
+    s += anim
+      ? `<g pointer-events="none"><text font-size="17" text-anchor="middle" y="6">🛻<animateMotion dur="2.4s" fill="freeze" path="${d}"/></text></g>`
+      : `<text x="${end[0]+16}" y="${end[1]-9}" font-size="14" pointer-events="none">🛻</text>`;
+    MAPANIM = S.turn;
+  }
+  // pins
+  for (const k of Object.keys(TOWNLL)) {
+    const [x,y] = pins[k], sel = MAPSEL === k, isWork = k === work, c = CITIES[k];
+    s += `<g class="mpin" tabindex="0" role="button" aria-label="${c.name}" onclick="MAPTAP('${k}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();MAPTAP('${k}')}">
+      <circle cx="${x}" cy="${y}" r="${sel?16:14}" fill="#fff" stroke="${sel?'#9b2f1f':isWork?'#5f8a55':'#3d2b1f'}" stroke-width="${sel||isWork?3:1.6}"/>
+      <text x="${x}" y="${y+5}" font-size="14" text-anchor="middle">${TOWNIC[k]}</text>
+      <text x="${x}" y="${y+28}" class="mtown" text-anchor="middle">${c.name}</text></g>`;
+    if (k === 'waitsburg') s += `<text x="${x-17}" y="${y-11}" font-size="11" pointer-events="none">🏠</text>`;
+    if (isWork) s += `<text x="${x+11}" y="${y-11}" font-size="11" pointer-events="none">💼</text>`;
+  }
+  for (const l of LANDMARKS) {
+    const [x,y] = pins[l.k], sel = MAPSEL === l.k;
+    s += `<g class="mpin" tabindex="0" role="button" aria-label="${l.name}" onclick="MAPTAP('${l.k}')"><circle cx="${x}" cy="${y}" r="${sel?14:12}" fill="#fffaf0" stroke="${sel?'#9b2f1f':'#7a6a5c'}" stroke-width="${sel?3:1.2}" stroke-dasharray="${sel?'':'3 2'}"/><text x="${x}" y="${y+4.5}" font-size="12" text-anchor="middle">${l.ic}</text></g>`;
+  }
+  return s + '</svg>';
+}
+
+function regionDetail(k){
+  const lm = LANDMARKS.find(l => l.k === k);
+  if (lm) return `<div class="card mapdet"><h3>${lm.ic} ${lm.name}</h3><p class="muted" style="margin:0">${lm.desc}</p></div>`;
+  const c = CITIES[k], jobs = JOBS.filter(x => x.city === k);
+  const drive = c.miles ? `${c.miles} mi each way · about ${Math.round(c.miles*1.1+3)} min · ~${wk(commuteCost(c.miles))} gas in your ${CARS[S.car].name.toLowerCase()}` : 'Home. No commute: you can walk to work.';
+  return `<div class="card mapdet"><h3>${TOWNIC[k]} ${c.name}</h3>
+    <p class="muted" style="margin:0 0 4px">${drive}</p><p style="margin:0 0 6px;font-size:14px">${c.blurb}</p>
+    ${jobs.map(jobRow).join('')}</div>`;
+}
+
+/* ---- Waitsburg town map: stylized, not to scale ---- */
+const TW = 400, TH = 330;
+function townPlaces(){
+  const j = S.retired ? null : job();
+  const P = [
+    { k:'home', lb:'Home',     ic:'🏠', x:78,  y:118, name:HOMES[S.home].name, focus:'rest', desc:'Sleep in, fix something on the porch, take it easy.' },
+    { k:'mainst', lb:'Main St.',   ic:'☕', x:226, y:174, name:'Main Street', focus:'community', desc:'Coffee, the café counter, town hall and whoever needs a hand this week.' },
+    { k:'library', lb:'Library',  ic:'📚', x:292, y:142, name:'Weller Public Library', focus:'study', desc:S.edu<3 ? `Quiet tables and good Wi-Fi for your classes (${SCHOOL[S.edu]}).` : 'You\'ve finished all your schooling. Still a nice place to read.' },
+    { k:'river', lb:'River',    ic:'🎣', x:330, y:84,  name:'Touchet River', focus:'outdoors', desc:'Fish the river, walk the levee, or head up toward the Blue Mountains.' },
+    { k:'board', lb:'Odd jobs',    ic:'📌', x:186, y:222, name:'Post office bulletin board', focus:'hustle', desc:'Odd jobs: mowing, hauling, fixing fences, helping at harvest.' },
+    { k:'fair', lb:'Fairgrounds',     ic:'🐎', x:326, y:262, name:'Fairgrounds', desc:'Horse races and the parade happen here during Celebration Days in May.' },
+    { k:'school', lb:'School',   ic:'🏫', x:262, y:226, name:'Waitsburg schools', desc:'Friday night games in the gym all winter.' },
+    { k:'elevator', lb:'Elevator', ic:'🌾', x:120, y:212, name:'Grain elevator', desc:'Wheat from the hills comes through here at harvest.' },
+    { k:'fields', lb:'Fields',   ic:'🚜', x:66,  y:280, name:'Wheat fields', desc:'Rolling wheat in every direction.' }
+  ];
+  // where you work in town (or the highway out of town) is the "work extra hours" spot
+  const at = { farmhand:'fields', diner:'mainst', para:'school', elevator:'elevator', insure:'mainst' };
+  if (j && j.city === 'waitsburg') P.find(p => p.k === at[j.id]).work = j.title;
+  else if (j) P.push({ k:'hwy', lb:'To work', ic:'💼', x:372, y:38, name:`Highway 12 to ${CITIES[j.city].name}`, focus:'work', desc:`Your commute to work as ${j.title.toLowerCase()}, ${CITIES[j.city].miles} miles each way.` });
+  P.forEach(p => { if (p.work) { p.focus = 'work'; p.desc = `You work here as ${p.work.toLowerCase()}. ` + p.desc; } });
+  return P;
+}
+function townSVG(){
+  const P = townPlaces();
+  let s = `<svg class="mapsvg" viewBox="0 0 ${TW} ${TH}" role="group" aria-label="Map of Waitsburg">
+    <rect width="${TW}" height="${TH}" fill="#e9c46a"/>
+    <path d="M0 0 H${TW} V60 C320 80 260 50 200 70 S80 60 0 90Z" fill="#c99a3b" opacity=".45"/>
+    <path d="M0 250 C80 235 150 262 220 290 S330 300 ${TW} 285 V${TH} H0Z" fill="#c99a3b" opacity=".4"/>
+    <rect x="96" y="96" width="250" height="160" rx="22" fill="#efe6d2"/>
+    <path d="M${TW} 52 C350 72 312 96 270 116 S200 148 150 160 S60 196 0 228" fill="none" stroke="#6fa3c0" stroke-width="9" stroke-linecap="round"/>
+    <path d="M232 ${TH} C230 290 214 250 222 205 S200 152 196 148" fill="none" stroke="#6fa3c0" stroke-width="4" stroke-linecap="round"/>
+    <g class="mwlbl"><text x="120" y="182" transform="rotate(-24 120 182)">Touchet River</text><text x="244" y="300" transform="rotate(-80 244 300)">Coppei Creek</text></g>
+    <path d="M${TW} 22 L340 60 C300 100 250 150 230 176 L170 250 L120 ${TH}" fill="none" stroke="#fffaf0" stroke-width="9" stroke-linejoin="round"/>
+    <path d="M${TW} 22 L340 60 C300 100 250 150 230 176 L170 250 L120 ${TH}" fill="none" stroke="#9b2f1f" stroke-width="2" stroke-dasharray="7 4"/>
+    <path d="M110 186 H350" stroke="#fffaf0" stroke-width="8"/><path d="M200 112 V250 M290 112 V250 M110 140 H340 M110 226 H340" stroke="#fffaf0" stroke-width="4" opacity=".9"/>
+    <text x="300" y="180" class="mlbl" font-weight="700">Main St.</text>
+    <text x="${TW-6}" y="14" class="mlbl" text-anchor="end">↗ Dayton 11 mi</text>
+    <text x="126" y="${TH-6}" class="mlbl">↙ Walla Walla 21 mi</text>
+    <text x="8" y="14" class="mlbl" font-weight="700">N ↑</text><text x="${TW-6}" y="${TH-6}" class="mlbl" text-anchor="end" font-size="7.5">Not to scale</text>`;
+  for (const p of P) {
+    const sel = MAPSEL === p.k, on = p.focus && S.focus === p.focus;
+    s += `<g class="mpin${p.focus?'':' info'}" tabindex="0" role="button" aria-label="${esc(p.name)}" onclick="MAPTAP('${p.k}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();MAPTAP('${p.k}')}">
+      <circle cx="${p.x}" cy="${p.y}" r="${sel?18:15}" fill="${on?'#fbe9e4':'#fff'}" stroke="${sel||on?'#9b2f1f':'#3d2b1f'}" stroke-width="${sel||on?3:1.4}"${p.focus?'':' stroke-dasharray="3 2"'}/>
+      <text x="${p.x}" y="${p.y+5.5}" font-size="16" text-anchor="middle">${p.ic}</text>
+      <text x="${p.x}" y="${p.y+28}" class="mtown" text-anchor="middle">${p.lb}</text></g>`;
+    if (on) s += `<text x="${p.x+13}" y="${p.y-11}" font-size="11" pointer-events="none">⭐</text>`;
+  }
+  return s + '</svg>';
+}
+function townDetail(k){
+  const p = townPlaces().find(x => x.k === k); if (!p) return '';
+  const f = p.focus && FOCUS[p.focus];
+  let btn = '';
+  if (f) {
+    const dis = (f.needsJob && (!job() || S.retired)) || (f.study && S.edu >= 3);
+    const extra = f.study && S.edu < 3 ? ` · ${wk(TUITION[S.edu])}` : f.cost ? ` · ${wk(f.cost)}` : '';
+    btn = S.focus === p.focus ? `<span class="tag cur">This week's focus: ${f.name}</span>`
+      : `<button class="sm" onclick="MAPFOCUS('${p.focus}')" ${dis?'disabled':''}>${f.ic} Spend this week here${extra}</button>`;
+  }
+  return `<div class="card mapdet"><h3>${p.ic} ${esc(p.name)}</h3><p style="margin:0 0 8px;font-size:14px">${p.desc}</p>${btn}</div>`;
+}
+
+/* ---- the map block, the toggle, and taps ---- */
+function mapToggle(){
+  const on = !!prefs().mapView;
+  return `<div class="maptog" role="group" aria-label="Show as"><button class="${on?'':'on'}" onclick="MAPPREF(false)">📋 List</button><button class="${on?'on':''}" onclick="MAPPREF(true)">🗺️ Map</button></div>`;
+}
+function mapBlock(defSide){
+  const side = MAPSIDE || defSide;
+  if (MAPSEL && (side === 'R') !== (MAPSEL in TOWNLL || LANDMARKS.some(l => l.k === MAPSEL))) MAPSEL = null;
+  return `<div class="maptabs" role="tablist">
+      <button role="tab" aria-selected="${side==='T'}" class="${side==='T'?'on':''}" onclick="MAPTAB('T')">🏡 Waitsburg</button>
+      <button role="tab" aria-selected="${side==='R'}" class="${side==='R'?'on':''}" onclick="MAPTAB('R')">🛣️ The region</button></div>
+    ${side === 'T' ? townSVG() : regionSVG()}
+    <div class="mapcap">${side === 'T' ? 'Tap a place to spend your week there. Dashed circles are just for looking.' : 'Tap a town to see the drive and its jobs.'}</div>
+    ${MAPSEL ? (side === 'T' ? townDetail(MAPSEL) : regionDetail(MAPSEL)) : ''}`;
+}
+window.MAPTAP = k => { MAPSEL = MAPSEL === k ? null : k; render(); };
+window.MAPTAB = s => { MAPSIDE = s; MAPSEL = null; render(); };
+window.MAPPREF = v => { setPref('mapView', !!v); MAPSIDE = null; MAPSEL = null; render(); };
+window.MAPFOCUS = f => { S.focus = f; save(); render(); toast(`This week: ${FOCUS[f].name}`); };
 
 /* ---------- boot ---------- */
 renderTitle();
