@@ -3,12 +3,6 @@
 Release notes for The Burg. `/release now` turns the Unreleased section into a dated `## X.Y.Z (YYYY-MM-DD)`
 entry for every release, and the GitHub release notes are taken from it.
 
-## Unreleased
-
-### Changed
-- The Menu now starts with **💾 Save game** and **📂 Load game**. Save game saves to this life's own slot or a copy to
-  any other slot; Load game lists every saved life, with the one you're playing marked.
-
 ## 0.1.0 (2026-11-17)
 
 The first release of The Burg.
@@ -31,6 +25,7 @@ The first release of The Burg.
 - A Life Score from happiness, health, community standing and net worth (Lifetime counts in 2027 dollars), with
   your best score saved for each length.
 - Up to 5 saved lives. Each life auto-saves to its own slot, and the title screen lists them all to continue or
-  delete. The Menu can save a copy of your life to another slot as a checkpoint, or load a different life. With all
-  5 slots full, starting a new life asks which one to replace. A game saved in the first beta moves into slot 1.
+  delete. In the Menu, **💾 Save game** saves to this life's slot or a copy to another slot as a checkpoint, and
+  **📂 Load game** switches to any saved life. With all 5 slots full, starting a new life asks which one to replace.
+  A game saved in the first beta moves into slot 1.
 - Installable as an app, and works offline.
