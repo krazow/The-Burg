@@ -94,12 +94,50 @@ await t.check('⏩ 4 weeks plays up to four weeks and stops early when something
   assert(d >= 1 && d <= 4, `skipped ${d} weeks`);
 });
 
-await t.check('the game saves, and Continue picks up the same week after a reload', async () => {
+await t.check('the game saves to its slot, and Continue picks up the same week after a reload', async () => {
   const before = await S();
+  assert(before.slot === 0, `first life should be in slot 1, was ${before.slot + 1}`);
   await page.reload({ waitUntil: 'load' });
-  await page.click('#cont');
+  assert((await page.$$('[data-cont]')).length === 1, 'title should list one saved life');
+  await page.click('[data-cont="0"]');
   const after = await S();
   assert(after.turn === before.turn && Math.round(after.money) === Math.round(before.money) && after.jobId === before.jobId, 'save did not round-trip');
+});
+
+await t.check('Menu → Save a copy puts a checkpoint in another slot, and play continues in the original', async () => {
+  await page.click('[data-tab=menu]');
+  await page.click('#copy');
+  await page.click('[data-copy="1"]');
+  const slots = await page.evaluate(() => slots());
+  assert(slots[0] && slots[1] && slots[1].slot === 1 && slots[1].turn === slots[0].turn, 'copy not saved to slot 2');
+  assert((await S()).slot === 0, 'should still be playing slot 1');
+  await endWeek();
+  const after = await page.evaluate(() => slots());
+  assert(after[0].turn === after[1].turn + 1, 'the copy should stay at the checkpoint while the original moves on');
+});
+
+await t.check('Menu → Load another game switches to the copy, saving the current life first', async () => {
+  const cur = await S();
+  await page.click('[data-tab=menu]');
+  await page.click('#load');
+  await page.click('[data-load="1"]');
+  const s = await S();
+  assert(s.slot === 1 && s.turn === cur.turn - 1, 'did not load the copy');
+  assert((await page.evaluate(() => slots()))[0].turn === cur.turn, 'the original was not kept');
+  await page.click('[data-tab=menu]'); await page.click('#load'); await page.click('[data-load="0"]');
+  assert((await S()).slot === 0, 'could not load the original back');
+});
+
+await t.check('the title lists every life, and deleting one asks first', async () => {
+  await page.click('[data-tab=menu]'); await page.click('#title');
+  assert((await page.$$('[data-cont]')).length === 2, 'title should list two lives');
+  await page.click('[data-del="1"]');
+  await page.click(`${open} #no`);
+  assert((await page.$$('[data-cont]')).length === 2, 'Keep it should keep the life');
+  await page.click('[data-del="1"]');
+  await page.click(`${open} #yes`);
+  assert((await page.$$('[data-cont]')).length === 1, 'delete did not remove the life');
+  await page.click('[data-cont="0"]');
 });
 
 await t.check('the Waitsburg map sets this week\'s focus by place', async () => {
@@ -120,7 +158,7 @@ await t.check('the region map shows a town\'s drive and jobs, with Apply', async
 
 await t.check('the List/Map choice is remembered', async () => {
   await page.reload({ waitUntil: 'load' });
-  await page.click('#cont');
+  await page.click('[data-cont="0"]');
   await page.waitForSelector('.mapsvg');
   await page.click('.maptog button:nth-child(1)');
   await page.waitForSelector('.fbtn');
@@ -135,7 +173,31 @@ await t.check('the last week ends the game with a Life Score, and Play again ret
   assert(Number.isInteger(score) && score >= 0 && score <= 100, `bad score ${score}`);
   await page.click('#again');
   await page.waitForSelector('#start');
-  assert(!(await page.$('#cont')), 'a finished game should not offer Continue');
+  assert(!(await page.$('[data-cont="0"]')), 'a finished game should leave its slot');
+});
+
+await t.check('with all 5 slots full, a new life asks which one to replace', async () => {
+  await page.evaluate(() => { for (let i = 0; i < 5; i++) { newGame('Life' + (i+1), 'half', i); save(); } S = null; renderTitle(); });
+  assert((await page.$$('[data-cont]')).length === 5, 'title should list five lives');
+  await page.fill('#nm', 'Sixth');
+  await page.click('#start');
+  await page.waitForSelector(`${open} [data-over]`);
+  await page.click(`${open} [data-over="2"]`);
+  const s = await S(), all = await page.evaluate(() => slots());
+  assert(s.name === 'Sixth' && s.slot === 2 && all[2].name === 'Sixth' && all[1].name === 'Life2' && all[3].name === 'Life4', 'replace went to the wrong slot');
+});
+
+await t.check('a save from before slots moves into a slot', async () => {
+  await page.evaluate(() => {
+    localStorage.clear();
+    newGame('Oldtimer', 'two'); S.turn = 9; const g = JSON.parse(JSON.stringify(S)); delete g.slot;
+    localStorage.clear(); localStorage.setItem('theburg.save.v2', JSON.stringify(g));
+  });
+  await page.reload({ waitUntil: 'load' });
+  await page.click('[data-cont="0"]');
+  const s = await S();
+  assert(s.name === 'Oldtimer' && s.turn === 9 && s.slot === 0, 'old save was not moved');
+  assert(!(await page.evaluate(() => localStorage.getItem('theburg.save.v2'))), 'old save key should be removed');
 });
 
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });

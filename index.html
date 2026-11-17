@@ -112,6 +112,10 @@ nav button.on{color:var(--barn)}
 .mapsvg .mtown{font-size:9.5px;font-weight:800;fill:#3d2b1f;paint-order:stroke;stroke:#fffaf0;stroke-width:3px;pointer-events:none}
 .mpin{cursor:pointer;outline:none}.mpin:focus-visible circle{stroke:var(--barn);stroke-width:3}
 .mapcap{font-size:13px;color:var(--muted);margin:6px 2px 8px}.mapdet{margin:4px 0 0;background:#fffaf0}
+.slots{display:flex;flex-direction:column;gap:8px;margin:6px 0 4px;text-align:left}
+.slot{display:flex;gap:10px;align-items:center;justify-content:space-between;background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px}
+.slot.empty{border-style:dashed}.slot.empty .slotinfo{opacity:.7}.slot .s{font-size:12.5px;color:var(--muted)}.slotinfo{min-width:0}
+.slotbtns{display:flex;gap:6px;flex-shrink:0}
 .score{font-size:64px;font-weight:800;text-align:center;color:var(--barn);font-family:Georgia,serif}
 </style>
 </head>
@@ -234,7 +238,7 @@ const age = () => Math.floor(S.ageMonths/12);
 const kidsAtHome = () => (S.kids || []).filter(b => S.ageMonths - b < 18*12).length;
 // fill in fields that older saves don't have
 function migrate(s){
-  const d = { evCd:{}, evDone:{}, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, mortgage:null, loanPay:0 };
+  const d = { slot:0, evCd:{}, evDone:{}, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, mortgage:null, loanPay:0 };
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
   if (HOMES[s.home] && HOMES[s.home].own && !s.mortgage) s.mortgage = HOMES[s.home].cost;
   return s;
@@ -253,7 +257,35 @@ function adj(o){
   ['happy','health','community'].forEach(k => { if (o[k]) S[k] = clamp(S[k] + o[k]); });
 }
 function log(msg){ S.log.unshift({d: dateLabel(), m: msg}); if (S.log.length > 120) S.log.length = 120; }
-function save(){ if (S && !S.over) store.set(SAVE_KEY, S); }
+/* ---------- save slots: up to 5 lives, each auto-saving to its own slot ---------- */
+const SLOTS_KEY = 'theburg.slots.v1', SLOT_COUNT = 5;
+function slots(){
+  const a = store.get(SLOTS_KEY), out = Array.isArray(a) ? a.slice(0, SLOT_COUNT) : [];
+  while (out.length < SLOT_COUNT) out.push(null);
+  const old = store.get(SAVE_KEY);                 // the single save from before slots: move it into a free slot
+  if (old && !old.over) {
+    const i = out.indexOf(null);
+    if (i >= 0) { old.slot = i; out[i] = old; store.set(SLOTS_KEY, out); store.del(SAVE_KEY); }
+  } else if (old) store.del(SAVE_KEY);
+  return out;
+}
+function writeSlot(i, game){ const a = slots(); a[i] = game; store.set(SLOTS_KEY, a); }
+function save(){ if (S && !S.over) { S.savedAt = Date.now(); writeSlot(S.slot ?? 0, S); } }
+const clone = o => JSON.parse(JSON.stringify(o));
+function savedAgo(t){
+  if (!t) return '';
+  const m = Math.round((Date.now() - t) / 60000);
+  return m < 1 ? 'saved just now' : m < 60 ? `saved ${m} min ago` : m < 1440 ? `saved ${Math.round(m/60)} h ago` : `saved ${new Date(t).toLocaleDateString()}`;
+}
+function slotLine(g){
+  const d = new Date(g.date);
+  return `${LENGTHS[g.len] ? LENGTHS[g.len].label : ''} · age ${Math.floor(g.ageMonths/12)} · ${MONTHS[d.getMonth()].slice(0,3)} ${d.getFullYear()} · ${fmt(g.money)}`;
+}
+function slotCard(g, i, buttons){
+  return g ? `<div class="slot"><div class="slotinfo"><b>${esc(g.name)}</b>${g.copyNote ? ` <span class="tag">${esc(g.copyNote)}</span>` : ''}
+      <div class="s">${slotLine(g)}</div><div class="s">Slot ${i+1} · ${savedAgo(g.savedAt)}</div></div>${buttons}</div>`
+    : `<div class="slot empty"><div class="slotinfo"><b>Empty slot</b><div class="s">Slot ${i+1}</div></div>${buttons}</div>`;
+}
 function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.remove('hidden'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.add('hidden'), 2200); }
 
 /* ---------- title screen ---------- */
@@ -271,21 +303,22 @@ const SCENE = `<svg class="scene" viewBox="0 0 420 170" aria-hidden="true">
 </svg>`;
 
 function renderTitle(){
-  const saved = store.get(SAVE_KEY);
+  const all = slots(), used = all.filter(Boolean).length;
   const best = store.get(BEST_KEY) || {};
   let len = 'half';
   $('#app').innerHTML = `<div class="title">
     ${SCENE}
     <h1>The Burg</h1>
     <div class="sub">Make a life in Waitsburg, Washington.</div>
-    ${saved ? `<button class="btn primary" id="cont">Continue ${saved.name}'s life<br><small style="font-weight:500;opacity:.85">${LENGTHS[saved.len].label} · age ${Math.floor(saved.ageMonths/12)}</small></button>
-      <div class="muted" style="margin:18px 0 0">— or start over —</div>` : ''}
+    ${used ? `<label class="field">Your lives (${used}/${SLOT_COUNT})</label>
+      <div class="slots">${all.map((g,i) => g ? slotCard(g, i, `<div class="slotbtns"><button class="sm" data-cont="${i}">Continue</button><button class="sm alt" data-del="${i}" aria-label="Delete ${esc(g.name)}'s life">🗑</button></div>`) : '').join('')}</div>
+      <div class="muted" style="margin:18px 0 0">— or start a new life —</div>` : ''}
     <label class="field" for="nm">Your citizen's name</label>
     <input type="text" id="nm" maxlength="20" placeholder="e.g. Dusty" autocomplete="off">
     <label class="field">Game length</label>
     <div class="lengths">${Object.entries(LENGTHS).map(([k,L]) =>
       `<button class="len ${k===len?'on':''}" data-len="${k}"><b>${L.label}</b><span>${L.sub}</span></button>`).join('')}</div>
-    <button class="btn ${saved?'ghost':'primary'}" id="start">Start a new life</button>
+    <button class="btn ${used?'ghost':'primary'}" id="start">Start a new life</button>
     <button class="btn ghost" id="how">How to play</button>
     <div class="muted" style="margin-top:14px;font-size:12px">v${APP_VERSION}</div>
     <div class="best">${Object.keys(best).length ? 'Best life scores: ' + Object.entries(best).filter(([k]) => LENGTHS[k]).map(([k,v]) => `${LENGTHS[k].label} <b>${v}</b>`).join(' · ') : ''}</div>
@@ -293,19 +326,66 @@ function renderTitle(){
   document.querySelectorAll('.len').forEach(b => b.onclick = () => {
     len = b.dataset.len; document.querySelectorAll('.len').forEach(x => x.classList.toggle('on', x === b));
   });
-  if (saved) $('#cont').onclick = () => { S = migrate(saved); tab = 'home'; render(); };
+  document.querySelectorAll('[data-cont]').forEach(b => b.onclick = () => loadSlot(+b.dataset.cont));
+  document.querySelectorAll('[data-del]').forEach(b => b.onclick = () => askDelete(+b.dataset.del));
   $('#start').onclick = () => {
     const name = ($('#nm').value.trim() || 'Dusty').slice(0,20);
-    if (saved && !confirmSheet) { return askOverwrite(name, len); }
-    newGame(name, len);
+    const free = slots().indexOf(null);
+    if (free < 0) return askReplace(name, len);
+    newGame(name, len, free);
   };
   $('#how').onclick = showHelp;
 }
-let confirmSheet = false;
-function askOverwrite(name, len){
-  sheet(`<h2>Start over?</h2><p>This replaces ${store.get(SAVE_KEY).name}'s saved life.</p>
-    <button class="btn primary" id="yes">Start new life</button><button class="btn ghost" id="no">Keep my save</button>`);
-  $('#yes').onclick = () => { closeSheet(); newGame(name, len); };
+function loadSlot(i){
+  const g = slots()[i]; if (!g) return;
+  if (S && !S.over && S.slot !== i) save();
+  S = migrate(clone(g)); S.slot = i; tab = 'home'; MAPSIDE = null; MAPSEL = null;
+  closeSheet(); render(); window.scrollTo(0,0);
+}
+function askDelete(i){
+  const g = slots()[i]; if (!g) return;
+  sheet(`<h2>Delete ${esc(g.name)}'s life?</h2><p>${slotLine(g)}</p><p>This can't be undone.</p>
+    <button class="btn primary" id="yes">Delete</button><button class="btn ghost" id="no">Keep it</button>`);
+  $('#yes').onclick = () => { writeSlot(i, null); closeSheet(); renderTitle(); toast('Deleted'); };
+  $('#no').onclick = closeSheet;
+}
+function askReplace(name, len){
+  sheet(`<h2>All ${SLOT_COUNT} slots are full</h2><p>Pick a life to replace with ${esc(name)}'s new one. The old one is deleted.</p>
+    <div class="slots">${slots().map((g,i) => slotCard(g, i, `<button class="sm" data-over="${i}">Replace</button>`)).join('')}</div>
+    <button class="btn ghost" id="no">Cancel</button>`);
+  document.querySelectorAll('[data-over]').forEach(b => b.onclick = () => { closeSheet(); newGame(name, len, +b.dataset.over); });
+  $('#no').onclick = closeSheet;
+}
+// Menu: save a copy of this life to another slot (a checkpoint you can go back to)
+function saveCopySheet(){
+  save();
+  sheet(`<h2>Save a copy</h2><p class="muted">Copies ${esc(S.name)}'s life as it is right now into another slot. You keep playing this one; load the copy any time to go back to this moment.</p>
+    <div class="slots">${slots().map((g,i) => i === S.slot
+      ? slotCard(g, i, '<span class="tag cur">Playing</span>')
+      : slotCard(g, i, `<button class="sm" data-copy="${i}">${g ? 'Replace' : 'Save here'}</button>`)).join('')}</div>
+    <button class="btn ghost" id="no">Cancel</button>`);
+  document.querySelectorAll('[data-copy]').forEach(b => b.onclick = () => {
+    const i = +b.dataset.copy, old = slots()[i];
+    const go = () => {
+      const c = clone(S); c.slot = i; c.savedAt = Date.now(); c.copyNote = `Copy · ${dateLabel().replace('Week of ','')}`;
+      writeSlot(i, c); closeSheet(); toast(`Copy saved to slot ${i+1}`);
+    };
+    if (!old) return go();
+    sheet(`<h2>Replace ${esc(old.name)}'s life?</h2><p>${slotLine(old)}</p><p>Slot ${i+1} will hold the copy instead. This can't be undone.</p>
+      <button class="btn primary" id="yes">Replace it</button><button class="btn ghost" id="back">Back</button>`);
+    $('#yes').onclick = go; $('#back').onclick = saveCopySheet;
+  });
+  $('#no').onclick = closeSheet;
+}
+// Menu: switch to another saved life (this one is saved first)
+function loadSheet(){
+  save();
+  const all = slots(), others = all.map((g,i) => [g,i]).filter(([g,i]) => g && i !== S.slot);
+  sheet(`<h2>Load a game</h2><p class="muted">${esc(S.name)}'s life is saved in slot ${S.slot+1}.</p>
+    ${others.length ? `<div class="slots">${others.map(([g,i]) => slotCard(g, i, `<button class="sm" data-load="${i}">Load</button>`)).join('')}</div>`
+      : '<p>No other saved lives yet. Use “Save a copy” to make a checkpoint, or start a new life from the title screen.</p>'}
+    <button class="btn ghost" id="no">Cancel</button>`);
+  document.querySelectorAll('[data-load]').forEach(b => b.onclick = () => { loadSlot(+b.dataset.load); toast(`Loaded ${S.name}'s life`); });
   $('#no').onclick = closeSheet;
 }
 function showHelp(){
@@ -313,13 +393,14 @@ function showHelp(){
    <p>You live in <b>Waitsburg</b>. Each turn is <b>one week</b>: pick a <b>focus</b>, then end the week. Use the skip buttons to play several weeks with the same focus. Skipping stops when something happens.</p>
    <p>Work anywhere from Waitsburg to Richland. Farther jobs pay more, but gas costs money and the drive on Highway 12 wears you down.</p>
    <p>Take classes to unlock better jobs. Rent or buy a home, upgrade your truck, and handle whatever life in the Burg throws at you.</p>
-   <p>Your <b>Life Score</b> blends happiness, health, community standing and net worth. Your game saves automatically.</p>
+   <p>Your <b>Life Score</b> blends happiness, health, community standing and net worth.</p>
+   <p>You can keep up to <b>5 lives</b> going. Each one saves automatically to its own slot, and the Menu can save a copy to another slot (a checkpoint) or load a different life.</p>
    <button class="btn primary" id="ok">Got it</button>`);
   $('#ok').onclick = closeSheet;
 }
 
-function newGame(name, len){
-  S = { v:3, name, len, turn:0, date: new Date(2027,0,4).getTime(), ageMonths:18*12, evCd:{}, evDone:{}, last:null, ui:0,
+function newGame(name, len, slot = 0){
+  S = { v:3, slot, name, len, turn:0, date: new Date(2027,0,4).getTime(), ageMonths:18*12, evCd:{}, evDone:{}, last:null, ui:0,
     col:1, wage:1, kids:[], k401:0, k401rate:0, mortgage:null, loanPay:0,
     money:1500, health:82, happy:65, community:30,
     edu:0, studyProg:0, jobId:null, jobMonths:0, raise:1, retired:false,
@@ -541,11 +622,15 @@ function renderLog(){
 
 function showMenu(){
   sheet(`<h2>Menu</h2>
-    <p class="muted">Your game saves automatically after every turn.</p>
+    <p class="muted">${esc(S.name)}'s life saves automatically to slot ${S.slot+1} after every turn.</p>
+    <button class="btn ghost" id="copy">💾 Save a copy to another slot</button>
+    <button class="btn ghost" id="load">📂 Load another game</button>
     <button class="btn ghost" id="help">How to play</button>
     <button class="btn ghost" id="title">Back to title screen</button>
     <button class="btn ghost" id="retireNow">End this life now (see score)</button>
     <button class="btn ghost" id="close">Close</button>`);
+  $('#copy').onclick = saveCopySheet;
+  $('#load').onclick = loadSheet;
   $('#help').onclick = showHelp;
   $('#title').onclick = () => { save(); closeSheet(); S = null; renderTitle(); };
   $('#retireNow').onclick = () => { closeSheet(); finish('You chose to wrap things up.'); };
@@ -912,7 +997,7 @@ function finish(reason){
   const best = store.get(BEST_KEY) || {};
   const isBest = !best[S.len] || score > best[S.len];
   if (isBest) { best[S.len] = score; store.set(BEST_KEY, best); }
-  S.over = true; store.del(SAVE_KEY);
+  S.over = true; writeSlot(S.slot ?? 0, null);
   sheet(`<h2 style="text-align:center">${esc(S.name)}'s life in the Burg</h2>
     <p class="muted" style="text-align:center">${reason}</p>
     <div class="score">${score}</div>
