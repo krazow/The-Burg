@@ -21,21 +21,21 @@ added, finished or re-prioritized, both change in the same session.
 | # | Item | Why it's next | Issue |
 |---|---|---|---|
 | 1 | **Review and merge the maps PR** (your action) | The map is finished and tested; merging it puts the current game on `main` before releases start. | [PR #1](https://github.com/krazow/The-Burg/pull/1) |
-| 2 | **Adopt the shared release kit** | You've turned on Actions and allowed `release/*` and `v*`. This adds the `/release now` → beta → promote flow every krazow app uses. | [#2](https://github.com/krazow/The-Burg/issues/2) |
-| 3 | **QA suite: browser smoke + gameplay tests** | The kit's CI runs `npm test` on every PR and release, so these gate every release. | [#3](https://github.com/krazow/The-Burg/issues/3) |
-| 4 | **Play-test simulation suite** | Bots play hundreds of full games to catch crashes and bad balance before people do. It also measures the P2 balance work. | [#4](https://github.com/krazow/The-Burg/issues/4) |
-| 5 | **First beta release and tester invite** | Gets the game in front of real players at `/beta/`. | [#5](https://github.com/krazow/The-Burg/issues/5) |
+| 2 | **Review and merge the release kit + QA PR** (your action, after #1) | Built and passing locally. Merging closes #2, #3 and #4. | [PR #15](https://github.com/krazow/The-Burg/pull/15) |
+| 3 | **One-time GitHub settings** (your action) | Settings → Pages → Source: **GitHub Actions**; Settings → Actions → General → Workflow permissions: **Read and write**. | [#2](https://github.com/krazow/The-Burg/issues/2) |
+| 4 | **First beta release and tester invite** | `/release now` → https://krazow.github.io/The-Burg/beta/. Gets the game in front of real players. | [#5](https://github.com/krazow/The-Burg/issues/5) |
+| 5 | **Fix the difficulty and event tuning** found by the first balance report | Careless play scores a median of 78, and inheritances and layoffs repeat too often. Worth fixing before many testers play. | [#7](https://github.com/krazow/The-Burg/issues/7), [#16](https://github.com/krazow/The-Burg/issues/16) |
 
 - [ ] Merge maps PR — [PR #1](https://github.com/krazow/The-Burg/pull/1)
-- [ ] Adopt the release kit — [#2](https://github.com/krazow/The-Burg/issues/2)
-- [ ] QA suite: smoke + gameplay tests — [#3](https://github.com/krazow/The-Burg/issues/3)
-- [ ] Play-test simulation suite — [#4](https://github.com/krazow/The-Burg/issues/4)
+- [ ] Merge release kit + QA suites — [PR #15](https://github.com/krazow/The-Burg/pull/15) (closes [#2](https://github.com/krazow/The-Burg/issues/2), [#3](https://github.com/krazow/The-Burg/issues/3), [#4](https://github.com/krazow/The-Burg/issues/4))
+- [ ] One-time Pages and workflow-permission settings — [#2](https://github.com/krazow/The-Burg/issues/2)
 - [ ] First beta release — [#5](https://github.com/krazow/The-Burg/issues/5)
 
 ## Soon: P2
 
-- [ ] **Lifetime economy:** savings grow into the millions; add rising costs, investing, family costs — [#6](https://github.com/krazow/The-Burg/issues/6)
-- [ ] **Difficulty:** strategy-free bots still score 70–90; tune with the simulation suite — [#7](https://github.com/krazow/The-Burg/issues/7)
+- [ ] **Lifetime economy:** savings reach $1–4M in simulations; add rising costs, investing, family costs — [#6](https://github.com/krazow/The-Burg/issues/6)
+- [ ] **Difficulty:** careless bots score a median of 78 (target ≤ 60); tune with the simulation suite — [#7](https://github.com/krazow/The-Burg/issues/7)
+- [ ] **Event tuning:** an inheritance about every 3 years in Lifetime, layoffs about every 2 years, a few events almost never seen — [#16](https://github.com/krazow/The-Burg/issues/16)
 - [ ] **Events happen at places on the map** — [#8](https://github.com/krazow/The-Burg/issues/8)
 - [ ] **Manual play-test pass on real phones** (iPhone and Android install, offline, resume) — [#9](https://github.com/krazow/The-Burg/issues/9)
 - [ ] **Accessibility pass** (contrast, keyboard and screen readers on the maps, reduced motion) — [#10](https://github.com/krazow/The-Burg/issues/10)
@@ -64,8 +64,10 @@ Three layers, from cheapest to most human:
 3. **People** ([#5](https://github.com/krazow/The-Burg/issues/5), [#9](https://github.com/krazow/The-Burg/issues/9)):
    a phone checklist before each production release, plus beta testers at `/beta/`.
 
-What has run so far (ad hoc, not yet in the repo): a headless 6-month playthrough, a 16-game simulation across all
-four lengths, and a maps walkthrough, all with no errors. Item 1 turns these into the permanent suites.
+**Status:** suites 1 and 2 are built and pass locally in about 16 seconds (smoke 5 checks, gameplay 11 checks,
+simulation 65 games / about 22,000 weeks). They go live with [PR #15](https://github.com/krazow/The-Burg/pull/15).
+The first balance report is summarized in [#6](https://github.com/krazow/The-Burg/issues/6),
+[#7](https://github.com/krazow/The-Burg/issues/7) and [#16](https://github.com/krazow/The-Burg/issues/16).
 
 ---
 
@@ -79,3 +81,5 @@ four lengths, and a maps walkthrough, all with no errors. Item 1 turns these int
 | Nov 16, 2026 | Repo set up, README written, offline cache and version stamp made release-kit compatible. | `main` |
 | Nov 16, 2026 | **Map navigation** like Island Time: List/Map toggle, Waitsburg town map that sets your week's focus, region map with real town positions, rivers, US-12, town job cards and a commute truck. | [PR #1](https://github.com/krazow/The-Burg/pull/1) |
 | Nov 16, 2026 | Set up this to-do list and its GitHub issues (#2–#14) with priority labels. | `TODO.md` |
+| Nov 16, 2026 | **Release kit adopted** (release.json, VERSION, CHANGELOG, release + CI workflows, `/release` command); kit checks, beta/production builds and site check pass locally. | [PR #15](https://github.com/krazow/The-Burg/pull/15) |
+| Nov 16, 2026 | **QA suites built:** smoke, gameplay walkthrough and bot play-test simulation with a balance report. The first report filed [#16](https://github.com/krazow/The-Burg/issues/16) and updated [#6](https://github.com/krazow/The-Burg/issues/6) and [#7](https://github.com/krazow/The-Burg/issues/7). | [PR #15](https://github.com/krazow/The-Burg/pull/15) |
