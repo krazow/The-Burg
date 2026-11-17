@@ -7,7 +7,7 @@ import { serve, launch, runner, seedScript } from './helpers.mjs';
 
 const SCALE = Number(process.env.SIM_SCALE || 1);
 const GAMES = { half: 6, two: 4, five: 2, life: 1 };              // per strategy, times SIM_SCALE
-const STRATEGIES = ['homebody', 'commuter', 'student', 'hustler', 'careless'];
+const STRATEGIES = ['planner', 'homebody', 'commuter', 'student', 'hustler', 'careless'];
 
 const srv = await serve();
 const browser = await launch();
@@ -28,6 +28,7 @@ for (const len of Object.keys(GAMES)) {
         // ---- the bot, running inside the game page ----
         render = () => {}; toast = () => {};   // skip redrawing the screen: just the rules
         newGame('Bot', len);
+        S.k401rate = { planner: 2, homebody: 1, commuter: 1, student: 1 }[strat] || 0;
         const bad = [], events = {};
         const best = () => JOBS.filter(x => x.edu <= S.edu).sort((a, b) =>
           (b.pay - commuteCost(CITIES[b.city].miles) * (strat === 'homebody' ? 4 : 1)) - (a.pay - commuteCost(CITIES[a.city].miles) * (strat === 'homebody' ? 4 : 1)))[0];
@@ -45,6 +46,7 @@ for (const len of Object.keys(GAMES)) {
           if (strat === 'careless') f = opts[Math.floor(Math.random() * opts.length)];
           else if (S.health < 45 || S.happy < 40) f = S.health < S.happy ? 'rest' : 'outdoors';
           else if (strat === 'student' && S.edu < 3) f = 'study';
+          else if (strat === 'planner') f = S.edu < 2 && LENGTHS[S.len].turns > 26 ? 'study' : ['work', 'community', 'outdoors', 'work', 'community', 'rest'][weeks % 6];
           else if (strat === 'hustler') f = weeks % 3 ? 'hustle' : (job() ? 'work' : 'rest');
           else if (strat === 'commuter') f = weeks % 4 === 3 ? 'community' : (job() && !S.retired ? 'work' : 'rest');
           else f = ['community', 'outdoors', 'rest', 'community'][weeks % 4];
@@ -62,7 +64,7 @@ for (const len of Object.keys(GAMES)) {
           if (bad.length) break;
         }
         const sc = lifeScore();
-        return { weeks, ending, bad, events, score: sc.score, nw: Math.round(sc.nw), age: age(), edu: S.edu,
+        return { weeks, ending, bad, events, score: sc.score, parts: sc.parts, nw: Math.round(sc.real), age: age(), edu: S.edu, kids: S.kids.length,
                  debt: /debt/.test(ending || ''), endedOk: !!ending };
       }, [len, strat]);
       r.len = len; r.strat = strat; r.errors = errors;
@@ -97,7 +99,7 @@ await t.check('scores are whole numbers from 0 to 100', async () => {
 // ---- balance report (information only; see issues #6 and #7 for targets) ----
 const med = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : 0; };
 const money = n => (n < 0 ? '-$' : '$') + Math.abs(n).toLocaleString();
-let md = `## The Burg balance report\n\n${results.length} simulated games (SIM_SCALE=${SCALE}).\n\n| Length | Strategy | Games | Median score | Score range | Median net worth | Debt endings |\n|---|---|---|---|---|---|---|\n`;
+let md = `## The Burg balance report\n\n${results.length} simulated games (SIM_SCALE=${SCALE}).\n\n| Length | Strategy | Games | Median score | Score range | Median net worth (2027 $) | Debt endings |\n|---|---|---|---|---|---|---|\n`;
 for (const len of Object.keys(GAMES)) for (const strat of STRATEGIES) {
   const rs = results.filter(r => r.len === len && r.strat === strat); if (!rs.length) continue;
   const sc = rs.map(r => r.score);
@@ -108,8 +110,12 @@ for (const r of results) { weeks += r.weeks; for (const [k, v] of Object.entries
 md += `\n**Events per 100 weeks played** (${weeks.toLocaleString()} weeks in total):\n\n` +
   Object.entries(ev).sort((a, b) => b[1] - a[1]).map(([k, v]) => `- ${k}: ${(v / weeks * 100).toFixed(1)}`).join('\n') + '\n';
 const careless = med(results.filter(r => r.strat === 'careless').map(r => r.score));
-if (careless > 60) md += `\n> ⚠️ Careless players have a median score of ${careless}; the target is 60 or below (issue #7).\n`;
+const planner = med(results.filter(r => r.strat === 'planner' && (r.len === 'five' || r.len === 'life')).map(r => r.score));
+md += `\nCareless median **${careless}** (target 60 or below) · Planner median in 5-year and Lifetime games **${planner}** (target 70 or above).\n`;
+if (careless > 60) md += `\n> ⚠️ Careless play scores too high (issue #7).\n`;
+if (planner < 70) md += `\n> ⚠️ Good play scores too low.\n`;
 console.log(md);
+if (process.env.SIM_DEBUG) for (const len of Object.keys(GAMES)) for (const st of STRATEGIES) { const rs = results.filter(r => r.len===len && r.strat===st); const avg = k => Math.round(rs.reduce((a,r)=>a+r.parts[k],0)/rs.length); console.log(len.padEnd(5), st.padEnd(9), 'happy', avg('happy'), 'health', avg('health'), 'comm', avg('community'), 'wealth', avg('wealth'), 'kids', rs.map(r=>r.kids).join(',')); }
 fs.mkdirSync('test-results', { recursive: true });
 fs.writeFileSync('test-results/balance-report.md', md);
 if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md + '\n');

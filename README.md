@@ -31,9 +31,9 @@ Your Life Score blends average happiness (30%), average health (20%), community 
 - **Smoke** (`tests/smoke.test.mjs`): the app opens cleanly, the service worker installs, and it opens offline.
 - **Gameplay** (`tests/gameplay.test.mjs`): taps through the core loop: start a game, get hired, end weeks,
   answer an event, skip ahead, save and continue, both maps, and the ending screen.
-- **Play-test simulation** (`tests/sim.test.mjs`): five bot players (homebody, commuter, student, hustler,
-  careless) play full games at every length. It fails on errors or impossible values, and writes a balance report
-  to `test-results/balance-report.md` (and the Actions job summary). Use `SIM_SCALE=3` for more games.
+- **Play-test simulation** (`tests/sim.test.mjs`): six bot players (planner, homebody, commuter, student,
+  hustler, careless) play full games at every length. It fails on errors or impossible values, and writes a balance report
+  to `test-results/balance-report.md` (and the Actions job summary). Use `SIM_SCALE=3` for more games and `SIM_DEBUG=1` to see each part of the score.
 
 The dice are seeded, so a failing run fails the same way every time. On a machine without Playwright's own browser,
 set `CHROME_PATH` to an installed Chrome.
