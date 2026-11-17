@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#9b2f1f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="The Burg">
+<title>The Burg</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --barn:#9b2f1f; --barn-d:#6f1f14; --wheat:#e9c46a; --wheat-d:#c99a3b;
+  --cream:#fbf6ea; --paper:#fffdf7; --soil:#3d2b1f; --muted:#7a6a5c;
+  --sage:#5f8a55; --sky:#7fb3d5; --line:#e7dcc4;
+  --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--cream);color:var(--soil);
+  font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+h1,h2,h3{font-family:Georgia,"Times New Roman",serif;margin:0}
+.wrap{max-width:520px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+.hidden{display:none!important}
+
+/* Title screen */
+.title{padding:calc(var(--safe-t) + 24px) 20px calc(var(--safe-b) + 24px);text-align:center}
+.scene{width:100%;max-width:420px;margin:0 auto;display:block}
+.title h1{font-size:46px;letter-spacing:1px;color:var(--barn);margin-top:6px}
+.title .sub{color:var(--muted);margin:4px 0 20px}
+.field{display:block;text-align:left;margin:14px 0 6px;font-weight:600;font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+input[type=text]{width:100%;padding:14px;border:2px solid var(--line);border-radius:12px;font:inherit;background:var(--paper)}
+input[type=text]:focus{outline:none;border-color:var(--wheat-d)}
+.lengths{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.len{padding:14px 6px;border-radius:12px;border:2px solid var(--line);background:var(--paper)}
+.len b{display:block;font-size:17px}.len span{font-size:12px;color:var(--muted)}
+.len.on{border-color:var(--barn);background:#fbe9e4}
+.btn{display:block;width:100%;padding:15px;border-radius:14px;font-weight:700;font-size:17px;margin-top:12px}
+.btn.primary{background:var(--barn);color:#fff;box-shadow:0 3px 0 var(--barn-d)}
+.btn.primary:active{transform:translateY(2px);box-shadow:0 1px 0 var(--barn-d)}
+.btn.ghost{border:2px solid var(--line);background:var(--paper)}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.best{margin-top:18px;font-size:14px;color:var(--muted)}
+
+/* Game header */
+.top{background:var(--barn);color:#fff;padding:calc(var(--safe-t) + 12px) 16px 12px;position:sticky;top:0;z-index:5}
+.top .row{display:flex;justify-content:space-between;align-items:baseline}
+.top h2{font-size:20px}
+.top .money{font-weight:800;font-size:20px}
+.top .meta{font-size:13px;opacity:.85;margin-top:2px;display:flex;justify-content:space-between}
+.progress{height:4px;background:rgba(255,255,255,.25);border-radius:2px;margin-top:8px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--wheat)}
+main{flex:1;padding:14px 14px calc(var(--safe-b) + 140px)}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.card h3{font-size:17px;margin-bottom:8px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+.stat label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:flex;justify-content:space-between}
+.bar{height:10px;background:#efe6d2;border-radius:6px;overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;border-radius:6px;transition:width .4s}
+.kv{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line);font-size:15px}
+.kv:last-child{border-bottom:0}.kv span:first-child{color:var(--muted)}
+.focus{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fbtn{text-align:left;padding:10px;border-radius:12px;border:2px solid var(--line);background:#fff;min-height:74px}
+.fbtn .ic{font-size:22px}.fbtn b{display:block;font-size:14px;margin-top:2px}.fbtn small{color:var(--muted);font-size:12px;line-height:1.25;display:block}
+.fbtn.on{border-color:var(--barn);background:#fbe9e4}
+.fbtn[disabled]{opacity:.4}
+.endbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--safe-b) + 66px);width:min(492px,calc(100% - 28px));z-index:6;display:flex;gap:8px}
+.endbar .btn{margin-top:0;padding:15px 8px;font-size:16px}.endbar #end{flex:2}.endbar .ghost{flex:1;font-size:14px}
+.warn{background:#fbe9e4;border-color:#efc2b8;color:var(--barn-d);font-size:14px;font-weight:600}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px;scrollbar-width:none}
+.chip{white-space:nowrap;padding:7px 12px;border-radius:20px;border:1.5px solid var(--line);background:#fff;font-size:14px}
+.chip.on{background:var(--soil);color:#fff;border-color:var(--soil)}
+.job{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.job .t{font-weight:700}.job .s{font-size:13px;color:var(--muted)}
+.job .pay{font-weight:800;color:var(--sage);white-space:nowrap}
+.sm{padding:8px 12px;border-radius:10px;font-weight:700;font-size:14px;background:var(--barn);color:#fff;white-space:nowrap}
+.sm.alt{background:#fff;border:1.5px solid var(--line);color:var(--soil)}
+.sm[disabled]{background:#d8cfbf;color:#fff;pointer-events:none}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:8px;background:#efe6d2;color:var(--muted);margin-left:4px;vertical-align:middle}
+.tag.cur{background:var(--sage);color:#fff}
+.logitem{font-size:14px;padding:8px 0;border-bottom:1px solid var(--line)}
+.logitem em{font-style:normal;color:var(--muted);font-size:12px;display:block}
+.muted{color:var(--muted);font-size:14px}
+
+/* Tabs */
+nav{position:fixed;bottom:0;left:0;right:0;background:var(--paper);border-top:1px solid var(--line);
+  display:flex;justify-content:center;padding-bottom:var(--safe-b);z-index:7}
+nav .in{display:flex;width:100%;max-width:520px}
+nav button{flex:1;padding:8px 0 10px;font-size:12px;color:var(--muted);font-weight:600}
+nav button .ic{display:block;font-size:20px}
+nav button.on{color:var(--barn)}
+
+/* Modal */
+.modal{position:fixed;inset:0;background:rgba(40,25,15,.55);display:flex;align-items:flex-end;justify-content:center;z-index:20;animation:fade .2s}
+.sheet{background:var(--paper);width:100%;max-width:520px;border-radius:22px 22px 0 0;padding:20px 18px calc(var(--safe-b) + 20px);max-height:88vh;overflow:auto;animation:up .25s}
+.sheet h2{font-size:23px;color:var(--barn);margin-bottom:6px}
+.sheet .big{font-size:44px;text-align:center}
+.sheet p{margin:8px 0}
+.delta{display:inline-block;margin:3px 4px 0 0;padding:3px 8px;border-radius:8px;font-size:13px;font-weight:700}
+.delta.up{background:#e3f0dc;color:#3d6b33}.delta.down{background:#f7dfda;color:#9b2f1f}
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.toast{position:fixed;left:50%;top:calc(var(--safe-t) + 14px);transform:translateX(-50%);background:var(--soil);color:#fff;padding:10px 16px;border-radius:12px;z-index:30;font-size:14px;max-width:90%;text-align:center}
+.score{font-size:64px;font-weight:800;text-align:center;color:var(--barn);font-family:Georgia,serif}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div id="modal" class="modal hidden"><div class="sheet" id="sheet"></div></div>
+<div id="toast" class="toast hidden"></div>
+
+<script>
+/* ============================================================
+   THE BURG — a life sim in Waitsburg, WA
+   ============================================================ */
+const APP_VERSION = '0.1.0';
+const SAVE_KEY = 'theburg.save.v2', BEST_KEY = 'theburg.best.v2';
+const store = {
+  get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} },
+  del(k){ try { localStorage.removeItem(k); } catch(e){} }
+};
+const $ = s => document.querySelector(s);
+const fmt = n => (n < 0 ? '-$' : '$') + Math.abs(Math.round(n)).toLocaleString();
+const clamp = (v,a=0,b=100) => Math.max(a, Math.min(b, v));
+const ri = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+const chance = p => Math.random() < p;
+const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const SEASON = m => ['Winter','Winter','Spring','Spring','Spring','Summer','Summer','Summer','Fall','Fall','Fall','Winter'][m];
+const GAS = 3.89, WORKDAYS = 21, ERRAND_MILES = 300;
+
+const W = 12/52;                 // months in one week (all money constants below are monthly)
+const SS_PAY = 1900;
+const wk = v => fmt(v*W) + '/wk';
+const LENGTHS = {
+  half: { label:'6 Months', sub:'26 weeks',  turns:26,       target:8000 },
+  two:  { label:'2 Years',  sub:'104 weeks', turns:104,      target:32000 },
+  five: { label:'5 Years',  sub:'260 weeks', turns:260,      target:120000 },
+  life: { label:'Lifetime', sub:'18 to the end', turns:Infinity, target:1500000 }
+};
+
+const CITIES = {
+  waitsburg: { name:'Waitsburg',   miles:0,  blurb:'Home. Main Street, the Touchet River, and everybody knows your truck.' },
+  dayton:    { name:'Dayton',      miles:11, blurb:'Up Highway 12 past the wheat. Courthouse, the old depot, Bluewood up the hill.' },
+  wallawalla:{ name:'Walla Walla', miles:21, blurb:'The big town next door: wineries, sweet onions, colleges and the hospital.' },
+  pasco:     { name:'Pasco',       miles:58, blurb:'Rail yards, the airport and food plants at the river junction.' },
+  kennewick: { name:'Kennewick',   miles:62, blurb:'Shopping, hospitals and the most jobs in the Tri-Cities.' },
+  richland:  { name:'Richland',    miles:68, blurb:'Hanford and the national lab. Big paychecks, long drive.' }
+};
+
+// stress = happiness drain per month, wear = health drain per month
+const JOBS = [
+  {id:'farmhand', city:'waitsburg', title:'Wheat farm hand',            pay:2500, edu:0, stress:.2, wear:1.0},
+  {id:'diner',    city:'waitsburg', title:'Main Street diner cook',     pay:2300, edu:0, stress:.5, wear:.5},
+  {id:'para',     city:'waitsburg', title:'School paraeducator',        pay:2900, edu:1, stress:.4, wear:.1},
+  {id:'elevator', city:'waitsburg', title:'Grain elevator operator',    pay:3800, edu:1, stress:.4, wear:.7},
+  {id:'insure',   city:'waitsburg', title:'Farm insurance agent',       pay:4900, edu:2, stress:.6, wear:0},
+  {id:'hardware', city:'dayton',    title:'Hardware store clerk',       pay:2600, edu:0, stress:.3, wear:.3},
+  {id:'lift',     city:'dayton',    title:'Bluewood ski lift operator', pay:2400, edu:0, stress:.1, wear:.5},
+  {id:'clerk',    city:'dayton',    title:'County courthouse clerk',    pay:3500, edu:1, stress:.5, wear:0},
+  {id:'cna',      city:'dayton',    title:'Hospital nursing assistant', pay:3400, edu:1, stress:.8, wear:.5},
+  {id:'cellar',   city:'wallawalla',title:'Winery cellar hand',         pay:3000, edu:0, stress:.3, wear:.7},
+  {id:'onion',    city:'wallawalla',title:'Sweet onion packing shed',   pay:2700, edu:0, stress:.4, wear:.9},
+  {id:'co',       city:'wallawalla',title:'Corrections officer',        pay:5000, edu:1, stress:1.3,wear:.7},
+  {id:'rn',       city:'wallawalla',title:'Registered nurse',           pay:7300, edu:2, stress:1.0,wear:.5},
+  {id:'prof',     city:'wallawalla',title:'College professor',          pay:6700, edu:3, stress:.5, wear:0},
+  {id:'retail',   city:'kennewick', title:'Mall retail associate',      pay:2600, edu:0, stress:.6, wear:.2},
+  {id:'mech',     city:'kennewick', title:'Auto mechanic',              pay:4400, edu:1, stress:.5, wear:.8},
+  {id:'imaging',  city:'kennewick', title:'Hospital imaging tech',      pay:5700, edu:2, stress:.6, wear:.2},
+  {id:'loan',     city:'kennewick', title:'Bank loan officer',          pay:6100, edu:3, stress:.8, wear:0},
+  {id:'hanford',  city:'richland',  title:'Hanford cleanup technician', pay:6500, edu:1, stress:.8, wear:1.1},
+  {id:'labadmin', city:'richland',  title:'Research lab administrator', pay:4800, edu:2, stress:.5, wear:0},
+  {id:'scientist',city:'richland',  title:'National lab scientist',     pay:9200, edu:3, stress:.8, wear:0},
+  {id:'foodplant',city:'pasco',     title:'Food processing line worker',pay:3000, edu:0, stress:.6, wear:.9},
+  {id:'airport',  city:'pasco',     title:'Airport ground crew',        pay:3700, edu:0, stress:.5, wear:.7},
+  {id:'trucker',  city:'pasco',     title:'Truck driver (CDL)',         pay:5500, edu:1, stress:.9, wear:.8},
+  {id:'rail',     city:'pasco',     title:'Rail yard conductor',        pay:6100, edu:1, stress:.8, wear:.8}
+];
+const jobById = id => JOBS.find(j => j.id === id);
+
+const EDU = ['High school diploma','Trade certificate','Associate degree',"Bachelor's degree"];
+const STUDY_NEED = [16, 40, 72];         // weeks of classes to reach the next level
+const TUITION   = [300, 350, 650];        // per month while studying
+const SCHOOL    = ['a trade program in Walla Walla','community college classes','a university program in the Tri-Cities'];
+
+const HOMES = {
+  room:  {name:'Rented room above Main Street', cost:550,  happy:0},
+  house: {name:'Rented house on a quiet street', cost:1150, happy:1.5},
+  fixer: {name:'Fixer-upper by the Touchet',     cost:950,  happy:1.5, own:true, down:9000,  equityPer:260},
+  farm:  {name:'Farmhouse in the wheat hills',   cost:1650, happy:3,   own:true, down:30000, equityPer:520}
+};
+const CARS = {
+  beater:{name:'1998 pickup',            mpg:15, price:0,     breakdown:.12},
+  sedan: {name:'Used sedan',             mpg:32, price:9000,  breakdown:.04, value:9000},
+  truck: {name:'New pickup (financed)',  mpg:21, down:4000,   pay:640, months:60, breakdown:.01, value:42000}
+};
+
+const FOCUS = {
+  work:     {ic:'💼', name:'Work extra hours', desc:'+15% pay, but it wears on you.', fx:{happy:-3, health:-2}, payMult:1.15, needsJob:true},
+  rest:     {ic:'🛋️', name:'Rest & recharge',  desc:'Sleep in, take it easy.',         fx:{happy:4, health:4}},
+  community:{ic:'🤝', name:'Show up for town', desc:'Volunteer, potlucks, ballgames.',   fx:{community:6, happy:2}, cost:50},
+  study:    {ic:'📚', name:'Take classes',     desc:'Work toward the next diploma.',    fx:{happy:-2}, study:true},
+  outdoors: {ic:'🎣', name:'Get outside',      desc:'Fish the Touchet, hike the Blues.', fx:{health:5, happy:3}, cost:40},
+  hustle:   {ic:'🔧', name:'Side hustle',      desc:'Odd jobs and weekend gigs.',        fx:{happy:-1, health:-2}, hustle:true}
+};
+
+let S = null;                 // game state
+let tab = 'home', jobCity = 'all';
+
+/* ---------- helpers on state ---------- */
+const age = () => Math.floor(S.ageMonths/12);
+const job = () => S.jobId ? jobById(S.jobId) : null;
+const commuteOneWay = () => (job() && !S.retired) ? CITIES[job().city].miles : 0;
+const netWorth = () => {
+  const loan = S.loanLeft > 0 ? S.loanLeft * CARS.truck.pay * 0.85 : 0;
+  return S.money + S.equity + S.carValue - loan;
+};
+const curMonth = () => new Date(S.date).getMonth();
+const dateLabel = () => { const d = new Date(S.date); return `Week of ${MONTHS[d.getMonth()].slice(0,3)} ${d.getDate()}, ${d.getFullYear()}`; };
+const turnWord = () => 'Week';
+function adj(o){
+  if (o.money) S.money += o.money;
+  ['happy','health','community'].forEach(k => { if (o[k]) S[k] = clamp(S[k] + o[k]); });
+}
+function log(msg){ S.log.unshift({d: dateLabel(), m: msg}); if (S.log.length > 120) S.log.length = 120; }
+function save(){ if (S && !S.over) store.set(SAVE_KEY, S); }
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.remove('hidden'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.add('hidden'), 2200); }
+
+/* ---------- title screen ---------- */
+const SCENE = `<svg class="scene" viewBox="0 0 420 170" aria-hidden="true">
+  <rect width="420" height="170" rx="18" fill="#cfe5f2"/>
+  <circle cx="335" cy="48" r="24" fill="#f4d58d"/>
+  <path d="M0 105 C70 70 130 90 200 80 S330 60 420 85 V170 H0Z" fill="#8fae7e"/>
+  <rect x="78" y="40" width="34" height="80" fill="#fbf6ea"/><polygon points="78,40 95,20 112,40" fill="#fbf6ea"/>
+  <rect x="114" y="62" width="26" height="58" fill="#efe3c8"/><rect x="86" y="50" width="18" height="10" fill="#9b2f1f"/>
+  <rect x="230" y="78" width="54" height="40" fill="#9b2f1f"/><polygon points="226,80 257,58 288,80" fill="#6f1f14"/>
+  <rect x="250" y="96" width="14" height="22" fill="#fbf6ea"/>
+  <path d="M0 120 C90 100 180 125 260 118 S380 100 420 110 V170 H0Z" fill="#e9c46a"/>
+  <path d="M0 145 C100 130 220 152 320 142 S400 132 420 138 V170 H0Z" fill="#c99a3b"/>
+  <path d="M30 160 C120 150 200 162 300 155" stroke="#7fb3d5" stroke-width="5" fill="none" stroke-linecap="round"/>
+</svg>`;
+
+function renderTitle(){
+  const saved = store.get(SAVE_KEY);
+  const best = store.get(BEST_KEY) || {};
+  let len = 'half';
+  $('#app').innerHTML = `<div class="title">
+    ${SCENE}
+    <h1>The Burg</h1>
+    <div class="sub">Make a life in Waitsburg, Washington.</div>
+    ${saved ? `<button class="btn primary" id="cont">Continue ${saved.name}'s life<br><small style="font-weight:500;opacity:.85">${LENGTHS[saved.len].label} · age ${Math.floor(saved.ageMonths/12)}</small></button>
+      <div class="muted" style="margin:18px 0 0">— or start over —</div>` : ''}
+    <label class="field" for="nm">Your citizen's name</label>
+    <input type="text" id="nm" maxlength="20" placeholder="e.g. Dusty" autocomplete="off">
+    <label class="field">Game length</label>
+    <div class="lengths">${Object.entries(LENGTHS).map(([k,L]) =>
+      `<button class="len ${k===len?'on':''}" data-len="${k}"><b>${L.label}</b><span>${L.sub}</span></button>`).join('')}</div>
+    <button class="btn ${saved?'ghost':'primary'}" id="start">Start a new life</button>
+    <button class="btn ghost" id="how">How to play</button>
+    <div class="muted" style="margin-top:14px;font-size:12px">v${APP_VERSION}</div>
+    <div class="best">${Object.keys(best).length ? 'Best life scores: ' + Object.entries(best).filter(([k]) => LENGTHS[k]).map(([k,v]) => `${LENGTHS[k].label} <b>${v}</b>`).join(' · ') : ''}</div>
+  </div>`;
+  document.querySelectorAll('.len').forEach(b => b.onclick = () => {
+    len = b.dataset.len; document.querySelectorAll('.len').forEach(x => x.classList.toggle('on', x === b));
+  });
+  if (saved) $('#cont').onclick = () => { S = saved; tab = 'home'; render(); };
+  $('#start').onclick = () => {
+    const name = ($('#nm').value.trim() || 'Dusty').slice(0,20);
+    if (saved && !confirmSheet) { return askOverwrite(name, len); }
+    newGame(name, len);
+  };
+  $('#how').onclick = showHelp;
+}
+let confirmSheet = false;
+function askOverwrite(name, len){
+  sheet(`<h2>Start over?</h2><p>This replaces ${store.get(SAVE_KEY).name}'s saved life.</p>
+    <button class="btn primary" id="yes">Start new life</button><button class="btn ghost" id="no">Keep my save</button>`);
+  $('#yes').onclick = () => { closeSheet(); newGame(name, len); };
+  $('#no').onclick = closeSheet;
+}
+function showHelp(){
+  sheet(`<h2>How to play</h2>
+   <p>You live in <b>Waitsburg</b>. Each turn is <b>one week</b>: pick a <b>focus</b>, then end the week. Use the skip buttons to play several weeks with the same focus. Skipping stops when something happens.</p>
+   <p>Work anywhere from Waitsburg to Richland. Farther jobs pay more, but gas costs money and the drive on Highway 12 wears you down.</p>
+   <p>Take classes to unlock better jobs. Rent or buy a home, upgrade your truck, and handle whatever life in the Burg throws at you.</p>
+   <p>Your <b>Life Score</b> blends happiness, health, community standing and net worth. Your game saves automatically.</p>
+   <button class="btn primary" id="ok">Got it</button>`);
+  $('#ok').onclick = closeSheet;
+}
+
+function newGame(name, len){
+  S = { v:2, name, len, turn:0, date: new Date(2027,0,4).getTime(), ageMonths:18*12, evCd:{}, last:null, ui:0,
+    money:1500, health:82, happy:65, community:30,
+    edu:0, studyProg:0, jobId:null, jobMonths:0, raise:1, retired:false,
+    home:'room', equity:0, car:'beater', carValue:2500, loanLeft:0,
+    dog:false, partner:false, council:false,
+    focus:'rest', applied:false, happySum:0, healthSum:0, monthsPlayed:0,
+    log:[], over:false, cause:null };
+  log(`${name} turns 18 and rents a room above Main Street in Waitsburg. Time to find a job.`);
+  tab = 'jobs'; save(); render();
+  toast('Welcome to the Burg! Start by finding a job.');
+}
+
+/* ---------- main render ---------- */
+function render(){
+  if (!S) return renderTitle();
+  const L = LENGTHS[S.len];
+  const pct = L.turns === Infinity ? Math.min(100, (age()-18)/(85-18)*100) : S.turn / L.turns * 100;
+  const big = L.turns === Infinity || L.turns >= 260;
+  const left = L.turns === Infinity ? `Age ${age()}` : `${L.turns - S.turn} weeks left`;
+  $('#app').innerHTML = `
+  <header class="top">
+    <div class="row"><h2>${esc(S.name)}</h2><div class="money">${fmt(S.money)}</div></div>
+    <div class="meta"><span>${dateLabel()} · age ${age()}</span><span>${left}</span></div>
+    <div class="progress"><i style="width:${pct}%"></i></div>
+  </header>
+  <main id="main"></main>
+  ${tab==='home' ? `<div class="endbar"><button class="btn primary" id="end">End Week →</button>
+    <button class="btn ghost" id="ff4">⏩ 4 wks</button>${big ? `<button class="btn ghost" id="ff13">⏩ 13 wks</button>` : ''}</div>` : ''}
+  <nav><div class="in">
+    ${[['home','🏠','Home'],['jobs','💼','Jobs'],['life','🌾','Life'],['log','📜','Journal']].map(([k,ic,l]) =>
+      `<button data-tab="${k}" class="${tab===k?'on':''}"><span class="ic">${ic}</span>${l}</button>`).join('')}
+    <button data-tab="menu"><span class="ic">⚙️</span>Menu</button>
+  </div></nav>`;
+  document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
+    if (b.dataset.tab === 'menu') return showMenu();
+    tab = b.dataset.tab; render(); window.scrollTo(0,0);
+  });
+  if ($('#end')) $('#end').onclick = endTurn;
+  if ($('#ff4')) $('#ff4').onclick = () => playWeeks(4);
+  if ($('#ff13')) $('#ff13').onclick = () => playWeeks(13);
+  ({home:renderHome, jobs:renderJobs, life:renderLife, log:renderLog})[tab]();
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const statColor = v => v >= 60 ? 'var(--sage)' : v >= 35 ? 'var(--wheat-d)' : 'var(--barn)';
+const statBar = (label, v) => `<div class="stat"><label><span>${label}</span><span>${Math.round(v)}</span></label>
+  <div class="bar"><i style="width:${v}%;background:${statColor(v)}"></i></div></div>`;
+
+function renderHome(){
+  const j = job();
+  const work = S.retired ? 'Retired 🎉' : j ? `${j.title}` : 'Unemployed';
+  const where = S.retired ? '' : j ? `${CITIES[j.city].name}${CITIES[j.city].miles ? ` · ${CITIES[j.city].miles} mi each way` : ' · walk to work'}` : 'Check the Jobs tab';
+  $('#main').innerHTML = `
+  <div class="card"><div class="stats">
+    ${statBar('Happiness', S.happy)}${statBar('Health', S.health)}
+    ${statBar('Community', S.community)}
+    <div class="stat"><label><span>Net worth</span></label><div style="font-weight:800;font-size:18px;margin-top:2px">${fmt(netWorth())}</div></div>
+  </div></div>
+  <div class="card">
+    <div class="kv"><span>Work</span><span><b>${work}</b></span></div>
+    ${where ? `<div class="kv"><span>Where</span><span>${where}</span></div>` : ''}
+    <div class="kv"><span>Home</span><span>${HOMES[S.home].name}</span></div>
+    <div class="kv"><span>Ride</span><span>${CARS[S.car].name}</span></div>
+    <div class="kv"><span>Schooling</span><span>${EDU[S.edu]}</span></div>
+  </div>
+  ${!j && !S.retired ? `<div class="card warn">💼 No paycheck coming in. Apply for a job on the Jobs tab.</div>` : ''}
+  ${S.money < -15000 ? `<div class="card warn">⚠️ Your debt is getting dangerous. Below -$40,000 you'll have to leave town.</div>` : ''}
+  <div class="card"><h3>This week's focus</h3>
+    <div class="focus">${Object.entries(FOCUS).map(([k,f]) => {
+      const dis = (f.needsJob && (!j || S.retired)) || (f.study && S.edu >= 3);
+      return `<button class="fbtn ${S.focus===k?'on':''}" data-f="${k}" ${dis?'disabled':''}>
+        <span class="ic">${f.ic}</span><b>${f.name}</b><small>${f.study && S.edu<3 ? `${wk(TUITION[S.edu])} · ${S.studyProg}/${STUDY_NEED[S.edu]} weeks` : f.desc}${f.cost?` (${wk(f.cost)})`:''}</small></button>`;
+    }).join('')}</div>
+  </div>
+  ${S.last ? `<div class="card"><h3>Last week</h3>${S.last.lines.map(([l,v]) => `<div class="kv"><span>${l}</span><span style="color:${v<0?'var(--barn)':'var(--sage)'}">${v>0?'+':''}${fmt(v)}</span></div>`).join('')}
+    <div class="kv"><span><b>Net</b></span><span><b>${S.last.net>=0?'+':''}${fmt(S.last.net)}</b></span></div></div>` : ''}
+  <div class="muted" style="text-align:center">Each turn is one week.</div>`;
+  document.querySelectorAll('.fbtn').forEach(b => b.onclick = () => { S.focus = b.dataset.f; save(); renderHome(); });
+}
+
+function renderJobs(){
+  const j = job();
+  const list = JOBS.filter(x => jobCity === 'all' || x.city === jobCity);
+  $('#main').innerHTML = `
+  <div class="chips">${[['all','All towns'], ...Object.entries(CITIES).map(([k,c]) => [k,c.name])].map(([k,l]) =>
+    `<button class="chip ${jobCity===k?'on':''}" data-c="${k}">${l}</button>`).join('')}</div>
+  ${jobCity!=='all' ? `<div class="card muted">${CITIES[jobCity].blurb}</div>` : ''}
+  <div class="card">
+    <h3>Job board <span class="tag">${S.applied ? 'Applied this turn' : '1 application per turn'}</span></h3>
+    ${list.map(x => {
+      const c = CITIES[x.city], cur = S.jobId === x.id && !S.retired;
+      const gas = commuteCost(c.miles);
+      const btn = cur ? `<span class="tag cur">Current</span>`
+        : S.edu < x.edu ? `<button class="sm" disabled>Needs ${['','cert','assoc.','degree'][x.edu]}</button>`
+        : `<button class="sm" data-apply="${x.id}" ${S.applied?'disabled':''}>Apply</button>`;
+      return `<div class="kv job"><div><div class="t">${x.title}</div>
+        <div class="s">${c.name}${c.miles?` · ${c.miles} mi · ~${wk(gas)} gas`:' · no commute'} · ${EDU[x.edu].replace(' diploma','')}</div></div>
+        <div style="text-align:right"><div class="pay">${wk(x.pay*(cur?S.raise:1))}</div>${btn}</div></div>`;
+    }).join('')}
+  </div>
+  ${j && !S.retired ? `<button class="btn ghost" id="quit">Quit my job</button>` : ''}
+  ${LENGTHS[S.len].turns===Infinity && age()>=62 && !S.retired ? `<button class="btn primary" id="retire">Retire (Social Security ${wk(SS_PAY)})</button>` : ''}`;
+  document.querySelectorAll('.chip').forEach(b => b.onclick = () => { jobCity = b.dataset.c; renderJobs(); });
+  document.querySelectorAll('[data-apply]').forEach(b => b.onclick = () => apply(b.dataset.apply));
+  if ($('#quit')) $('#quit').onclick = () => {
+    sheet(`<h2>Quit your job?</h2><p>You'll have no paycheck until you land another one.</p>
+      <button class="btn primary" id="y">Quit</button><button class="btn ghost" id="n">Never mind</button>`);
+    $('#y').onclick = () => { log(`Quit the job as ${job().title}.`); S.jobId = null; adj({happy:3}); if (S.focus==='work') S.focus='rest'; closeSheet(); save(); render(); };
+    $('#n').onclick = closeSheet;
+  };
+  if ($('#retire')) $('#retire').onclick = () => {
+    S.retired = true; S.jobId = null; if (S.focus==='work') S.focus='rest';
+    adj({happy:10}); log(`Retired at ${age()}. Time for coffee on Main Street every morning.`);
+    save(); render(); toast('Happy retirement!');
+  };
+}
+function commuteCost(miles, car = CARS[S.car]){ return miles * 2 * WORKDAYS * GAS / car.mpg; }
+
+function apply(id){
+  const x = jobById(id); if (S.applied) return;
+  S.applied = true;
+  let p = 0.5 + S.community * 0.004 + (S.edu > x.edu ? 0.12 : 0) + (x.city === 'waitsburg' ? 0.1 : 0);
+  if (!S.jobId) p += 0.08;
+  if (chance(Math.min(0.92, p))) {
+    S.jobId = id; S.jobMonths = 0; S.raise = 1;
+    log(`Hired as ${x.title} in ${CITIES[x.city].name}!`); adj({happy:5});
+    sheet(`<div class="big">🎉</div><h2 style="text-align:center">You're hired!</h2>
+      <p style="text-align:center">${x.title} in ${CITIES[x.city].name} at ${wk(x.pay)}.</p><button class="btn primary" id="ok">Let's go</button>`);
+  } else {
+    log(`Applied for ${x.title} in ${CITIES[x.city].name}. They went with someone else.`); adj({happy:-2});
+    sheet(`<div class="big">📭</div><h2 style="text-align:center">Not this time</h2>
+      <p style="text-align:center">The ${x.title} job went to someone else. You can apply again next ${turnWord().toLowerCase()}.</p>
+      <p class="muted" style="text-align:center">Tip: higher Community standing and more schooling help.</p><button class="btn primary" id="ok">OK</button>`);
+  }
+  $('#ok').onclick = () => { closeSheet(); tab = 'home'; render(); };
+  save();
+}
+
+function renderLife(){
+  const h = HOMES[S.home];
+  $('#main').innerHTML = `
+  <div class="card"><h3>📚 Education</h3>
+    <div class="kv"><span>Highest</span><span><b>${EDU[S.edu]}</b></span></div>
+    ${S.edu < 3 ? `<div class="kv"><span>Next: ${EDU[S.edu+1]}</span><span>${S.studyProg}/${STUDY_NEED[S.edu]} weeks</span></div>
+    <div class="bar"><i style="width:${S.studyProg/STUDY_NEED[S.edu]*100}%;background:var(--sky)"></i></div>
+    <p class="muted">Pick "Take classes" as your focus to study through ${SCHOOL[S.edu]} (${wk(TUITION[S.edu])}).</p>` : '<p class="muted">You\'ve finished all the schooling the game offers.</p>'}
+  </div>
+  <div class="card"><h3>🏡 Home in Waitsburg</h3>
+    ${Object.entries(HOMES).map(([k,x]) => {
+      const cur = S.home === k;
+      let btn = cur ? '<span class="tag cur">Home</span>' : `<button class="sm ${x.own?'':'alt'}" data-home="${k}">${x.own ? `Buy (${fmt(x.down)} down)` : 'Move'}</button>`;
+      return `<div class="kv job"><div><div class="t">${x.name}</div><div class="s">${x.own?'Mortgage':'Rent'} ${wk(x.cost)}${x.own?' · builds equity':''}</div></div>${btn}</div>`;
+    }).join('')}
+    ${h.own ? `<p class="muted">Home equity: <b>${fmt(S.equity)}</b>. Moving sells your house (6% fees).</p>` : ''}
+  </div>
+  <div class="card"><h3>🛻 Ride</h3>
+    ${Object.entries(CARS).map(([k,c]) => {
+      const cur = S.car === k;
+      const label = k==='beater' ? 'Starter' : k==='sedan' ? `Buy ${fmt(c.price)}` : `${fmt(c.down)} down`;
+      const btn = cur ? '<span class="tag cur">Yours</span>' : k==='beater' ? '' : `<button class="sm" data-car="${k}" ${S.loanLeft>0?'disabled':''}>${label}</button>`;
+      return `<div class="kv job"><div><div class="t">${c.name}</div><div class="s">${c.mpg} mpg${c.pay?` · ${wk(c.pay)} for 5 years`:''}</div></div>${btn}</div>`;
+    }).join('')}
+    <p class="muted">Trade-in value of your ride: ${fmt(S.carValue)}${S.loanLeft>0?` · ${Math.ceil(S.loanLeft/W)} weekly payments left`:''}</p>
+  </div>
+  <div class="card"><h3>❤️ Household</h3>
+    <div class="kv"><span>Partner</span><span>${S.partner ? 'Together 💕' : 'Single'}</span></div>
+    <div class="kv"><span>Dog</span><span>${S.dog ? 'One good dog 🐕' : 'None'}</span></div>
+    <div class="kv"><span>Town council</span><span>${S.council ? 'Council member' : '—'}</span></div>
+  </div>`;
+  document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => moveHome(b.dataset.home));
+  document.querySelectorAll('[data-car]').forEach(b => b.onclick = () => buyCar(b.dataset.car));
+}
+
+function moveHome(k){
+  const x = HOMES[k], old = HOMES[S.home];
+  const sale = old.own ? Math.round(S.equity * 0.94) : 0;
+  const need = (x.own ? x.down : 0) + 300;
+  if (S.money + sale < need) return toast(`You need ${fmt(need - sale)} on hand (down payment + moving).`);
+  sheet(`<h2>${x.own ? 'Buy' : 'Move to'} ${x.name}?</h2>
+    <p>${x.own ? `Down payment ${fmt(x.down)}, then ${wk(x.cost)} mortgage.` : `Rent is ${wk(x.cost)}.`} Moving costs $300.</p>
+    ${old.own ? `<p>You'll sell your current place and pocket ${fmt(sale)}.</p>` : ''}
+    <button class="btn primary" id="y">Do it</button><button class="btn ghost" id="n">Cancel</button>`);
+  $('#y').onclick = () => {
+    S.money += sale - need; S.equity = x.own ? x.down : 0; S.home = k;
+    adj({happy:4}); log(`Moved into the ${x.name.toLowerCase()}.`);
+    closeSheet(); save(); render();
+  };
+  $('#n').onclick = closeSheet;
+}
+function buyCar(k){
+  const c = CARS[k], cost = (k==='sedan' ? c.price : c.down) - Math.round(S.carValue);
+  if (S.money < cost) return toast(`You need ${fmt(cost)} after your trade-in.`);
+  sheet(`<h2>Get the ${c.name.toLowerCase()}?</h2>
+    <p>Your ${CARS[S.car].name.toLowerCase()} trades in for ${fmt(S.carValue)}. You pay ${fmt(Math.max(0,cost))} now${c.pay?`, then ${wk(c.pay)} for 5 years`:''}.</p>
+    <button class="btn primary" id="y">Buy it</button><button class="btn ghost" id="n">Cancel</button>`);
+  $('#y').onclick = () => {
+    S.money -= cost; S.car = k; S.carValue = c.value; S.loanLeft = c.months || 0;
+    adj({happy:5}); log(`Drove home a ${c.name.toLowerCase()}.`);
+    closeSheet(); save(); render();
+  };
+  $('#n').onclick = closeSheet;
+}
+
+function renderLog(){
+  $('#main').innerHTML = `<div class="card"><h3>📜 ${esc(S.name)}'s journal</h3>
+    ${S.log.map(e => `<div class="logitem"><em>${e.d}</em>${e.m}</div>`).join('')}</div>`;
+}
+
+function showMenu(){
+  sheet(`<h2>Menu</h2>
+    <p class="muted">Your game saves automatically after every turn.</p>
+    <button class="btn ghost" id="help">How to play</button>
+    <button class="btn ghost" id="title">Back to title screen</button>
+    <button class="btn ghost" id="retireNow">End this life now (see score)</button>
+    <button class="btn ghost" id="close">Close</button>`);
+  $('#help').onclick = showHelp;
+  $('#title').onclick = () => { save(); closeSheet(); S = null; renderTitle(); };
+  $('#retireNow').onclick = () => { closeSheet(); finish('You chose to wrap things up.'); };
+  $('#close').onclick = closeSheet;
+}
+
+/* ---------- modal ---------- */
+function sheet(html){ $('#sheet').innerHTML = html; $('#modal').classList.remove('hidden'); $('#sheet').scrollTop = 0; }
+function closeSheet(){ $('#modal').classList.add('hidden'); }
+
+/* ---------- turn processing (one turn = one week) ---------- */
+function endTurn(){ playWeeks(1); }
+
+function playWeeks(n){
+  const startMoney = S.money, before = {happy:S.happy, health:S.health, community:S.community};
+  let res, played = 0;
+  for (let i = 0; i < n; i++) {
+    res = weekTick(n > 1); played++;
+    if (res.ending || res.ev || res.notes.length) break;
+  }
+  save();
+  const dm = S.money - startMoney;
+  const after = () => {
+    if (res.ending) return finish(res.ending);
+    render();
+    if (res.ev) showEvent(res.ev);
+  };
+  if (res.notes.length) {
+    sheet(`<h2>${played > 1 ? played + ' weeks later' : 'This week'}</h2>
+      ${res.notes.map(t => `<p><b>${t}</b></p>`).join('')}
+      <p><span class="delta ${dm>=0?'up':'down'}">${dm>=0?'+':''}${fmt(dm)}</span>${deltaChips(before)}</p>
+      <button class="btn primary" id="ok">Continue</button>`);
+    $('#ok').onclick = () => { closeSheet(); after(); };
+  } else {
+    after();
+    if (!res.ending) toast(`${played > 1 ? played + ' weeks' : 'Week'} done · ${dm>=0?'+':''}${fmt(dm)}`);
+  }
+}
+
+function weekTick(auto){
+  const L = LENGTHS[S.len], m = W, k = 0.35;
+  const f = FOCUS[S.focus] || FOCUS.rest, j = S.retired ? null : job();
+  const lines = [], notes = [];
+
+  // ---- money (constants are monthly; m converts to one week) ----
+  let gross = 0;
+  if (S.retired) { gross = SS_PAY*m; lines.push(['Social Security', gross]); }
+  else if (j) { gross = j.pay * S.raise * m * (f.payMult||1); lines.push([`Paycheck${f.payMult?' + overtime':''}`, gross]); }
+  if (gross) lines.push(['Taxes', -gross * (S.retired ? 0.05 : 0.15)]);
+  if (!S.retired && !j && S.ui > 0) { const n = Math.min(m, S.ui); lines.push(['Unemployment benefits', 1100*n]); S.ui -= n; }
+  if (f.hustle) lines.push(['Side hustle', ri(350, 850) * m]);
+  const home = HOMES[S.home], car = CARS[S.car];
+  lines.push([home.own ? 'Mortgage' : 'Rent', -home.cost*m]);
+  lines.push(['Food & utilities', -520*m]);
+  lines.push(['Insurance & phone', -160*m]);
+  const miles = (commuteOneWay()*2*WORKDAYS + ERRAND_MILES) * m;
+  lines.push([commuteOneWay() ? 'Gas (commute + errands)' : 'Gas (errands)', -miles*GAS/car.mpg]);
+  if (S.loanLeft > 0) {
+    const n = Math.min(m, S.loanLeft); lines.push(['Truck payment', -CARS.truck.pay*n]); S.loanLeft -= n;
+    if (S.loanLeft < 1e-6) { S.loanLeft = 0; notes.push('🛻 The truck is paid off!'); log('Made the last truck payment.'); }
+  }
+  if (S.dog) lines.push(['Dog food & vet', -45*m]);
+  if (S.partner) lines.push(['Date nights', -120*m]);
+  if (f.cost) lines.push([f.name, -f.cost*m]);
+  if (f.study && S.edu < 3) {
+    lines.push(['Tuition', -TUITION[S.edu]*m]);
+    S.studyProg += 1;
+    if (S.studyProg >= STUDY_NEED[S.edu]) { S.studyProg = 0; S.edu++; notes.push(`🎓 You earned your ${EDU[S.edu]}! New jobs unlocked.`); log(`Graduated with a ${EDU[S.edu]}.`); adj({happy:8}); }
+  }
+  if (S.money < 0) lines.push(['Interest on debt', S.money * 0.015 * m]);
+  const net = lines.reduce((a,[,v]) => a + v, 0);
+  S.money += net;
+  S.last = { lines: lines.filter(([,v]) => Math.round(v)), net };
+  if (home.own) S.equity += home.equityPer * m;
+  S.carValue = Math.max(500, S.carValue * Math.pow(0.99, m));
+
+  // ---- stats drift for the week ----
+  const a = age();
+  let dh = -0.5 + (55 - S.happy) * 0.08;
+  let dH = ((a < 30 ? 85 : a < 50 ? 78 : a < 65 ? 68 : a < 80 ? 55 : 42) - S.health) * 0.05;
+  let dc = (25 - S.community) * 0.03;
+  if (S.retired) dh += 1;
+  else if (j) { dh -= j.stress; dH -= j.wear; dc += j.city==='waitsburg' ? 0.6 : j.city==='dayton' ? 0.2 : 0; }
+  else dh -= 2;
+  dh -= commuteOneWay() / 40;
+  dh += home.happy * 0.4 + (S.partner ? 1 : 0) + (S.dog ? 0.7 : 0) - (S.money < 0 ? 2 : 0);
+  if (S.council) dc += 0.8;
+  S.happy = clamp(S.happy + dh*m); S.health = clamp(S.health + dH*m); S.community = clamp(S.community + dc*m);
+  adj(Object.fromEntries(Object.entries(f.fx).map(([s,v]) => [s, v*k])));
+
+  // ---- maybe an event this week ----
+  let ev = chance(0.28) ? pickEvent(curMonth()) : null;
+  if (ev) {
+    S.evCd[ev.title] = S.turn + (ev.yr ? 40 : 8);
+    S.evLabel = dateLabel();
+    if (auto) {                      // while skipping ahead, one-choice events resolve on their own
+      const ch = ev.choices().filter(c => !c.if || c.if());
+      if (ch.length === 1) { const r = ch[0].go(); if (r) log(`${ev.title}: ${r}`); ev = null; }
+    }
+  }
+
+  // ---- advance one week ----
+  S.happySum += S.happy * m; S.healthSum += S.health * m; S.monthsPlayed += m;
+  const oldAge = age();
+  S.date += 7 * 864e5; S.ageMonths += m; S.turn++; S.jobMonths += m; S.applied = false;
+  if (age() > oldAge && age() % 10 === 0) notes.push(`🎂 Happy ${age()}th birthday!`);
+  if (S.focus === 'work' && !job()) S.focus = 'rest';
+
+  // ---- health crises & endings ----
+  let ending = null;
+  if (S.health <= 0) {
+    if (L.turns === Infinity && age() >= 50) ending = `${S.name}'s health finally gave out at age ${age()}.`;
+    else { S.money -= 6500; S.health = 30; adj({happy:-10}); notes.push('🏥 You ended up in the hospital. The bill was $6,500.'); log('Spent a week in the hospital in Walla Walla.'); }
+  }
+  if (!ending && L.turns === Infinity && age() >= 60) {
+    const p = Math.pow((age()-60)/35, 3) * 0.22 * (1.6 - S.health/100) * (W/3);
+    if (chance(p) || age() >= 102) ending = `${S.name} passed peacefully at age ${age()}, with the whole town at the service.`;
+  }
+  if (!ending && S.turn >= L.turns) ending = `${L.label} in the Burg is in the books.`;
+  if (!ending && S.money < -40000) ending = `Buried in debt, ${S.name} packed up and left Waitsburg.`;
+  return { ev, notes, ending };
+}
+
+function deltaChips(before){
+  const d = [['Happiness', S.happy-before.happy], ['Health', S.health-before.health], ['Community', S.community-before.community]];
+  return d.map(([l,v]) => Math.abs(v) < 0.5 ? '' : `<span class="delta ${v>0?'up':'down'}">${l} ${v>0?'+':''}${Math.round(v)}</span>`).join('');
+}
+
+/* ---------- events ---------- */
+function pickEvent(month){
+  const ok = EVENTS.filter(e => !(S.evCd[e.title] > S.turn) && (!e.when || e.when(month)));
+  const total = ok.reduce((a,e) => a + (e.w||1), 0);
+  let r = Math.random() * total;
+  for (const e of ok) { r -= (e.w||1); if (r <= 0) return e; }
+  return null;
+}
+function showEvent(ev){
+  const before = {happy:S.happy, health:S.health, community:S.community};
+  const choices = ev.choices().filter(c => !c.if || c.if());
+  sheet(`<div class="big">${ev.ic}</div><h2 style="text-align:center">${ev.title}</h2><p>${typeof ev.text==='function'?ev.text():ev.text}</p>
+    ${choices.map((c,i) => `<button class="btn ${i===0?'primary':'ghost'}" data-i="${i}">${c.label}</button>`).join('')}`);
+  document.querySelectorAll('#sheet [data-i]').forEach(b => b.onclick = () => {
+    const mBefore = S.money;
+    const result = choices[+b.dataset.i].go() || '';
+    const dm = S.money - mBefore;
+    if (result) S.log.unshift({d: S.evLabel || dateLabel(), m: `${ev.title}: ${result}`});
+    save();
+    sheet(`<div class="big">${ev.ic}</div><p>${result}</p>
+      <p>${dm ? `<span class="delta ${dm>0?'up':'down'}">${dm>0?'+':''}${fmt(dm)}</span>` : ''}${deltaChips(before)}</p>
+      <button class="btn primary" id="ok">Continue</button>`);
+    $('#ok').onclick = () => { closeSheet(); render(); };
+  });
+}
+const inM = (m, ...ms) => ms.includes(m);
+const commuting = () => commuteOneWay() > 0;
+
+const EVENTS = [
+  { ic:'🐎', title:'Celebration Days', yr:1, w:4, when:m => inM(m,4),
+    text:'Waitsburg\'s big spring weekend: parade down Main Street, horse races, and a beer garden.',
+    choices:() => [
+      {label:'Go to the parade and races (-$60)', go:() => { adj({money:-60, happy:8, community:3}); return 'You cheered yourself hoarse at the races.'; }},
+      {label:'Put $100 on a long-shot horse', go:() => { if (chance(.28)) { adj({money:400, happy:10}); return 'The long shot came in! You won $500 and bragging rights.'; } adj({money:-100, happy:-1}); return 'Your horse is still running, probably.'; }},
+      {label:'Stay home', go:() => { adj({happy:-2}); return 'You heard the parade from your porch.'; }}
+    ]},
+  { ic:'🌾', title:'Harvest time', yr:1, w:5, when:m => inM(m,6,7),
+    text:() => S.jobId==='farmhand' ? 'Wheat is ready and the combines run dawn to dark. The boss is paying harvest overtime.' : 'A farmer up the road is short a truck driver for wheat harvest.',
+    choices:() => S.jobId==='farmhand' ? [
+      {label:'Run the combine all month', go:() => { adj({money:1500, health:-4, happy:2}); return 'Long, dusty days, but a fat harvest bonus.'; }}
+    ] : [
+      {label:'Drive grain trucks on weekends', go:() => { adj({money:900, health:-3, community:4}); return 'Hauled wheat to the elevator. The farmer won\'t forget it.'; }},
+      {label:'Pass this year', go:() => 'You watched the dust plumes from town.'}
+    ]},
+  { ic:'❄️', title:'Snow on Highway 12', w:4, when:m => inM(m,11,0,1) && commuting(),
+    text:'Overnight snow and ice on the highway. Your commute looks ugly.',
+    choices:() => [
+      {label:'Drive in slow and careful', go:() => { if (chance(CARS[S.car].mpg>25 ? .3 : .2)) { adj({money:-850, health:-3, happy:-4}); return 'You slid into a ditch. A tow and repairs ran $850.'; } adj({happy:-1}); return 'White knuckles the whole way, but you made it.'; }},
+      {label:'Take an unpaid day', go:() => { const p = Math.round((job()?job().pay:0)/WORKDAYS); adj({money:-p, happy:2}); return `You stayed home with coffee and lost a day's pay.`; }}
+    ]},
+  { ic:'🔧', title:'Truck trouble', w:4, when:() => chance(CARS[S.car].breakdown * 4),
+    text:() => `Your ${CARS[S.car].name.toLowerCase()} won't start.`,
+    choices:() => [
+      {label:'Take it to the shop', go:() => { const c = ri(300, S.car==='beater'?1400:900); adj({money:-c, happy:-2}); return `The shop fixed it for ${fmt(c)}.`; }},
+      {label:'Call a buddy who knows engines', if:() => S.community >= 40, go:() => { adj({money:-120, community:2}); return 'Your buddy fixed it for parts and a six-pack.'; }}
+    ]},
+  { ic:'🌊', title:'The Touchet is running high', yr:1, w:3, when:m => inM(m,1,2,3),
+    text:'Snowmelt and rain have the river climbing. Neighbors are filling sandbags.',
+    choices:() => [
+      {label:'Help sandbag', go:() => { adj({community:6, health:-2, happy:2}); return 'Muddy, cold and proud. The town held the line.'; }},
+      {label:'Stay dry', go:() => { if (S.home==='fixer' && chance(.4)) { adj({money:-2500, happy:-6}); return 'Water got in your basement. Cleanup cost $2,500.'; } adj({community:-2}); return 'The water stayed in its banks this time.'; }}
+    ]},
+  { ic:'🍷', title:'Wine country weekend', w:3, when:() => age() >= 21,
+    text:'Friends are heading to Walla Walla tasting rooms on Saturday.',
+    choices:() => [
+      {label:'Go along (-$90)', go:() => { adj({money:-90, happy:6}); return 'A sunny afternoon among the vineyards.'; }},
+      {label:'Be the designated driver (-$20)', go:() => { adj({money:-20, happy:3, community:3}); return 'Everyone got home safe, thanks to you.'; }},
+      {label:'Not this time', go:() => 'You saved your money.'}
+    ]},
+  { ic:'⛷️', title:'Powder day at Bluewood', w:3, when:m => inM(m,0,1,2),
+    text:'Fresh snow up above Dayton. The lifts open at nine.',
+    choices:() => [
+      {label:'Hit the slopes (-$75)', go:() => { if (chance(.1)) { adj({money:-375, health:-6, happy:2}); return 'Great runs until you twisted a knee. Urgent care cost $300.'; } adj({money:-75, happy:7, health:2}); return 'Bluebird skies and fresh tracks.'; }},
+      {label:'Skip it', go:() => 'Maybe next storm.'}
+    ]},
+  { ic:'🧾', title:'Tax refund', yr:1, w:4, when:m => inM(m,2,3) && S.jobId,
+    text:'Your return is in.',
+    choices:() => [{label:'Nice!', go:() => { const r = ri(300,1300); adj({money:r, happy:3}); return `The IRS sent back ${fmt(r)}.`; }}]},
+  { ic:'📈', title:'A raise', w:3, when:() => job() && !S.retired && S.jobMonths >= 12 && S.raise < 1.5,
+    text:() => `Your boss at the ${job().title.toLowerCase()} job calls you in.`,
+    choices:() => [{label:'Hear them out', go:() => { S.raise = Math.min(1.5, S.raise * 1.06); S.jobMonths = 0; adj({happy:5}); return `A 6% raise! You now make ${wk(job().pay*S.raise)}.`; }}]},
+  { ic:'📉', title:'Layoffs', w:1, when:() => job() && !S.retired && S.jobId !== 'farmhand',
+    text:() => `Business is slow and cuts are coming at your ${job().title.toLowerCase()} job.`,
+    choices:() => [
+      {label:'Ask to stay on', go:() => { if (chance(.5 + S.community*0.003)) { adj({happy:-2}); return 'They kept you on. Phew.'; } const t = job().title; S.jobId = null; S.ui = 6; adj({happy:-10}); return `You were let go from your ${t.toLowerCase()} job. Check the job board.`; }},
+      {label:'Take the severance', go:() => { const p = job().pay; S.jobId = null; adj({money:p*2, happy:-5}); return `You took two months' pay (${fmt(p*2)}) and walked.`; }}
+    ]},
+  { ic:'🐕', title:'A friendly stray', w:2, when:() => !S.dog,
+    text:'A scruffy dog follows you all the way home from the park.',
+    choices:() => [
+      {label:'Keep it', go:() => { S.dog = true; adj({happy:8}); return 'You have a dog now. Best decision all year.'; }},
+      {label:'Find it a home', go:() => { adj({community:3}); return 'A family on Main Street took it in.'; }}
+    ]},
+  { ic:'☕', title:'Someone catches your eye', w:2, when:() => !S.partner && age() >= 19 && age() < 75,
+    text:'You keep running into the same person at the coffee shop on Main.',
+    choices:() => [
+      {label:'Ask them out', go:() => { if (chance(.6)) { S.partner = true; adj({happy:10}); log('Started dating someone special.'); return 'They said yes! You\'re seeing each other now.'; } adj({happy:-3}); return 'They\'re flattered but not interested. Ouch.'; }},
+      {label:'Just smile', go:() => 'Maybe next time.'}
+    ]},
+  { ic:'💔', title:'A rough patch', w:1, when:() => S.partner,
+    text:'You and your partner have been arguing a lot lately.',
+    choices:() => [
+      {label:'Plan a getaway to the coast (-$400)', go:() => { adj({money:-400}); if (chance(.8)) { adj({happy:4}); return 'A weekend away fixed a lot.'; } S.partner = false; adj({happy:-10}); return 'It didn\'t help. You split up.'; }},
+      {label:'Let it run its course', go:() => { if (chance(.5)) { adj({happy:1}); return 'Things settled down on their own.'; } S.partner = false; adj({happy:-10}); return 'You went your separate ways.'; }}
+    ]},
+  { ic:'🏛️', title:'Run for town council?', w:2, when:() => S.community >= 65 && !S.council && age() >= 21,
+    text:'People keep telling you that you should run for Waitsburg city council.',
+    choices:() => [
+      {label:'Run (-$300 for signs)', go:() => { adj({money:-300}); if (chance(.65)) { S.council = true; adj({community:10, happy:5}); return 'You won the seat! Meetings are Wednesday nights.'; } adj({happy:-4}); return 'You lost by eleven votes.'; }},
+      {label:'Not for me', go:() => 'You\'ll keep helping from the sidelines.'}
+    ]},
+  { ic:'🎡', title:'Fair & Frontier Days', yr:1, w:3, when:m => inM(m,7,8),
+    text:'The fair and rodeo are on in Walla Walla.',
+    choices:() => [
+      {label:'Go for the rodeo (-$70)', go:() => { adj({money:-70, happy:7}); return 'Corn dogs, bull riding and a sunburn.'; }},
+      {label:'Enter your pie (-$20)', go:() => { adj({money:-20}); if (chance(.3)) { adj({community:6, happy:8}); return 'Blue ribbon! Your pie is famous now.'; } adj({happy:2}); return 'No ribbon, but the judges asked for seconds.'; }},
+      {label:'Skip it', go:() => 'You\'ll go next year.'}
+    ]},
+  { ic:'🦌', title:'Hunting season', yr:1, w:3, when:m => inM(m,9,10),
+    text:'Deer season opens in the Blue Mountains.',
+    choices:() => [
+      {label:'Buy a tag and go (-$150)', go:() => { adj({money:-150}); if (chance(.5)) { adj({money:450, happy:5}); return 'You filled your tag. The freezer is full for winter.'; } adj({happy:2}); return 'No deer, but a great sunrise.'; }},
+      {label:'Pass', go:() => 'You stayed in town.'}
+    ]},
+  { ic:'🩺', title:'Feeling run down', w:5, when:() => S.health < 40,
+    text:'You\'ve been tired and achy for weeks.',
+    choices:() => [
+      {label:'See a doctor (-$350)', go:() => { adj({money:-350, health:12}); return 'Some rest and a prescription helped a lot.'; }},
+      {label:'Tough it out', go:() => { adj({health:-6}); return 'You kept going. Your body kept score.'; }}
+    ]},
+  { ic:'🌬️', title:'Windstorm', w:2,
+    text:'A big wind tears through the valley overnight.',
+    choices:() => [{label:'Check the damage', go:() => {
+      if (HOMES[S.home].own) { adj({money:-1200, happy:-3}); return 'You lost shingles. Roof repair: $1,200.'; }
+      adj({money:-60, happy:-1}); return 'Power was out a day and the fridge food spoiled.'; }}]},
+  { ic:'🧅', title:'Walla Walla Sweets are in', yr:1, w:3, when:m => inM(m,5,6),
+    text:'The sweet onion harvest is here.',
+    choices:() => [
+      {label:'Host a backyard BBQ (-$80)', go:() => { adj({money:-80, community:4, happy:4}); return 'Grilled onions for the whole block.'; }},
+      {label:'Grab a bag (-$15)', go:() => { adj({money:-15, happy:2}); return 'Onion rings for a week.'; }}
+    ]},
+  { ic:'🚂', title:'Festival at the Dayton Depot', yr:1, w:2, when:m => inM(m,5,6,7,8),
+    text:'Dayton is throwing a summer festival around its historic train depot.',
+    choices:() => [
+      {label:'Drive over (-$40)', go:() => { adj({money:-40, happy:5}); return 'Live music, old trains and good food.'; }},
+      {label:'Skip it', go:() => 'Another time.'}
+    ]},
+  { ic:'💡', title:'A tip from a friend', w:2, when:() => S.community >= 50 && !S.retired,
+    text:'A friend says there\'s an opening nobody\'s posted yet. They could put in a word.',
+    choices:() => {
+      const opts = JOBS.filter(x => x.edu <= S.edu && x.id !== S.jobId && x.pay > (job() ? job().pay*S.raise : 0));
+      if (!opts.length) return [{label:'Thanks anyway', go:() => { adj({community:1}); return 'Nothing beats what you have now.'; }}];
+      const x = pick(opts);
+      return [
+        {label:`Take it: ${x.title} in ${CITIES[x.city].name} (${fmt(x.pay)})`, go:() => { S.jobId = x.id; S.jobMonths = 0; S.raise = 1; adj({happy:4}); return `You start as ${x.title} in ${CITIES[x.city].name}.`; }},
+        {label:'Stay where I am', go:() => 'You thanked them and passed.'}
+      ];
+    }},
+  { ic:'⛽', title:'Gas prices spike', w:2, when:() => commuteOneWay() >= 20,
+    text:'Prices jumped at the pump this month.',
+    choices:() => [
+      {label:'Pay up', go:() => { const c = Math.round(commuteCost(commuteOneWay())*0.25); adj({money:-c, happy:-2}); return `Your commute costs ${fmt(c)} extra this month.`; }},
+      {label:'Find a carpool', if:() => S.community >= 35, go:() => { adj({community:2}); return 'You split rides with a coworker from Waitsburg.'; }}
+    ]},
+  { ic:'📦', title:'Neighbor\'s moving day', w:2,
+    text:'The family next door needs help loading a truck.',
+    choices:() => [
+      {label:'Lend a hand', go:() => { adj({community:4, health:-1}); return 'They paid in pizza and gratitude.'; }},
+      {label:'Make an excuse', go:() => { adj({community:-2}); return 'They noticed.'; }}
+    ]},
+  { ic:'🧥', title:'Found money', w:1,
+    text:'Something crinkles in your old winter coat.',
+    choices:() => [{label:'Check the pocket', go:() => { const v = pick([20,50,100]); adj({money:v, happy:2}); return `${fmt(v)}! Today is a good day.`; }}]},
+  { ic:'📜', title:'An inheritance', yr:1, w:1, when:() => LENGTHS[S.len].turns===Infinity && age() >= 40,
+    text:'A great-aunt in Spokane left you something in her will.',
+    choices:() => [{label:'Read the letter', go:() => { const v = ri(5,30)*1000; adj({money:v, happy:3}); return `She left you ${fmt(v)} and a note telling you to stay out of trouble.`; }}]},
+  { ic:'🏀', title:'Friday night game', w:2, when:m => inM(m,0,1,2,8,9,10,11),
+    text:'The home team is playing in the school gym tonight.',
+    choices:() => [
+      {label:'Go cheer (-$10)', go:() => { adj({money:-10, community:3, happy:3}); return 'Half the town was there. You saw everyone.'; }},
+      {label:'Stay in', go:() => 'You caught the score the next morning.'}
+    ]}
+];
+
+/* ---------- ending ---------- */
+function finish(reason){
+  const L = LENGTHS[S.len];
+  const mp = Math.max(1, S.monthsPlayed);
+  const avgH = S.happySum ? S.happySum/mp : S.happy, avgHe = S.healthSum ? S.healthSum/mp : S.health;
+  const nw = netWorth(), wealth = clamp(nw / L.target * 100);
+  const score = Math.round(avgH*0.3 + avgHe*0.2 + S.community*0.2 + wealth*0.3);
+  const title = score >= 85 ? 'Legend of the Burg' : score >= 70 ? 'Pillar of the Community' : score >= 55 ? 'Solid Waitsburger' : score >= 40 ? 'Getting By on Main Street' : 'Tumbleweed';
+  const best = store.get(BEST_KEY) || {};
+  const isBest = !best[S.len] || score > best[S.len];
+  if (isBest) { best[S.len] = score; store.set(BEST_KEY, best); }
+  S.over = true; store.del(SAVE_KEY);
+  sheet(`<h2 style="text-align:center">${esc(S.name)}'s life in the Burg</h2>
+    <p class="muted" style="text-align:center">${reason}</p>
+    <div class="score">${score}</div>
+    <p style="text-align:center;margin-top:0"><b>${title}</b>${isBest ? ' · <span class="tag cur">New best!</span>' : ''}</p>
+    <div class="kv"><span>Average happiness</span><span>${Math.round(avgH)}</span></div>
+    <div class="kv"><span>Average health</span><span>${Math.round(avgHe)}</span></div>
+    <div class="kv"><span>Community standing</span><span>${Math.round(S.community)}</span></div>
+    <div class="kv"><span>Net worth</span><span>${fmt(nw)} (${Math.round(wealth)}/100)</span></div>
+    <div class="kv"><span>Final age</span><span>${age()}</span></div>
+    <div class="kv"><span>Education</span><span>${EDU[S.edu]}</span></div>
+    <button class="btn primary" id="again">Play again</button>`);
+  $('#again').onclick = () => { closeSheet(); S = null; renderTitle(); };
+}
+
+/* ---------- boot ---------- */
+renderTitle();
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => { try { navigator.serviceWorker.register('sw.js').catch(() => {}); } catch(e){} });
+}
+</script>
+</body>
+</html>

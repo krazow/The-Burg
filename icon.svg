@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#9b2f1f"/>
+  <circle cx="370" cy="150" r="56" fill="#f4d58d"/>
+  <rect x="150" y="150" width="70" height="230" fill="#fbf6ea"/>
+  <rect x="226" y="200" width="56" height="180" fill="#efe3c8"/>
+  <polygon points="150,150 185,105 220,150" fill="#fbf6ea"/>
+  <rect x="170" y="170" width="30" height="18" fill="#9b2f1f"/>
+  <path d="M0 360 C120 300 220 330 300 350 S440 320 512 300 V512 H0Z" fill="#e9c46a"/>
+  <path d="M0 420 C140 380 260 420 360 410 S470 380 512 390 V512 H0Z" fill="#c99a3b"/>
+  <text x="256" y="490" font-family="Georgia,serif" font-size="70" font-weight="bold" fill="#3d2b1f" text-anchor="middle">THE BURG</text>
+</svg>
