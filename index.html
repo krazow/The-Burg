@@ -144,12 +144,21 @@ const GAS = 3.89, WORKDAYS = 21, ERRAND_MILES = 300;
 
 const W = 12/52;                 // months in one week (all money constants below are monthly)
 const SS_PAY = 1900;
+const COL_RATE = 0.03, WAGE_RATE = 0.025;          // yearly growth of prices and of pay
+const cost = v => v * (S ? S.col : 1);              // today's price of something listed in 2027 dollars
+const payNow = (j, withRaise = true) => j.pay * (S ? S.wage : 1) * (withRaise && S && S.jobId === j.id ? S.raise : 1);
+const ssPay = () => cost(SS_PAY);
+// layoff risk by job: 1 = shaky (retail, seasonal), 0.2 = steady (public sector, licensed work)
+const LAYOFF_RISK = { diner:1, hardware:1, lift:1, cellar:1, onion:1, retail:1, foodplant:1, airport:1,
+  elevator:.5, cna:.5, mech:.5, imaging:.5, loan:.5, hanford:.5, labadmin:.5, trucker:.5, rail:.5,
+  para:.2, insure:.2, clerk:.2, co:.2, rn:.2, prof:.2, scientist:.2, farmhand:0 };
+const K401 = [0, 0.05, 0.10];
 const wk = v => fmt(v*W) + '/wk';
 const LENGTHS = {
-  half: { label:'6 Months', sub:'26 weeks',  turns:26,       target:8000 },
-  two:  { label:'2 Years',  sub:'104 weeks', turns:104,      target:32000 },
-  five: { label:'5 Years',  sub:'260 weeks', turns:260,      target:120000 },
-  life: { label:'Lifetime', sub:'18 to the end', turns:Infinity, target:1500000 }
+  half: { label:'6 Months', sub:'26 weeks',  turns:26,       target:16000 },
+  two:  { label:'2 Years',  sub:'104 weeks', turns:104,      target:90000 },
+  five: { label:'5 Years',  sub:'260 weeks', turns:260,      target:300000 },
+  life: { label:'Lifetime', sub:'18 to the end', turns:Infinity, target:3000000 }
 };
 
 const CITIES = {
@@ -211,7 +220,7 @@ const CARS = {
 const FOCUS = {
   work:     {ic:'💼', name:'Work extra hours', desc:'+15% pay, but it wears on you.', fx:{happy:-3, health:-2}, payMult:1.15, needsJob:true},
   rest:     {ic:'🛋️', name:'Rest & recharge',  desc:'Sleep in, take it easy.',         fx:{happy:4, health:4}},
-  community:{ic:'🤝', name:'Show up for town', desc:'Volunteer, potlucks, ballgames.',   fx:{community:6, happy:2}, cost:50},
+  community:{ic:'🤝', name:'Show up for town', desc:'Volunteer, potlucks, ballgames.',   fx:{community:4, happy:2}, cost:50},
   study:    {ic:'📚', name:'Take classes',     desc:'Work toward the next diploma.',    fx:{happy:-2}, study:true},
   outdoors: {ic:'🎣', name:'Get outside',      desc:'Fish the Touchet, hike the Blues.', fx:{health:5, happy:3}, cost:40},
   hustle:   {ic:'🔧', name:'Side hustle',      desc:'Odd jobs and weekend gigs.',        fx:{happy:-1, health:-2}, hustle:true}
@@ -222,11 +231,19 @@ let tab = 'home', jobCity = 'all';
 
 /* ---------- helpers on state ---------- */
 const age = () => Math.floor(S.ageMonths/12);
+const kidsAtHome = () => (S.kids || []).filter(b => S.ageMonths - b < 18*12).length;
+// fill in fields that older saves don't have
+function migrate(s){
+  const d = { evCd:{}, evDone:{}, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, mortgage:null, loanPay:0 };
+  for (const k in d) if (s[k] === undefined) s[k] = d[k];
+  if (HOMES[s.home] && HOMES[s.home].own && !s.mortgage) s.mortgage = HOMES[s.home].cost;
+  return s;
+}
 const job = () => S.jobId ? jobById(S.jobId) : null;
 const commuteOneWay = () => (job() && !S.retired) ? CITIES[job().city].miles : 0;
 const netWorth = () => {
-  const loan = S.loanLeft > 0 ? S.loanLeft * CARS.truck.pay * 0.85 : 0;
-  return S.money + S.equity + S.carValue - loan;
+  const loan = S.loanLeft > 0 ? S.loanLeft * (S.loanPay || CARS.truck.pay) * 0.85 : 0;
+  return S.money + S.equity + S.carValue + (S.k401 || 0) - loan;
 };
 const curMonth = () => new Date(S.date).getMonth();
 const dateLabel = () => { const d = new Date(S.date); return `Week of ${MONTHS[d.getMonth()].slice(0,3)} ${d.getDate()}, ${d.getFullYear()}`; };
@@ -276,7 +293,7 @@ function renderTitle(){
   document.querySelectorAll('.len').forEach(b => b.onclick = () => {
     len = b.dataset.len; document.querySelectorAll('.len').forEach(x => x.classList.toggle('on', x === b));
   });
-  if (saved) $('#cont').onclick = () => { S = saved; tab = 'home'; render(); };
+  if (saved) $('#cont').onclick = () => { S = migrate(saved); tab = 'home'; render(); };
   $('#start').onclick = () => {
     const name = ($('#nm').value.trim() || 'Dusty').slice(0,20);
     if (saved && !confirmSheet) { return askOverwrite(name, len); }
@@ -302,7 +319,8 @@ function showHelp(){
 }
 
 function newGame(name, len){
-  S = { v:2, name, len, turn:0, date: new Date(2027,0,4).getTime(), ageMonths:18*12, evCd:{}, last:null, ui:0,
+  S = { v:3, name, len, turn:0, date: new Date(2027,0,4).getTime(), ageMonths:18*12, evCd:{}, evDone:{}, last:null, ui:0,
+    col:1, wage:1, kids:[], k401:0, k401rate:0, mortgage:null, loanPay:0,
     money:1500, health:82, happy:65, community:30,
     edu:0, studyProg:0, jobId:null, jobMonths:0, raise:1, retired:false,
     home:'room', equity:0, car:'beater', carValue:2500, loanLeft:0,
@@ -373,7 +391,7 @@ function renderHome(){
     ${prefs().mapView ? mapBlock('T') : `<div class="focus">${Object.entries(FOCUS).map(([k,f]) => {
       const dis = (f.needsJob && (!j || S.retired)) || (f.study && S.edu >= 3);
       return `<button class="fbtn ${S.focus===k?'on':''}" data-f="${k}" ${dis?'disabled':''}>
-        <span class="ic">${f.ic}</span><b>${f.name}</b><small>${f.study && S.edu<3 ? `${wk(TUITION[S.edu])} · ${S.studyProg}/${STUDY_NEED[S.edu]} weeks` : f.desc}${f.cost?` (${wk(f.cost)})`:''}</small></button>`;
+        <span class="ic">${f.ic}</span><b>${f.name}</b><small>${f.study && S.edu<3 ? `${wk(cost(TUITION[S.edu]))} · ${S.studyProg}/${STUDY_NEED[S.edu]} weeks` : f.desc}${f.cost?` (${wk(cost(f.cost))})`:''}</small></button>`;
     }).join('')}</div>`}
   </div>
   ${S.last ? `<div class="card"><h3>Last week</h3>${S.last.lines.map(([l,v]) => `<div class="kv"><span>${l}</span><span style="color:${v<0?'var(--barn)':'var(--sage)'}">${v>0?'+':''}${fmt(v)}</span></div>`).join('')}
@@ -389,7 +407,7 @@ function jobRow(x){
     : `<button class="sm" data-apply="${x.id}" ${S.applied?'disabled':''}>Apply</button>`;
   return `<div class="kv job"><div><div class="t">${x.title}</div>
     <div class="s">${c.name}${c.miles?` · ${c.miles} mi · ~${wk(commuteCost(c.miles))} gas`:' · no commute'} · ${EDU[x.edu].replace(' diploma','')}</div></div>
-    <div style="text-align:right"><div class="pay">${wk(x.pay*(cur?S.raise:1))}</div>${btn}</div></div>`;
+    <div style="text-align:right"><div class="pay">${wk(payNow(x, cur))}</div>${btn}</div></div>`;
 }
 function renderJobs(){
   const j = job();
@@ -405,7 +423,7 @@ function renderJobs(){
     ${list.map(jobRow).join('')}
   </div>`}
   ${j && !S.retired ? `<button class="btn ghost" id="quit">Quit my job</button>` : ''}
-  ${LENGTHS[S.len].turns===Infinity && age()>=62 && !S.retired ? `<button class="btn primary" id="retire">Retire (Social Security ${wk(SS_PAY)})</button>` : ''}`;
+  ${LENGTHS[S.len].turns===Infinity && age()>=62 && !S.retired ? `<button class="btn primary" id="retire">Retire (Social Security ${wk(ssPay())}${S.k401>0?` + 401(k) ${wk(S.k401*0.04/12)}`:''})</button>` : ''}`;
   document.querySelectorAll('.chip').forEach(b => b.onclick = () => { jobCity = b.dataset.c; renderJobs(); });
   document.querySelectorAll('[data-apply]').forEach(b => b.onclick = () => apply(b.dataset.apply));
   if ($('#quit')) $('#quit').onclick = () => {
@@ -420,7 +438,7 @@ function renderJobs(){
     save(); render(); toast('Happy retirement!');
   };
 }
-function commuteCost(miles, car = CARS[S.car]){ return miles * 2 * WORKDAYS * GAS / car.mpg; }
+function commuteCost(miles, car = CARS[S.car]){ return miles * 2 * WORKDAYS * cost(GAS) / car.mpg; }
 
 function apply(id){
   const x = jobById(id); if (S.applied) return;
@@ -431,7 +449,7 @@ function apply(id){
     S.jobId = id; S.jobMonths = 0; S.raise = 1;
     log(`Hired as ${x.title} in ${CITIES[x.city].name}!`); adj({happy:5});
     sheet(`<div class="big">🎉</div><h2 style="text-align:center">You're hired!</h2>
-      <p style="text-align:center">${x.title} in ${CITIES[x.city].name} at ${wk(x.pay)}.</p><button class="btn primary" id="ok">Let's go</button>`);
+      <p style="text-align:center">${x.title} in ${CITIES[x.city].name} at ${wk(payNow(x))}.</p><button class="btn primary" id="ok">Let's go</button>`);
   } else {
     log(`Applied for ${x.title} in ${CITIES[x.city].name}. They went with someone else.`); adj({happy:-2});
     sheet(`<div class="big">📭</div><h2 style="text-align:center">Not this time</h2>
@@ -449,58 +467,67 @@ function renderLife(){
     <div class="kv"><span>Highest</span><span><b>${EDU[S.edu]}</b></span></div>
     ${S.edu < 3 ? `<div class="kv"><span>Next: ${EDU[S.edu+1]}</span><span>${S.studyProg}/${STUDY_NEED[S.edu]} weeks</span></div>
     <div class="bar"><i style="width:${S.studyProg/STUDY_NEED[S.edu]*100}%;background:var(--sky)"></i></div>
-    <p class="muted">Pick "Take classes" as your focus to study through ${SCHOOL[S.edu]} (${wk(TUITION[S.edu])}).</p>` : '<p class="muted">You\'ve finished all the schooling the game offers.</p>'}
+    <p class="muted">Pick "Take classes" as your focus to study through ${SCHOOL[S.edu]} (${wk(cost(TUITION[S.edu]))}).</p>` : '<p class="muted">You\'ve finished all the schooling the game offers.</p>'}
   </div>
   <div class="card"><h3>🏡 Home in Waitsburg</h3>
     ${Object.entries(HOMES).map(([k,x]) => {
       const cur = S.home === k;
-      let btn = cur ? '<span class="tag cur">Home</span>' : `<button class="sm ${x.own?'':'alt'}" data-home="${k}">${x.own ? `Buy (${fmt(x.down)} down)` : 'Move'}</button>`;
-      return `<div class="kv job"><div><div class="t">${x.name}</div><div class="s">${x.own?'Mortgage':'Rent'} ${wk(x.cost)}${x.own?' · builds equity':''}</div></div>${btn}</div>`;
+      let btn = cur ? '<span class="tag cur">Home</span>' : `<button class="sm ${x.own?'':'alt'}" data-home="${k}">${x.own ? `Buy (${fmt(cost(x.down))} down)` : 'Move'}</button>`;
+      return `<div class="kv job"><div><div class="t">${x.name}</div><div class="s">${x.own?'Mortgage':'Rent'} ${wk(cur && x.own && S.mortgage ? S.mortgage : cost(x.cost))}${x.own?' · builds equity':''}</div></div>${btn}</div>`;
     }).join('')}
     ${h.own ? `<p class="muted">Home equity: <b>${fmt(S.equity)}</b>. Moving sells your house (6% fees).</p>` : ''}
   </div>
   <div class="card"><h3>🛻 Ride</h3>
     ${Object.entries(CARS).map(([k,c]) => {
       const cur = S.car === k;
-      const label = k==='beater' ? 'Starter' : k==='sedan' ? `Buy ${fmt(c.price)}` : `${fmt(c.down)} down`;
+      const label = k==='beater' ? 'Starter' : k==='sedan' ? `Buy ${fmt(cost(c.price))}` : `${fmt(cost(c.down))} down`;
       const btn = cur ? '<span class="tag cur">Yours</span>' : k==='beater' ? '' : `<button class="sm" data-car="${k}" ${S.loanLeft>0?'disabled':''}>${label}</button>`;
-      return `<div class="kv job"><div><div class="t">${c.name}</div><div class="s">${c.mpg} mpg${c.pay?` · ${wk(c.pay)} for 5 years`:''}</div></div>${btn}</div>`;
+      return `<div class="kv job"><div><div class="t">${c.name}</div><div class="s">${c.mpg} mpg${c.pay?` · ${wk(cur && S.loanPay ? S.loanPay : cost(c.pay))} for 5 years`:''}</div></div>${btn}</div>`;
     }).join('')}
     <p class="muted">Trade-in value of your ride: ${fmt(S.carValue)}${S.loanLeft>0?` · ${Math.ceil(S.loanLeft/W)} weekly payments left`:''}</p>
+  </div>
+  <div class="card"><h3>🏦 Retirement savings (401(k))</h3>
+    <div class="kv"><span>Balance</span><span><b>${fmt(S.k401)}</b></span></div>
+    ${S.retired ? `<p class="muted">You're retired: about ${wk(S.k401*0.04/12)} comes out each week.</p>` : `
+    <p class="muted" style="margin:6px 0">Put part of each paycheck away before taxes. At 5% or more your employer adds 3%. It grows about 6% a year and pays out when you retire.</p>
+    <div class="maptog">${K401.map((r,i) => `<button class="${S.k401rate===i?'on':''}" data-k401="${i}">${r*100}%</button>`).join('')}</div>`}
   </div>
   <div class="card"><h3>❤️ Household</h3>
     <div class="kv"><span>Partner</span><span>${S.partner ? 'Together 💕' : 'Single'}</span></div>
     <div class="kv"><span>Dog</span><span>${S.dog ? 'One good dog 🐕' : 'None'}</span></div>
+    <div class="kv"><span>Kids</span><span>${S.kids.length ? S.kids.map(b => Math.floor((S.ageMonths-b)/12)).map(a => a < 18 ? `age ${a}` : 'grown').join(', ') : 'None'}</span></div>
+    <div class="kv"><span>Prices since 2027</span><span>${S.col > 1.005 ? `+${Math.round((S.col-1)*100)}%` : 'Same'}</span></div>
     <div class="kv"><span>Town council</span><span>${S.council ? 'Council member' : '—'}</span></div>
   </div>`;
   document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => moveHome(b.dataset.home));
   document.querySelectorAll('[data-car]').forEach(b => b.onclick = () => buyCar(b.dataset.car));
+  document.querySelectorAll('[data-k401]').forEach(b => b.onclick = () => { S.k401rate = +b.dataset.k401; save(); renderLife(); toast(`Saving ${K401[S.k401rate]*100}% of each paycheck`); });
 }
 
 function moveHome(k){
   const x = HOMES[k], old = HOMES[S.home];
   const sale = old.own ? Math.round(S.equity * 0.94) : 0;
-  const need = (x.own ? x.down : 0) + 300;
+  const need = (x.own ? cost(x.down) : 0) + cost(300);
   if (S.money + sale < need) return toast(`You need ${fmt(need - sale)} on hand (down payment + moving).`);
   sheet(`<h2>${x.own ? 'Buy' : 'Move to'} ${x.name}?</h2>
-    <p>${x.own ? `Down payment ${fmt(x.down)}, then ${wk(x.cost)} mortgage.` : `Rent is ${wk(x.cost)}.`} Moving costs $300.</p>
+    <p>${x.own ? `Down payment ${fmt(cost(x.down))}, then ${wk(cost(x.cost))} mortgage (locked in).` : `Rent is ${wk(cost(x.cost))}.`} Moving costs ${fmt(cost(300))}.</p>
     ${old.own ? `<p>You'll sell your current place and pocket ${fmt(sale)}.</p>` : ''}
     <button class="btn primary" id="y">Do it</button><button class="btn ghost" id="n">Cancel</button>`);
   $('#y').onclick = () => {
-    S.money += sale - need; S.equity = x.own ? x.down : 0; S.home = k;
+    S.money += sale - need; S.equity = x.own ? cost(x.down) : 0; S.mortgage = x.own ? cost(x.cost) : null; S.home = k;
     adj({happy:4}); log(`Moved into the ${x.name.toLowerCase()}.`);
     closeSheet(); save(); render();
   };
   $('#n').onclick = closeSheet;
 }
 function buyCar(k){
-  const c = CARS[k], cost = (k==='sedan' ? c.price : c.down) - Math.round(S.carValue);
-  if (S.money < cost) return toast(`You need ${fmt(cost)} after your trade-in.`);
+  const c = CARS[k], price = cost(k==='sedan' ? c.price : c.down) - Math.round(S.carValue);
+  if (S.money < price) return toast(`You need ${fmt(price)} after your trade-in.`);
   sheet(`<h2>Get the ${c.name.toLowerCase()}?</h2>
-    <p>Your ${CARS[S.car].name.toLowerCase()} trades in for ${fmt(S.carValue)}. You pay ${fmt(Math.max(0,cost))} now${c.pay?`, then ${wk(c.pay)} for 5 years`:''}.</p>
+    <p>Your ${CARS[S.car].name.toLowerCase()} trades in for ${fmt(S.carValue)}. You pay ${fmt(Math.max(0,price))} now${c.pay?`, then ${wk(cost(c.pay))} for 5 years`:''}.</p>
     <button class="btn primary" id="y">Buy it</button><button class="btn ghost" id="n">Cancel</button>`);
   $('#y').onclick = () => {
-    S.money -= cost; S.car = k; S.carValue = c.value; S.loanLeft = c.months || 0;
+    S.money -= price; S.car = k; S.carValue = cost(c.value); S.loanLeft = c.months || 0; S.loanPay = c.pay ? cost(c.pay) : 0;
     adj({happy:5}); log(`Drove home a ${c.name.toLowerCase()}.`);
     closeSheet(); save(); render();
   };
@@ -559,32 +586,44 @@ function playWeeks(n){
 }
 
 function weekTick(auto){
-  const L = LENGTHS[S.len], m = W, k = 0.35;
+  const L = LENGTHS[S.len], m = W, k = 0.28;
   const f = FOCUS[S.focus] || FOCUS.rest, j = S.retired ? null : job();
   const lines = [], notes = [];
 
   // ---- money (constants are monthly; m converts to one week) ----
   let gross = 0;
-  if (S.retired) { gross = SS_PAY*m; lines.push(['Social Security', gross]); }
-  else if (j) { gross = j.pay * S.raise * m * (f.payMult||1); lines.push([`Paycheck${f.payMult?' + overtime':''}`, gross]); }
-  if (gross) lines.push(['Taxes', -gross * (S.retired ? 0.05 : 0.15)]);
-  if (!S.retired && !j && S.ui > 0) { const n = Math.min(m, S.ui); lines.push(['Unemployment benefits', 1100*n]); S.ui -= n; }
-  if (f.hustle) lines.push(['Side hustle', ri(350, 850) * m]);
+  if (S.retired) {
+    gross = ssPay()*m; lines.push(['Social Security', gross]);
+    if (S.k401 > 0) { const w = Math.min(S.k401, S.k401 * 0.04 * m / 12); S.k401 -= w; gross += w; lines.push(['401(k) withdrawal', w]); }
+  }
+  else if (j) { gross = payNow(j) * m * (f.payMult||1); lines.push([`Paycheck${f.payMult?' + overtime':''}`, gross]); }
+  let k401 = 0;
+  if (j && !S.retired && S.k401rate) {           // pre-tax contribution, with a 3% employer match at 5% or more
+    k401 = gross * K401[S.k401rate]; lines.push(['401(k) contribution', -k401]);
+    S.k401 += k401 + gross * 0.03;
+  }
+  if (gross) lines.push(['Taxes', -(gross - k401) * (S.retired ? 0.05 : 0.15)]);
+  if (!S.retired && !j && S.ui > 0) { const n = Math.min(m, S.ui); lines.push(['Unemployment benefits', 1100*S.wage*n]); S.ui -= n; }
+  if (f.hustle) lines.push(['Side hustle', cost(ri(350, 850)) * m]);
   const home = HOMES[S.home], car = CARS[S.car];
-  lines.push([home.own ? 'Mortgage' : 'Rent', -home.cost*m]);
-  lines.push(['Food & utilities', -520*m]);
-  lines.push(['Insurance & phone', -160*m]);
+  lines.push([home.own ? 'Mortgage' : 'Rent', -(home.own && S.mortgage ? S.mortgage : cost(home.cost))*m]);
+  lines.push(['Food & utilities', -cost(520)*m]);
+  lines.push(['Insurance & phone', -cost(160)*m]);
   const miles = (commuteOneWay()*2*WORKDAYS + ERRAND_MILES) * m;
-  lines.push([commuteOneWay() ? 'Gas (commute + errands)' : 'Gas (errands)', -miles*GAS/car.mpg]);
+  lines.push([commuteOneWay() ? 'Gas (commute + errands)' : 'Gas (errands)', -miles*cost(GAS)/car.mpg]);
   if (S.loanLeft > 0) {
-    const n = Math.min(m, S.loanLeft); lines.push(['Truck payment', -CARS.truck.pay*n]); S.loanLeft -= n;
+    const n = Math.min(m, S.loanLeft); lines.push(['Truck payment', -(S.loanPay || CARS.truck.pay)*n]); S.loanLeft -= n;
     if (S.loanLeft < 1e-6) { S.loanLeft = 0; notes.push('🛻 The truck is paid off!'); log('Made the last truck payment.'); }
   }
-  if (S.dog) lines.push(['Dog food & vet', -45*m]);
-  if (S.partner) lines.push(['Date nights', -120*m]);
-  if (f.cost) lines.push([f.name, -f.cost*m]);
+  if (S.dog) lines.push(['Dog food & vet', -cost(45)*m]);
+  if (S.partner) { lines.push(['Date nights', -cost(120)*m]); if (age() < 65) lines.push(["Partner's paycheck (part-time)", 1400*S.wage*m]); }
+  const kidsHome = kidsAtHome();
+  if (kidsHome) lines.push([kidsHome > 1 ? `Kids (${kidsHome})` : 'Kid', -cost(650)*kidsHome*m]);
+  const a0 = age();
+  if (a0 >= 50) lines.push(['Health care', -cost(a0 >= 65 ? 420 : 180)*m]);
+  if (f.cost) lines.push([f.name, -cost(f.cost)*m]);
   if (f.study && S.edu < 3) {
-    lines.push(['Tuition', -TUITION[S.edu]*m]);
+    lines.push(['Tuition', -cost(TUITION[S.edu])*m]);
     S.studyProg += 1;
     if (S.studyProg >= STUDY_NEED[S.edu]) { S.studyProg = 0; S.edu++; notes.push(`🎓 You earned your ${EDU[S.edu]}! New jobs unlocked.`); log(`Graduated with a ${EDU[S.edu]}.`); adj({happy:8}); }
   }
@@ -592,19 +631,22 @@ function weekTick(auto){
   const net = lines.reduce((a,[,v]) => a + v, 0);
   S.money += net;
   S.last = { lines: lines.filter(([,v]) => Math.round(v)), net };
-  if (home.own) S.equity += home.equityPer * m;
+  if (home.own) S.equity = S.equity * Math.pow(1.025, 1/52) + home.equityPer * m;   // principal paid + 2.5%/yr appreciation
   S.carValue = Math.max(500, S.carValue * Math.pow(0.99, m));
+  S.k401 *= Math.pow(1.06, 1/52);
+  S.col *= Math.pow(1 + COL_RATE, 1/52); S.wage *= Math.pow(1 + WAGE_RATE, 1/52);
 
   // ---- stats drift for the week ----
   const a = age();
-  let dh = -0.5 + (55 - S.happy) * 0.08;
+  let dh = -0.5 + (52 - S.happy) * 0.06;
   let dH = ((a < 30 ? 85 : a < 50 ? 78 : a < 65 ? 68 : a < 80 ? 55 : 42) - S.health) * 0.05;
-  let dc = (25 - S.community) * 0.03;
+  let dc = (25 - S.community) * 0.05;
   if (S.retired) dh += 1;
   else if (j) { dh -= j.stress; dH -= j.wear; dc += j.city==='waitsburg' ? 0.6 : j.city==='dayton' ? 0.2 : 0; }
   else dh -= 2;
   dh -= commuteOneWay() / 40;
-  dh += home.happy * 0.4 + (S.partner ? 1 : 0) + (S.dog ? 0.7 : 0) - (S.money < 0 ? 2 : 0);
+  dh += home.happy * 0.4 + (S.partner ? 0.6 : 0) + (S.dog ? 0.4 : 0) + kidsHome * 0.3 - (S.money < 0 ? 2 : 0);
+  dc += kidsHome * 0.2;
   if (S.council) dc += 0.8;
   S.happy = clamp(S.happy + dh*m); S.health = clamp(S.health + dH*m); S.community = clamp(S.community + dc*m);
   adj(Object.fromEntries(Object.entries(f.fx).map(([s,v]) => [s, v*k])));
@@ -613,6 +655,7 @@ function weekTick(auto){
   let ev = chance(0.28) ? pickEvent(curMonth()) : null;
   if (ev) {
     S.evCd[ev.title] = S.turn + (ev.yr ? 40 : 8);
+    if (ev.once) S.evDone[ev.title] = 1;
     S.evLabel = dateLabel();
     if (auto) {                      // while skipping ahead, one-choice events resolve on their own
       const ch = ev.choices().filter(c => !c.if || c.if());
@@ -631,7 +674,7 @@ function weekTick(auto){
   let ending = null;
   if (S.health <= 0) {
     if (L.turns === Infinity && age() >= 50) ending = `${S.name}'s health finally gave out at age ${age()}.`;
-    else { S.money -= 6500; S.health = 30; adj({happy:-10}); notes.push('🏥 You ended up in the hospital. The bill was $6,500.'); log('Spent a week in the hospital in Walla Walla.'); }
+    else { const bill = Math.round(cost(6500)); S.money -= bill; S.health = 30; adj({happy:-10}); notes.push(`🏥 You ended up in the hospital. The bill was ${fmt(bill)}.`); log('Spent a week in the hospital in Walla Walla.'); }
   }
   if (!ending && L.turns === Infinity && age() >= 60) {
     const p = Math.pow((age()-60)/35, 3) * 0.22 * (1.6 - S.health/100) * (W/3);
@@ -649,10 +692,11 @@ function deltaChips(before){
 
 /* ---------- events ---------- */
 function pickEvent(month){
-  const ok = EVENTS.filter(e => !(S.evCd[e.title] > S.turn) && (!e.when || e.when(month)));
-  const total = ok.reduce((a,e) => a + (e.w||1), 0);
+  const wt = e => typeof e.w === 'function' ? e.w() : (e.w || 1);
+  const ok = EVENTS.filter(e => !(S.evCd[e.title] > S.turn) && !(e.once && S.evDone[e.title]) && (!e.when || e.when(month)) && wt(e) > 0);
+  const total = ok.reduce((a,e) => a + wt(e), 0);
   let r = Math.random() * total;
-  for (const e of ok) { r -= (e.w||1); if (r <= 0) return e; }
+  for (const e of ok) { r -= wt(e); if (r <= 0) return e; }
   return null;
 }
 function showEvent(ev){
@@ -727,14 +771,14 @@ const EVENTS = [
     choices:() => [{label:'Nice!', go:() => { const r = ri(300,1300); adj({money:r, happy:3}); return `The IRS sent back ${fmt(r)}.`; }}]},
   { ic:'📈', title:'A raise', w:3, when:() => job() && !S.retired && S.jobMonths >= 12 && S.raise < 1.5,
     text:() => `Your boss at the ${job().title.toLowerCase()} job calls you in.`,
-    choices:() => [{label:'Hear them out', go:() => { S.raise = Math.min(1.5, S.raise * 1.06); S.jobMonths = 0; adj({happy:5}); return `A 6% raise! You now make ${wk(job().pay*S.raise)}.`; }}]},
-  { ic:'📉', title:'Layoffs', w:1, when:() => job() && !S.retired && S.jobId !== 'farmhand',
+    choices:() => [{label:'Hear them out', go:() => { S.raise = Math.min(1.5, S.raise * 1.06); S.jobMonths = 0; adj({happy:5}); return `A 6% raise! You now make ${wk(payNow(job()))}.`; }}]},
+  { ic:'📉', title:'Layoffs', yr:1, w:() => 0.8 * (LAYOFF_RISK[S.jobId] ?? .5), when:() => job() && !S.retired && S.jobMonths >= 9,
     text:() => `Business is slow and cuts are coming at your ${job().title.toLowerCase()} job.`,
     choices:() => [
       {label:'Ask to stay on', go:() => { if (chance(.5 + S.community*0.003)) { adj({happy:-2}); return 'They kept you on. Phew.'; } const t = job().title; S.jobId = null; S.ui = 6; adj({happy:-10}); return `You were let go from your ${t.toLowerCase()} job. Check the job board.`; }},
       {label:'Take the severance', go:() => { const p = job().pay; S.jobId = null; adj({money:p*2, happy:-5}); return `You took two months' pay (${fmt(p*2)}) and walked.`; }}
     ]},
-  { ic:'🐕', title:'A friendly stray', w:2, when:() => !S.dog,
+  { ic:'🐕', title:'A friendly stray', w:3, when:() => !S.dog,
     text:'A scruffy dog follows you all the way home from the park.',
     choices:() => [
       {label:'Keep it', go:() => { S.dog = true; adj({happy:8}); return 'You have a dog now. Best decision all year.'; }},
@@ -752,7 +796,7 @@ const EVENTS = [
       {label:'Plan a getaway to the coast (-$400)', go:() => { adj({money:-400}); if (chance(.8)) { adj({happy:4}); return 'A weekend away fixed a lot.'; } S.partner = false; adj({happy:-10}); return 'It didn\'t help. You split up.'; }},
       {label:'Let it run its course', go:() => { if (chance(.5)) { adj({happy:1}); return 'Things settled down on their own.'; } S.partner = false; adj({happy:-10}); return 'You went your separate ways.'; }}
     ]},
-  { ic:'🏛️', title:'Run for town council?', w:2, when:() => S.community >= 65 && !S.council && age() >= 21,
+  { ic:'🏛️', title:'Run for town council?', yr:1, w:5, when:() => S.community >= 60 && !S.council && age() >= 21,
     text:'People keep telling you that you should run for Waitsburg city council.',
     choices:() => [
       {label:'Run (-$300 for signs)', go:() => { adj({money:-300}); if (chance(.65)) { S.council = true; adj({community:10, happy:5}); return 'You won the seat! Meetings are Wednesday nights.'; } adj({happy:-4}); return 'You lost by eleven votes.'; }},
@@ -820,9 +864,27 @@ const EVENTS = [
   { ic:'🧥', title:'Found money', w:1,
     text:'Something crinkles in your old winter coat.',
     choices:() => [{label:'Check the pocket', go:() => { const v = pick([20,50,100]); adj({money:v, happy:2}); return `${fmt(v)}! Today is a good day.`; }}]},
-  { ic:'📜', title:'An inheritance', yr:1, w:1, when:() => LENGTHS[S.len].turns===Infinity && age() >= 40,
+  { ic:'📜', title:'An inheritance', once:1, w:1, when:() => LENGTHS[S.len].turns===Infinity && age() >= 40,
     text:'A great-aunt in Spokane left you something in her will.',
     choices:() => [{label:'Read the letter', go:() => { const v = ri(5,30)*1000; adj({money:v, happy:3}); return `She left you ${fmt(v)} and a note telling you to stay out of trouble.`; }}]},
+  { ic:'👶', title:'Starting a family?', yr:1, w:3, when:() => S.partner && age() >= 23 && age() <= 42 && S.kids.length < 3,
+    text:() => S.kids.length ? 'You and your partner are talking about another one.' : 'You and your partner have been talking about kids.',
+    choices:() => [
+      {label:'Have a baby (about $650/mo until they\'re 18)', go:() => { S.kids.push(S.ageMonths); adj({happy:12, community:3, health:-2}); log(S.kids.length > 1 ? `Baby number ${S.kids.length} arrived!` : 'Became a parent!'); return S.kids.length > 1 ? 'Another little Waitsburger! The house is louder and happier.' : 'A baby! Sleepless, broke and over the moon.'; }},
+      {label:'Not now', go:() => 'You decided to wait.'}
+    ]},
+  { ic:'✈️', title:'The trip of a lifetime', yr:1, w:2, when:() => age() >= 28 && S.money > cost(12000),
+    text:() => `You've always wanted to see the world. A big trip would cost about ${fmt(cost(5000))}.`,
+    choices:() => [
+      {label:'Book it', go:() => { adj({money:-Math.round(cost(5000)), happy:12, health:2}); return 'Two weeks away. You came home with a full camera roll and a new outlook.'; }},
+      {label:'Keep saving', go:() => { adj({happy:-1}); return 'Maybe someday.'; }}
+    ]},
+  { ic:'🎓', title:'A kid heads off to college', yr:1, w:4, when:() => (S.kids||[]).some(b => { const a = (S.ageMonths - b)/12; return a >= 18 && a < 19; }),
+    text:'Your oldest at home just graduated from Waitsburg High and wants to go to college.',
+    choices:() => [
+      {label:`Help with tuition`, go:() => { adj({money:-Math.round(cost(15000)), happy:8, community:2}); return 'They\'re off to college with your help. Proud doesn\'t cover it.'; }},
+      {label:'They\'ll take out loans', go:() => { adj({happy:2}); return 'They\'re off to college on their own dime.'; }}
+    ]},
   { ic:'🏀', title:'Friday night game', w:2, when:m => inM(m,0,1,2,8,9,10,11),
     text:'The home team is playing in the school gym tonight.',
     choices:() => [
@@ -837,13 +899,16 @@ function lifeScore(){
   const L = LENGTHS[S.len];
   const mp = Math.max(1, S.monthsPlayed);
   const avgH = S.happySum ? S.happySum/mp : S.happy, avgHe = S.healthSum ? S.healthSum/mp : S.health;
-  const nw = netWorth(), wealth = clamp(nw / L.target * 100);
-  const score = Math.round(avgH*0.3 + avgHe*0.2 + S.community*0.2 + wealth*0.3);
+  // each part maps to 0–100 so that a middling life lands in the middle: happiness 30→0 and 90→100,
+  // health 40→0 and 95→100, community 10→0 and 90→100, and net worth (in 2027 dollars) against the length's target
+  const nw = netWorth(), real = nw / (S.col || 1), wealth = clamp(real / L.target * 100);
+  const hp = clamp((avgH - 30) / 60 * 100), he = clamp((avgHe - 40) / 55 * 100), cm = clamp((S.community - 10) / 80 * 100);
+  const score = Math.round(hp*0.3 + he*0.2 + cm*0.2 + wealth*0.3);
   const title = score >= 85 ? 'Legend of the Burg' : score >= 70 ? 'Pillar of the Community' : score >= 55 ? 'Solid Waitsburger' : score >= 40 ? 'Getting By on Main Street' : 'Tumbleweed';
-  return { score, title, avgH, avgHe, nw, wealth };
+  return { score, title, avgH, avgHe, nw, real, wealth, parts: { happy: Math.round(hp), health: Math.round(he), community: Math.round(cm), wealth: Math.round(wealth) } };
 }
 function finish(reason){
-  const { score, title, avgH, avgHe, nw, wealth } = lifeScore();
+  const { score, title, avgH, avgHe, nw, real, wealth } = lifeScore();
   const best = store.get(BEST_KEY) || {};
   const isBest = !best[S.len] || score > best[S.len];
   if (isBest) { best[S.len] = score; store.set(BEST_KEY, best); }
@@ -856,6 +921,8 @@ function finish(reason){
     <div class="kv"><span>Average health</span><span>${Math.round(avgHe)}</span></div>
     <div class="kv"><span>Community standing</span><span>${Math.round(S.community)}</span></div>
     <div class="kv"><span>Net worth</span><span>${fmt(nw)} (${Math.round(wealth)}/100)</span></div>
+    ${S.col > 1.05 ? `<div class="kv"><span>…in 2027 dollars</span><span>${fmt(real)}</span></div>` : ''}
+    ${S.kids && S.kids.length ? `<div class="kv"><span>Kids raised</span><span>${S.kids.length}</span></div>` : ''}
     <div class="kv"><span>Final age</span><span>${age()}</span></div>
     <div class="kv"><span>Education</span><span>${EDU[S.edu]}</span></div>
     <button class="btn primary" id="again">Play again</button>`);
@@ -1036,7 +1103,7 @@ function townDetail(k){
   let btn = '';
   if (f) {
     const dis = (f.needsJob && (!job() || S.retired)) || (f.study && S.edu >= 3);
-    const extra = f.study && S.edu < 3 ? ` · ${wk(TUITION[S.edu])}` : f.cost ? ` · ${wk(f.cost)}` : '';
+    const extra = f.study && S.edu < 3 ? ` · ${wk(cost(TUITION[S.edu]))}` : f.cost ? ` · ${wk(cost(f.cost))}` : '';
     btn = S.focus === p.focus ? `<span class="tag cur">This week's focus: ${f.name}</span>`
       : `<button class="sm" onclick="MAPFOCUS('${p.focus}')" ${dis?'disabled':''}>${f.ic} Spend this week here${extra}</button>`;
   }
