@@ -260,10 +260,11 @@ function newGame(name, len, slot = 0, opts = {}){
     trip:null, svc:0, tires:null, stockUntil:-1, dentist:0, stopLast:{}, tabsYear:2027, carpool:false, hustleWeeks:0, scoreQ:null,
     bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0,
     badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false,
-    skills:{}, biz:null, weekly:null, rng:null, gen:1, goalAt:{} };
+    skills:{}, biz:null, weekly:null, rng:null, rngEv:null, gen:1, goalAt:{}, carpoolJob:null, hustleLast:0, highWater:null, recentF:[] };
   S.bg = BACKGROUNDS[opts.bg] ? opts.bg : 'fresh'; S.mode = MODES[opts.mode] ? opts.mode : 'normal';
   if (BACKGROUNDS[S.bg].set) BACKGROUNDS[S.bg].set(S);
-  S.weekly = opts.weekly || null; S.rng = opts.weekly ? weekSeed(opts.weekly) : null; useDice();
+  S.weekly = opts.weekly || null; S.rng = opts.weekly ? weekSeed(opts.weekly) : null; S.rngEv = opts.weekly ? weekSeed(`${opts.weekly}:events`) : null; useDice();
+  if (len === 'half') { S.happy -= HALF_START_DIP; S.health -= HALF_START_DIP; }   // B2: 26 weeks is short, so a 6-month life starts a little worn
   if (SCENARIOS[opts.scenario]) { S.scenario = opts.scenario; if (SCENARIOS[S.scenario].set) SCENARIOS[S.scenario].set(S); }
   S.yearStart = { nw: netWorth(), happy: S.happy, health: S.health, community: S.community };
   if (opts.practice) { S.practice = true; S.noEvents = true; }      // the tutorial's throwaway life: never saved, no random events
@@ -324,6 +325,13 @@ const TIPS = [
   { id:'strip', when:() => S.run && S.turn >= 1, text:'📊 The strip above End Week shows what your week did. Tap it for details. <b>⏩</b> skips ahead and <b>⏭ Auto</b> plays until something needs you.' },
   { id:'tabs',  when:() => S.turn >= 4, text:'💼 <b>Jobs</b> has better-paying work, and 🌾 <b>Life</b> has homes, rides, savings and schooling.' }
 ];
+// B8: say why overtime (and side hustles) on a long commute are dragging you down
+function overtimeTip(){
+  const r = S.recentF || [], n = r.filter(f => f === 'work' || f === 'hustle').length;
+  if (r.length < 4 || n < 3 || S.retired) return '';
+  const what = r.filter(f => f === 'work').length >= 3 ? 'Overtime' : r.filter(f => f === 'hustle').length >= 3 ? 'Side hustles' : 'Overtime and side hustles';
+  return `😮‍💨 ${what} ${n} weeks in 4 ${n === 4 ? 'are' : 'is'} wearing you down${commuteOneWay() >= 20 ? ', on top of a long commute' : ''}: they cost happiness and health every week. Mix in Rest or Get outside.`;
+}
 function currentTip(){ if (S.practice) return null; const done = prefs().tips || []; return TIPS.find(t => !done.includes(t.id) && t.when()); }
 function renderHome(){
   const j = job(), f = FOCUS[S.focus];
@@ -343,13 +351,14 @@ function renderHome(){
   ${!j && !S.retired ? `<div class="card warn">💼 No paycheck coming in. <button class="sm" data-go="jobs">Find a job</button></div>` : ''}
   ${S.happy < 30 ? sugg('happy', 'outdoors', `😟 Happiness is low (${Math.round(S.happy)}).`) : ''}
   ${S.health < 30 ? sugg('health', 'rest', `🤒 Health is low (${Math.round(S.health)}).`) : ''}
+  ${overtimeTip() ? `<div class="card warn">${overtimeTip()}</div>` : ''}
   ${S.money < -15000 ? `<div class="card warn">⚠️ Your debt is getting dangerous. Below -$40,000 you'll have to leave town.</div>` : ''}
   <div class="card"><div class="focushead"><h3>This week's focus</h3></div>${scenarioLine()}${seasonLine()}${mapToggle()}
     ${prefs().mapView ? mapBlock('T') : `<div class="fgrid">${Object.entries(FOCUS).map(([k,x]) => {
       const dis = (x.needsJob && (!j || S.retired)) || (x.study && S.edu >= 3);
       return `<button class="fbtn ${S.focus===k?'on':''}" data-f="${k}" ${dis?'disabled':''} aria-pressed="${S.focus===k}"><span class="ic">${x.ic}</span><b>${FOCUS_SHORT[k]}</b></button>`;
     }).join('')}</div>
-    <div class="fdesc"><b>${f.ic} ${f.name}:</b> ${f.study && S.edu < 3 ? `work toward a ${EDU[S.edu+1].toLowerCase()} (${S.studyProg}/${STUDY_NEED[S.edu]} weeks).` : f.desc}${f.study && S.edu < 3 ? ` ${wk(cost(TUITION[S.edu]))}.` : f.cost ? ` ${wk(cost(f.cost))}.` : ''}${streak}</div>`}
+    <div class="fdesc"><b>${f.ic} ${f.name}:</b> ${f.study && S.edu < 3 ? `work toward a ${EDU[S.edu+1].toLowerCase()} (${studyDone()}/${STUDY_NEED[S.edu]} weeks).` : f.desc}${f.study && S.edu < 3 ? ` ${wk(cost(TUITION[S.edu]))}.` : f.cost ? ` ${wk(cost(f.cost))}.` : ''}${streak}</div>`}
   </div>
   <div class="card sumrow">
     <button class="sumchip" data-go="jobs">${work}</button>
@@ -415,11 +424,11 @@ function explainLocked(id){
   const x = jobById(id); if (!x) return;
   const steps = []; let weeks = 0;
   for (let l = S.edu; l < x.edu; l++) {
-    const w = STUDY_NEED[l] - (l === S.edu ? S.studyProg : 0); weeks += w;
+    const w = Math.ceil(STUDY_NEED[l] - (l === S.edu ? S.studyProg : 0)); weeks += w;
     steps.push(`<div class="kv"><span>${EDU[l+1]}</span><span>${w} weeks · ${wk(cost(TUITION[l]))}</span></div>`);
   }
   sheet(`<h2>🔒 ${x.title}</h2><p>This job needs a <b>${EDU[x.edu].toLowerCase()}</b>. You have a ${EDU[S.edu].toLowerCase()}.</p>
-    <p class="muted">Pick <b>📚 Take classes</b> as your weekly focus to study${S.studyProg ? ` (you're ${S.studyProg}/${STUDY_NEED[S.edu]} weeks into the next one)` : ''}. About ${weeks} weeks in all:</p>
+    <p class="muted">Pick <b>📚 Take classes</b> as your weekly focus to study${S.studyProg ? ` (you're ${studyDone()}/${STUDY_NEED[S.edu]} weeks into the next one)` : ''}. About ${weeks} weeks in all:</p>
     ${steps.join('')}
     ${S.focus === 'study' ? '<p><b>📚 Take classes is already your focus.</b></p>' : `<button class="btn primary" id="yes">📚 Make Take classes my focus</button>`}
     <button class="btn ghost" id="no">${S.focus === 'study' ? 'OK' : 'Not now'}</button>`);
@@ -427,6 +436,7 @@ function explainLocked(id){
   $('#no').onclick = closeSheet;
 }
 function renderJobs(){
+  syncCarpool();
   const j = job();
   const cur = S.jobId && !S.retired ? S.jobId : null;
   const list = JOBS.filter(x => (jobCity === 'all' || x.city === jobCity) && (!jobOK || x.edu <= S.edu))
@@ -450,7 +460,7 @@ function renderJobs(){
   ${LENGTHS[S.len].turns===Infinity && age()>=62 && !S.retired ? `<button class="btn primary" id="retire">Retire (Social Security ${wk(ssPay())}${S.k401>0?` + 401(k) ${wk(S.k401*0.04/12)}`:''})</button>` : ''}`;
   document.querySelectorAll('.chip[data-c]').forEach(b => b.onclick = () => { jobCity = b.dataset.c; render(); });
   if ($('#jobok')) $('#jobok').onclick = () => { jobOK = !jobOK; render(); };
-  if ($('#carpool')) $('#carpool').onclick = () => { S.carpool = !S.carpool; save(); render(); toast(S.carpool ? '🚙 You joined a carpool' : 'Driving alone again'); };
+  if ($('#carpool')) $('#carpool').onclick = () => { S.carpool = !S.carpool; S.carpoolJob = S.carpool ? S.jobId : null; save(); render(); toast(S.carpool ? '🚙 You joined a carpool' : 'Driving alone again'); };
   document.querySelectorAll('[data-apply]').forEach(b => b.onclick = () => apply(b.dataset.apply));
   if ($('#quit')) $('#quit').onclick = () => {
     sheet(`<h2>Quit your job?</h2><p>You'll have no paycheck until you land another one.</p>
@@ -491,7 +501,7 @@ function renderLife(){
   $('#main').innerHTML = `${S.practice ? '' : goalsCard()}${S.practice ? '' : skillsCard()}${S.practice ? '' : bizCard()}
   <div class="card"><h3>📚 Education</h3>
     <div class="kv"><span>Highest</span><span><b>${EDU[S.edu]}</b></span></div>
-    ${S.edu < 3 ? `<div class="kv"><span>Next: ${EDU[S.edu+1]}</span><span>${S.studyProg}/${STUDY_NEED[S.edu]} weeks</span></div>
+    ${S.edu < 3 ? `<div class="kv"><span>Next: ${EDU[S.edu+1]}</span><span>${studyDone()}/${STUDY_NEED[S.edu]} weeks</span></div>
     <div class="bar"><i style="width:${S.studyProg/STUDY_NEED[S.edu]*100}%;background:var(--sky)"></i></div>
     <p class="muted">Pick "Take classes" as your focus to study through ${SCHOOL[S.edu]} (${wk(cost(TUITION[S.edu]))}).</p>` : '<p class="muted">You\'ve finished all the schooling the game offers.</p>'}
   </div>
@@ -528,6 +538,7 @@ function renderLife(){
   </div>`;
   if ($('#goals')) $('#goals').onclick = goalsSheet;
   document.querySelectorAll('[data-biz]').forEach(b => b.onclick = () => startBiz(b.dataset.biz));
+  if ($('#renew')) $('#renew').onclick = () => { const err = renewLease(); if (err) return toast(err); save(); render(); toast('🌾 Lease renewed for 5 years'); };
   if ($('#bizsell')) $('#bizsell').onclick = () => { sheet(`<h2>Sell your business?</h2><p>You'd get about ${fmt(bizValue())}.</p><button class="btn primary" id="y">Sell</button><button class="btn ghost" id="n">Keep it</button>`); $('#y').onclick = () => { closeSheet(); sellBiz(); }; $('#n').onclick = closeSheet; };
   document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => moveHome(b.dataset.home));
   document.querySelectorAll('[data-car]').forEach(b => b.onclick = () => buyCar(b.dataset.car));
