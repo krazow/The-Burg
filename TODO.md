@@ -25,15 +25,15 @@ added, finished or re-prioritized, both change in the same session.
 | 2 | **Try it, then promote** (`/release promote`) | The Android app is signed with The Burg's key since beta 4, so updates install over each other. | — |
 | 3 | **Pick from the review and the 90 events** (below) | The three 🔴 review bugs are fixed; the rest is yours to pick. | [#90](https://github.com/krazow/The-Burg/issues/90) |
 
-- [ ] Cut a new beta with everything on `main`
+- [x] Cut a new beta with everything on `main` (0.2.0-beta.5)
 - [ ] Try it on your phone, then `/release promote`
-- [ ] Pick review items and events to build
+- [x] Pick review items and events to build (104 picked on the build board; all built)
 
 ## Soon: P2
 
 - [ ] **Manual play-test pass on real phones** (iPhone and Android install, offline, resume) — [#9](https://github.com/krazow/The-Burg/issues/9)
 
-## Feature: Out and about (Waitsburg's real businesses)
+## Feature: Out and about (Waitsburg's real businesses) — built, ships in the next beta
 
 Waitsburg's open businesses come into the game: pins on a Main Street close-up map, places to visit for a small cost
 and a small boost, real jobs, and events from their real rhythms (Ten Ton's every-other-week bluegrass jam, Grenache
@@ -46,154 +46,154 @@ Fest at Atelier, winter breaks). Business list, how each one appears, decisions 
 
 **Food and drink**
 
-- [ ] **Bar Bacetto** (119 Main, Italian pasta bar): pick a game name
-  - [ ] Bar Smacketto
-  - [ ] The Little Kiss Pasta Bar
-  - [ ] Bar Buonbacio
-  - [ ] Noodle Smooch at 119
-  - [ ] Bar Pastaccio
-- [ ] **Wolfling Coffee** (206 Main, coffee and pastries): pick a game name
-  - [ ] Wolf Pup Coffee
-  - [ ] Howlin' Bean
-  - [ ] Cub & Cup Coffee
-  - [ ] Little Wolf Roasters
-  - [ ] The Den Coffee
-- [ ] **Atelier Waitsburg** (120 Main, wine tasting and guest chefs): pick a game name
-  - [ ] The Wine Workshop at 120
-  - [ ] Atelier Wheatsburg
-  - [ ] Grenache & Gather
-  - [ ] The Studio Cellar
-  - [ ] Petite Atelier
-- [ ] **The Royal Block** (222 Main, hotel and wine bar): pick a game name
-  - [ ] The Regal Block
-  - [ ] The Crown Block Hotel
-  - [ ] The Royal Brick
-  - [ ] Kings Row Hotel
-  - [ ] The Noble Block
-- [ ] **Laht Neppur Brewing** (444 Preston Ave, brewery (its name is the owner's spelled backwards)): pick a game name
-  - [ ] Drawkcab Brewing Co. ("backward" spelled backwards)
-  - [ ] Hatl Nupper Brewing
-  - [ ] Laughing Lad Ale House
-  - [ ] Backward Brewing Co.
-  - [ ] 444 Preston Pub & Brew
-- [ ] **Whiskey Canyon Sports Bar & Grill** (701 Preston Ave): pick a game name
-  - [ ] Bourbon Gulch Sports Bar
-  - [ ] Whiskey Gulch Grill
-  - [ ] Rye Canyon Sports Bar
-  - [ ] Whisky Ravine Bar & Grill
-  - [ ] Moonshine Canyon Grill
-- [ ] **Mr. C's Smokin' Co.** (405 Preston Ave, BBQ): pick a game name
-  - [ ] Mr. Q's Smokehouse
-  - [ ] Mister See's Smokin' Co.
-  - [ ] Mr. Z's Smoke Shack
-  - [ ] The Smokin' Mister
-  - [ ] Mr. C-Saw Smokin' Co.
-- [ ] **Ten Ton Coffee** (216 Main, open on event days, every-other-week bluegrass jam): pick a game name
-  - [ ] Eleven Ton Coffee
-  - [ ] Half Ton Coffee
-  - [ ] The Heavyweight Coffee Club
-  - [ ] Tonnage Coffee & Strings
-  - [ ] Twenty Ton Tunes
+- [x] **Bar Bacetto** (119 Main, Italian pasta bar): pick a game name
+  - [x] Bar Smacketto
+  - [x] The Little Kiss Pasta Bar
+  - [x] Bar Buonbacio
+  - [x] Noodle Smooch at 119
+  - [x] Bar Pastaccio
+- [x] **Wolfling Coffee** (206 Main, coffee and pastries): pick a game name
+  - [x] Wolf Pup Coffee
+  - [x] Howlin' Bean
+  - [x] Cub & Cup Coffee
+  - [x] Little Wolf Roasters
+  - [x] The Den Coffee
+- [x] **Atelier Waitsburg** (120 Main, wine tasting and guest chefs): pick a game name
+  - [x] The Wine Workshop at 120
+  - [x] Atelier Wheatsburg
+  - [x] Grenache & Gather
+  - [x] The Studio Cellar
+  - [x] Petite Atelier
+- [x] **The Royal Block** (222 Main, hotel and wine bar): pick a game name
+  - [x] The Regal Block
+  - [x] The Crown Block Hotel
+  - [x] The Royal Brick
+  - [x] Kings Row Hotel
+  - [x] The Noble Block
+- [x] **Laht Neppur Brewing** (444 Preston Ave, brewery (its name is the owner's spelled backwards)): pick a game name
+  - [x] Drawkcab Brewing Co. ("backward" spelled backwards)
+  - [x] Hatl Nupper Brewing
+  - [x] Laughing Lad Ale House
+  - [x] Backward Brewing Co.
+  - [x] 444 Preston Pub & Brew
+- [x] **Whiskey Canyon Sports Bar & Grill** (701 Preston Ave): pick a game name
+  - [x] Bourbon Gulch Sports Bar
+  - [x] Whiskey Gulch Grill
+  - [x] Rye Canyon Sports Bar
+  - [x] Whisky Ravine Bar & Grill
+  - [x] Moonshine Canyon Grill
+- [x] **Mr. C's Smokin' Co.** (405 Preston Ave, BBQ): pick a game name
+  - [x] Mr. Q's Smokehouse
+  - [x] Mister See's Smokin' Co.
+  - [x] Mr. Z's Smoke Shack
+  - [x] The Smokin' Mister
+  - [x] Mr. C-Saw Smokin' Co.
+- [x] **Ten Ton Coffee** (216 Main, open on event days, every-other-week bluegrass jam): pick a game name
+  - [x] Eleven Ton Coffee
+  - [x] Half Ton Coffee
+  - [x] The Heavyweight Coffee Club
+  - [x] Tonnage Coffee & Strings
+  - [x] Twenty Ton Tunes
 
 **Shops**
 
-- [ ] **Waitsburg Grocery** (200 Main): pick a game name
-  - [ ] Waitsburger Grocery
-  - [ ] Wait-a-Bit Grocery
-  - [ ] Burg Basket Grocery
-  - [ ] Main Street Market
-  - [ ] Waitsbury Grocery
-- [ ] **Simply Sawdust** (101 Main, woodshop and makerspace): pick a game name
-  - [ ] Simply Shavings
-  - [ ] Plainly Sawdust
-  - [ ] Just Sawdust
-  - [ ] Sawdust & Sundries
-  - [ ] Purely Plywood
-- [ ] **Gaudy Gals on Main** (Town Hall, vintage and gifts): pick a game name
-  - [ ] Gussied Gals on Main
-  - [ ] Glitzy Gals on Main
-  - [ ] The Junque Sisters
-  - [ ] Gaudy Galore on Main
-  - [ ] Flashy Gals on Main
-- [ ] **Nancy's Dream Garden Center** (503 W. 2nd St.): pick a game name
-  - [ ] Nancy's Daydream Garden
-  - [ ] Nan's Dream Greenhouse
-  - [ ] Fancy Nancy's Garden
-  - [ ] Dreamy Garden Center
-  - [ ] Nancy's Bloom & Dream
+- [x] **Waitsburg Grocery** (200 Main): pick a game name
+  - [x] Waitsburger Grocery
+  - [x] Wait-a-Bit Grocery
+  - [x] Burg Basket Grocery
+  - [x] Main Street Market
+  - [x] Waitsbury Grocery
+- [x] **Simply Sawdust** (101 Main, woodshop and makerspace): pick a game name
+  - [x] Simply Shavings
+  - [x] Plainly Sawdust
+  - [x] Just Sawdust
+  - [x] Sawdust & Sundries
+  - [x] Purely Plywood
+- [x] **Gaudy Gals on Main** (Town Hall, vintage and gifts): pick a game name
+  - [x] Gussied Gals on Main
+  - [x] Glitzy Gals on Main
+  - [x] The Junque Sisters
+  - [x] Gaudy Galore on Main
+  - [x] Flashy Gals on Main
+- [x] **Nancy's Dream Garden Center** (503 W. 2nd St.): pick a game name
+  - [x] Nancy's Daydream Garden
+  - [x] Nan's Dream Greenhouse
+  - [x] Fancy Nancy's Garden
+  - [x] Dreamy Garden Center
+  - [x] Nancy's Bloom & Dream
 
 **Services**
 
-- [ ] **Blush Salon & Spa** (141 Main): pick a game name
-  - [ ] Rouge Salon & Spa
-  - [ ] Flush Salon
-  - [ ] Blusher Salon & Spa
-  - [ ] Pink Cheeks Salon
-  - [ ] Glow Salon & Spa
-- [ ] **Banner Bank** (215 Main): pick a game name
-  - [ ] Pennant Bank
-  - [ ] Flagstaff Bank
-  - [ ] Standard Bearer Bank
-  - [ ] Bunting Bank
-  - [ ] Banner Day Bank
-- [ ] **Waitsburg Clinic** (235 Main): pick a game name
-  - [ ] Waits-a-Minute Clinic
-  - [ ] The Burg Clinic
-  - [ ] Main Street Health Hut
-  - [ ] Touchet Valley Clinic
-  - [ ] Waitsburg Fix-It Clinic
-- [ ] **The Times** (216 Main, the local paper): pick a game name
-  - [ ] The Waitsburg Tymes
-  - [ ] The Burg Times
-  - [ ] The Weekly Waits
-  - [ ] The Main Street Minutes
-  - [ ] The Touchet Tattler
-- [ ] **Stone and Sky Yoga** (evening classes): pick a game name
-  - [ ] Rock and Cloud Yoga
-  - [ ] Pebble & Sky Yoga
-  - [ ] Stone and Star Yoga
-  - [ ] Boulder & Blue Yoga
-  - [ ] Earth and Air Yoga
-- [ ] **Hubbard Law Office and Karl Law Office** (145 Main): pick a game name
-  - [ ] Cupboard & Carl, Attorneys
-  - [ ] Hubbub & Karl Law
-  - [ ] The 145 Main Law Offices
-  - [ ] Mother Hubbard's Legal Cupboard
-  - [ ] Huffard & Carlo Law
+- [x] **Blush Salon & Spa** (141 Main): pick a game name
+  - [x] Rouge Salon & Spa
+  - [x] Flush Salon
+  - [x] Blusher Salon & Spa
+  - [x] Pink Cheeks Salon
+  - [x] Glow Salon & Spa
+- [x] **Banner Bank** (215 Main): pick a game name
+  - [x] Pennant Bank
+  - [x] Flagstaff Bank
+  - [x] Standard Bearer Bank
+  - [x] Bunting Bank
+  - [x] Banner Day Bank
+- [x] **Waitsburg Clinic** (235 Main): pick a game name
+  - [x] Waits-a-Minute Clinic
+  - [x] The Burg Clinic
+  - [x] Main Street Health Hut
+  - [x] Touchet Valley Clinic
+  - [x] Waitsburg Fix-It Clinic
+- [x] **The Times** (216 Main, the local paper): pick a game name
+  - [x] The Waitsburg Tymes
+  - [x] The Burg Times
+  - [x] The Weekly Waits
+  - [x] The Main Street Minutes
+  - [x] The Touchet Tattler
+- [x] **Stone and Sky Yoga** (evening classes): pick a game name
+  - [x] Rock and Cloud Yoga
+  - [x] Pebble & Sky Yoga
+  - [x] Stone and Star Yoga
+  - [x] Boulder & Blue Yoga
+  - [x] Earth and Air Yoga
+- [x] **Hubbard Law Office and Karl Law Office** (145 Main): pick a game name
+  - [x] Cupboard & Carl, Attorneys
+  - [x] Hubbub & Karl Law
+  - [x] The 145 Main Law Offices
+  - [x] Mother Hubbard's Legal Cupboard
+  - [x] Huffard & Carlo Law
 
 **Farm and trades**
 
-- [ ] **McGregor Co.** (115 Garden St., farm supply): pick a game name
-  - [ ] McGrower Co.
-  - [ ] McGreener Co.
-  - [ ] The McFarmer Co.
-  - [ ] McGrainer Co.
-  - [ ] McGrub & Grain Co.
-- [ ] **Local trades**: pick a game name for each
-  - [ ] **Affordable Concrete**
-    - [ ] Reasonable Concrete
-    - [ ] Budget Cement Co.
-    - [ ] Fair Price Pours
-    - [ ] Thrifty Concrete
-    - [ ] Cheap & Cheerful Concrete
-  - [ ] **Chisel Point Construction**
-    - [ ] Chisel Tip Construction
-    - [ ] Sharp Point Builders
-    - [ ] Gouge Point Construction
-    - [ ] Pointy Chisel Builders
-    - [ ] Chisel Peak Construction
-  - [ ] **Tim's Carpentry**
-    - [ ] Tom's Carpentry
-    - [ ] Timber Tim's
-    - [ ] Tim-ber! Carpentry
-    - [ ] Jim's Joinery
-    - [ ] Tim's Trim & Timber
-  - [ ] **L-C Applicators**
-    - [ ] L-C Sprayers
-    - [ ] Elsie Applicators
-    - [ ] El Sea Applicators
-    - [ ] LC Spray & Spread
-    - [ ] K-D Applicators
+- [x] **McGregor Co.** (115 Garden St., farm supply): pick a game name
+  - [x] McGrower Co.
+  - [x] McGreener Co.
+  - [x] The McFarmer Co.
+  - [x] McGrainer Co.
+  - [x] McGrub & Grain Co.
+- [x] **Local trades**: pick a game name for each
+  - [x] **Affordable Concrete**
+    - [x] Reasonable Concrete
+    - [x] Budget Cement Co.
+    - [x] Fair Price Pours
+    - [x] Thrifty Concrete
+    - [x] Cheap & Cheerful Concrete
+  - [x] **Chisel Point Construction**
+    - [x] Chisel Tip Construction
+    - [x] Sharp Point Builders
+    - [x] Gouge Point Construction
+    - [x] Pointy Chisel Builders
+    - [x] Chisel Peak Construction
+  - [x] **Tim's Carpentry**
+    - [x] Tom's Carpentry
+    - [x] Timber Tim's
+    - [x] Tim-ber! Carpentry
+    - [x] Jim's Joinery
+    - [x] Tim's Trim & Timber
+  - [x] **L-C Applicators**
+    - [x] L-C Sprayers
+    - [x] Elsie Applicators
+    - [x] El Sea Applicators
+    - [x] LC Spray & Spread
+    - [x] K-D Applicators
 
 | # | Item | Size | Issue |
 |---|---|---|---|
@@ -205,13 +205,13 @@ Fest at Atelier, winter breaks). Business list, how each one appears, decisions 
 | 6 | **Life systems at real places:** bank, clinic, grocery, local trades, home shopping | M | [#53](https://github.com/krazow/The-Burg/issues/53) |
 | 7 | **Out and about QA:** rules, flows, screens, simulation balance | M | [#54](https://github.com/krazow/The-Burg/issues/54) |
 
-- [ ] Decisions and business facts — [#48](https://github.com/krazow/The-Burg/issues/48)
-- [ ] Main Street close-up map — [#49](https://github.com/krazow/The-Burg/issues/49)
-- [ ] Visiting businesses — [#50](https://github.com/krazow/The-Burg/issues/50)
-- [ ] Business events — [#51](https://github.com/krazow/The-Burg/issues/51)
-- [ ] Jobs at local businesses — [#52](https://github.com/krazow/The-Burg/issues/52)
-- [ ] Life systems at real places — [#53](https://github.com/krazow/The-Burg/issues/53)
-- [ ] Out and about QA — [#54](https://github.com/krazow/The-Burg/issues/54)
+- [x] Decisions and business facts — [#48](https://github.com/krazow/The-Burg/issues/48)
+- [x] Main Street close-up map — [#49](https://github.com/krazow/The-Burg/issues/49)
+- [x] Visiting businesses — [#50](https://github.com/krazow/The-Burg/issues/50)
+- [x] Business events — [#51](https://github.com/krazow/The-Burg/issues/51)
+- [x] Jobs at local businesses — [#52](https://github.com/krazow/The-Burg/issues/52)
+- [x] Life systems at real places — [#53](https://github.com/krazow/The-Burg/issues/53)
+- [x] Out and about QA — [#54](https://github.com/krazow/The-Burg/issues/54)
 
 ## Soon: Around the region (Dayton, Walla Walla and the Tri-Cities) — built, ships in the next beta
 
@@ -319,43 +319,43 @@ old ones.
 - [x] 🔴 **R1** Backups don't include badges or challenge results
 - [x] 🔴 **R2** Pin-at-the-end exploit
 - [x] 🔴 **R3** Event costs don't rise with prices
-- [ ] 🟠 **R4** The version label still says 0.1.0
-- [ ] 🟡 **R5** Legacy names repeat
-- [ ] 🟡 **R6** The legacy heir is 18 although the parent died in their 80s
-- [ ] 🟡 **R7** Weekly challenge best scores pile up
-- [ ] 🟡 **R8** "Same dice" isn't "same events"
-- [ ] 🟡 **R9** Weekly challenge week boundaries
-- [ ] 🟡 **R10** The flood story can start without high water
-- [ ] 🟡 **R11** Trips don't slow down classes
-- [ ] 🟡 **R12** The carpool setting sticks
-- [ ] 🟡 **R13** Business value rises with prices forever
-- [ ] ⚪ **R14** Vehicle tabs are a flat $95
-- [ ] ⚪ **R15** Hard mode's +10% living costs
-- [ ] ⚪ **R16** Relaxed mode
-- [ ] 🟠 **B1** Careless play in long games
-- [ ] 🟠 **B2** Doing nothing in 6-month games
-- [ ] 🟠 **B3** The grad start is very strong
-- [ ] 🟠 **B4** The young parent isn't harder
-- [ ] 🟠 **B5** Weekly trips forever end in debt in Lifetime games
-- [ ] 🟠 **B6** Stock-up runs barely pay off from the Tri-Cities
-- [ ] 🟠 **B7** Story rewards were trimmed once
-- [ ] 🟠 **B8** The long-commute overtime grinder
-- [ ] ⚪ **B9** Side hustle experience never fades
-- [ ] ⚪ **B10** Life Score so far looks harsh early
+- [x] 🟠 **R4** The version label still says 0.1.0
+- [x] 🟡 **R5** Legacy names repeat
+- [x] 🟡 **R6** The legacy heir is 18 although the parent died in their 80s
+- [x] 🟡 **R7** Weekly challenge best scores pile up
+- [x] 🟡 **R8** "Same dice" isn't "same events"
+- [x] 🟡 **R9** Weekly challenge week boundaries
+- [x] 🟡 **R10** The flood story can start without high water
+- [x] 🟡 **R11** Trips don't slow down classes
+- [x] 🟡 **R12** The carpool setting sticks
+- [x] 🟡 **R13** Business value rises with prices forever
+- [x] ⚪ **R14** Vehicle tabs are a flat $95
+- [x] ⚪ **R15** Hard mode's +10% living costs
+- [x] ⚪ **R16** Relaxed mode
+- [x] 🟠 **B1** Careless play in long games
+- [x] 🟠 **B2** Doing nothing in 6-month games
+- [x] 🟠 **B3** The grad start is very strong
+- [x] 🟠 **B4** The young parent isn't harder
+- [x] 🟠 **B5** Weekly trips forever end in debt in Lifetime games
+- [x] 🟠 **B6** Stock-up runs barely pay off from the Tri-Cities
+- [x] 🟠 **B7** Story rewards were trimmed once
+- [x] 🟠 **B8** The long-commute overtime grinder
+- [x] ⚪ **B9** Side hustle experience never fades
+- [x] ⚪ **B10** Life Score so far looks harsh early
 - [ ] 🟡 **G1** The tutorial doesn't show the new features
-- [ ] 🟡 **G2** The title screen is long
-- [ ] 🟡 **G3** The screen checks don't cover the newest pop-ups
+- [x] 🟡 **G2** The title screen is long
+- [x] 🟡 **G3** The screen checks don't cover the newest pop-ups
 - [ ] 🟡 **G4** Score cards need checking on real devices
-- [ ] 🟡 **G5** Events will thin out as more are added
-- [ ] 🟡 **G6** No in-game "What's new"
-- [ ] ⚪ **G7** Best scores per mode and challenge
-- [ ] ⚪ **G8** Journal filters
-- [ ] ⚪ **G9** Out and about
-- [ ] ⚪ **G10** A beta with all of this
-- [ ] 🟡 **T1** The careless and idle ceilings are report-only
-- [ ] 🟡 **T2** The full test run takes about 15 minutes
-- [ ] ⚪ **T3** index.html is about 2,400 lines
-- [ ] ⚪ **T4** The exploratory tests
+- [x] 🟡 **G5** Events will thin out as more are added
+- [x] 🟡 **G6** No in-game "What's new"
+- [x] ⚪ **G7** Best scores per mode and challenge
+- [x] ⚪ **G8** Journal filters
+- [x] ⚪ **G9** Out and about
+- [x] ⚪ **G10** A beta with all of this
+- [x] 🟡 **T1** The careless and idle ceilings are report-only
+- [x] 🟡 **T2** The full test run takes about 15 minutes
+- [x] ⚪ **T3** index.html is about 2,400 lines
+- [x] ⚪ **T4** The exploratory tests
 
 </details>
 
@@ -396,71 +396,71 @@ old ones.
 
 <details><summary><b>Event pack B: 30 events on the road and in other towns</b> — [#92](https://github.com/krazow/The-Burg/issues/92)</summary>
 
-- [ ] **R-1** Deer on Highway 12 at dusk (Commuters, Oct–Jan)
-- [ ] **R-2** Stuck behind a wheat truck (Harvest, Jul–Aug)
-- [ ] **R-3** Fog in the Touchet Valley (Nov–Jan)
-- [ ] **R-4** Flat tire on US-12 (Any)
-- [ ] **R-5** Speeding ticket (Commuters)
-- [ ] **R-6** Road-construction detour (Summer)
-- [ ] **R-7** A stranded driver on the shoulder (Any)
-- [ ] **R-8** Your carpool buddy is always late (Carpoolers)
-- [ ] **R-9** An audiobook habit on the commute (Commute 40+ miles)
-- [ ] **R-10** Dust storm near the Tri-Cities (Summer)
-- [ ] **R-11** Hot-air balloon festival in Walla Walla (May)
-- [ ] **R-12** A free college lecture in Walla Walla (School year)
-- [ ] **R-13** A friend is in the hospital in Walla Walla (Any)
-- [ ] **R-14** Wine release weekend in Walla Walla (Spring and fall, 21+)
-- [ ] **R-15** Train crossing in Pasco (Pasco commuters)
-- [ ] **R-16** Cheap flight deal out of Pasco (Any, money $1,000+)
-- [ ] **R-17** Spring festival in Pasco (May)
-- [ ] **R-18** Hydroplane races on the Columbia (July)
-- [ ] **R-19** Fourth of July fireworks in Columbia Park (July)
-- [ ] **R-20** Clearance sale at the mall (January and August)
-- [ ] **R-21** A test drive at a dealership (Kennewick or Pasco trips)
-- [ ] **R-22** Riverfront 5K in Richland (April and September)
-- [ ] **R-23** Hanford history tour (Any, Richland trips)
-- [ ] **R-24** Classic car show in Dayton (June)
-- [ ] **R-25** Bluewood season pass sale (October)
-- [ ] **R-26** Chains required on the road to Bluewood (Dec–Feb, Dayton trips)
-- [ ] **R-27** Wrong pump at the gas station (Any, low weight)
-- [ ] **R-28** A lost wallet in a Walla Walla parking lot (Any)
-- [ ] **R-29** Pothole season (March)
-- [ ] **R-30** A friendly regular at the gas station (Commuters, once)
+- [x] **R-1** Deer on Highway 12 at dusk (Commuters, Oct–Jan)
+- [x] **R-2** Stuck behind a wheat truck (Harvest, Jul–Aug)
+- [x] **R-3** Fog in the Touchet Valley (Nov–Jan)
+- [x] **R-4** Flat tire on US-12 (Any)
+- [x] **R-5** Speeding ticket (Commuters)
+- [x] **R-6** Road-construction detour (Summer)
+- [x] **R-7** A stranded driver on the shoulder (Any)
+- [x] **R-8** Your carpool buddy is always late (Carpoolers)
+- [x] **R-9** An audiobook habit on the commute (Commute 40+ miles)
+- [x] **R-10** Dust storm near the Tri-Cities (Summer)
+- [x] **R-11** Hot-air balloon festival in Walla Walla (May)
+- [x] **R-12** A free college lecture in Walla Walla (School year)
+- [x] **R-13** A friend is in the hospital in Walla Walla (Any)
+- [x] **R-14** Wine release weekend in Walla Walla (Spring and fall, 21+)
+- [x] **R-15** Train crossing in Pasco (Pasco commuters)
+- [x] **R-16** Cheap flight deal out of Pasco (Any, money $1,000+)
+- [x] **R-17** Spring festival in Pasco (May)
+- [x] **R-18** Hydroplane races on the Columbia (July)
+- [x] **R-19** Fourth of July fireworks in Columbia Park (July)
+- [x] **R-20** Clearance sale at the mall (January and August)
+- [x] **R-21** A test drive at a dealership (Kennewick or Pasco trips)
+- [x] **R-22** Riverfront 5K in Richland (April and September)
+- [x] **R-23** Hanford history tour (Any, Richland trips)
+- [x] **R-24** Classic car show in Dayton (June)
+- [x] **R-25** Bluewood season pass sale (October)
+- [x] **R-26** Chains required on the road to Bluewood (Dec–Feb, Dayton trips)
+- [x] **R-27** Wrong pump at the gas station (Any, low weight)
+- [x] **R-28** A lost wallet in a Walla Walla parking lot (Any)
+- [x] **R-29** Pothole season (March)
+- [x] **R-30** A friendly regular at the gas station (Commuters, once)
 
 </details>
 
 <details><summary><b>Event pack C: 30 events at work</b> — [#93](https://github.com/krazow/The-Burg/issues/93)</summary>
 
-- [ ] **J1** Your performance review (Any job, 26+ weeks in)
-- [ ] **J2** A promotion offer (Any job, 52+ weeks in)
-- [ ] **J3** Mandatory overtime week (Field and service)
-- [ ] **J4** A coworker conflict (Any)
-- [ ] **J5** Free training course (Any job)
-- [ ] **J6** Hurt on the job (Field and transport)
-- [ ] **J7** Employee of the month (Any; odds up with People)
-- [ ] **J8** New manager (Any)
-- [ ] **J9** Holiday party (December)
-- [ ] **J10** Train the new hire (Any, 26+ weeks in)
-- [ ] **J11** A big mistake at work (Any, 15% weight)
-- [ ] **J12** Equipment breaks down (Field and transport)
-- [ ] **J13** Flu going around (Dec–Feb)
-- [ ] **J14** A customer compliment (Service and care)
-- [ ] **J15** A rude customer (Service)
-- [ ] **J16** Workplace fundraiser (Any)
-- [ ] **J17** The boss offers a weekend gig (Field and trades)
-- [ ] **J18** Conference trip (Office and care)
-- [ ] **J19** A coworker retires (Any)
-- [ ] **J20** New software rollout (Office)
-- [ ] **J21** Payroll error: a late paycheck (Any, low weight)
-- [ ] **J22** Year-end bonus (Office and care, December)
-- [ ] **J23** Lunchroom potluck (Any)
-- [ ] **J24** Cover a double shift (Service, care and field)
-- [ ] **J25** Harvest crunch (Elevator, cellar hand, onion shed, Jul–Sep)
-- [ ] **J26** Safety inspection (Field and transport)
-- [ ] **J27** A recruiter calls (Any, community 30+)
-- [ ] **J28** A remote-day trial (Office jobs without remote days)
-- [ ] **J29** Health plan choice (Any, January)
-- [ ] **J30** A work friend's wedding (Any)
+- [x] **J1** Your performance review (Any job, 26+ weeks in)
+- [x] **J2** A promotion offer (Any job, 52+ weeks in)
+- [x] **J3** Mandatory overtime week (Field and service)
+- [x] **J4** A coworker conflict (Any)
+- [x] **J5** Free training course (Any job)
+- [x] **J6** Hurt on the job (Field and transport)
+- [x] **J7** Employee of the month (Any; odds up with People)
+- [x] **J8** New manager (Any)
+- [x] **J9** Holiday party (December)
+- [x] **J10** Train the new hire (Any, 26+ weeks in)
+- [x] **J11** A big mistake at work (Any, 15% weight)
+- [x] **J12** Equipment breaks down (Field and transport)
+- [x] **J13** Flu going around (Dec–Feb)
+- [x] **J14** A customer compliment (Service and care)
+- [x] **J15** A rude customer (Service)
+- [x] **J16** Workplace fundraiser (Any)
+- [x] **J17** The boss offers a weekend gig (Field and trades)
+- [x] **J18** Conference trip (Office and care)
+- [x] **J19** A coworker retires (Any)
+- [x] **J20** New software rollout (Office)
+- [x] **J21** Payroll error: a late paycheck (Any, low weight)
+- [x] **J22** Year-end bonus (Office and care, December)
+- [x] **J23** Lunchroom potluck (Any)
+- [x] **J24** Cover a double shift (Service, care and field)
+- [x] **J25** Harvest crunch (Elevator, cellar hand, onion shed, Jul–Sep)
+- [x] **J26** Safety inspection (Field and transport)
+- [x] **J27** A recruiter calls (Any, community 30+)
+- [x] **J28** A remote-day trial (Office jobs without remote days)
+- [x] **J29** Health plan choice (Any, January)
+- [x] **J30** A work friend's wedding (Any)
 
 </details>
 
@@ -522,6 +522,7 @@ that careless play stays at or below 60 and good play at or above 70.
 
 | Date | What | Where |
 |---|---|---|
+| Nov 18, 2026 | **Build board picks, all 104 built:** the review gotchas, balance and testing fixes, title screen with More options, Your records, What's new, Journal filters, event pacing by category, 30 road and 30 work events, and **Out and about** (20 Waitsburg businesses under stand-in names, Main Street map, visits, 7 local jobs, business events). | PRs [#97](https://github.com/krazow/The-Burg/pull/97), [#98](https://github.com/krazow/The-Burg/pull/98), [#99](https://github.com/krazow/The-Burg/pull/99), [#100](https://github.com/krazow/The-Burg/pull/100), [#101](https://github.com/krazow/The-Burg/pull/101) |
 | Nov 16, 2026 | Built **The Burg**: a turn-based life sim set in Waitsburg with 25 jobs across Waitsburg, Dayton, Walla Walla, Kennewick, Richland and Pasco; housing, vehicles, schooling, about 27 seasonal local events, Life Score, auto-save, installable with offline play. | `main` |
 | Nov 16, 2026 | Balance fixes from simulated games: raises capped at +50%, 6 months of unemployment benefits after a layoff, debt warnings. | `main` |
 | Nov 16, 2026 | **Weekly turns** and four game lengths (6 months, 2 years, 5 years, Lifetime), with ⏩ 4-week and 13-week skips that stop when something happens; weekly pay and bills. | `main` |
