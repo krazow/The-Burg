@@ -13,10 +13,12 @@
     }
   ],
   "android": {
-    "enabled": false
+    "enabled": true,
+    "appId": "com.krazow.theburg"
   },
   "windows": {
-    "enabled": false
+    "enabled": true,
+    "port": 47920
   },
   "ios": {
     "enabled": false

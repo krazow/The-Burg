@@ -65,6 +65,15 @@ repo, type `/release now` to publish a beta at https://krazow.github.io/The-Burg
 to put it live at https://krazow.github.io/The-Burg/. Pushing to `main` doesn't change the live game.
 `VERSION` holds the version, and `CHANGELOG.md` the release notes.
 
+Each release also builds:
+
+- **Android APK** (`com.krazow.theburg`, the beta is `com.krazow.theburg.beta`) on the GitHub release page.
+- **Windows installer** (it runs the game on local port 47920, or 48920 for the beta) on the GitHub release page.
+
+**Android signing (one time):** add the `ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_ALIAS`
+secrets under Settings → Secrets and variables → Actions (the same key as your other apps works). Without them the
+APK is signed with a throwaway key, and every update needs an uninstall first.
+
 ## Running it
 
 It's a static site with no build step. Serve the folder over HTTP (for example with GitHub Pages) and open `index.html`. On a phone, use "Add to Home Screen" to install it. The service worker (`sw.js`) caches the app so it works offline.
