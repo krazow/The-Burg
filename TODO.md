@@ -1,6 +1,6 @@
 # The Burg: To-do
 
-_Last updated: November 18, 2026 (Out and about: 5 game-name choices per business)_
+_Last updated: November 18, 2026 (Around the region planned)_
 
 This is the project's working to-do list: what's been done, what's next, and in what order. Every open item has a
 matching **GitHub issue** with a priority label (**P1 – now**, **P2 – soon**, **P3 – later**). The issues are the
@@ -208,6 +208,42 @@ Fest at Atelier, winter breaks). Business list, how each one appears, decisions 
 - [ ] Life systems at real places — [#53](https://github.com/krazow/The-Burg/issues/53)
 - [ ] Out and about QA — [#54](https://github.com/krazow/The-Burg/issues/54)
 
+## Soon: Around the region (Dayton, Walla Walla and the Tri-Cities)
+
+Today the other towns are only places to work. This gives you reasons to go: errands, car care, eating out and
+outings, with real trade-offs (cheaper groceries in the big towns cost gas and time; skipping an oil change raises
+breakdown odds). Commuters run errands in their work town on the way home. Uses playful stand-in names, like Out and
+about, and shares its visit system. Issues are in the
+[Around the region milestone](https://github.com/krazow/The-Burg/milestone/3).
+
+**What each town offers:**
+
+| Town | Errands | Eat | Do |
+|---|---|---|---|
+| **Dayton** (11 mi) | Small grocery, auto repair shop | Small-town café | The old depot, courthouse, Bluewood skiing (already in the game) |
+| **Walla Walla** (21 mi) | Big supermarkets, auto parts and tire shops, car wash, hospital and specialists, DMV | Downtown restaurants, tasting rooms (21+) | Farmers market, college games and concerts, movies |
+| **Pasco** (58 mi) | Grocery, car dealers | Taquerias and food trucks | Farmers market, the state park where the rivers meet, minor-league baseball, the airport (trip of a lifetime) |
+| **Kennewick** (62 mi) | Warehouse store, car dealers, big-box stores, hospital | Mall food court and chains | The mall, Columbia Park, arena events |
+| **Richland** (68 mi) | Grocery, car wash | Riverfront dining | Riverfront park, science museum |
+
+| # | Item | Size | Issue |
+|---|---|---|---|
+| 1 | **Trips on the region map:** tap a town → Make a trip; gas by distance and mpg; combine errands; free for commuters on the way home | M | [#57](https://github.com/krazow/The-Burg/issues/57) |
+| 2 | **Grocery runs:** close and pricier in Waitsburg vs. cheaper in the big towns; a monthly stock-up | S | [#58](https://github.com/krazow/The-Burg/issues/58) |
+| 3 | **Car care and car wash:** oil changes and tune-ups change breakdown odds, winter tires, car wash, yearly tabs, dealers | M | [#59](https://github.com/krazow/The-Burg/issues/59) |
+| 4 | **Dining out by town:** each town's own flavor; dates, birthdays, celebrating a raise | M | [#60](https://github.com/krazow/The-Burg/issues/60) |
+| 5 | **Outings and attractions:** markets, parks, games, movies, museum; seasonal where real | M | [#61](https://github.com/krazow/The-Burg/issues/61) |
+| 6 | **Appointments in bigger towns:** specialists and hospital, dentist, DMV | S | [#62](https://github.com/krazow/The-Burg/issues/62) |
+| 7 | **Around the region QA:** rules, flows, screens, simulation balance | M | [#63](https://github.com/krazow/The-Burg/issues/63) |
+
+- [ ] Trips on the region map — [#57](https://github.com/krazow/The-Burg/issues/57)
+- [ ] Grocery runs — [#58](https://github.com/krazow/The-Burg/issues/58)
+- [ ] Car care and car wash — [#59](https://github.com/krazow/The-Burg/issues/59)
+- [ ] Dining out by town — [#60](https://github.com/krazow/The-Burg/issues/60)
+- [ ] Outings and attractions — [#61](https://github.com/krazow/The-Burg/issues/61)
+- [ ] Appointments in bigger towns — [#62](https://github.com/krazow/The-Burg/issues/62)
+- [ ] Around the region QA — [#63](https://github.com/krazow/The-Burg/issues/63)
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
@@ -302,3 +338,4 @@ that careless play stays at or below 60 and good play at or above 70.
 | Nov 18, 2026 | **Android signing (#37):** made The Burg's own release key; secrets added. **0.2.0-beta.4** passed every check and its APK is signed with the new key (certificate confirmed in the downloaded APK). | [pre-release](https://github.com/krazow/The-Burg/releases/tag/v0.2.0-beta.4) |
 | Nov 18, 2026 | **Planned Out and about:** researched Waitsburg's open businesses; you picked 20 (plus Ten Ton Coffee as you described it). Plan, milestone and issues #48–#54. | [plan](docs/out-and-about.md) |
 | Nov 18, 2026 | **Out and about game names:** 5 playful stand-in names per business added for you to pick from, so real business names stay out of the game. | `TODO.md` |
+| Nov 18, 2026 | **Planned Around the region:** errands, car care, dining and outings in Dayton, Walla Walla and the Tri-Cities; milestone and issues #57–#63. | `TODO.md` |
