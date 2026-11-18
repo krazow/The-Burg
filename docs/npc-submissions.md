@@ -86,7 +86,6 @@ something the game can do.
 | `display_name` **R** | text, ≤ 20 | The name shown in the game. A first name or nickname only, no last names. |
 | `credit` | choice | Show "Submitted by a player" / show my name in the credits / no credit. |
 | `avatar` **R** | emoji picker | About 40 people and animal emoji. |
-| `pronouns` | choice + other | she/her, he/him, they/them, other (≤ 12). Used in event text. |
 | `age_band` **R** | choice | 18–25, 26–40, 41–60, 61+ (in the game, not necessarily real). Gates events, for example a retired NPC isn't anyone's boss. |
 | `real_or_made_up` **R** | choice | "This is me" / "A character I made up". Shown to reviewers only. |
 
@@ -193,6 +192,9 @@ for each page.
 | Their event | Added to the event list with a place pin, a season and a 40-week cooldown, at a low weight so the mix of events doesn't change much. |
 | `work` matching a game job | They can be the player's coworker, and the boss in A raise or Layoffs if their job fits. |
 | Friendship | Shown on a new 👥 **People** screen (who you've met, where to find them, friendship hearts). High friendship counts toward community and unlocks better offers. |
+
+Game text always refers to an NPC by their display name (for example "Dale is already at the parade"), so the form
+doesn't ask for pronouns.
 
 Balance rules: no NPC changes the Life Score by more than about 2 points over a full game, by design. The bot
 simulation must still land careless play at 60 or below, idle at 50 or below, and good play at 70 or above, with NPCs
