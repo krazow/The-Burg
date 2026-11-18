@@ -1,6 +1,6 @@
 # The Burg: To-do
 
-_Last updated: November 17, 2026 (0.1.0 live; 0.2.0 beta with map events, real rivers, backups, Android and Windows)_
+_Last updated: November 17, 2026 (0.2.0-beta.2; Help guide fix; demo videos)_
 
 This is the project's working to-do list: what's been done, what's next, and in what order. Every open item has a
 matching **GitHub issue** with a priority label (**P1 – now**, **P2 – soon**, **P3 – later**). The issues are the
@@ -21,12 +21,10 @@ added, finished or re-prioritized, both change in the same session.
 | # | Item | Why it's next | Issue |
 |---|---|---|---|
 | 1 | **Add the Android signing secrets** (your action) | The APK builds, but with a throwaway key, so every update would need an uninstall. Add the three secrets (the same key as Bankroll works). | [#37](https://github.com/krazow/The-Burg/issues/37) |
-| 2 | **Try 0.2.0-beta.1, then promote** (`/release now` after the secrets, then `/release promote`) | Map events, real rivers, backups, Android APK and Windows installer: https://krazow.github.io/The-Burg/beta/ and the [pre-release](https://github.com/krazow/The-Burg/releases/tag/v0.2.0-beta.1). | [#37](https://github.com/krazow/The-Burg/issues/37) |
-| 3 | **Delete the merged branches** (your action, optional) | Claude sessions can't delete branches (the proxy blocks it). 13 merged branches: `map-navigation`, `release-kit`, `balance`, `save-slots`, `menu-save-load`, `playtest-fixes`, `help-tutorial`, `more-tests`, `found-issues`, `map-events`, `real-rivers`, `save-backup`, `native-builds`. | — |
+| 2 | **Cut beta 3, try it, then promote** (`/release now` after the secrets, then `/release promote`) | 0.2.0-beta.2 is out ([pre-release](https://github.com/krazow/The-Burg/releases/tag/v0.2.0-beta.2)), but its APK still used a throwaway key, and the Help guide fix (PR #38) came after it. | [#37](https://github.com/krazow/The-Burg/issues/37) |
 
 - [ ] Android signing secrets — [#37](https://github.com/krazow/The-Burg/issues/37)
-- [ ] Try 0.2.0 beta, then `/release promote`
-- [ ] Delete merged branches
+- [ ] Beta 3 with the signed APK and the Help fix, then `/release promote`
 
 ## Soon: P2
 
@@ -92,3 +90,6 @@ that careless play stays at or below 60 and good play at or above 70.
 | Nov 17, 2026 | **Save backup (#13):** download a backup file or copy a backup code; restore by adding to empty slots or replacing all. | [PR #35](https://github.com/krazow/The-Burg/pull/35) |
 | Nov 17, 2026 | **Android and Windows builds (#14):** APK (`com.krazow.theburg`) and Windows installer (port 47920) on every release. | [PR #36](https://github.com/krazow/The-Burg/pull/36) |
 | Nov 17, 2026 | **0.2.0-beta.1:** all of the above; QA, Android, Windows, deploy and live smoke test passed. The APK used a throwaway key ([#37](https://github.com/krazow/The-Burg/issues/37)). | [pre-release](https://github.com/krazow/The-Burg/releases/tag/v0.2.0-beta.1) |
+| Nov 17, 2026 | **0.2.0-beta.2:** all release checks passed; the APK still used a throwaway key (#37). Merged branches were deleted. | [pre-release](https://github.com/krazow/The-Burg/releases/tag/v0.2.0-beta.2) |
+| Nov 17, 2026 | **Help guide fix:** the contents list was pinned to the bottom of the screen over the guide's text (since 0.1.0). Found while recording the demo video; new screens check. | [PR #38](https://github.com/krazow/The-Burg/pull/38) |
+| Nov 17, 2026 | **Demo videos** of the gameplay tutorial with subtitles: vertical 9:16 and widescreen 16:9, each with an .srt file (2:09). | sent in chat |
