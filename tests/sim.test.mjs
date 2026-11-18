@@ -65,6 +65,8 @@ for (const { len, strat, g, opts, label } of JOBS_LIST) {
           else f = ['community', 'outdoors', 'rest', 'community'][weeks % 4];
           S.focus = opts.includes(f) ? f : 'rest';
           if (!['careless', 'idle'].includes(strat) && canCarpool()) S.carpool = true;   // sensible players share the drive
+          if (!S.biz && strat === 'planner' && S.money > 40000) startBiz('wheat');            // businesses: a planner leases wheat ground,
+          if (!S.biz && strat === 'homebody' && S.money > 8000) startBiz('shop');             // a homebody opens a woodshop
           // trips around the region: the planner shops and keeps up car care monthly; the tripper goes out every week
           if (strat === 'planner' && weeks % 4 === 0 && S.money > 300) {
             const ids = ['stock']; if (S.turn - S.svc > 22) ids.push('oil'); else if (S.turn - S.dentist > 45) ids.push('dentist'); else ids.push('movies');

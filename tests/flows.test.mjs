@@ -365,6 +365,25 @@ await t.check('pick life goals on the Life tab, and start a challenge from the t
   assert(/Challenge/.test(await page.textContent('#main')), 'Home should show the challenge');
 });
 
+await t.check('start and sell a business on the Life tab; skills show there too', async () => {
+  await life({ jobId: 'farmhand', money: 8000 }, 'life');
+  assert(/Skills/.test(await page.textContent('#main')), 'skills card missing');
+  await page.click('[data-biz="shop"]');
+  assert((await S()).biz.type === 'shop', 'business not started');
+  await page.click('#bizsell'); await page.click(`${open} #y`);
+  assert((await S()).biz === null, 'business not sold');
+});
+
+await t.check('the weekly challenge starts a seeded 6-month life from the title screen; the end screen offers a score card', async () => {
+  await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); render(); });
+  await page.click('#weekly'); await page.click(`${open} #y`);
+  const s = await S();
+  assert(s.weekly && s.rng !== null && s.len === 'half', JSON.stringify({ weekly: s.weekly, rng: s.rng, len: s.len }));
+  await page.evaluate(() => { S.noEvents = true; finish('done'); });
+  assert(await page.$(`${open} #share`), 'no share button');
+  await page.click(`${open} #again`);
+});
+
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });
 
 await browser.close();

@@ -42,6 +42,14 @@ entry for every release, and the GitHub release notes are taken from it.
 - **🏁 Challenges** on the title screen: Debt-free in 2 years, Save the family farm, Single parent, and From the
   wheat to the lab.
 
+- **🧰 Skills** (Handy, Mechanic, Cook, People) grow with practice and pay off: cheaper repairs, fixing the truck
+  yourself, cheaper groceries, better odds when you apply.
+- **🏪 Your own business:** lease wheat ground (pays at harvest), run a food truck (weekends, April–October) or open a
+  woodworking shop. Sell it any time for 60% of what you paid.
+- **📅 Weekly challenge:** a 6-month life with the same dice for everyone that week, and a **📤 score card** picture to
+  share at the end of any life.
+- **🌳 Legacy:** when a Lifetime game ends and you had kids, keep playing as your grown kid.
+
 ### Changed
 - **Work extra hours** now pays +20% (was +15%) and wears on you less. Long commutes and side hustles were traps:
   in simulated 5-year games a sensible long-commuter now scores 73 (was 66), an overtime grinder 51 (was 46) and a
