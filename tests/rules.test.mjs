@@ -492,6 +492,53 @@ await t.check('challenges set up the life and are judged at the end (or as soon 
   assert(/Challenge complete/.test(r.note) && r.won && r.stored.lab, JSON.stringify(r));
 });
 
+// ---- Phase 4 (#71, #72, #75, #76): skills, business, weekly challenge, legacy ----
+await t.check('skills grow with practice and pay off', async () => {
+  const r = await ev(() => { fresh('two', { focus: 'community' }); weeks(25); const people = skillLv('people');
+    fresh('two', { focus: 'rest', skills: { cook: 48 } }); const food = week().lines['Food & utilities'];
+    fresh('two', { skills: { mechanic: 30 } }); const ev2 = EVENTS.find(e => e.title === 'Truck trouble'); const labels = ev2.choices().filter(c => !c.if || c.if()).map(c => c.label);
+    fresh('two', { jobId: 'farmhand', focus: 'hustle', date: new Date(2027, 4, 3).getTime() }); weeks(10); const handy = S.skills.handy;
+    return { people, food, labels, handy }; });
+  assert(r.people === 2, `people level after 25 weeks of town ${r.people}`);
+  assert(near(r.food, -520 * W * 0.88), `cook level 3 food ${r.food}`);
+  assert(r.labels.some(l => /yourself/.test(l)), 'mechanic level 2 should offer fixing it yourself');
+  assert(r.handy >= 9, `yard-work hustles should build handy: ${r.handy}`);
+});
+
+await t.check('a business costs money up front, earns, counts in net worth, and sells for 60%', async () => {
+  const r = await ev(() => { fresh('two', { money: 10000, skills: { handy: 48 } }); render(); const nw0 = netWorth(); startBiz('shop'); const nw1 = netWorth();
+    let earned = 0; for (let i = 0; i < 20; i++) { const l = week().lines; earned += l['🪚 Woodworking shop'] || 0; }
+    const m = S.money; sellBiz(); const got = S.money - m;
+    fresh('two', { money: 10000, date: new Date(2027, 6, 5).getTime() }); render(); startBiz('wheat'); let check = 0, n = 0;
+    for (let i = 0; i < 6; i++) { const l = week().lines; if (l['🌾 Harvest check']) { check = l['🌾 Harvest check']; n++; } }
+    return { lost: nw0 - nw1, earned, got, biz: S.biz && S.biz.type, check, n }; });
+  assert(near(r.lost, 2500 * 0.4, 0.02), `starting should only lose 40% of the cost in net worth: ${r.lost}`);
+  assert(r.earned > 20 * 180 * W * 1.5 && near(r.got, 1500, 0.03), `shop earned ${r.earned}, sold for ${r.got}`);
+  assert(r.n === 1 && r.check > 1500, `wheat lease paid ${r.n} times, ${r.check}`);
+});
+
+await t.check('the weekly challenge plays the same for everyone, even across saves', async () => {
+  const r = await ev(() => { const run = () => { localStorage.clear(); newGame('W', 'half', 0, { weekly: '2026-W47' }); S.jobId = 'farmhand';
+      const out = []; for (let i = 0; i < 26; i++) { const res = weekTick(false); if (res.ev) { res.ev.choices()[0].go(); out.push(res.ev.title); } } return out.join('|') + '#' + Math.round(S.money); };
+    const a = run(), b = run();
+    localStorage.clear(); newGame('W', 'half', 0, { weekly: '2026-W47' }); S.jobId = 'farmhand'; for (let i = 0; i < 10; i++) weekTick(false); save();
+    loadSlot(0); for (let i = 0; i < 5; i++) weekTick(false); const c = Math.round(S.money);
+    localStorage.clear(); newGame('W', 'half', 0, { weekly: '2026-W47' }); S.jobId = 'farmhand'; for (let i = 0; i < 15; i++) weekTick(false); const d = Math.round(S.money);
+    newGame('X', 'half', 0); const native = S.rng === null;
+    return { same: a === b, a, savedSame: c === d, c, d, native, wk: isoWeek(new Date(2026, 10, 18)) }; });
+  assert(r.same && r.a.length > 5, `two weekly runs differed: ${r.a}`);
+  assert(r.savedSame, `save/continue changed the dice: ${r.c} vs ${r.d}`);
+  assert(r.native && r.wk === '2026-W47', JSON.stringify(r));
+});
+
+await t.check('legacy: a Lifetime game with kids continues as the grown kid', async () => {
+  const r = await ev(() => { localStorage.clear(); newGame('Pat Doe', 'life', 0); S.noEvents = true; S.kids = [300]; S.money = 400000; S.community = 70;
+    S.date = new Date(2080, 3, 1).getTime(); S.col = 2; finish('done'); const btn = !!document.querySelector('#legacy'); document.querySelector('#legacy').click();
+    return { btn, name: S.name, gen: S.gen, money: S.money, community: S.community, age: age(), year: new Date(S.date).getFullYear(), col: S.col }; });
+  assert(r.btn && r.name === 'Pat Jr.' && r.gen === 2 && r.age === 18, JSON.stringify(r));
+  assert(r.money > 100000 && r.money <= 500000 && r.community === 50 && r.year === 2080 && r.col === 2, JSON.stringify(r));
+});
+
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });
 
 await browser.close();
