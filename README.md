@@ -80,7 +80,8 @@ It's a static site with no build step. Serve the folder over HTTP (for example w
 
 ## Files
 
-- `index.html`: the whole game (markup, styles and logic)
+- `index.html`: the page (markup and styles); it loads the game's scripts in order
+- `js/`: the game logic, in load order: `state.js` (constants, saves, starts and modes), `ui.js` (title screen, backups, screens), `turn.js` (the weekly turn), `events.js` (events and stories), `features.js` (trips, badges, skills, businesses, the Life Score), `maps.js` (region and town maps), `help.js` (Help guide and tutorial), `boot.js`. They share one global scope, like one script.
 - `manifest.webmanifest`, `icon*.png`, `icon.svg`: install metadata and icons
 - `sw.js`: offline cache
-- `tools/make-geo.py`: bakes the real Columbia, Snake and Yakima river shapes (Natural Earth 1:10m, public domain) into `index.html`. Re-run it with the folder holding Natural Earth's `ne_10m_rivers_lake_centerlines.geojson` and `ne_10m_rivers_north_america.geojson`.
+- `tools/make-geo.py`: bakes the real Columbia, Snake and Yakima river shapes (Natural Earth 1:10m, public domain) into `js/maps.js`. Re-run it with the folder holding Natural Earth's `ne_10m_rivers_lake_centerlines.geojson` and `ne_10m_rivers_north_america.geojson`.

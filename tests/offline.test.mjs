@@ -7,9 +7,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { serve, launch, runner, assert, SITE_DIR } from './helpers.mjs';
 
-const FILES = ['index.html', 'sw.js', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png'];
+const FILES = ['index.html', 'js', 'sw.js', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png'];
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'theburg-offline-'));
-for (const f of FILES) fs.copyFileSync(path.join(SITE_DIR, f), path.join(dir, f));
+for (const f of FILES) fs.cpSync(path.join(SITE_DIR, f), path.join(dir, f), { recursive: true });
 const oldVersion = fs.readFileSync(path.join(dir, 'sw.js'), 'utf8').match(/const VERSION = CACHE_PREFIX \+ '([^']+)'/)[1];
 
 const srv = await serve(dir);
@@ -65,7 +65,7 @@ await t.check('a new version replaces the old one: new cache, old cache gone, sa
   // publish "9.9.9": a changed service worker (new cache name) and a changed page
   const NEW = '9.9.9';
   fs.writeFileSync(path.join(dir, 'sw.js'), fs.readFileSync(path.join(dir, 'sw.js'), 'utf8').replace(`const VERSION = CACHE_PREFIX + '${oldVersion}'`, `const VERSION = CACHE_PREFIX + '${NEW}'`));
-  fs.writeFileSync(path.join(dir, 'index.html'), fs.readFileSync(path.join(dir, 'index.html'), 'utf8').replace(/const APP_VERSION = '[^']*'/, `const APP_VERSION = '${NEW}'`));
+  fs.writeFileSync(path.join(dir, 'js/state.js'), fs.readFileSync(path.join(dir, 'js/state.js'), 'utf8').replace(/const APP_VERSION = '[^']*'/, `const APP_VERSION = '${NEW}'`));
   await page.reload({ waitUntil: 'load' });                      // the old cached page loads; the browser finds the new worker
   let names = [];
   for (let i = 0; i < 40; i++) { names = await cacheNames(); if (names.includes('theburg-' + NEW) && !names.includes('theburg-' + oldVersion)) break; await page.waitForTimeout(250); }

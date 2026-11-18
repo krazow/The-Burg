@@ -8,7 +8,7 @@
   "sw": "sw.js",
   "version": [
     {
-      "file": "index.html",
+      "file": "js/state.js",
       "pattern": "const APP_VERSION = '([^']*)'"
     }
   ],
