@@ -6,8 +6,11 @@ import fs from 'node:fs';
 import { serve, launch, runner, seedScript } from './helpers.mjs';
 
 const SCALE = Number(process.env.SIM_SCALE || 1);
-const GAMES = { half: 6, two: 4, five: 2, life: 1 };              // per strategy, times SIM_SCALE
-const STRATEGIES = ['planner', 'homebody', 'commuter', 'student', 'hustler', 'careless', 'idle', 'tripper'];
+let GAMES = { half: 6, two: 4, five: 2, life: 1 };              // per strategy, times SIM_SCALE
+let STRATEGIES = ['planner', 'homebody', 'commuter', 'student', 'hustler', 'careless', 'idle', 'tripper', 'roadie'];
+// for tuning: SIM_ONLY=commuter,hustler and/or SIM_LEN=five,two run a subset (CI always runs everything)
+if (process.env.SIM_ONLY) STRATEGIES = STRATEGIES.filter(x => process.env.SIM_ONLY.split(',').includes(x));
+if (process.env.SIM_LEN) GAMES = Object.fromEntries(Object.entries(GAMES).filter(([k]) => process.env.SIM_LEN.split(',').includes(k)));
 
 const srv = await serve();
 const browser = await launch();
@@ -51,8 +54,10 @@ for (const len of Object.keys(GAMES)) {
           else if (strat === 'planner') f = S.edu < 2 && LENGTHS[S.len].turns > 26 ? 'study' : ['work', 'community', 'outdoors', 'work', 'community', 'rest'][weeks % 6];
           else if (strat === 'hustler') f = weeks % 3 ? 'hustle' : (job() ? 'work' : 'rest');
           else if (strat === 'commuter') f = weeks % 4 === 3 ? 'community' : (job() && !S.retired ? 'work' : 'rest');
+          else if (strat === 'roadie') f = ['work', 'community', 'outdoors', 'rest'][weeks % 4];   // a long commute, but a balanced week
           else f = ['community', 'outdoors', 'rest', 'community'][weeks % 4];
           S.focus = opts.includes(f) ? f : 'rest';
+          if (!['careless', 'idle'].includes(strat) && canCarpool()) S.carpool = true;   // sensible players share the drive
           // trips around the region: the planner shops and keeps up car care monthly; the tripper goes out every week
           if (strat === 'planner' && weeks % 4 === 0 && S.money > 300) {
             const ids = ['stock']; if (S.turn - S.svc > 22) ids.push('oil'); else if (S.turn - S.dentist > 45) ids.push('dentist'); else ids.push('movies');
