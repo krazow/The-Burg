@@ -245,6 +245,43 @@ await t.check('the region map uses real river shapes that cross the map', async 
   assert(Math.abs(meet[0] - 46.2) < 0.1 && Math.abs(meet[1] + 119.05) < 0.1, `Snake ends at ${meet}`);
 });
 
+await t.check('backups round-trip: compressed code, plain code and file JSON all restore the same lives', async () => {
+  const r = await ev(async () => {
+    localStorage.clear(); fresh('two', { jobId: 'rn', money: 12345 }); S.turn = 30; save();
+    newGame('Second', 'life', 1); S.turn = 9; save(); store.set(BEST_KEY, { two: 66 });
+    const data = backupData();
+    const gz = await backupCode(data), plain = 'BURG0:' + b64(new TextEncoder().encode(JSON.stringify(data)));
+    const a = await readBackup(gz), b = await readBackup(plain), c = await readBackup(JSON.stringify(data, null, 1));
+    const sig = x => x.lives.map(g => g && `${g.name}/${g.len}/${g.turn}/${Math.round(g.money)}`).join('|');
+    return { gz: gz.slice(0, 6), short: gz.length < JSON.stringify(data).length / 2, a: sig(a), b: sig(b), c: sig(c), best: a.best.two };
+  });
+  assert(r.gz === 'BURG1:' && r.short, `code ${r.gz}, compressed well: ${r.short}`);
+  assert(r.a === r.b && r.b === r.c && r.a.startsWith('Rules/two/30/12345|Second/life/9'), `${r.a} / ${r.b} / ${r.c}`);
+  assert(r.best === 66, 'best scores missing');
+});
+
+await t.check('restoring adds to empty slots or replaces all, keeps the best scores, and rejects junk', async () => {
+  const r = await ev(async () => {
+    localStorage.clear(); newGame('A', 'two', 0); save(); newGame('B', 'two', 1); save(); store.set(BEST_KEY, { two: 50, five: 70 });
+    const bk = await readBackup(JSON.stringify(backupData()));
+    store.set(SLOTS_KEY, [null, null, null, null, null]); newGame('Here', 'half', 0); save(); store.set(BEST_KEY, { two: 60 });
+    const skippedAdd = restoreBackup(bk, 'add'); const added = slots().map(g => g && g.name);
+    const best = store.get(BEST_KEY);
+    restoreBackup(bk, 'replace'); const replaced = slots().map(g => g && g.name);
+    const errs = [];
+    for (const junk of ['hello', '{"app":"other","slots":[]}', '{"app":"theburg","slots":[{"name":5}]}', 'BURG1:@@@']) { try { await readBackup(junk); errs.push('accepted ' + junk); } catch (e) { errs.push(e.message ? 'ok' : 'no message'); } }
+    // full slots: nothing fits
+    for (let i = 0; i < 5; i++) { newGame('F' + i, 'half', i); save(); }
+    const skippedFull = restoreBackup(bk, 'add');
+    return { skippedAdd, added, best, replaced, errs, skippedFull, slotsOk: slots().every((g, i) => g.slot === i) };
+  });
+  assert(r.skippedAdd === 0 && r.added.join() === 'Here,A,B,,', `add: ${r.added}`);
+  assert(r.best.two === 60 && r.best.five === 70, `best ${JSON.stringify(r.best)}`);
+  assert(r.replaced.join() === 'A,B,,,', `replace: ${r.replaced}`);
+  assert(r.errs.every(x => x === 'ok'), r.errs.join('; '));
+  assert(r.skippedFull === 2 && r.slotsOk, `full slots skipped ${r.skippedFull}`);
+});
+
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });
 
 await browser.close();

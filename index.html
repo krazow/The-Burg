@@ -182,6 +182,8 @@ nav button:focus-visible{outline-offset:-4px}
 .evbadge.fresh circle{animation:evpulse 1.6s ease-in-out 3}
 @keyframes evpulse{50%{stroke-width:5;stroke:#ffd166}}
 @media (prefers-reduced-motion: reduce){.evbadge.fresh circle{animation:none}}
+.code{width:100%;font:12px/1.35 ui-monospace,Menlo,Consolas,monospace;border:2px solid var(--line);border-radius:10px;padding:8px;background:#fff;color:var(--soil);word-break:break-all;resize:vertical}
+.warnline{color:var(--barn-d);font-weight:600}
 .score{font-size:64px;font-weight:800;text-align:center;color:var(--barn);font-family:Georgia,serif}
 </style>
 </head>
@@ -391,6 +393,7 @@ function renderTitle(){
       `<button class="len ${k===len?'on':''}" data-len="${k}" aria-pressed="${k===len}"><b>${L.label}</b><span>${L.sub}</span></button>`).join('')}</div>
     <button class="btn ${used?'ghost':'primary'}" id="start">Start a new life</button>
     <button class="btn ghost" id="how">❓ Help & tutorial</button>
+    <button class="btn ghost" id="restore">📥 Restore from a backup</button>
     <div class="muted" style="margin-top:14px;font-size:12px">v${APP_VERSION}</div>
     <div class="best">${Object.keys(best).length ? 'Best life scores: ' + Object.entries(best).filter(([k]) => LENGTHS[k]).map(([k,v]) => `${LENGTHS[k].label} <b>${v}</b>`).join(' · ') : ''}</div>
   </div>`;
@@ -406,6 +409,7 @@ function renderTitle(){
     newGame(name, len, free);
   };
   $('#how').onclick = showHelp;
+  $('#restore').onclick = restoreSheet;
 }
 function loadSlot(i){
   const g = slots()[i]; if (!g) return;
@@ -450,6 +454,124 @@ function saveCopySheet(){
   $('#no').onclick = closeSheet;
 }
 // Menu: switch to another saved life (this one is saved first)
+/* ---------- 📤 backups: move your lives between devices ---------- */
+// A backup is every saved life plus best scores. It leaves as a .json file or a "backup code" (text you can paste
+// into a message to yourself); codes are gzip-compressed when the browser can.
+function backupData(){ return { app: 'theburg', kind: 'backup', v: 1, version: APP_VERSION, exported: new Date().toISOString(), slots: slots(), best: store.get(BEST_KEY) || {} }; }
+const b64 = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(s); };
+const unb64 = text => Uint8Array.from(atob(text.replace(/\s+/g, '')), c => c.charCodeAt(0));
+async function backupCode(obj){
+  const json = JSON.stringify(obj);
+  if (window.CompressionStream) {
+    const gz = new Blob([json]).stream().pipeThrough(new CompressionStream('gzip'));
+    return 'BURG1:' + b64(new Uint8Array(await new Response(gz).arrayBuffer()));
+  }
+  return 'BURG0:' + b64(new TextEncoder().encode(json));
+}
+async function readBackup(text){
+  text = (text || '').trim();
+  let d;
+  try {
+    if (text.startsWith('{')) d = JSON.parse(text);
+    else if (text.startsWith('BURG1:')) {
+      if (!window.DecompressionStream) throw new Error('This browser can\'t open compressed codes. Use the backup file instead.');
+      const raw = new Blob([unb64(text.slice(6))]).stream().pipeThrough(new DecompressionStream('gzip'));
+      d = JSON.parse(await new Response(raw).text());
+    } else if (text.startsWith('BURG0:')) d = JSON.parse(new TextDecoder().decode(unb64(text.slice(6))));
+    else throw new Error('');
+  } catch (e) { throw new Error(e.message || 'That doesn\'t look like a backup from The Burg.'); }
+  if (!d || d.app !== 'theburg' || !Array.isArray(d.slots)) throw new Error('That doesn\'t look like a backup from The Burg.');
+  const ok = g => g && typeof g === 'object' && typeof g.name === 'string' && LENGTHS[g.len] && Number.isFinite(g.money) && Number.isFinite(g.date) && Number.isFinite(g.ageMonths);
+  const lives = d.slots.slice(0, SLOT_COUNT).map(g => ok(g) ? migrate(g) : null);
+  if (!lives.some(Boolean)) throw new Error('That backup has no saved lives in it.');
+  return { lives, best: d.best && typeof d.best === 'object' ? d.best : {}, exported: d.exported };
+}
+// put a backup's lives in: 'add' fills empty slots (returns how many didn't fit), 'replace' swaps all slots
+function restoreBackup(b, mode){
+  const cur = slots(), best = store.get(BEST_KEY) || {};
+  for (const [k, v] of Object.entries(b.best)) if (LENGTHS[k] && Number.isFinite(v) && !(best[k] >= v)) best[k] = v;
+  store.set(BEST_KEY, best);
+  let skipped = 0;
+  if (mode === 'replace') store.set(SLOTS_KEY, b.lives.map((g, i) => g ? { ...g, slot: i } : null).concat(Array(SLOT_COUNT).fill(null)).slice(0, SLOT_COUNT));
+  else {
+    for (const g of b.lives.filter(Boolean)) { const i = cur.indexOf(null); if (i < 0) { skipped++; continue; } cur[i] = { ...g, slot: i }; }
+    store.set(SLOTS_KEY, cur);
+  }
+  return skipped;
+}
+function backupSheet(){
+  if (S && !S.over && !S.practice) save();
+  const n = slots().filter(Boolean).length;
+  sheet(`<h2>📤 Back up or restore</h2>
+    <p class="muted">Your lives are saved on this device. A backup lets you keep a copy or move them to another phone or computer.</p>
+    <h3>Back up (${n} ${n === 1 ? 'life' : 'lives'})</h3>
+    <button class="btn primary" id="bkfile" ${n ? '' : 'disabled'}>⬇️ Download a backup file</button>
+    <button class="btn ghost" id="bkcode" ${n ? '' : 'disabled'}>📋 Copy a backup code</button>
+    <div id="bkout"></div>
+    <h3 style="margin-top:14px">Restore</h3>
+    <button class="btn ghost" id="bkrestore">📥 Restore from a backup</button>
+    <button class="btn ghost" id="no">Close</button>`);
+  $('#bkfile').onclick = () => {
+    const blob = new Blob([JSON.stringify(backupData(), null, 1)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `the-burg-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    toast('Backup file downloaded'); announce('Backup file downloaded');
+  };
+  $('#bkcode').onclick = async () => {
+    const code = await backupCode(backupData());
+    let copied = false;
+    try { await navigator.clipboard.writeText(code); copied = true; } catch (e) {}
+    $('#bkout').innerHTML = `<p class="${copied ? '' : 'muted'}">${copied ? '✅ Copied! Paste it into a note or a message to yourself.' : 'Copy this code (select it all), then paste it into a note or a message to yourself:'}</p>
+      <textarea class="code" id="bkcodetext" readonly aria-label="Backup code" rows="4">${code}</textarea>`;
+    const ta = $('#bkcodetext'); ta.focus(); ta.select();
+    announce(copied ? 'Backup code copied' : 'Backup code shown, select and copy it');
+  };
+  $('#bkrestore').onclick = restoreSheet;
+  $('#no').onclick = closeSheet;
+}
+function restoreSheet(){
+  sheet(`<h2>📥 Restore from a backup</h2>
+    <p class="muted">Paste a backup code, or choose a backup file.</p>
+    <textarea class="code" id="rscode" rows="4" aria-label="Paste a backup code" placeholder="BURG1:…"></textarea>
+    <button class="btn ghost" id="rsfilebtn">📁 Choose a backup file</button><input type="file" id="rsfile" accept=".json,application/json,text/plain" hidden>
+    <button class="btn primary" id="rscheck">Check this backup</button>
+    <div id="rsout" role="status"></div>
+    <button class="btn ghost" id="no">Cancel</button>`);
+  const check = async text => {
+    const out = $('#rsout');
+    try {
+      const b = await readBackup(text);
+      const lives = b.lives.filter(Boolean), free = slots().filter(g => !g).length;
+      out.innerHTML = `<p><b>This backup has ${lives.length} ${lives.length === 1 ? 'life' : 'lives'}</b>${b.exported ? ` (saved ${new Date(b.exported).toLocaleDateString()})` : ''}:</p>
+        <div class="slots">${b.lives.map((g, i) => g ? slotCard(g, i, '') : '').join('')}</div>
+        <button class="btn primary" id="rsadd" ${free ? '' : 'disabled'}>Add to my empty slots (${free} free)</button>
+        <button class="btn ghost" id="rsrep">Replace all my lives with these</button>`;
+      $('#rsadd').onclick = () => finishRestore(b, 'add');
+      $('#rsrep').onclick = () => {
+        out.innerHTML = `<p><b>Replace all your lives?</b> Every life saved on this device now is deleted and replaced by the backup's. This can't be undone.</p>
+          <button class="btn primary" id="rsyes">Replace them</button><button class="btn ghost" id="rsback">Back</button>`;
+        $('#rsyes').onclick = () => finishRestore(b, 'replace');
+        $('#rsback').onclick = () => check(text);
+        $('#rsyes').focus();
+      };
+      $('#rsadd').focus();
+    } catch (e) { out.innerHTML = `<p class="warnline">⚠️ ${esc(e.message)}</p>`; }
+  };
+  $('#rscheck').onclick = () => check($('#rscode').value);
+  $('#rsfilebtn').onclick = () => $('#rsfile').click();
+  $('#rsfile').onchange = async e => { const f = e.target.files && e.target.files[0]; if (!f) return; const text = await f.text(); $('#rscode').value = ''; check(text); };
+  $('#no').onclick = closeSheet;
+}
+function finishRestore(b, mode){
+  const skipped = restoreBackup(b, mode);
+  closeSheet();
+  if (mode === 'replace' || !S) { S = null; renderTitle(); }
+  else render();
+  const msg = skipped ? `Restored. ${skipped} ${skipped === 1 ? 'life' : 'lives'} didn't fit: free up a slot and restore again.` : 'Backup restored';
+  toast(msg); announce(msg);
+}
+
 function loadSheet(){
   save();
   const all = slots(), lives = all.map((g,i) => [g,i]).filter(([g]) => g);
@@ -764,6 +886,7 @@ function showMenu(){
   sheet(`<h2>Menu</h2>
     <button class="btn primary" id="save">💾 Save game</button>
     <button class="btn primary" id="load">📂 Load game</button>
+    <button class="btn ghost" id="backup">📤 Back up or restore</button>
     <p class="muted" style="margin-top:12px">${esc(S.name)}'s life is in slot ${S.slot+1} and also saves itself after every week.</p>
     <button class="btn ghost" id="help">❓ Help & tutorial</button>
     <button class="btn ghost" id="title">Back to title screen</button>
@@ -771,6 +894,7 @@ function showMenu(){
     <button class="btn ghost" id="close">Close</button>`);
   $('#save').onclick = saveCopySheet;
   $('#load').onclick = loadSheet;
+  $('#backup').onclick = backupSheet;
   $('#help').onclick = showHelp;
   $('#title').onclick = () => { save(); closeSheet(); S = null; renderTitle(); };
   $('#retireNow').onclick = () => { closeSheet(); finish('You chose to wrap things up.'); };
@@ -1576,7 +1700,8 @@ function guideHTML(){
       <ul><li><b>Title screen:</b> your lives are listed with Continue and 🗑 Delete. When all 5 slots are full, a new life asks which one to replace.</li>
       <li><b>Menu → 💾 Save game:</b> Save writes your current life right now. Save here or Replace on another slot makes a copy as a checkpoint you can go back to.</li>
       <li><b>Menu → 📂 Load game:</b> switches to any saved life. The one you're playing is saved first.</li></ul>
-      <p>Finishing a life frees its slot. Saves live on this device and in this browser.</p>`],
+      <p>Finishing a life frees its slot. Saves live on this device and in this browser.</p>
+      <p><b>Menu → 📤 Back up or restore:</b> download a backup file or copy a backup code, then on another device use <b>📥 Restore from a backup</b> (on the title screen or in the same menu). You can add the backup's lives to empty slots or replace all your lives.</p>`],
     ['score', '🏆 The Life Score', `
       <p>At the end, your life gets a score out of 100 from four parts:</p>
       <table><tr><th>Part</th><th>Measured as</th><th>Weight</th></tr>
