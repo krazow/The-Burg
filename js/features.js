@@ -96,7 +96,7 @@ function tripWeek(lines){
   (S.towns = S.towns || {})[t.city] = 1;
   log(`Trip to ${c.name}${tripIsCommute(t.city) ? ' on the way home from work' : ''}: ${done.join(', ')}.`);
   if (S.run) S.run.happened.push({ ic:'🚗', title:`Trip to ${c.name}`, money:0 });
-  return { fx, away: !tripIsCommute(t.city) };
+  return { fx, away: !tripIsCommute(t.city), city: t.city };
 }
 
 /* ---- trip screens ---- */

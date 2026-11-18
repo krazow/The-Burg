@@ -68,11 +68,16 @@ function guideHTML(){
     ['family', '❤️ Family and household', `
       <p>Life brings people and pets: a <b>partner</b> (date nights, a part-time paycheck, and happier weeks), <b>kids</b> (about $650 a month each until 18, and more joy and community), a <b>dog</b>, even a seat on the <b>town council</b> once your community standing is 60 or higher. These mostly arrive through events, so say yes when it fits your life.</p>`],
     ['events', '🎲 Events', `
-      <p>Most weeks something might happen: about 30 local events tied to the seasons and your life. Tap a choice to decide, and every choice shows what it did. Events with only one choice close in one tap. A few examples:</p>
+      <p>Many weeks something happens: about 100 events tied to the seasons, the road and your work. Tap a choice to decide, and every choice shows what it did. Events with only one choice close in one tap. A few examples:</p>
       <ul><li><b>Spring:</b> Celebration Days races, the Touchet running high, tax refunds.</li>
       <li><b>Summer:</b> wheat harvest, Walla Walla Sweets, the Dayton depot festival, the fair and rodeo.</li>
       <li><b>Fall and winter:</b> deer season, snow on Highway 12, powder days at Bluewood, Friday night games.</li>
-      <li><b>Any time:</b> truck trouble, layoffs, raises, a friendly stray, someone special, a windstorm, a tip about a job.</li></ul>`],
+      <li><b>Any time:</b> truck trouble, layoffs, raises, a friendly stray, someone special, a windstorm, a tip about a job.</li></ul>
+      <p><b>Three kinds of events</b>, each with its own odds, and never more than one a week:</p>
+      <ul><li><b>🏡 Town</b> (about 1 week in 7): Waitsburg life and the seasons, for everyone.</li>
+      <li><b>🛣️ Road</b> (about 1 week in 12): deer, fog, flat tires, festivals and deals in other towns. Only in weeks you commute 20+ miles each way or take a trip, and it happens in the town you drive to.</li>
+      <li><b>💼 Work</b> (about 1 week in 12): reviews, promotions, overtime, coworkers and the holiday party. Only when you have a job; some fit only certain kinds of work.</li></ul>
+      <p>A commuter with a job sees about one event every 3 weeks; someone at home with no job, about one every 7. Hard mode brings 25% more of each. Event prices rise with the cost of living.</p>`],
     ['maps', '🗺️ Maps', `
       <p>Home and Jobs both have a <b>📋 List / 🗺️ Map</b> switch, and the game remembers your choice.</p>
       <ul><li><b>🏡 Waitsburg:</b> tap a place to spend your week there. Home is Rest, Main Street is Show up for town, the library is classes, the river is Get outside, the bulletin board is a side hustle, and your workplace or Highway 12 is Work extra hours. Dashed circles are just for looking.</li>

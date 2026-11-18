@@ -16,7 +16,7 @@ function playWeeks(n){
     if (res.ending) return finish(res.ending);
     render();
     if (S.newBadges && S.newBadges.length) { toast(S.newBadges.join(' · ')); S.newBadges = []; }
-    if (res.ev) showEvent(res.ev);
+    if (res.ev) showEvent(res.ev, res.review);     // a year in review that week comes after the event
     else if (res.review) showReview(res.review);
     const r = S.run, dm = S.money - r.money, ch = (n, v) => Math.abs(v) < 0.5 ? `${n} unchanged` : `${n} ${v > 0 ? 'up' : 'down'} ${Math.abs(Math.round(v))}`;
     announce(`${r.weeks > 1 ? r.weeks + ' weeks' : 'Week'} done. Cash ${dm >= 0 ? 'up' : 'down'} ${fmt(Math.abs(dm))}, now ${fmt(S.money)}. ${ch('Happiness', S.happy - r.happy)}, ${ch('health', S.health - r.health)}, ${ch('community', S.community - r.community)}. ${dateLabel()}.`);
@@ -158,7 +158,7 @@ function weekTick(auto){
   skillWeek(notes, gig);
 
   // ---- maybe an event this week ----
-  let ev = !S.noEvents && chance(mode() === 'hard' ? 0.33 : 0.28) ? pickEvent(curMonth()) : null;
+  let ev = S.noEvents ? null : rollEvent(curMonth(), trip);   // town, road and work events, paced by category
   if (ev) {
     S.evCd[ev.title] = S.turn + (ev.yr ? 40 : 8);
     { const pl = eventPlace(ev); S.evPins = [{ t: ev.title, ic: ev.ic, m: pl[0], k: pl[1], turn: S.turn + 1, r: '' }, ...(S.evPins || [])].slice(0, 12); }

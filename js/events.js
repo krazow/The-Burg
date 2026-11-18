@@ -1,14 +1,31 @@
 // The Burg: events.js (part 4 of 8; scripts load in order and share one global scope)
 /* ---------- events ---------- */
-function pickEvent(month){
+// G5: events are paced by category so new ones don't crowd out the old. Each week one roll decides which category
+// (if any) gets an event: town 14%, road 8% (only in weeks you commute 20+ miles each way or take a trip),
+// work 8% (only with a job). At most one event a week; Hard mode adds 25% to each.
+const EVENT_ODDS = { town: 0.14, road: 0.08, work: 0.08 };
+const evCat = e => e.cat || 'town';
+function eventOdds(trip){
+  const hard = mode() === 'hard' ? 1.25 : 1, hasJob = !!job() && !S.retired;
+  return { town: EVENT_ODDS.town * hard, road: trip || commuteOneWay() >= 20 ? EVENT_ODDS.road * hard : 0, work: hasJob ? EVENT_ODDS.work * hard : 0 };
+}
+function rollEvent(month, trip){
+  eventUpkeep();
+  S.roadTo = trip && trip.city ? trip.city : commuteOneWay() >= 20 ? job().city : null;   // where this week's drive goes
+  const odds = eventOdds(trip);
+  let r = Math.random();
+  for (const cat of ['town', 'road', 'work']) { if (r < odds[cat]) return pickEvent(month, cat); r -= odds[cat]; }
+  return null;
+}
+function pickEvent(month, cat = 'town'){
   const wt = e => typeof e.w === 'function' ? e.w() : (e.w || 1);
-  const ok = EVENTS.filter(e => !(S.evCd[e.title] > S.turn) && !(e.once && S.evDone[e.title]) && (!e.when || e.when(month)) && wt(e) > 0);
+  const ok = EVENTS.filter(e => evCat(e) === cat && !(S.evCd[e.title] > S.turn) && !(e.once && S.evDone[e.title]) && (!e.when || e.when(month)) && wt(e) > 0);
   const total = ok.reduce((a,e) => a + wt(e), 0);
   let r = Math.random() * total;
   for (const e of ok) { r -= wt(e); if (r <= 0) return e; }
   return null;
 }
-function showEvent(ev){
+function showEvent(ev, then = null){
   const before = {happy:S.happy, health:S.health, community:S.community};
   const choices = ev.choices().filter(c => !c.if || c.if());
   const pin = S.evPins && S.evPins[0] && S.evPins[0].t === ev.title ? [S.evPins[0].m, S.evPins[0].k] : eventPlace(ev);
@@ -22,11 +39,11 @@ function showEvent(ev){
     if (S.run) S.run.happened.push({ ic: ev.ic, title: ev.title, money: dm });
     if (S.evPins && S.evPins[0] && S.evPins[0].t === ev.title) S.evPins[0].r = result;
     save();
-    if (choices.length === 1) { closeSheet(); render(); toast(`${ev.ic} ${result}${dm ? ` (${dm>0?'+':''}${fmt(dm)})` : ''}`); return; }
+    if (choices.length === 1) { closeSheet(); render(); toast(`${ev.ic} ${result}${dm ? ` (${dm>0?'+':''}${fmt(dm)})` : ''}`); if (then) showReview(then); return; }
     sheet(`<div class="big">${ev.ic}</div><p>${result}</p>
       <p>${dm ? `<span class="delta ${dm>0?'up':'down'}">${dm>0?'+':''}${fmt(dm)}</span>` : ''}${deltaChips(before)}</p>
       <button class="btn primary" id="ok">Continue</button>`);
-    $('#ok').onclick = () => { closeSheet(); render(); };
+    $('#ok').onclick = () => { closeSheet(); render(); if (then) showReview(then); };
   });
 }
 // where each event happens: ['T', place] on the Waitsburg map or ['R', town or landmark] on the region map;
@@ -48,6 +65,7 @@ const WORK_SPOT = { farmhand:'fields', diner:'mainst', para:'school', elevator:'
 function eventPlace(ev){
   let pl = EVENT_PLACE[ev.title] || ['T','mainst'];
   const j = S.retired ? null : job();
+  if (pl === 'road') pl = ['R', roadTown()];
   if (pl === 'work') pl = !j ? ['T','mainst'] : j.city === 'waitsburg' ? ['T', WORK_SPOT[j.id]] : ['R', j.city];
   if (pl[1] === 'hwy' && !(j && j.city !== 'waitsburg')) pl = ['T','home'];   // the highway pin only shows for commuters
   return pl;
@@ -116,7 +134,9 @@ const EVENTS = [
   { ic:'⛷️', title:'Powder day at Bluewood', w:3, when:m => inM(m,0,1,2),
     text:'Fresh snow up above Dayton. The lifts open at nine.',
     choices:() => [
-      {label:`Hit the slopes (-${fmtc(75)})`, go:() => { if (chance(.1)) { adj({money:-cost(375), health:-6, happy:2}); return `Great runs until you twisted a knee. Urgent care cost ${fmtc(300)}.`; } adj({money:-cost(75), happy:7, health:2}); return 'Bluebird skies and fresh tracks.'; }},
+      {label:skiPass() ? 'Hit the slopes (season pass)' : `Hit the slopes (-${fmtc(75)})`, go:() => { const lift = skiPass() ? 0 : cost(75);
+        if (chance(.1)) { const care = medBill(300); adj({money:-(lift + care), health:-6, happy:2}); return `Great runs until you twisted a knee. Urgent care cost ${fmt(care)}.`; }
+        adj({money:-lift, happy:7, health:2}); return skiPass() ? 'Bluebird skies, fresh tracks, and your season pass paid for itself a little more.' : 'Bluebird skies and fresh tracks.'; }},
       {label:'Skip it', go:() => 'Maybe next storm.'}
     ]},
   { ic:'🧾', title:'Tax refund', yr:1, w:4, when:m => inM(m,2,3) && S.jobId,
@@ -171,7 +191,7 @@ const EVENTS = [
   { ic:'🩺', title:'Feeling run down', w:5, when:() => S.health < 40,
     text:'You\'ve been tired and achy for weeks.',
     choices:() => [
-      {label:`See a doctor (-${fmtc(350)})`, go:() => { const bad = S.health < 25; adj({money:-cost(350), health:12}); return bad ? 'The doctor sent you to a specialist in Walla Walla. Rest and a prescription helped a lot.' : 'Some rest and a prescription helped a lot.'; }},
+      {label:`See a doctor (-${fmt(medBill(350))})`, go:() => { const bad = S.health < 25; adj({money:-medBill(350), health:12}); return bad ? 'The doctor sent you to a specialist in Walla Walla. Rest and a prescription helped a lot.' : 'Some rest and a prescription helped a lot.'; }},
       {label:'Tough it out', go:() => { adj({health:-6}); return 'You kept going. Your body kept score.'; }}
     ]},
   { ic:'🦷', title:'Toothache', w:2, when:() => S.turn - (S.dentist ?? 0) > 52,
@@ -251,3 +271,408 @@ const EVENTS = [
       {label:'Stay in', go:() => 'You caught the score the next morning.'}
     ]}
 ];
+
+/* ============================================================
+   🛣️ ROAD AND 💼 WORK EVENTS (review doc 2026-11-18, sections B and C)
+   Road events come in weeks you commute 20+ miles each way or take a trip; work events need a job.
+   Every amount is in 2027 dollars and goes through cost(); labels show today's price.
+   ============================================================ */
+// small state these events keep (new lives get it in newGame, older saves in migrate)
+const EVENT_STATE = () => ({ roadTo:null, healthPlan:null, skiPass:null, snowChains:null, gasFriend:false, applyBoost:0, hireBy:-1,
+  tradeBy:-1, raiseBoost:0, promoBoost:0, promo:null });
+// the doc's job groups, mapped to every job in JOBS
+const JOB_GROUP = { farmhand:'field', cellar:'field', onion:'field', foodplant:'field', hanford:'field', lift:'field', airport:'field',
+  insure:'office', clerk:'office', loan:'office', labadmin:'office', prof:'office', scientist:'office',
+  cna:'care', rn:'care', imaging:'care', para:'care',
+  diner:'service', retail:'service', hardware:'service',
+  trucker:'trades', rail:'trades', mech:'trades', elevator:'trades', co:'trades' };
+const working = () => !!job() && !S.retired;
+const jobIn = (...groups) => working() && groups.includes(JOB_GROUP[S.jobId]);
+const longCommute = () => commuteOneWay() >= 20;
+const dayPay = () => working() ? payNow(job()) / WORKDAYS : 0;
+const weekPay = () => working() ? payNow(job()) * W : 0;
+const cr = v => Math.round(cost(v));
+const RAISE_CAP = 1.6;
+const bumpPay = f => { S.raise = Math.min(RAISE_CAP, S.raise * f); };
+// the town this week's drive goes to: a trip's town, else your commute, else Walla Walla
+function roadTown(){
+  if (S.roadTo && CITIES[S.roadTo] && S.roadTo !== 'waitsburg') return S.roadTo;
+  return longCommute() ? job().city : 'wallawalla';
+}
+const roadName = () => CITIES[roadTown()].name;
+// the ski season that starts each October (December to March count with the October before)
+const skiSeason = () => { const d = new Date(S.date); return d.getMonth() >= 9 ? d.getFullYear() : d.getFullYear() - 1; };
+const skiPass = () => S.skiPass === skiSeason();
+// J29: better coverage halves doctor and urgent-care bills from events until next January
+const planYear = () => new Date(S.date).getFullYear();
+const medBill = v => cost(v) * (S.healthPlan && S.healthPlan.k === 'better' && S.healthPlan.y === planYear() ? 0.5 : 1);
+// weeks of class progress from an event; graduates you if that finishes the program
+function classWeeks(n){
+  if (S.edu >= 3) return false;
+  S.studyProg += n;
+  if (S.studyProg >= STUDY_NEED[S.edu]) { S.studyProg = 0; S.edu++; log(`Graduated with a ${EDU[S.edu]}.`); adj({happy:8}); (S.newBadges = S.newBadges || []).push(`🎓 ${EDU[S.edu]}!`); }
+  return true;
+}
+const studying = () => S.focus === 'study' && S.edu < 3;
+// what event choices keep doing week to week (runs each week, before the event roll)
+function eventUpkeep(){
+  if (S.promo && (S.promo.job !== S.jobId || S.retired)) S.promo = null;
+  if (S.promo) adj({happy: -0.3 * S.promo.n * W});          // J2: a promotion adds job stress
+}
+
+const ROAD_EVENTS = [
+  { ic:'🦌', title:'Deer on Highway 12 at dusk', cat:'road', w:3, when:m => longCommute() && inM(m,9,10,11,0),
+    text:'Eyes in the headlights at the edge of the wheat.',
+    choices:() => [{label:'Brake hard', go:() => { if (chance(S.tires === S.car ? .05 : .15)) { adj({money:-cr(900), health:-1, happy:-1}); return `You clipped it. The repair ran ${fmtc(900)}.`; }
+      adj({happy:-1}); return `It bounded off into the dark. Your heart took a while to slow down${S.tires === S.car ? ' (good thing for those winter tires)' : ''}.`; }}]},
+  { ic:'🚜', title:'Stuck behind a wheat truck', cat:'road', w:3, when:m => inM(m,6,7),
+    text:'A loaded grain truck doing 35 on the two-lane, and a line of cars behind it.',
+    choices:() => [
+      {label:'Wait it out', go:() => { adj({happy:-1}); return 'You crawled along behind the wheat and got there late.'; }},
+      {label:'Pass on the straightaway', go:() => { if (chance(.05)) { adj({health:-2}); return 'An oncoming pickup came over the rise. Too close. Your hands shook for an hour.'; } adj({happy:1}); return 'Clean pass. The trucker waved.'; }}
+    ]},
+  { ic:'🌫️', title:'Fog in the Touchet Valley', cat:'road', w:2, when:m => inM(m,10,11,0),
+    text:'Thick valley fog. You can barely see the hood ornament.',
+    choices:() => [
+      {label:'Drive slow', go:() => { adj({happy:-1}); return 'Twenty-five miles an hour, the whole way.'; }},
+      {label:working() ? `Leave late and lose a few hours (-${fmt(dayPay() / 4)})` : 'Leave late, once it lifts', go:() => { const p = Math.round(dayPay() / 4); adj({money:-p}); return p ? `You waited for the fog to burn off and lost ${fmt(p)} of pay.` : 'You waited for the fog to burn off.'; }}
+    ]},
+  { ic:'🛞', title:'Flat tire on US-12', cat:'road', w:2,
+    text:() => `A loud thump on the way to ${roadName()}. The back tire is flat.`,
+    choices:() => [
+      {label:'Change it yourself', if:() => skillLv('mechanic') >= 1, go:() => { adj({health:-1}); practice('mechanic', 1); return 'Jack, lug wrench, spare. Twenty minutes on the shoulder.'; }},
+      {label:`Call a tow (-${fmtc(120)})`, go:() => { adj({money:-cr(120)}); return `The tow and a patch ran ${fmtc(120)}.`; }}
+    ]},
+  { ic:'🚓', title:'Speeding ticket', cat:'road', yr:1, w:2, when:() => longCommute(),
+    text:'Lights in the mirror. You were doing 72 in a 60.',
+    choices:() => [
+      {label:`Pay it (-${fmtc(160)})`, go:() => { adj({money:-cr(160), happy:-2}); return `Paid the ${fmtc(160)} ticket online. Ouch.`; }},
+      {label:`Traffic school (-${fmtc(60)}, an evening)`, go:() => { adj({money:-cr(60), happy:-1}); return 'An evening of videos, and the ticket stays off your record.'; }}
+    ]},
+  { ic:'🚧', title:'Road-construction detour', cat:'road', w:2, when:m => inM(m,5,6,7),
+    text:'Orange signs: the highway is down to gravel for a mile and traffic is detoured.',
+    choices:() => [{label:'Take the long way', go:() => { adj({money:-cr(15), happy:-1}); return `The detour cost about ${fmtc(15)} in gas and half an hour.`; }}]},
+  { ic:'🚙', title:'A stranded driver on the shoulder', cat:'road', w:2,
+    text:'A car with its hazards on and the hood up. Someone is waving.',
+    choices:() => [
+      {label:'Stop and help', go:() => { adj({community:2, happy:2}); if (chance(S.gasFriend ? .3 : .1)) { adj({community:2}); return 'It turned out to be someone from Waitsburg. The whole town will hear about it.'; } return 'A jump start and a thank-you. It felt good.'; }},
+      {label:'Drive on', go:() => 'Somebody else will stop.'}
+    ]},
+  { ic:'⏰', title:'Your carpool buddy is always late', cat:'road', yr:1, w:3, when:() => carpooling(),
+    text:'Third time this month you\'ve sat in their driveway for ten minutes.',
+    choices:() => [
+      {label:'Talk it out', go:() => { adj({community:1, happy:-1}); practice('people', 1); return 'An awkward talk, but they\'re on time now.'; }},
+      {label:'Leave the carpool', go:() => { S.carpool = false; return 'You drive yourself again. More gas, less waiting.'; }}
+    ]},
+  { ic:'🎧', title:'An audiobook habit on the commute', cat:'road', w:2, when:() => commuteOneWay() >= 40,
+    text:'An hour each way adds up. You could use it.',
+    choices:() => [
+      {label:studying() ? 'Learn something (a week of class work)' : 'Learn something', go:() => { if (studying()) { classWeeks(1); return 'You listened to your course lectures on the drive: a week ahead in class.'; } adj({happy:2}); return 'A history of the Oregon Trail, one commute at a time.'; }},
+      {label:'Music and coffee', go:() => { adj({happy:2}); return 'Windows down, radio up.'; }}
+    ]},
+  { ic:'🌪️', title:'Dust storm near the Tri-Cities', cat:'road', yr:1, w:2, when:m => inM(m,5,6,7),
+    text:'A brown wall of dust rolls across the highway.',
+    choices:() => [
+      {label:'Pull over and wait', go:() => { adj({happy:-1}); return 'You sat on the shoulder until you could see again.'; }},
+      {label:'Push through', go:() => { if (chance(.1)) { adj({money:-cr(600)}); return `You tapped a car you couldn't see. The fender cost ${fmtc(600)}.`; } return 'You made it through, gritting your teeth (and your teeth were gritty).'; }}
+    ]},
+  { ic:'🎈', title:'Hot-air balloon festival in Walla Walla', cat:'road', yr:1, w:3, when:m => inM(m,4),
+    text:'Dozens of balloons lift off at dawn over Walla Walla.',
+    choices:() => [
+      {label:'Watch the dawn launch', go:() => { adj({happy:4}); return 'Coffee in a field, and the sky full of color.'; }},
+      {label:`Balloon ride (-${fmtc(250)})`, go:() => { adj({money:-cr(250), happy:8}); return 'You floated over the wheat and the Blues. Unforgettable.'; }}
+    ]},
+  { ic:'🎓', title:'A free college lecture in Walla Walla', cat:'road', w:2, when:m => inM(m,0,1,2,3,4,8,9,10,11),
+    text:'A professor is giving a free public talk tonight.',
+    choices:() => [
+      {label:'Go', go:() => { adj({happy:2}); if (studying()) { classWeeks(1); return 'Fascinating, and it counted as a week of your class work.'; } return 'You learned something and stayed for the questions.'; }},
+      {label:'Skip', go:() => 'Maybe the next one.'}
+    ]},
+  { ic:'🏥', title:'A friend is in the hospital in Walla Walla', cat:'road', yr:1, w:2,
+    text:'An old friend had surgery and is stuck in a hospital bed.',
+    choices:() => { const g = Math.round(tripGas('wallawalla')); return [
+      {label:g ? `Visit (gas about ${fmt(g)})` : 'Visit after work', go:() => { adj({money:-g, community:2, happy:1}); return 'You brought magazines and bad jokes. They needed both.'; }},
+      {label:`Send flowers (-${fmtc(40)})`, go:() => { adj({money:-cr(40), community:1}); return 'The flowers made it. So did a text.'; }}
+    ]; }},
+  { ic:'🍷', title:'Wine release weekend in Walla Walla', cat:'road', w:2, when:m => inM(m,3,4,8,9,10) && age() >= 21,
+    text:'Release weekend: the tasting rooms are full and so is the road.',
+    choices:() => [
+      {label:`Stop at a tasting (-${fmtc(35)})`, go:() => { adj({money:-cr(35), happy:3}); return 'A new red, poured by the winemaker.'; }},
+      {label:'Sit in traffic', go:() => { adj({happy:-1}); return 'Limos and tour buses the whole way through town.'; }}
+    ]},
+  { ic:'🚆', title:'Train crossing in Pasco', cat:'road', w:3, when:() => roadTown() === 'pasco',
+    text:'The gates come down. A mile-long freight train is crawling through.',
+    choices:() => [
+      {label:'Wait', go:() => { if (chance(.05)) { adj({money:-cr(50), happy:-1}); return `It stopped on the crossing. You were late, and ${fmtc(50)} was docked.`; } adj({happy:-1}); return 'You counted 112 cars.'; }},
+      {label:`Take the long way (-${fmtc(8)})`, go:() => { adj({money:-cr(8)}); return `Around by the overpass: ${fmtc(8)} in gas.`; }}
+    ]},
+  { ic:'🛫', title:'Cheap flight deal out of Pasco', cat:'road', yr:1, w:2, when:() => S.money >= cost(1000),
+    text:'Fares out of the Tri-Cities airport just dropped for next weekend.',
+    choices:() => [
+      {label:`Weekend getaway (-${fmtc(350)})`, go:() => { adj({money:-cr(350), happy:6}); return 'Two days somewhere new. You came back rested.'; }},
+      {label:'Pass', go:() => 'You closed the tab.'}
+    ]},
+  { ic:'💃', title:'Spring festival in Pasco', cat:'road', yr:1, w:3, when:m => inM(m,4),
+    text:'Music, dancing and food stands fill downtown Pasco.',
+    choices:() => [
+      {label:`Food and music (-${fmtc(25)})`, go:() => { adj({money:-cr(25), happy:4, community:1}); return 'Tamales, a mariachi band and new friends.'; }},
+      {label:'Skip', go:() => 'You drove past the crowds.'}
+    ]},
+  { ic:'🚤', title:'Hydroplane races on the Columbia', cat:'road', yr:1, w:3, when:m => inM(m,6),
+    text:'Unlimited hydroplanes roar down the river. You can hear them for miles.',
+    choices:() => [
+      {label:`Go (-${fmtc(30)})`, go:() => { adj({money:-cr(30), happy:5}); return 'Rooster tails, sunburn and ringing ears.'; }},
+      {label:'Watch from the riverbank, free', go:() => { adj({happy:3}); return 'A blanket on the bank and a free show.'; }}
+    ]},
+  { ic:'🎆', title:'Fourth of July fireworks in Columbia Park', cat:'road', yr:1, w:3, when:m => inM(m,6),
+    text:'The Tri-Cities puts on the biggest fireworks show around.',
+    choices:() => { const g = Math.round(tripGas('kennewick')); return [
+      {label:g ? `Drive over (gas about ${fmt(g)})` : 'Stay after work for the show', go:() => { adj({money:-g, happy:3}); return 'Booms over the river. Worth the drive.'; }},
+      {label:'Stay in Waitsburg for the parade', go:() => { adj({happy:2}); return 'Small-town parade, sparklers on the porch.'; }}
+    ]; }},
+  { ic:'🛍️', title:'Clearance sale at the mall', cat:'road', yr:1, w:2, when:m => inM(m,0,7),
+    text:'Everything is 60% off at the Kennewick mall.',
+    choices:() => [
+      {label:`New work clothes (-${fmtc(120)})`, go:() => { adj({money:-cr(120), happy:2}); S.applyBoost = 0.05; return 'You look sharp. Your next job application gets a little boost.'; }},
+      {label:'Window shop', go:() => { adj({happy:1}); return 'You looked at everything and bought a pretzel.'; }}
+    ]},
+  { ic:'🚘', title:'A test drive at a dealership', cat:'road', yr:1, w:3, when:() => ['kennewick','pasco'].includes(roadTown()),
+    text:'A salesman waves you onto the lot. "Take her for a spin!"',
+    choices:() => [
+      {label:`Take it home (+${fmtc(500)} trade-in bonus this week)`, go:() => { S.tradeBy = S.turn; tab = 'life'; return `The dealer will add ${fmtc(500)} to your trade-in if you buy this week. Your vehicles are on the Life tab.`; }},
+      {label:'Just a test drive', go:() => { adj({happy:2}); return 'New-car smell, and no paperwork.'; }}
+    ]},
+  { ic:'🏃', title:'Riverfront 5K in Richland', cat:'road', yr:1, w:3, when:m => inM(m,3,8),
+    text:'A 5K along the Columbia this Saturday.',
+    choices:() => [
+      {label:`Run it (-${fmtc(25)})`, go:() => { adj({money:-cr(25), health:3, happy:2}); return 'You finished, and got a T-shirt to prove it.'; }},
+      {label:'Cheer from the side', go:() => { adj({happy:1}); return 'Cowbell duty.'; }}
+    ]},
+  { ic:'☢️', title:'Hanford history tour', cat:'road', yr:1, w:3, when:() => roadTown() === 'richland',
+    text:'A free public tour of the old reactor site.',
+    choices:() => [{label:'Take it, free', go:() => { adj({happy:2}); if (studying()) { classWeeks(1); return 'You took notes for class: a week of class work.'; } return 'History you can stand inside.'; }}]},
+  { ic:'🚗', title:'Classic car show in Dayton', cat:'road', yr:1, w:3, when:m => inM(m,5),
+    text:'Chrome and fins line Main Street in Dayton.',
+    choices:() => [
+      {label:'Show off the 1998 pickup', if:() => S.car === 'beater', go:() => { adj({happy:3}); if (chance(.2)) { adj({money:cr(50)}); return `It won "best beater" and ${fmtc(50)}!`; } return 'People loved the rust. Well, some did.'; }},
+      {label:'Browse', go:() => { adj({happy:2}); return 'You picked out the one you\'d buy if you won the lottery.'; }}
+    ]},
+  { ic:'🎿', title:'Bluewood season pass sale', cat:'road', yr:1, w:3, when:m => inM(m,9) && !skiPass(),
+    text:'Early-bird season passes for Bluewood are on sale.',
+    choices:() => [
+      {label:`Buy it (-${fmtc(300)})`, go:() => { adj({money:-cr(300)}); S.skiPass = skiSeason(); return 'Powder days at Bluewood are free for you this season.'; }},
+      {label:'Pass', go:() => 'You\'ll pay by the day.'}
+    ]},
+  { ic:'⛓️', title:'Chains required on the road to Bluewood', cat:'road', yr:1, w:3, when:m => inM(m,11,0,1) && roadTown() === 'dayton' && S.snowChains !== skiSeason(),
+    text:'Past Dayton, the sign says chains required.',
+    choices:() => [
+      {label:`Buy chains (-${fmtc(60)})`, go:() => { adj({money:-cr(60)}); S.snowChains = skiSeason(); return 'Chained up on the shoulder. Good for the rest of the season.'; }},
+      {label:'Turn back', go:() => { adj({happy:-2}); return 'You turned around and went home.'; }}
+    ]},
+  { ic:'⛽', title:'Wrong pump at the gas station', cat:'road', yr:1, w:0.4,
+    text:'You were half asleep and grabbed the diesel nozzle.',
+    choices:() => [{label:'Drain and refill', go:() => { adj({money:-cr(400), happy:-2}); return `A tow and a tank flush: ${fmtc(400)}.`; }}]},
+  { ic:'👛', title:'A lost wallet in a Walla Walla parking lot', cat:'road', yr:1, w:2,
+    text:'A wallet on the ground by your car. Cash and a driver\'s license inside.',
+    choices:() => [
+      {label:'Track down the owner', go:() => { adj({community:2, happy:3}); if (chance(.4)) { adj({money:cr(50)}); return `The owner insisted on a ${fmtc(50)} reward.`; } return 'A very grateful stranger.'; }},
+      {label:'Leave it at the store desk', go:() => { adj({happy:1}); return 'You did the right thing, quickly.'; }}
+    ]},
+  { ic:'🕳️', title:'Pothole season', cat:'road', yr:1, w:3, when:m => inM(m,2),
+    text:'Winter left the highway full of holes.',
+    choices:() => [{label:'Swerve and slow down', go:() => { if (S.car === 'sedan' && chance(.3)) { adj({money:-cr(150), happy:-1}); return `The sedan dropped into one. Alignment: ${fmtc(150)}.`; } adj({happy:-1}); return S.car === 'sedan' ? 'You dodged most of them.' : 'The pickup shrugged them off.'; }}]},
+  { ic:'☕', title:'A friendly regular at the gas station', cat:'road', once:1, w:2, when:() => longCommute(),
+    text:'The same old-timer is at the gas station every morning you fill up.',
+    choices:() => [{label:'Coffee and stories', go:() => { S.gasFriend = true; adj({happy:2, community:1}); return 'He knew your grandparents. Now the drive feels like home.'; }}]}
+];
+
+const WORK_EVENTS = [
+  { ic:'📝', title:'Your performance review', cat:'work', yr:1, w:3, when:() => working() && S.jobMonths >= 6,
+    text:() => `Review time at your ${job().title.toLowerCase()} job.`,
+    choices:() => [
+      {label:'Ask for a raise', go:() => { const p = .6 + skillLv('people') * .05 + (S.raiseBoost || 0); S.raiseBoost = 0;
+        if (chance(p)) { bumpPay(1.04); adj({happy:3}); return `A 4% raise! You now make ${wk(payNow(job()))}.`; } adj({happy:-3}); return '"Not this year." Ouch.'; }},
+      {label:'Keep your head down', go:() => 'A fine review, and no surprises.'}
+    ]},
+  { ic:'🪜', title:'A promotion offer', cat:'work', yr:1, w:2, when:() => working() && S.jobMonths >= 12 && S.raise < RAISE_CAP,
+    text:'Your boss wants you to take on a team. More pay, more headaches.',
+    choices:() => [
+      {label:`Take it (+${Math.round((0.12 + (S.promoBoost || 0)) * 100)}% pay, more stress)`, go:() => { bumpPay(1.12 + (S.promoBoost || 0)); S.promoBoost = 0;
+        S.promo = { job: S.jobId, n: Math.min(3, (S.promo && S.promo.job === S.jobId ? S.promo.n : 0) + 1) }; return `Promoted! You now make ${wk(payNow(job()))}, and the job is a little more stressful.`; }},
+      {label:'Turn it down', go:() => { adj({happy:1}); return 'You like your job the way it is.'; }}
+    ]},
+  { ic:'⏱️', title:'Mandatory overtime week', cat:'work', w:2, when:() => jobIn('field','service'),
+    text:'Everyone is on 60 hours this week. No exceptions, says the boss.',
+    choices:() => [
+      {label:`Work it (+${fmt(weekPay() * .3)})`, go:() => { const v = Math.round(weekPay() * .3); adj({money:v, health:-3, happy:-2}); return `A long week. ${fmt(v)} extra.`; }},
+      {label:'Refuse', go:() => { if (chance(.1)) { adj({happy:-1}); return 'You got a write-up for it.'; } return 'You said no. Nobody pushed it.'; }}
+    ]},
+  { ic:'😤', title:'A coworker conflict', cat:'work', w:2, when:() => working(),
+    text:'A coworker keeps taking credit for your work.',
+    choices:() => [
+      {label:'Talk it out', go:() => { const ok = chance(.7 + skillLv('people') * .15); practice('people', 1);
+        if (ok) { adj({community:1, happy:1}); return 'You cleared the air over coffee.'; } adj({happy:-2}); return 'It got heated. Things are tense now.'; }},
+      {label:'Go to the boss', go:() => { adj({happy:-1}); return 'The boss sorted it out. Your coworker isn\'t speaking to you.'; }}
+    ]},
+  { ic:'📚', title:'Free training course', cat:'work', once:1, w:2, when:() => working() && S.edu < 3,
+    text:'Work will pay for a training course that counts toward your next diploma.',
+    choices:() => [
+      {label:'Take it (4 weeks of class work)', go:() => { classWeeks(4); adj({happy:-1}); return 'Four weeks of evening classes, paid for. You\'re ahead in school.'; }},
+      {label:'Skip', go:() => 'You passed on it.'}
+    ]},
+  { ic:'🤕', title:'Hurt on the job', cat:'work', yr:1, w:2, when:() => jobIn('field','trades'),
+    text:'You wrenched your back lifting at work.',
+    choices:() => [
+      {label:`Light duty for 4 weeks (-${fmt(weekPay() * .8)})`, go:() => { const v = Math.round(weekPay() * .8); adj({money:-v}); return `Four weeks of light duty at 80% pay: ${fmt(v)} less.`; }},
+      {label:'Push through', go:() => { adj({health:-6}); return 'You kept working. Your back kept score.'; }},
+      {label:`See the doctor (-${fmt(medBill(120))})`, go:() => { adj({money:-Math.round(medBill(120)), health:-2}); return 'Stretches and rest. It\'s healing.'; }}
+    ]},
+  { ic:'🏆', title:'Employee of the month', cat:'work', yr:1, w:() => .6 + skillLv('people') * .4, when:() => working(),
+    text:'Your picture is going up on the wall.',
+    choices:() => [{label:'Accept the parking spot and gift card', go:() => { adj({money:cr(50), happy:4}); return `A reserved parking spot and a ${fmtc(50)} gift card.`; }}]},
+  { ic:'👔', title:'New manager', cat:'work', yr:1, w:2, when:() => working(),
+    text:'A new manager starts Monday. Everyone is nervous.',
+    choices:() => [
+      {label:`Bring donuts (-${fmtc(15)})`, go:() => { adj({money:-cr(15), happy:1, community:1}); return 'A good first impression, with sprinkles.'; }},
+      {label:'Keep your head down', go:() => { adj({happy:-3}); return 'A rough month while they figured everyone out.'; }}
+    ]},
+  { ic:'🎄', title:'Holiday party', cat:'work', yr:1, w:4, when:m => working() && inM(m,11),
+    text:'The work holiday party is Friday.',
+    choices:() => [
+      {label:'Go', go:() => { adj({happy:3, community:1}); return 'Ugly sweaters and a white-elephant gift.'; }},
+      {label:'Skip', go:() => { adj({happy:-1}); return 'You heard it was fun.'; }}
+    ]},
+  { ic:'🧑‍🏫', title:'Train the new hire', cat:'work', w:2, when:() => working() && S.jobMonths >= 6,
+    text:'The boss asks you to show the new hire the ropes.',
+    choices:() => [
+      {label:'Mentor them', go:() => { adj({happy:1}); practice('people', 2); return 'They\'re catching on fast, thanks to you.'; }},
+      {label:'Not my job', go:() => { adj({happy:-1}); return 'The new hire struggled. People noticed.'; }}
+    ]},
+  { ic:'😬', title:'A big mistake at work', cat:'work', w:.3, when:() => working(),
+    text:'You messed up an order, and it\'s going to cost the company.',
+    choices:() => [
+      {label:'Fix it after hours', go:() => { adj({health:-2}); return 'Two late nights, and nobody ever knew.'; }},
+      {label:'Own up to the boss', go:() => { adj({happy:-2}); S.raiseBoost = .1; return 'An uncomfortable talk, but the boss respects honesty. It will help at your next review.'; }}
+    ]},
+  { ic:'⚙️', title:'Equipment breaks down', cat:'work', w:2, when:() => jobIn('field','trades'),
+    text:'The main machine at work quits mid-shift.',
+    choices:() => [
+      {label:`Fix it yourself (+${fmtc(100)} bonus)`, if:() => skillLv('mechanic') >= 1, go:() => { adj({money:cr(100)}); practice('mechanic', 1); return `Back up in an hour. The boss handed you ${fmtc(100)}.`; }},
+      {label:`Call it in (-${fmt(dayPay() / 2)})`, go:() => { adj({money:-Math.round(dayPay() / 2), happy:-1}); return 'Half a day without pay while you waited for the repair crew.'; }}
+    ]},
+  { ic:'🤧', title:'Flu going around', cat:'work', yr:1, w:3, when:m => working() && inM(m,11,0,1),
+    text:'Half the crew is out sick, and you\'re starting to feel it.',
+    choices:() => [
+      {label:`Stay home unpaid (-${fmt(dayPay())})`, go:() => { adj({money:-Math.round(dayPay()), health:1}); return 'A day in bed with soup.'; }},
+      {label:'Work sick', go:() => { adj({health:-4}); if (chance(.3)) { adj({community:-1}); return 'You worked through it, and two coworkers caught it from you.'; } return 'You worked through it. Barely.'; }}
+    ]},
+  { ic:'💬', title:'A customer compliment', cat:'work', w:2, when:() => jobIn('service','care'),
+    text:'Someone asked for your manager, just to say how great you were.',
+    choices:() => [{label:'Enjoy it', go:() => { adj({happy:3}); return 'It made your whole week.'; }}]},
+  { ic:'😠', title:'A rude customer', cat:'work', w:2, when:() => jobIn('service'),
+    text:'A customer is yelling at you about something that isn\'t your fault.',
+    choices:() => [
+      {label:'Keep your cool', go:() => { adj({happy:-2}); practice('people', 1); return 'You smiled through it. You\'re getting good at this.'; }},
+      {label:'Snap back', go:() => { if (chance(.2)) { adj({happy:-3}); return 'It felt great until the write-up.'; } adj({happy:1}); return 'It felt great.'; }}
+    ]},
+  { ic:'🫙', title:'Workplace fundraiser', cat:'work', yr:1, w:2, when:() => working(),
+    text:'A coworker is raising money for a family in need.',
+    choices:() => [
+      {label:`Chip in (-${fmtc(25)})`, go:() => { adj({money:-cr(25), community:2}); return 'Every bit helps.'; }},
+      {label:'Skip', go:() => 'You passed the jar along.'}
+    ]},
+  { ic:'💵', title:'The boss offers a weekend gig', cat:'work', w:2, when:() => jobIn('field','trades'),
+    text:'The boss needs help with a side job this weekend. Cash.',
+    choices:() => [
+      {label:`Take it (+${fmtc(300)})`, go:() => { adj({money:cr(300), health:-2, happy:-1}); return `A long weekend, and ${fmtc(300)} cash.`; }},
+      {label:'Decline', go:() => 'You kept your weekend.'}
+    ]},
+  { ic:'🧳', title:'Conference trip', cat:'work', yr:1, w:2, when:() => jobIn('office','care'),
+    text:'Work will send you to a conference in Spokane, paid.',
+    choices:() => [
+      {label:'Go, paid', go:() => { const cls = classWeeks(2); adj({happy:S.partner ? 2 : 3}); return `Three days of talks and hotel breakfasts${cls ? ', and two weeks of class work' : ''}.${S.partner ? ' Your partner missed you.' : ''}`; }},
+      {label:'Skip', go:() => 'Someone else went.'}
+    ]},
+  { ic:'🎂', title:'A coworker retires', cat:'work', yr:1, w:2, when:() => working(),
+    text:'After 30 years, a coworker is retiring.',
+    choices:() => [
+      {label:`Chip in for the gift (-${fmtc(20)})`, go:() => { adj({money:-cr(20), community:2, happy:2}); return 'Cake in the break room and a few tears.'; }},
+      {label:'Sign the card', go:() => { adj({community:1}); return 'You wrote something nice.'; }}
+    ]},
+  { ic:'💻', title:'New software rollout', cat:'work', yr:1, w:2, when:() => jobIn('office'),
+    text:'A whole new system at work. Training is optional, for now.',
+    choices:() => [
+      {label:'Learn it early', go:() => { adj({happy:-2}); S.promoBoost = .05; return 'A frustrating week, but now you\'re the one people ask. Your next promotion will pay a bit more.'; }},
+      {label:'Grumble', go:() => { adj({happy:-1}); return 'You\'ll learn it when you have to.'; }}
+    ]},
+  { ic:'🧾', title:'Payroll error: a late paycheck', cat:'work', yr:1, w:.5, when:() => working(),
+    text:'Payroll messed up. Your check is a week late.',
+    choices:() => [{label:'Wait it out', go:() => { const short = Math.max(0, weekPay() - S.money), fee = Math.round(short * .015);
+      adj({money:-fee, happy:-2}); return fee ? `It came a week late, and the overdraft cost ${fmt(fee)} in interest.` : 'It came a week late. Annoying.'; }}]},
+  { ic:'🎁', title:'Year-end bonus', cat:'work', yr:1, w:4, when:m => jobIn('office','care') && inM(m,11),
+    text:'A good year. Bonus checks are out.',
+    choices:() => [
+      {label:`Bank it (+${fmt(weekPay() * 2)})`, go:() => { const v = Math.round(weekPay() * 2); adj({money:v}); return `${fmt(v)} into savings.`; }},
+      {label:`Treat yourself (+${fmt(weekPay())})`, go:() => { const v = Math.round(weekPay()); adj({money:v, happy:4}); return `${fmt(v)} saved and the rest spent on something nice.`; }}
+    ]},
+  { ic:'🥘', title:'Lunchroom potluck', cat:'work', w:2, when:() => working(),
+    text:'Potluck in the break room Friday.',
+    choices:() => [
+      {label:`Bring a dish (-${fmtc(10)})`, go:() => { const good = skillLv('cook') >= 2; adj({money:-cr(10), community:1, happy:good ? 3 : 2}); return good ? 'Your dish was gone in ten minutes. People asked for the recipe.' : 'Your dish was a hit.'; }},
+      {label:'Grab a plate', go:() => { adj({happy:1}); return 'Free lunch.'; }}
+    ]},
+  { ic:'🌙', title:'Cover a double shift', cat:'work', w:2, when:() => jobIn('service','care','field'),
+    text:'A coworker\'s kid is sick. Can you cover?',
+    choices:() => [
+      {label:`Do it (+${fmt(dayPay() * 1.5)})`, go:() => { const v = Math.round(dayPay() * 1.5); adj({money:v, health:-2, community:2}); return `Sixteen hours and ${fmt(v)}. They owe you one.`; }},
+      {label:'Say no', go:() => 'You need your sleep.'}
+    ]},
+  { ic:'🌾', title:'Harvest crunch', cat:'work', yr:1, w:4, when:m => working() && ['elevator','cellar','onion'].includes(S.jobId) && inM(m,6,7,8),
+    text:'It\'s crunch time: the boss wants 60-hour weeks for a month.',
+    choices:() => [
+      {label:`60-hour weeks for a month (+${fmtc(1200)})`, go:() => { adj({money:cr(1200), health:-4, happy:-2}); return `A brutal month and ${fmtc(1200)} in overtime.`; }},
+      {label:'Normal hours', go:() => { adj({happy:1}); return 'You kept your evenings.'; }}
+    ]},
+  { ic:'🦺', title:'Safety inspection', cat:'work', yr:1, w:2, when:() => jobIn('field','trades'),
+    text:'The state safety inspector is coming next week.',
+    choices:() => [
+      {label:'Prep the crew', go:() => { adj({happy:-1}); return 'A week of cleanup and paperwork. You passed easily.'; }},
+      {label:'Wing it', go:() => { if (chance(.2)) { const v = Math.round(weekPay()); adj({money:-v, happy:-1}); return `You failed. The site shut down for a week without pay (${fmt(v)}).`; } return 'You squeaked by.'; }}
+    ]},
+  { ic:'📞', title:'A recruiter calls', cat:'work', yr:1, w:2, when:() => working() && S.community >= 30,
+    text:'A recruiter heard good things about you.',
+    choices:() => [
+      {label:'Interview (your next application this month is a sure thing)', go:() => { S.hireBy = S.turn + 4; return 'They\'ll put you in for any job you apply to in the next 4 weeks.'; }},
+      {label:'Stay loyal (+2% pay)', go:() => { bumpPay(1.02); return `Your boss heard you turned them down and bumped your pay 2%.`; }}
+    ]},
+  { ic:'🏠', title:'A remote-day trial', cat:'work', yr:1, w:2, when:() => jobIn('office') && longCommute(),
+    text:'Your office is trying an extra work-from-home day for a month.',
+    choices:() => [
+      {label:'Try it', go:() => { const v = Math.round(commuteCost(commuteOneWay(), CARS[S.car], job()) * .4); adj({money:v, happy:2}); return `Pajama meetings, and ${fmt(v)} less gas this month.`; }},
+      {label:'Skip', go:() => 'You like the office.'}
+    ]},
+  { ic:'🩺', title:'Health plan choice', cat:'work', yr:1, w:4, when:m => working() && inM(m,0),
+    text:'Open enrollment: pick your health plan for the year.',
+    choices:() => [
+      {label:`Cheaper plan (+${fmtc(40)}/month)`, go:() => { S.healthPlan = { k:'cheap', y: planYear() }; const v = cr(40 * 12); adj({money:v}); return `You'll keep about ${fmtc(40)} a month: ${fmt(v)} back this year.`; }},
+      {label:'Better coverage (doctor bills half off)', go:() => { S.healthPlan = { k:'better', y: planYear() }; return 'Doctor and urgent-care bills are half off this year.'; }}
+    ]},
+  { ic:'💒', title:'A work friend\'s wedding', cat:'work', yr:1, w:2, when:() => working(),
+    text:'A work friend is getting married at a winery.',
+    choices:() => [
+      {label:`Go, with a gift (-${fmtc(100)})`, go:() => { adj({money:-cr(100), happy:4, community:2}); return 'You danced badly and loved it.'; }},
+      {label:`Send a gift (-${fmtc(60)})`, go:() => { adj({money:-cr(60), happy:1}); return 'They sent a lovely thank-you card.'; }}
+    ]}
+];
+EVENTS.push(...ROAD_EVENTS, ...WORK_EVENTS);
+// where road and work events happen: 'road' is the town you drive to that week, 'work' your workplace
+Object.assign(EVENT_PLACE, Object.fromEntries(WORK_EVENTS.map(e => [e.title, 'work'])), Object.fromEntries(ROAD_EVENTS.map(e => [e.title, 'road'])), {
+  'Hot-air balloon festival in Walla Walla':['R','wallawalla'], 'A free college lecture in Walla Walla':['R','wallawalla'],
+  'A friend is in the hospital in Walla Walla':['R','wallawalla'], 'Wine release weekend in Walla Walla':['R','wallawalla'],
+  'A lost wallet in a Walla Walla parking lot':['R','wallawalla'], 'Train crossing in Pasco':['R','pasco'],
+  'Cheap flight deal out of Pasco':['R','pasco'], 'Spring festival in Pasco':['R','pasco'], 'Hydroplane races on the Columbia':['R','kennewick'],
+  'Fourth of July fireworks in Columbia Park':['R','kennewick'], 'Clearance sale at the mall':['R','kennewick'],
+  'Riverfront 5K in Richland':['R','richland'], 'Hanford history tour':['R','richland'], 'Classic car show in Dayton':['R','dayton'],
+  'Bluewood season pass sale':['R','bluewood'], 'Chains required on the road to Bluewood':['R','dayton']
+});
+const tradeBonus = () => S.tradeBy === S.turn ? cr(500) : 0;   // R-21: a dealer's trade-in bonus, this week only

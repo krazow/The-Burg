@@ -261,6 +261,7 @@ function newGame(name, len, slot = 0, opts = {}){
     bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0,
     badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false,
     skills:{}, biz:null, weekly:null, rng:null, gen:1, goalAt:{} };
+  Object.assign(S, EVENT_STATE());                 // road and work events: health plan, ski pass, job-hunt help and more
   S.bg = BACKGROUNDS[opts.bg] ? opts.bg : 'fresh'; S.mode = MODES[opts.mode] ? opts.mode : 'normal';
   if (BACKGROUNDS[S.bg].set) BACKGROUNDS[S.bg].set(S);
   S.weekly = opts.weekly || null; S.rng = opts.weekly ? weekSeed(opts.weekly) : null; useDice();
@@ -471,7 +472,10 @@ function apply(id){
   S.applied = true;
   let p = 0.5 + S.community * 0.004 + (S.edu > x.edu ? 0.12 : 0) + (x.city === 'waitsburg' ? 0.1 : 0) + skillLv('people') * 0.04;
   if (!S.jobId) p += 0.08;
-  if (S.practice || chance(Math.min(0.92, p))) {
+  p += S.applyBoost || 0;                          // new work clothes from a clearance sale (event)
+  const sure = (S.hireBy ?? -1) >= S.turn;         // a recruiter set up the interview (event)
+  S.applyBoost = 0; S.hireBy = -1;                 // both count for the next application only
+  if (S.practice || sure || chance(Math.min(0.92, p))) {
     S.jobId = id; S.jobMonths = 0; S.raise = 1;
     log(`Hired as ${x.title} in ${CITIES[x.city].name}!`); adj({happy:5});
     sheet(`<div class="big">🎉</div><h2 style="text-align:center">You're hired!</h2>
@@ -510,7 +514,7 @@ function renderLife(){
       const btn = cur ? '<span class="tag cur">Yours</span>' : k==='beater' ? '' : `<button class="sm" data-car="${k}" ${S.loanLeft>0?'disabled':''}>${label}</button>`;
       return `<div class="kv job"><div><div class="t">${c.name}</div><div class="s">${c.mpg} mpg${c.pay?` · ${wk(cur && S.loanPay ? S.loanPay : cost(c.pay))} for 5 years`:''}</div></div>${btn}</div>`;
     }).join('')}
-    <p class="muted">Trade-in value of your ride: ${fmt(S.carValue)}${S.loanLeft>0?` · ${Math.ceil(S.loanLeft/W)} weekly payments left`:''}</p>
+    <p class="muted">Trade-in value of your ride: ${fmt(S.carValue)}${tradeBonus() ? ` (+${fmt(tradeBonus())} dealer bonus this week)` : ''}${S.loanLeft>0?` · ${Math.ceil(S.loanLeft/W)} weekly payments left`:''}</p>
     <p class="muted">🔧 ${S.turn - (S.svc ?? 0) <= 26 ? 'Oil changed recently: fewer breakdowns.' : S.turn - (S.svc ?? 0) <= 52 ? `Last oil change ${S.turn - (S.svc ?? 0)} weeks ago.` : 'Overdue for an oil change: breakdowns are more likely.'} ${S.tires === S.car ? '❄️ Winter tires on.' : ''} Get car care on a trip to Dayton, Walla Walla or the Tri-Cities.</p>
   </div>
   <div class="card"><h3>🏦 Retirement savings (401(k))</h3>
@@ -551,10 +555,10 @@ function moveHome(k){
   $('#n').onclick = closeSheet;
 }
 function buyCar(k){
-  const c = CARS[k], price = cost(k==='sedan' ? c.price : c.down) - Math.round(S.carValue);
+  const c = CARS[k], bonus = tradeBonus(), price = cost(k==='sedan' ? c.price : c.down) - Math.round(S.carValue) - bonus;
   if (S.money < price) return toast(`You need ${fmt(price)} after your trade-in.`);
   sheet(`<h2>Get the ${c.name.toLowerCase()}?</h2>
-    <p>Your ${CARS[S.car].name.toLowerCase()} trades in for ${fmt(S.carValue)}. You pay ${fmt(Math.max(0,price))} now${c.pay?`, then ${wk(cost(c.pay))} for 5 years`:''}.</p>
+    <p>Your ${CARS[S.car].name.toLowerCase()} trades in for ${fmt(S.carValue)}${bonus ? `, plus the dealer's ${fmt(bonus)} bonus this week` : ''}. You pay ${fmt(Math.max(0,price))} now${c.pay?`, then ${wk(cost(c.pay))} for 5 years`:''}.</p>
     <button class="btn primary" id="y">Buy it</button><button class="btn ghost" id="n">Cancel</button>`);
   $('#y').onclick = () => {
     S.money -= price; S.car = k; S.carValue = cost(c.value); S.loanLeft = c.months || 0; S.loanPay = c.pay ? cost(c.pay) : 0; S.svc = S.turn;

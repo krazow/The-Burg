@@ -163,8 +163,8 @@ await t.check('every event\'s every choice works and shows a result', async () =
   const titles = await page.evaluate(() => EVENTS.map(e => e.title));
   let tried = 0;
   for (const title of titles) {
-    // a life where every choice is open: a job, a partner, a kid of 18, money, standing
-    const base = { jobId: 'cellar', jobMonths: 24, partner: true, community: 75, money: 60000, ageMonths: 45 * 12, k401: 1000 };
+    // a life where every choice is open: a job, a partner, a kid of 18, money, standing, and the skills that open choices
+    const base = { jobId: 'cellar', jobMonths: 24, partner: true, community: 75, money: 60000, ageMonths: 45 * 12, k401: 1000, skills: { mechanic: 24, cook: 24 } };
     await life(base, 'home', 'life');
     await page.evaluate(() => { S.kids = [S.ageMonths - 18.2 * 12]; });
     const n = await page.evaluate(t => EVENTS.find(e => e.title === t).choices().filter(c => !c.if || c.if()).length, title);
@@ -182,6 +182,8 @@ await t.check('every event\'s every choice works and shows a result', async () =
     }
   }
   assert(tried >= titles.length, `only ${tried} choices across ${titles.length} events`);
+  const cats = await page.evaluate(() => ['road', 'work'].map(c => EVENTS.filter(e => e.cat === c).length));
+  assert(cats[0] === 30 && cats[1] === 30, `expected 30 road and 30 work events, got ${cats}`);
   console.log(`     (${tried} choices across ${titles.length} events)`);
 });
 
