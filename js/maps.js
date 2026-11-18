@@ -139,8 +139,9 @@ function townPlaces(){
     { k:'elevator', lb:'Elevator', ic:'🌾', x:120, y:212, name:'Grain elevator', desc:'Wheat from the hills comes through here at harvest.' },
     { k:'fields', lb:'Fields',   ic:'🚜', x:66,  y:280, name:'Wheat fields', desc:'Rolling wheat in every direction.' }
   ];
+  P.push(...outTownPins());                         // Preston Avenue businesses (js/outabout.js)
   // where you work in town (or the highway out of town) is the "work extra hours" spot
-  const at = { farmhand:'fields', diner:'mainst', para:'school', elevator:'elevator', insure:'mainst' };
+  const at = WORK_SPOT;
   if (j && j.city === 'waitsburg') P.find(p => p.k === at[j.id]).work = j.title;
   else if (j) P.push({ k:'hwy', lb:'To work', ic:'💼', x:372, y:38, name:`Highway 12 to ${CITIES[j.city].name}`, focus:'work', desc:`Your commute to work as ${j.title.toLowerCase()}, ${CITIES[j.city].miles} miles each way.` });
   P.forEach(p => { if (p.work) { p.focus = 'work'; p.desc = `You work here as ${p.work.toLowerCase()}. ` + p.desc; } });
@@ -176,6 +177,7 @@ function townSVG(){
 }
 function townDetail(k){
   const p = townPlaces().find(x => x.k === k); if (!p) return '';
+  if (p.biz) return outTownDetail(p);
   const f = p.focus && FOCUS[p.focus];
   let btn = '';
   if (f) {
@@ -184,7 +186,7 @@ function townDetail(k){
     btn = S.focus === p.focus ? `<span class="tag cur">This week's focus: ${f.name}</span>`
       : `<button class="sm" onclick="MAPFOCUS('${p.focus}')" ${dis?'disabled':''}>${f.ic} Spend this week here${extra}</button>`;
   }
-  return `<div class="card mapdet"><h3>${p.ic} ${esc(p.name)}</h3><p style="margin:0 0 8px;font-size:14px">${p.desc}</p>${btn}${recentList('T', k)}</div>`;
+  return `<div class="card mapdet"><h3>${p.ic} ${esc(p.name)}</h3><p style="margin:0 0 8px;font-size:14px">${p.desc}</p>${btn}${recentList('T', k)}${k === 'mainst' ? mainStreetBlock() : ''}</div>`;
 }
 
 /* ---- the map block, the toggle, and taps ---- */
