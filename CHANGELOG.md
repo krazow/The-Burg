@@ -36,7 +36,6 @@ entry for every release, and the GitHub release notes are taken from it.
   overtime or side hustles drags it down fast. About two years of nonstop overtime in a hard job lands you in the
   hospital, while a balanced life stays healthy.
 - Text contrast now meets WCAG AA everywhere: darker grey and green text, and the "Current" and "Home" tags.
-- Map pins are easier to tap: each has a larger invisible touch area (at least 24 × 24 px even on small phones).
 
 ### Changed
 - **Home puts the week first:** a compact focus grid sits right under the stats, the End Week button shows your
