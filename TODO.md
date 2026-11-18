@@ -1,6 +1,6 @@
 # The Burg: To-do
 
-_Last updated: November 18, 2026 (0.2.0-beta.4: Android app signed with The Burg's key)_
+_Last updated: November 18, 2026 (Out and about planned: 20 Waitsburg businesses)_
 
 This is the project's working to-do list: what's been done, what's next, and in what order. Every open item has a
 matching **GitHub issue** with a priority label (**P1 – now**, **P2 – soon**, **P3 – later**). The issues are the
@@ -28,9 +28,45 @@ added, finished or re-prioritized, both change in the same session.
 
 - [ ] **Manual play-test pass on real phones** (iPhone and Android install, offline, resume) — [#9](https://github.com/krazow/The-Burg/issues/9)
 
+## Feature: Out and about (Waitsburg's real businesses)
+
+Waitsburg's open businesses come into the game: pins on a Main Street close-up map, places to visit for a small cost
+and a small boost, real jobs, and events from their real rhythms (Ten Ton's every-other-week bluegrass jam, Grenache
+Fest at Atelier, winter breaks). Business list, how each one appears, decisions and risks:
+[docs/out-and-about.md](docs/out-and-about.md). Issues are in the
+[Out and about milestone](https://github.com/krazow/The-Burg/milestone/2). It also covers most of
+[#11](https://github.com/krazow/The-Burg/issues/11).
+
+**The 20 businesses:**
+- **Food and drink:** Bar Bacetto, Wolfling Coffee, Atelier Waitsburg, The Royal Block, Laht Neppur Brewing,
+  Whiskey Canyon Sports Bar & Grill, Mr. C's Smokin' Co., Ten Ton Coffee
+- **Shops:** Waitsburg Grocery, Simply Sawdust, Gaudy Gals on Main, Nancy's Dream Garden Center
+- **Services:** Blush Salon & Spa, Banner Bank, Waitsburg Clinic, The Times, Stone and Sky Yoga, Hubbard Law Office
+  and Karl Law Office
+- **Farm and trades:** McGregor Co., local trades (Affordable Concrete, Chisel Point Construction, Tim's Carpentry,
+  L-C Applicators)
+
+| # | Item | Size | Issue |
+|---|---|---|---|
+| 1 | **Decisions and business facts** (some your action): owner notes with an opt-out, check the city-list businesses, real days and seasons, `data/places.json` | S | [#48](https://github.com/krazow/The-Burg/issues/48) |
+| 2 | **Main Street close-up map** and business pins, business cards, Help guide section | L | [#49](https://github.com/krazow/The-Burg/issues/49) |
+| 3 | **Visiting businesses:** a quick Out and about action with capped effects, open days, winter breaks, 21+ rules | L | [#50](https://github.com/krazow/The-Burg/issues/50) |
+| 4 | **Business events:** bluegrass jam, Grenache Fest, music night, grill season, winter-break returns; doctor and inheritance at real places | M | [#51](https://github.com/krazow/The-Burg/issues/51) |
+| 5 | **Jobs at local businesses:** line cook, barista, grocery clerk, teller, medical assistant, reporter, ag tech, trades apprentice | M | [#52](https://github.com/krazow/The-Burg/issues/52) |
+| 6 | **Life systems at real places:** bank, clinic, grocery, local trades, home shopping | M | [#53](https://github.com/krazow/The-Burg/issues/53) |
+| 7 | **Out and about QA:** rules, flows, screens, simulation balance | M | [#54](https://github.com/krazow/The-Burg/issues/54) |
+
+- [ ] Decisions and business facts — [#48](https://github.com/krazow/The-Burg/issues/48)
+- [ ] Main Street close-up map — [#49](https://github.com/krazow/The-Burg/issues/49)
+- [ ] Visiting businesses — [#50](https://github.com/krazow/The-Burg/issues/50)
+- [ ] Business events — [#51](https://github.com/krazow/The-Burg/issues/51)
+- [ ] Jobs at local businesses — [#52](https://github.com/krazow/The-Burg/issues/52)
+- [ ] Life systems at real places — [#53](https://github.com/krazow/The-Burg/issues/53)
+- [ ] Out and about QA — [#54](https://github.com/krazow/The-Burg/issues/54)
+
 ## Later: P3
 
-- [ ] **More local content:** town-specific events, seasonal jobs — [#11](https://github.com/krazow/The-Burg/issues/11)
+- [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
 
 ## Version 2.0: Be in The Burg (player-submitted NPCs)
 
@@ -120,3 +156,4 @@ that careless play stays at or below 60 and good play at or above 70.
 | Nov 18, 2026 | Moved the NPC work (#39–#44) to **version 2.0**, with a [v2.0 milestone](https://github.com/krazow/The-Burg/milestone/1); removed the pronouns question from the form. | `TODO.md` |
 | Nov 18, 2026 | **0.2.0-beta.3** with the Help guide fix: all release checks passed, but the APK still used the throwaway key; the signing secrets weren't visible to the workflow (#37). | [pre-release](https://github.com/krazow/The-Burg/releases/tag/v0.2.0-beta.3) |
 | Nov 18, 2026 | **Android signing (#37):** made The Burg's own release key; secrets added. **0.2.0-beta.4** passed every check and its APK is signed with the new key (certificate confirmed in the downloaded APK). | [pre-release](https://github.com/krazow/The-Burg/releases/tag/v0.2.0-beta.4) |
+| Nov 18, 2026 | **Planned Out and about:** researched Waitsburg's open businesses; you picked 20 (plus Ten Ton Coffee as you described it). Plan, milestone and issues #48–#54. | [plan](docs/out-and-about.md) |
