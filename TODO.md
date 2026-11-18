@@ -1,6 +1,6 @@
 # The Burg: To-do
 
-_Last updated: November 18, 2026 (Around the region built)_
+_Last updated: November 18, 2026 (gameplay recommendations added)_
 
 This is the project's working to-do list: what's been done, what's next, and in what order. Every open item has a
 matching **GitHub issue** with a priority label (**P1 – now**, **P2 – soon**, **P3 – later**). The issues are the
@@ -244,6 +244,42 @@ about, and shares its visit system. Issues are in the
 - [x] Appointments in bigger towns — [#62](https://github.com/krazow/The-Burg/issues/62)
 - [x] Around the region QA — [#63](https://github.com/krazow/The-Burg/issues/63)
 
+## Soon: Gameplay recommendations
+
+From a gameplay analysis on November 18 (code review and 104 simulated games): there are no goals until the very
+end, long commutes and side hustles are traps, many weeks have no decisions, every life starts the same, school is
+the only way to grow, and there's one difficulty for everyone. Full analysis:
+[docs/gameplay-recommendations-2026-11-18.md](docs/gameplay-recommendations-2026-11-18.md). In the suggested
+order (small, high-impact ones first):
+
+| # | Item | Size | Issue |
+|---|---|---|---|
+| 1 | **Life Score so far on Home** | S | [#67](https://github.com/krazow/The-Burg/issues/67) |
+| 2 | **Fix long commutes and side hustles (they score 45 and 40 vs 80 for staying in town)** | S | [#70](https://github.com/krazow/The-Burg/issues/70) |
+| 3 | **Starting backgrounds (farm kid, grad coming home, Seattle transplant, young parent)** | S | [#69](https://github.com/krazow/The-Burg/issues/69) |
+| 4 | **Relaxed and Hard modes** | S | [#73](https://github.com/krazow/The-Burg/issues/73) |
+| 5 | **Season goals in town (Celebration Days, harvest, holiday food drive)** | S | [#77](https://github.com/krazow/The-Burg/issues/77) |
+| 6 | **Life goals and achievements** | M | [#66](https://github.com/krazow/The-Burg/issues/66) |
+| 7 | **Story chains: events that unfold over weeks** | M | [#68](https://github.com/krazow/The-Burg/issues/68) |
+| 8 | **Challenge scenarios (Debt-free in 2 years, Save the family farm, Single parent)** | M | [#74](https://github.com/krazow/The-Burg/issues/74) |
+| 9 | **Skills that grow with practice** | M | [#71](https://github.com/krazow/The-Burg/issues/71) |
+| 10 | **Weekly challenge and shareable score card** | M | [#75](https://github.com/krazow/The-Burg/issues/75) |
+| 11 | **Start your own business** | L | [#72](https://github.com/krazow/The-Burg/issues/72) |
+| 12 | **Legacy mode: play on as your kid** | L | [#76](https://github.com/krazow/The-Burg/issues/76) |
+
+- [ ] Life Score so far on Home — [#67](https://github.com/krazow/The-Burg/issues/67)
+- [ ] Fix long commutes and side hustles — [#70](https://github.com/krazow/The-Burg/issues/70)
+- [ ] Starting backgrounds — [#69](https://github.com/krazow/The-Burg/issues/69)
+- [ ] Relaxed and Hard modes — [#73](https://github.com/krazow/The-Burg/issues/73)
+- [ ] Season goals in town — [#77](https://github.com/krazow/The-Burg/issues/77)
+- [ ] Life goals and achievements — [#66](https://github.com/krazow/The-Burg/issues/66)
+- [ ] Story chains: events that unfold over weeks — [#68](https://github.com/krazow/The-Burg/issues/68)
+- [ ] Challenge scenarios — [#74](https://github.com/krazow/The-Burg/issues/74)
+- [ ] Skills that grow with practice — [#71](https://github.com/krazow/The-Burg/issues/71)
+- [ ] Weekly challenge and shareable score card — [#75](https://github.com/krazow/The-Burg/issues/75)
+- [ ] Start your own business — [#72](https://github.com/krazow/The-Burg/issues/72)
+- [ ] Legacy mode: play on as your kid — [#76](https://github.com/krazow/The-Burg/issues/76)
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
@@ -340,3 +376,4 @@ that careless play stays at or below 60 and good play at or above 70.
 | Nov 18, 2026 | **Out and about game names:** 5 playful stand-in names per business added for you to pick from, so real business names stay out of the game. | `TODO.md` |
 | Nov 18, 2026 | **Planned Around the region:** errands, car care, dining and outings in Dayton, Walla Walla and the Tri-Cities; milestone and issues #57–#63. | `TODO.md` |
 | Nov 18, 2026 | **Around the region built (#57–#63):** weekly trips to 5 towns with 23 stops (groceries, car care, eating out, outings, appointments), toothache event, vehicle tabs, Help section. New tests: 9 rules checks, 2 flows, a trip screen at 7 sizes, and a weekly-tripper bot in the simulation (careless 53, idle 49, good play 83). | [PR](https://github.com/krazow/The-Burg/pulls) |
+| Nov 18, 2026 | **Gameplay analysis:** 6 observations and 12 recommendations (features and styles of play), filed as #66–#77 under Soon. | [analysis](docs/gameplay-recommendations-2026-11-18.md) |
