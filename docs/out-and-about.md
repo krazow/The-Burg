@@ -11,7 +11,7 @@ Today the town map has one "Main Street" pin standing in for the whole downtown,
 - Some are places you can work.
 - Their real rhythms, like Ten Ton's bluegrass jam and Simply Sawdust's winter break, become events.
 
-The business list came from research on November 18, 2026: news from 2025–2026 plus the City of Waitsburg business
+The business list (real names, used here for planning only; the game uses stand-in names) came from research on November 18, 2026: news from 2025–2026 plus the City of Waitsburg business
 listing. Each business has a status:
 - **confirmed:** recent news shows it operating.
 - **city list:** on the City of Waitsburg's undated listing, so the facts need checking before building (#48).
@@ -87,11 +87,11 @@ Waitsburg), and jimgermanbar (Bar Bacetto now has 119 Main).
 
 ## Decisions and risks (#48)
 
-1. **Using real names.** Mentioning a real business is generally fine. Showing its name in a game, with prices,
-   events and jobs attached, is friendlier with the owner's OK. The recommended default is a short note to each owner
-   explaining the feature, with an easy opt-out, and only factual, warm descriptions. A business that says no gets a
-   made-up name instead. Ten Ton Coffee is private, so it's portrayed only the way you described it: open on event
-   days, and the bluegrass jam.
+1. **Names.** Real business names aren't used in the game. Each business gets a playful stand-in name that hides the
+   real one, but locals can still tell which place it is by its location (for example, the coffee shop at 206 Main).
+   You pick one name per business from five options each, listed under Out and about in TODO.md. Descriptions stay
+   factual and warm. Ten Ton Coffee is private, so it's portrayed only the way you described it: open on event days,
+   plus the bluegrass jam. A short heads-up to owners is still a nice touch, but optional.
 2. **Facts.** Hours, days and seasons in the game should match reality loosely (the right days and seasons) and
    never promise anything. A "Last checked" date in `data/places.json` helps.
 3. **Change.** Small-town businesses open and close. One data file keeps updates to a single edit, and a yearly
@@ -105,7 +105,7 @@ Waitsburg), and jimgermanbar (Bar Bacetto now has 119 Main).
 
 | Issue | Work | Size |
 |---|---|---|
-| #48 | **Decisions and business facts:** owner notes and opt-outs, check the city-list businesses, days and seasons, `data/places.json` with a last-checked date, Ten Ton described as you said. | S (some your action) |
+| #48 | **Decisions and business facts:** pick each business's game name (TODO.md), check the city-list businesses, days and seasons, `data/places.json` with a last-checked date, Ten Ton described as you said. | S (some your action) |
 | #49 | **Main Street close-up map and business pins:** downtown blocks, Preston Ave pins, business cards, 44 px targets, keyboard and screen reader, Help guide section. | L |
 | #50 | **Out and about visits:** quick action with per-business capped effects, open days, seasons and winter breaks, 21+ rules, limited visits a week, saved in slots. | L |
 | #51 | **Business events:** Ten Ton bluegrass jam and festival days, Grenache Fest, Royal Block music night, Laht Neppur grill season, winter-break returns, garden rush, cookout; move Feeling run down and the inheritance to the clinic and law offices. | M |
