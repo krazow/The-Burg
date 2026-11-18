@@ -1,6 +1,6 @@
 # The Burg: To-do
 
-_Last updated: November 17, 2026 (more test suites merged)_
+_Last updated: November 17, 2026 (landscape, accessibility and hospital fixes merged)_
 
 This is the project's working to-do list: what's been done, what's next, and in what order. Every open item has a
 matching **GitHub issue** with a priority label (**P1 – now**, **P2 – soon**, **P3 – later**). The issues are the
@@ -20,9 +20,9 @@ added, finished or re-prioritized, both change in the same session.
 
 | # | Item | Why it's next | Issue |
 |---|---|---|---|
-| 1 | **Beta 4** with the playtest fixes, help, tutorial and accessibility fixes | All merged to `main` and passing 7 test suites. `/release now` makes 0.1.0-beta.4. | [#5](https://github.com/krazow/The-Burg/issues/5) |
+| 1 | **Beta 4** with the playtest fixes, help, tutorial, accessibility and landscape fixes | All merged to `main` and passing 7 test suites. `/release now` makes 0.1.0-beta.4. | [#5](https://github.com/krazow/The-Burg/issues/5) |
 | 2 | **Try it, invite testers, then promote** (your action, then `/release promote`) | Puts 0.1.0 live at https://krazow.github.io/The-Burg/. | [#5](https://github.com/krazow/The-Burg/issues/5) |
-| 3 | **Delete the merged branches** (your action, optional) | `map-navigation`, `release-kit`, `balance`, `save-slots`, `menu-save-load`, `playtest-fixes`, `help-tutorial` and `more-tests` are merged. | — |
+| 3 | **Delete the merged branches** (your action, optional) | `map-navigation`, `release-kit`, `balance`, `save-slots`, `menu-save-load`, `playtest-fixes`, `help-tutorial`, `more-tests` and `found-issues` are merged. | — |
 
 - [ ] Beta 4 (`/release now`) — [#5](https://github.com/krazow/The-Burg/issues/5)
 - [ ] Try it, invite testers, then `/release promote` — [#5](https://github.com/krazow/The-Burg/issues/5)
@@ -32,8 +32,6 @@ added, finished or re-prioritized, both change in the same session.
 
 - [ ] **Events happen at places on the map** — [#8](https://github.com/krazow/The-Burg/issues/8)
 - [ ] **Manual play-test pass on real phones** (iPhone and Android install, offline, resume) — [#9](https://github.com/krazow/The-Burg/issues/9)
-- [ ] **Accessibility pass:** contrast is done; next are 44 px tap targets, keyboard and screen readers on the maps — [#10](https://github.com/krazow/The-Burg/issues/10)
-- [ ] **Landscape phones:** too little room for content — [#31](https://github.com/krazow/The-Burg/issues/31)
 
 ## Later: P3
 
@@ -46,7 +44,7 @@ added, finished or re-prioritized, both change in the same session.
 
 ## QA plan
 
-`npm test` runs seven suites (about 2 minutes); CI runs them on every pull request and release: smoke (5), game rules (24), gameplay (30), flows (18, including every event choice), screens and accessibility (6 rules over 7 sizes × 10 screens), offline and updates (6), and the bot simulation. See the README's Testing section.
+`npm test` runs seven suites (about 2 minutes); CI runs them on every pull request and release: smoke (5), game rules (26), gameplay (30), flows (18, including every event choice), screens and accessibility (14: 7 rules over 7 sizes × 10 screens plus 7 keyboard and screen-reader checks), offline and updates (6), and the bot simulation. See the README's Testing section.
 
 Three layers, from cheapest to most human:
 
@@ -91,3 +89,4 @@ that careless play stays at or below 60 and good play at or above 70.
 | Nov 17, 2026 | **Playtest fixes (#20–#27):** week results strip, focus-first Home, End Week shows the focus, ⏭ Auto and 13-week skips for 2-year games, one-tap events, tips, locked-job help, stat help and low-stat banners, score breakdown, take-home job list with a Can apply filter, year in review, and focus streaks/ruts so doing nothing scores 48. Gameplay tests: 27 checks. | [PR #28](https://github.com/krazow/The-Burg/pull/28) |
 | Nov 17, 2026 | **Help center:** ❓ Help & tutorial on the start page, a **?** in the game header and in the Menu; a 15-section game guide built from the game's data; a 26-step guided practice tutorial with touch highlights that never touches saves. Gameplay tests: 30 checks. | [PR #29](https://github.com/krazow/The-Burg/pull/29) |
 | Nov 17, 2026 | **More test suites:** game rules (24), flows (18, all 56 event choices), screens and accessibility (7 sizes × 10 screens), offline and updates (6). Fixed WCAG AA contrast and small map-pin targets; filed #31 (landscape). | [PR #30](https://github.com/krazow/The-Burg/pull/30) |
+| Nov 17, 2026 | **Found issues fixed:** landscape layout (#31), every target 44 × 44 px and keyboard/screen-reader support (#10), and hospital tuning (overwork is now dangerous). Tests: rules 26, screens 14. | [PR #32](https://github.com/krazow/The-Burg/pull/32) |
