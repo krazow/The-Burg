@@ -201,6 +201,30 @@ await t.check('a Lifetime game plays to the end with ⏭ Auto, and its slot is f
   assert(!(await page.evaluate(() => slots()[0])), 'slot not freed');
 });
 
+await t.check('an event says where it happens, and the map marks the spot with what happened', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => { const e = EVENTS.find(x => x.title === 'The Touchet is running high'); S.evPins = [{ t: e.title, ic: e.ic, m: 'T', k: 'river', turn: S.turn, r: '' }]; showEvent(e); });
+  assert((await page.textContent('#sheet .evplace')).includes('Touchet River'), 'event sheet does not say where');
+  await page.click(`${open} [data-i="0"]`); await clearSheets();
+  await page.click('#main .maptog button:nth-child(2)');
+  await page.waitForSelector('.evbadge');
+  await page.click('.mpin[aria-label="Touchet River"]');
+  const txt = await page.textContent('.mapdet');
+  assert(txt.includes('Recently here') && txt.includes('Touchet is running high') && txt.includes('this week'), txt.slice(0, 200));
+  await page.click('#main .maptog button:nth-child(1)');
+});
+
+await t.check('region events (Bluewood, Walla Walla) are marked on the region map', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => { S.evPins = [{ t: 'Powder day at Bluewood', ic: '⛷️', m: 'R', k: 'bluewood', turn: S.turn, r: 'Bluebird skies and fresh tracks.' }]; render(); });
+  await page.click('[data-tab=jobs]');
+  await page.click('#main .maptog button:nth-child(2)');
+  await page.waitForSelector('.evbadge');
+  await page.click('.mpin[aria-label="Bluewood ski area"]');
+  assert((await page.textContent('.mapdet')).includes('Bluebird skies'), 'Bluewood detail missing the event');
+  await page.click('#main .maptog button:nth-child(1)');
+});
+
 await t.check('the Journal lists what happened, newest first', async () => {
   await life({ jobId: 'farmhand' });
   await page.evaluate(() => { log('First thing'); log('Second thing'); render(); });

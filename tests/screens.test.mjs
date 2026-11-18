@@ -22,7 +22,8 @@ const audit = () => {
     return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth; };
   const covered = el => { const r = el.getBoundingClientRect(); const x = Math.min(innerWidth - 1, Math.max(0, r.left + r.width / 2)), y = Math.min(innerHeight - 1, Math.max(0, r.top + r.height / 2));
     const top = document.elementFromPoint(x, y); return top && !el.contains(top) && !top.contains(el); };
-  const out = { overflow: document.documentElement.scrollWidth - innerWidth, unnamed: [], tiny: [], smallText: [], contrast: [], bars: [], room: 1 };
+  const out = { overflow: document.documentElement.scrollWidth - innerWidth, unnamed: [], tiny: [], smallText: [], contrast: [], bars: [], room: 1, leftover: [] };
+  for (const m of document.body.innerText.matchAll(/.{0,30}(\$\{|[\w.!?)]\}|undefined|NaN|\[object).{0,10}/g)) out.leftover.push(m[0].replace(/\s+/g, ' '));
   const name = el => (el.getAttribute('aria-label') || el.textContent || '').trim();
   for (const el of document.querySelectorAll('button, [role=button], a[href], input')) {
     if (!vis(el) || covered(el)) continue;
@@ -66,7 +67,7 @@ const audit = () => {
   return out;
 };
 
-const problems = { overflow: [], unnamed: [], tiny: [], smallText: [], contrast: [], bars: [], room: [] };
+const problems = { overflow: [], unnamed: [], tiny: [], smallText: [], contrast: [], bars: [], room: [], leftover: [] };
 for (const [label, w, h] of SIZES) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, serviceWorkers: 'block', hasTouch: w < 900, isMobile: w < 900 });
   await ctx.addInitScript(seedScript(77));
@@ -82,7 +83,7 @@ for (const [label, w, h] of SIZES) {
     ['life', async () => { await page.click('[data-tab=life]'); }],
     ['journal', async () => { await page.click('[data-tab=log]'); }],
     ['home-map', async () => { await page.click('[data-tab=home]'); await page.click('#main .maptog button:nth-child(2)'); }],
-    ['region-map', async () => { await page.click('.maptabs button:nth-child(2)'); }],
+    ['region-map', async () => { await page.evaluate(() => { S.evPins = [{ t: 'Wine country weekend', ic: '🍷', m: 'R', k: 'wallawalla', turn: S.turn, r: 'A sunny afternoon.' }]; }); await page.click('.maptabs button:nth-child(2)'); await page.click('.mpin[aria-label="Walla Walla"]'); }],
     ['menu', async () => { await page.click('#main .maptog button:nth-child(1)'); await page.click('[data-tab=menu]'); await page.waitForTimeout(300); }],
     ['tutorial', async () => { await page.evaluate(() => { closeSheet(); startTutorial(); }); await page.waitForTimeout(500); await page.click('#cnext'); await page.waitForTimeout(600); }]
   ];
@@ -93,7 +94,7 @@ for (const [label, w, h] of SIZES) {
     const a = await page.evaluate(audit);
     const where = `${label} ${w}×${h} / ${screen}`;
     if (a.overflow > 1) problems.overflow.push(`${where}: ${a.overflow}px too wide`);
-    for (const k of ['unnamed', 'tiny', 'smallText', 'contrast', 'bars']) for (const x of a[k]) problems[k].push(`${where}: ${x}`);
+    for (const k of ['unnamed', 'tiny', 'smallText', 'contrast', 'bars', 'leftover']) for (const x of a[k]) problems[k].push(`${where}: ${x}`);
     if (['home', 'jobs', 'life'].includes(screen) && a.room < 0.45) problems.room.push(`${where}: ${Math.round(a.room * 100)}% of the screen`);
   }
   if (errors.length) problems.unnamed.push(`${label}: page error ${errors[0]}`);
@@ -104,6 +105,7 @@ const uniq = a => [...new Set(a.map(x => x.replace(/^[^/]+\/ /, '')))];
 
 await t.check('nothing is wider than the screen at any size', async () => { assert(!problems.overflow.length, problems.overflow.slice(0, 5).join('; ')); });
 await t.check('End Week, the week strip and the tab bar stay on-screen and never overlap', async () => { assert(!problems.bars.length, problems.bars.slice(0, 5).join('; ')); });
+await t.check('no code leftovers on screen ("${", stray "}", undefined, NaN)', async () => { assert(!problems.leftover.length, uniq(problems.leftover).slice(0, 5).join('; ')); });
 await t.check('every button has a name a screen reader can say', async () => { assert(!problems.unnamed.length, problems.unnamed.slice(0, 5).join('; ')); });
 await t.check('content gets at least 45% of the screen between the header and the bottom bars (portrait and landscape)', async () => { assert(!problems.room.length, problems.room.slice(0, 5).join('; ')); });
 await t.check('every tap target is at least 44 × 44 px (WCAG 2.5.5)', async () => { assert(!problems.tiny.length, uniq(problems.tiny).slice(0, 8).join('; ')); });

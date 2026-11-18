@@ -205,6 +205,35 @@ await t.check('the year in review comes once each New Year, with the year\'s mil
   assert(r[0].m.some(x => x.includes('Hired as a test')), 'milestone missing');
 });
 
+await t.check('every event happens at a real place on one of the maps, for commuters and Waitsburg workers alike', async () => {
+  const bad = await ev(() => {
+    const out = [];
+    for (const setup of [{ jobId: 'farmhand' }, { jobId: 'scientist' }, { jobId: null }, { jobId: 'diner' }]) {
+      fresh('life', setup);
+      const town = townPlaces().map(p => p.k), region = Object.keys(TOWNLL).concat(LANDMARKS.map(l => l.k));
+      for (const e of EVENTS) { const [m, k] = eventPlace(e); if (!(m === 'T' ? town : region).includes(k)) out.push(`${e.title} → ${m}:${k} (${setup.jobId})`); }
+    }
+    return out;
+  });
+  assert(!bad.length, bad.slice(0, 5).join('; '));
+});
+
+await t.check('an event is pinned where it happened, with its result, for 4 weeks', async () => {
+  const r = await ev(() => {
+    fresh('two', { jobId: 'farmhand' }); S.noEvents = false;
+    const e = EVENTS.find(x => x.title === 'Celebration Days');
+    const realPick = pickEvent, old = Math.random;
+    pickEvent = () => e; Math.random = () => 0.01;        // force this week's event
+    let res; try { res = weekTick(true); } finally { pickEvent = realPick; Math.random = old; }
+    const pin = S.evPins[0];
+    const now = recentAt('T', 'fair').length;
+    weeks(5);
+    return { pin, now, later: recentAt('T', 'fair').length, ev: !!res.ev };
+  });
+  assert(r.pin && r.pin.t === 'Celebration Days' && r.pin.m === 'T' && r.pin.k === 'fair', JSON.stringify(r.pin));
+  assert(r.now === 1 && r.later === 0, `recent at the fairgrounds: ${r.now} then ${r.later}`);
+});
+
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });
 
 await browser.close();
