@@ -3,13 +3,7 @@
 Release notes for The Burg. `/release now` turns the Unreleased section into a dated `## X.Y.Z (YYYY-MM-DD)`
 entry for every release, and the GitHub release notes are taken from it.
 
-## Unreleased
-
-### Fixed
-- **Help guide:** the contents list was stuck to the bottom of the screen, covering the guide's text. It now scrolls
-  with the page like everything else.
-
-## 0.2.0 (2026-11-17)
+## 0.2.0 (2026-11-18)
 
 ### Added
 - **Events happen at places.** Every event says where it takes place (the fairgrounds, the Touchet, Bluewood, Walla
@@ -20,7 +14,13 @@ entry for every release, and the GitHub release notes are taken from it.
 - **Back up and restore your lives.** Menu → 📤 Back up or restore downloads a backup file or copies a short backup
   code. On another device, 📥 Restore from a backup (title screen or Menu) adds those lives to your empty slots or
   replaces all of them, and keeps your best scores.
-- **Android app and Windows installer** on each release, alongside the web app.
+- **Android app and Windows installer** on each release, alongside the web app. The Android app is signed with
+  The Burg's own release key, so future updates install over it. (If you installed an earlier test APK, uninstall it
+  once first.)
+
+### Fixed
+- **Help guide:** the contents list was stuck to the bottom of the screen, covering the guide's text. It now scrolls
+  with the page like everything else.
 
 ## 0.1.0 (2026-11-17)
 
