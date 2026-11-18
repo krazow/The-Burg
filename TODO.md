@@ -1,6 +1,6 @@
 # The Burg: To-do
 
-_Last updated: November 17, 2026 (0.1.0-beta.3 released)_
+_Last updated: November 17, 2026 (playtest of 0.1.0-beta.3)_
 
 This is the project's working to-do list: what's been done, what's next, and in what order. Every open item has a
 matching **GitHub issue** with a priority label (**P1 – now**, **P2 – soon**, **P3 – later**). The issues are the
@@ -18,18 +18,30 @@ added, finished or re-prioritized, both change in the same session.
 
 ## Next up: P1, in order
 
+The [playtest of beta 3](docs/playtest-2026-11-17.md) found four problems worth fixing before 0.1.0 goes to production.
+
 | # | Item | Why it's next | Issue |
 |---|---|---|---|
-| 1 | **Try the beta and invite testers** (your action) | 0.1.0-beta.3 (save slots + Menu Save/Load) is live at https://krazow.github.io/The-Burg/beta/. Play it on your phone, share the link, and collect feedback. | [#5](https://github.com/krazow/The-Burg/issues/5) |
-| 2 | **Promote to production** (`/release promote`) | When the beta looks good, type `/release promote` to put 0.1.0 live at https://krazow.github.io/The-Burg/. | [#5](https://github.com/krazow/The-Burg/issues/5) |
-| 3 | **Delete the merged branches** (your action, optional) | `map-navigation`, `release-kit`, `balance`, `save-slots` and `menu-save-load` are merged. Delete them on GitHub's Branches page. | — |
+| 1 | **Doing nothing scores too well** | Only tapping End Week (Rest) scores 64–76, beating random play. Add diminishing returns, a lower Rest cap and an idle bot. | [#20](https://github.com/krazow/The-Burg/issues/20) |
+| 2 | **Show what each week did** | The toast covers the header, stat changes aren't shown, and event costs aren't in the weekly total. | [#21](https://github.com/krazow/The-Burg/issues/21) |
+| 3 | **Weekly focus first on Home** | The focus picker is below the fold and half-hidden by End Week. Show the focus on the End Week button. | [#22](https://github.com/krazow/The-Burg/issues/22) |
+| 4 | **Fewer taps in longer games** | A 2-year game is about 180 taps. Add ⏩ 13 weeks for 2-year games, auto-play, and one-tap results for single-choice events. | [#23](https://github.com/krazow/The-Burg/issues/23) |
+| 5 | **Beta 4, then promote** | `/release now` with the fixes, try it, then `/release promote` to put 0.1.0 live. | [#5](https://github.com/krazow/The-Burg/issues/5) |
+| 6 | **Delete the merged branches** (your action, optional) | `map-navigation`, `release-kit`, `balance`, `save-slots` and `menu-save-load` are merged. | — |
 
-- [ ] Try the beta and invite testers — [#5](https://github.com/krazow/The-Burg/issues/5)
-- [ ] `/release promote` 0.1.0 — [#5](https://github.com/krazow/The-Burg/issues/5)
+- [ ] Doing nothing scores too well — [#20](https://github.com/krazow/The-Burg/issues/20)
+- [ ] Show what each week did — [#21](https://github.com/krazow/The-Burg/issues/21)
+- [ ] Weekly focus first on Home — [#22](https://github.com/krazow/The-Burg/issues/22)
+- [ ] Fewer taps in longer games — [#23](https://github.com/krazow/The-Burg/issues/23)
+- [ ] Beta 4, try it, then promote 0.1.0 — [#5](https://github.com/krazow/The-Burg/issues/5)
 - [ ] Delete merged branches
 
 ## Soon: P2
 
+- [ ] **First-time tips, and say how to unlock locked jobs** — [#24](https://github.com/krazow/The-Burg/issues/24)
+- [ ] **Explain stats and the Life Score; warn when a stat gets low** — [#25](https://github.com/krazow/The-Burg/issues/25)
+- [ ] **Job list: apply-able first, take-home after gas** — [#26](https://github.com/krazow/The-Burg/issues/26)
+- [ ] **Year in review each New Year** — [#27](https://github.com/krazow/The-Burg/issues/27)
 - [ ] **Events happen at places on the map** — [#8](https://github.com/krazow/The-Burg/issues/8)
 - [ ] **Manual play-test pass on real phones** (iPhone and Android install, offline, resume) — [#9](https://github.com/krazow/The-Burg/issues/9)
 - [ ] **Accessibility pass** (contrast, keyboard and screen readers on the maps, reduced motion) — [#10](https://github.com/krazow/The-Burg/issues/10)
@@ -84,3 +96,4 @@ that careless play stays at or below 60 and good play at or above 70.
 | Nov 17, 2026 | **Second beta: 0.1.0-beta.2** with 5 save slots. QA, build, deploy and live smoke test passed. | [pre-release](https://github.com/krazow/The-Burg/releases/tag/v0.1.0-beta.2) |
 | Nov 17, 2026 | **Menu Save game / Load game** at the top of the in-game Menu: save to this life's slot or a copy to another; load any saved life. QA passed. | [PR #19](https://github.com/krazow/The-Burg/pull/19) |
 | Nov 17, 2026 | **Third beta: 0.1.0-beta.3** with the clearer Menu Save game / Load game. All release checks passed. | [pre-release](https://github.com/krazow/The-Burg/releases/tag/v0.1.0-beta.3) |
+| Nov 17, 2026 | **Playtest of beta 3** on a phone-sized screen: walkthrough with screenshots, tap counts and an idle-player check. Filed #20–#27; added notes to #10 and #11. | [report](docs/playtest-2026-11-17.md) |
