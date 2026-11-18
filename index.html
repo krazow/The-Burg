@@ -13,8 +13,8 @@
 <style>
 :root{
   --barn:#9b2f1f; --barn-d:#6f1f14; --wheat:#e9c46a; --wheat-d:#c99a3b;
-  --cream:#fbf6ea; --paper:#fffdf7; --soil:#3d2b1f; --muted:#7a6a5c;
-  --sage:#5f8a55; --sky:#7fb3d5; --line:#e7dcc4;
+  --cream:#fbf6ea; --paper:#fffdf7; --soil:#3d2b1f; --muted:#6b5b4e;
+  --sage:#4a7340; --sky:#7fb3d5; --line:#e7dcc4;
   --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -77,7 +77,7 @@ main{flex:1;padding:14px 14px calc(var(--safe-b) + 200px)}
 .fgrid .fbtn{min-height:64px;text-align:center;padding:8px 4px}.fgrid .fbtn b{font-size:13.5px}
 .fdesc{font-size:14px;margin-top:10px;line-height:1.35}.fdesc .s{font-size:13px;color:var(--barn-d);margin-top:4px}
 .statbtn{text-align:left;padding:4px 2px;border-radius:10px;width:100%}.statbtn:active{background:#f3ead6}.statbtn label{cursor:pointer}
-.info{font-size:11px;opacity:.6}
+.info{font-size:11px;color:var(--muted)}
 .sumrow{display:flex;flex-wrap:wrap;gap:6px;padding:10px}.sumchip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:8px 12px;font-size:13.5px;min-height:40px}
 .tip{display:flex;gap:10px;align-items:center;background:#eef5e9;border-color:#cfe2c3;font-size:14px}
 .warn .sm{margin-left:6px;margin-top:6px}
@@ -1285,7 +1285,7 @@ function regionSVG(){
   for (const k of Object.keys(TOWNLL)) {
     const [x,y] = pins[k], sel = MAPSEL === k, isWork = k === work, c = CITIES[k];
     s += `<g class="mpin" tabindex="0" role="button" aria-label="${c.name}" onclick="MAPTAP('${k}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();MAPTAP('${k}')}">
-      <circle cx="${x}" cy="${y}" r="${sel?16:14}" fill="#fff" stroke="${sel?'#9b2f1f':isWork?'#5f8a55':'#3d2b1f'}" stroke-width="${sel||isWork?3:1.6}"/>
+      <circle cx="${x}" cy="${y}" r="24" fill="transparent"/><circle cx="${x}" cy="${y}" r="${sel?16:14}" fill="#fff" stroke="${sel?'#9b2f1f':isWork?'#5f8a55':'#3d2b1f'}" stroke-width="${sel||isWork?3:1.6}"/>
       <text x="${x}" y="${y+5}" font-size="14" text-anchor="middle">${TOWNIC[k]}</text>
       <text x="${x}" y="${y+28}" class="mtown" text-anchor="middle">${c.name}</text></g>`;
     if (k === 'waitsburg') s += `<text x="${x-17}" y="${y-11}" font-size="11" pointer-events="none">🏠</text>`;
@@ -1293,7 +1293,7 @@ function regionSVG(){
   }
   for (const l of LANDMARKS) {
     const [x,y] = pins[l.k], sel = MAPSEL === l.k;
-    s += `<g class="mpin" tabindex="0" role="button" aria-label="${l.name}" onclick="MAPTAP('${l.k}')"><circle cx="${x}" cy="${y}" r="${sel?14:12}" fill="#fffaf0" stroke="${sel?'#9b2f1f':'#7a6a5c'}" stroke-width="${sel?3:1.2}" stroke-dasharray="${sel?'':'3 2'}"/><text x="${x}" y="${y+4.5}" font-size="12" text-anchor="middle">${l.ic}</text></g>`;
+    s += `<g class="mpin" tabindex="0" role="button" aria-label="${l.name}" onclick="MAPTAP('${l.k}')"><circle cx="${x}" cy="${y}" r="22" fill="transparent"/><circle cx="${x}" cy="${y}" r="${sel?14:12}" fill="#fffaf0" stroke="${sel?'#9b2f1f':'#7a6a5c'}" stroke-width="${sel?3:1.2}" stroke-dasharray="${sel?'':'3 2'}"/><text x="${x}" y="${y+4.5}" font-size="12" text-anchor="middle">${l.ic}</text></g>`;
   }
   return s + '</svg>';
 }
@@ -1350,7 +1350,7 @@ function townSVG(){
   for (const p of P) {
     const sel = MAPSEL === p.k, on = p.focus && S.focus === p.focus;
     s += `<g class="mpin${p.focus?'':' info'}" tabindex="0" role="button" aria-label="${esc(p.name)}" onclick="MAPTAP('${p.k}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();MAPTAP('${p.k}')}">
-      <circle cx="${p.x}" cy="${p.y}" r="${sel?18:15}" fill="${on?'#fbe9e4':'#fff'}" stroke="${sel||on?'#9b2f1f':'#3d2b1f'}" stroke-width="${sel||on?3:1.4}"${p.focus?'':' stroke-dasharray="3 2"'}/>
+      <circle cx="${p.x}" cy="${p.y}" r="24" fill="transparent"/><circle cx="${p.x}" cy="${p.y}" r="${sel?18:15}" fill="${on?'#fbe9e4':'#fff'}" stroke="${sel||on?'#9b2f1f':'#3d2b1f'}" stroke-width="${sel||on?3:1.4}"${p.focus?'':' stroke-dasharray="3 2"'}/>
       <text x="${p.x}" y="${p.y+5.5}" font-size="16" text-anchor="middle">${p.ic}</text>
       <text x="${p.x}" y="${p.y+28}" class="mtown" text-anchor="middle">${p.lb}</text></g>`;
     if (on) s += `<text x="${p.x+13}" y="${p.y-11}" font-size="11" pointer-events="none">⭐</text>`;

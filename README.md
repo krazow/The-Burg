@@ -31,14 +31,27 @@ Your Life Score blends average happiness (30%), average health (20%), community 
 
 ## Testing
 
-`npm test` runs three suites in a real browser (Playwright). CI runs them on every pull request and release.
+`npm test` runs seven suites in a real browser (Playwright). CI runs them on every pull request and release, and
+each has its own script (for example `npm run test:rules`).
 
 - **Smoke** (`tests/smoke.test.mjs`): the app opens cleanly, the service worker installs, and it opens offline.
+- **Game rules** (`tests/rules.test.mjs`): the math, checked directly: pay and taxes, bills, gas, rising prices,
+  mortgages and equity, truck loans, the 401(k) and retirement, the Life Score, focus streaks and ruts, Rest's cap,
+  event rules (seasons, cooldowns, once-only, layoff risk), the hospital, debt, unemployment, school, kids, net
+  worth, save migration, applications and the year in review.
 - **Gameplay** (`tests/gameplay.test.mjs`): taps through the core loop: start a game, get hired, end weeks,
-  answer an event, skip ahead, save and continue, both maps, help and the full tutorial, and the ending screen.
+  answer an event, skip ahead, save and load, both maps, help and the full tutorial, and the ending screen.
+- **Flows** (`tests/flows.test.mjs`): the Life tab (moving, buying, vehicles, 401(k)), quitting and retiring, the
+  hospital, the debt ending, family and council, **every choice of every event**, and a Lifetime game to its end.
+- **Screens and accessibility** (`tests/screens.test.mjs`): 10 screens at 7 sizes from a 320 px phone to desktop and
+  landscape. Fails on content wider than the screen, overlapping or off-screen bars, unnamed buttons, tap targets
+  under 24 × 24 px, text under 11 px, or contrast below WCAG AA. Screenshots go to `test-results/screens/`.
+- **Offline and updates** (`tests/offline.test.mjs`): the app caches itself, a life can be continued and played
+  offline, and a new version replaces the old one without losing saves or best scores.
 - **Play-test simulation** (`tests/sim.test.mjs`): seven bot players (planner, homebody, commuter, student,
-  hustler, careless, idle) play full games at every length. It fails on errors or impossible values, and writes a balance report
-  to `test-results/balance-report.md` (and the Actions job summary). Use `SIM_SCALE=3` for more games and `SIM_DEBUG=1` to see each part of the score.
+  hustler, careless, idle) play full games at every length. It fails on errors or impossible values, and writes a
+  balance report to `test-results/balance-report.md` (and the Actions job summary). Use `SIM_SCALE=3` for more
+  games and `SIM_DEBUG=1` to see each part of the score.
 
 The dice are seeded, so a failing run fails the same way every time. On a machine without Playwright's own browser,
 set `CHROME_PATH` to an installed Chrome.
