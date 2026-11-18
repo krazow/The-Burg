@@ -68,7 +68,7 @@ for (const { len, strat, g, opts, label } of JOBS_LIST) {
           else if (strat === 'roadie') f = ['work', 'community', 'outdoors', 'rest'][weeks % 4];   // a long commute, but a balanced week
           else f = ['community', 'outdoors', 'rest', 'community'][weeks % 4];
           S.focus = opts.includes(f) ? f : 'rest';
-          if (!['careless', 'idle'].includes(strat) && canCarpool()) S.carpool = true;   // sensible players share the drive
+          if (!['careless', 'idle'].includes(strat) && canCarpool()) { S.carpool = true; S.carpoolJob = S.jobId; }   // sensible players share the drive
           if (!S.biz && strat === 'planner' && S.money > 40000) startBiz('wheat');            // businesses: a planner leases wheat ground (and renews it),
           if (strat === 'planner' && leaseDue()) renewLease();
           if (!S.biz && strat === 'homebody' && S.money > 8000) startBiz('shop');             // a homebody opens a woodshop

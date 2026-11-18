@@ -1,4 +1,7 @@
 # Runs the shared Krazow release kit's QA (tests + release checks) on every pull request and push to main.
+# Simulation scale (T2): the QA job runs `npm test`, and tests/sim.test.mjs plays the simulation at half scale
+# (SIM_SCALE=0.5) when GITHUB_EVENT_NAME is pull_request, and at full scale on pushes to main and in releases.
+# (A reusable workflow doesn't inherit this file's env, so the switch lives in the test itself.)
 name: CI
 
 on:
