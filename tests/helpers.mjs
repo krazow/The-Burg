@@ -11,16 +11,17 @@ const APP = path.relative(SITE, path.resolve(cfg.app || cfg.site || '.')).split(
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
   '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.png': 'image/png', '.woff2': 'font/woff2' };
 
-export async function serve() {
+// serve the site (or another folder, such as a copy the offline test changes mid-test)
+export async function serve(root = SITE) {
   const server = http.createServer((req, res) => {
-    let f = path.join(SITE, decodeURIComponent(new URL(req.url, 'http://x').pathname));
+    let f = path.join(root, decodeURIComponent(new URL(req.url, 'http://x').pathname));
     if (fs.existsSync(f) && fs.statSync(f).isDirectory()) f = path.join(f, 'index.html');
     if (!fs.existsSync(f)) return res.writeHead(404).end();
-    res.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream' });
+    res.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
     fs.createReadStream(f).pipe(res);
   });
   await new Promise(r => server.listen(0, '127.0.0.1', r));
-  const url = `http://127.0.0.1:${server.address().port}/${APP && APP !== '.' ? APP + '/' : ''}`;
+  const url = `http://127.0.0.1:${server.address().port}/${root === SITE && APP && APP !== '.' ? APP + '/' : ''}`;
   return { url, close: () => server.close() };
 }
 
@@ -44,3 +45,7 @@ export function runner() {
 }
 
 export const assert = (cond, msg) => { if (!cond) throw new Error(msg); };
+
+export const SITE_DIR = SITE;
+// close enough for money and stats (floating point)
+export const near = (a, b, tol = 0.01) => Math.abs(a - b) <= tol * Math.max(1, Math.abs(b));

@@ -24,6 +24,10 @@ entry for every release, and the GitHub release notes are taken from it.
   and each of the 26 steps waits for your tap. It never touches your saves or settings, and puts you back where you
   were.
 
+### Fixed
+- Text contrast now meets WCAG AA everywhere: darker grey and green text, and the "Current" and "Home" tags.
+- Map pins are easier to tap: each has a larger invisible touch area (at least 24 × 24 px even on small phones).
+
 ### Changed
 - **Home puts the week first:** a compact focus grid sits right under the stats, the End Week button shows your
   focus, and your job, home, ride and schooling fit on one line that links to Jobs and Life.

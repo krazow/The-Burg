@@ -3,9 +3,13 @@
   "private": true,
   "description": "The Burg: a life sim set in Waitsburg, WA",
   "scripts": {
-    "test": "node tests/smoke.test.mjs && node tests/gameplay.test.mjs && node tests/sim.test.mjs",
+    "test": "node tests/smoke.test.mjs && node tests/rules.test.mjs && node tests/gameplay.test.mjs && node tests/flows.test.mjs && node tests/screens.test.mjs && node tests/offline.test.mjs && node tests/sim.test.mjs",
     "test:smoke": "node tests/smoke.test.mjs",
+    "test:rules": "node tests/rules.test.mjs",
     "test:gameplay": "node tests/gameplay.test.mjs",
+    "test:flows": "node tests/flows.test.mjs",
+    "test:screens": "node tests/screens.test.mjs",
+    "test:offline": "node tests/offline.test.mjs",
     "test:sim": "node tests/sim.test.mjs"
   },
   "devDependencies": {
