@@ -328,6 +328,17 @@ await t.check('Plan a trip from the region map, change it, then cancel it', asyn
   await page.evaluate(() => { setPref('mapView', false); MAPSIDE = null; render(); });
 });
 
+await t.check('Life Score so far opens its breakdown from Home; a commuter can join a carpool on Jobs', async () => {
+  await life({ jobId: 'rail', community: 40 });
+  await page.click('#scorenow');
+  assert(/Life Score so far/.test(await page.textContent(open)), 'score sheet');
+  await page.click(`${open} #ok`);
+  await page.click('[data-tab=jobs]');
+  await page.click('#carpool');
+  assert((await S()).carpool === true, 'carpool not joined');
+  assert(/Drive alone/.test(await page.textContent('#carpool')), 'carpool button should switch');
+});
+
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });
 
 await browser.close();

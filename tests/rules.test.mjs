@@ -28,9 +28,9 @@ await t.check('a weekly paycheck is the monthly pay × 12/52, taxed 15%', async 
   assert(near(r['Rent'], -550 * W) && near(r['Food & utilities'], -520 * W) && near(r['Insurance & phone'], -160 * W), 'bills are off');
 });
 
-await t.check('Work extra hours pays 15% more', async () => {
+await t.check('Work extra hours pays 20% more', async () => {
   const r = await ev(() => { fresh('two', { jobId: 'farmhand', focus: 'work' }); return week().lines; });
-  assert(near(r['Paycheck + overtime'], 2500 * W * 1.15), `overtime paycheck ${r['Paycheck + overtime']}`);
+  assert(near(r['Paycheck + overtime'], 2500 * W * 1.2), `overtime paycheck ${r['Paycheck + overtime']}`);
 });
 
 await t.check('gas covers the commute both ways on 21 workdays plus errands, at your vehicle\'s mileage', async () => {
@@ -366,6 +366,43 @@ await t.check('a toothache can only come after a year without the dentist', asyn
 await t.check('older saves get the trip fields', async () => {
   const r = await ev(() => { const old = { turn: 30, date: new Date(2028, 3, 1).getTime() }; migrate(old); return old; });
   assert(r.trip === null && r.svc === 30 && r.dentist === 30 && r.tabsYear === 2028 && r.stockUntil === -1, JSON.stringify(r));
+});
+
+// ---- Phase 1 (#70, #67): commutes, side hustles, Life Score so far ----
+await t.check('remote days cut commute gas and wear; a carpool halves gas and adds a little community', async () => {
+  const r = await ev(() => {
+    const g = extra => { fresh('two', { focus: 'rest', ...extra }); return week().lines['Gas (commute + errands)']; };
+    return { full: g({ jobId: 'rail' }), remote: g({ jobId: 'loan' }), pool: g({ jobId: 'rail', carpool: true }),
+      can: (fresh('two', { jobId: 'rail', community: 25 }), canCarpool()), can2: (S.community = 35, canCarpool()), near: (fresh('two', { jobId: 'cellar', community: 50 }), canCarpool()) };
+  });
+  assert(near(r.full, -(58 * 2 * 21 + 300) * W * 3.89 / 15), `full ${r.full}`);
+  assert(near(r.remote, -(62 * 2 * 21 * 0.6 + 300) * W * 3.89 / 15), `remote ${r.remote}`);
+  assert(near(r.pool, -(58 * 2 * 21 * 0.5 + 300) * W * 3.89 / 15), `carpool ${r.pool}`);
+  assert(!r.can && r.can2 && r.near, `carpool rules ${JSON.stringify(r)}`);
+});
+
+await t.check('side-hustle gigs follow the seasons and pay more with experience', async () => {
+  const r = await ev(() => {
+    const pay = (month, hw) => { let tot = 0; for (let i = 0; i < 40; i++) { fresh('two', { focus: 'hustle', hustleWeeks: hw, date: new Date(2027, month, 7).getTime() });
+      const l = week().lines; tot += Object.entries(l).find(([k]) => k.startsWith('Side hustle'))[1]; } return { avg: tot / 40, label: Object.keys(S.last.lines.reduce((o, [k]) => (o[k] = 1, o), {})).find(k => k.startsWith('Side hustle')) }; };
+    return { july: pay(6, 0), jan: pay(0, 0), julyPro: pay(6, 40), hw: (fresh('two', { focus: 'hustle' }), week(), S.hustleWeeks) };
+  });
+  assert(/harvest/.test(r.july.label) && /snow/.test(r.jan.label), `gig names ${r.july.label} / ${r.jan.label}`);
+  assert(near(r.july.avg, 1300 * W, 0.06) && near(r.jan.avg, 950 * W, 0.06), `gig pay ${r.july.avg} ${r.jan.avg}`);
+  assert(near(r.julyPro.avg, 1300 * 1.6 * W, 0.06), `experienced pay ${r.julyPro.avg}`);
+  assert(r.hw === 1, 'hustle weeks not counted');
+});
+
+await t.check('Life Score so far shows on Home and a report card lands in the Journal every 13 weeks', async () => {
+  const r = await ev(() => { fresh('two', { jobId: 'farmhand' }); tab = 'home'; render();
+    const btn = document.querySelector('#scorenow').textContent; weeks(13); const log13 = S.log.find(e => /Report card/.test(e.m)); const q = S.scoreQ;
+    weeks(13); const log26 = S.log.find(e => /Report card/.test(e.m)).m;
+    showScoreNow(); const sheetText = document.querySelector('#modal').textContent; closeSheet();
+    return { btn, log13: log13 && log13.m, q, log26, sheetText, score: lifeScore().score };
+  });
+  assert(/Life Score so far/.test(r.btn), r.btn);
+  assert(r.log13 && Number.isInteger(r.q) && /since the last one/.test(r.log26), `${r.log13} / ${r.log26}`);
+  assert(/weakest part/.test(r.sheetText) && /if the game ended today/.test(r.sheetText), 'score sheet text');
 });
 
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });

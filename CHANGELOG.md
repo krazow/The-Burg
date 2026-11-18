@@ -20,6 +20,17 @@ entry for every release, and the GitHub release notes are taken from it.
 - **Appointments:** dentist and doctor checkups. Skip the dentist for over a year and a **Toothache** event can
   happen.
 - The Help guide has a new "Trips around the region" section, and the Life tab shows your car care.
+- **🏆 Life Score so far** on Home: the score you'd get if the game ended today, with a breakdown and a tip for your
+  weakest part. A report card goes in your Journal every 13 weeks.
+- **Carpools and remote days:** office jobs have 2 remote days a week, and with community 30+ you can join a carpool
+  for long commutes (half the gas, an easier drive, a little community).
+- **Side-hustle gigs** follow the seasons (harvest work, plowing snow, yard work, fixing cars) and pay up to 60% more
+  with experience.
+
+### Changed
+- **Work extra hours** now pays +20% (was +15%) and wears on you less. Long commutes and side hustles were traps:
+  in simulated 5-year games a sensible long-commuter now scores 73 (was 66), an overtime grinder 51 (was 46) and a
+  side hustler 50 (was 37). Overworking while your health is low is more dangerous than before.
 
 ## 0.2.0 (2026-11-18)
 

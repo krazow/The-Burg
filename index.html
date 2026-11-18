@@ -167,6 +167,7 @@ main{flex:1;padding:14px 14px calc(var(--safe-b) + 200px)}
 .stopbtn.on{border-color:var(--barn);background:#fbe9e4}.stopbtn:disabled{opacity:.6}
 .tripsum{font-weight:700;margin:10px 0 0}
 .sumchip.on{border-color:var(--barn);background:#fbe9e4}
+.scorebtn{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;margin-top:10px;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:#fffaf0;font-size:14.5px;min-height:44px;text-align:left}.scorebtn b{font-size:17px;color:var(--barn)}
 .tripto{width:100%;text-align:left;background:#fff;border:0;border-bottom:1px dashed var(--line);min-height:52px;font:inherit;color:inherit;cursor:pointer}.tripto > span:first-child{display:flex;flex-direction:column}
 #helpbtn{width:44px;height:44px}
 :focus-visible{outline:3px solid #1f5fae;outline-offset:2px}
@@ -235,6 +236,14 @@ const LAYOFF_RISK = { diner:1, hardware:1, lift:1, cellar:1, onion:1, retail:1, 
   para:.2, insure:.2, clerk:.2, co:.2, rn:.2, prof:.2, scientist:.2, farmhand:0 };
 const K401 = [0, 0.05, 0.10];
 const RUT_WEEKS = 8;
+// #70: side-hustle gigs follow the seasons; pay grows up to 60% with experience (40 weeks of hustling)
+const GIGS = [
+  { id:'harvest', name:'harvest work', months:[6,7], pay:1300, fx:{health:-1} },
+  { id:'snow', name:'plowing snow', months:[11,0,1], pay:950 },
+  { id:'yard', name:'yard work and fences', months:[3,4,5,8,9], pay:750, fx:{community:1} },
+  { id:'cars', name:'fixing neighbors\' cars', months:[2,10], pay:800 }
+];
+const currentGig = () => GIGS.find(g => g.months.includes(curMonth())) || GIGS[3];
 // how much a focus still does after repeating it: full for 4 weeks, then fading to 30%
 function focusEffect(f = S.focus, n = S.streakF === f ? S.streakN : 1){ return f === 'study' || n <= 4 ? 1 : Math.max(0.3, 1 - 0.12 * (n - 4)); }
 const wk = v => fmt(v*W) + '/wk';
@@ -260,23 +269,23 @@ const JOBS = [
   {id:'diner',    city:'waitsburg', title:'Main Street diner cook',     pay:2300, edu:0, stress:.5, wear:.5},
   {id:'para',     city:'waitsburg', title:'School paraeducator',        pay:2900, edu:1, stress:.4, wear:.1},
   {id:'elevator', city:'waitsburg', title:'Grain elevator operator',    pay:3800, edu:1, stress:.4, wear:.7},
-  {id:'insure',   city:'waitsburg', title:'Farm insurance agent',       pay:4900, edu:2, stress:.6, wear:0},
+  {id:'insure',   city:'waitsburg', title:'Farm insurance agent',       pay:4900, edu:2, stress:.6, wear:0, remote:2},
   {id:'hardware', city:'dayton',    title:'Hardware store clerk',       pay:2600, edu:0, stress:.3, wear:.3},
   {id:'lift',     city:'dayton',    title:'Bluewood ski lift operator', pay:2400, edu:0, stress:.1, wear:.5},
-  {id:'clerk',    city:'dayton',    title:'County courthouse clerk',    pay:3500, edu:1, stress:.5, wear:0},
+  {id:'clerk',    city:'dayton',    title:'County courthouse clerk',    pay:3500, edu:1, stress:.5, wear:0, remote:2},
   {id:'cna',      city:'dayton',    title:'Hospital nursing assistant', pay:3400, edu:1, stress:.8, wear:.5},
   {id:'cellar',   city:'wallawalla',title:'Winery cellar hand',         pay:3000, edu:0, stress:.3, wear:.7},
   {id:'onion',    city:'wallawalla',title:'Sweet onion packing shed',   pay:2700, edu:0, stress:.4, wear:.9},
   {id:'co',       city:'wallawalla',title:'Corrections officer',        pay:5000, edu:1, stress:1.3,wear:.7},
   {id:'rn',       city:'wallawalla',title:'Registered nurse',           pay:7300, edu:2, stress:1.0,wear:.5},
-  {id:'prof',     city:'wallawalla',title:'College professor',          pay:6700, edu:3, stress:.5, wear:0},
+  {id:'prof',     city:'wallawalla',title:'College professor',          pay:6700, edu:3, stress:.5, wear:0, remote:2},
   {id:'retail',   city:'kennewick', title:'Mall retail associate',      pay:2600, edu:0, stress:.6, wear:.2},
   {id:'mech',     city:'kennewick', title:'Auto mechanic',              pay:4400, edu:1, stress:.5, wear:.8},
   {id:'imaging',  city:'kennewick', title:'Hospital imaging tech',      pay:5700, edu:2, stress:.6, wear:.2},
-  {id:'loan',     city:'kennewick', title:'Bank loan officer',          pay:6100, edu:3, stress:.8, wear:0},
+  {id:'loan',     city:'kennewick', title:'Bank loan officer',          pay:6100, edu:3, stress:.8, wear:0, remote:2},
   {id:'hanford',  city:'richland',  title:'Hanford cleanup technician', pay:6500, edu:1, stress:.8, wear:1.1},
-  {id:'labadmin', city:'richland',  title:'Research lab administrator', pay:4800, edu:2, stress:.5, wear:0},
-  {id:'scientist',city:'richland',  title:'National lab scientist',     pay:9200, edu:3, stress:.8, wear:0},
+  {id:'labadmin', city:'richland',  title:'Research lab administrator', pay:4800, edu:2, stress:.5, wear:0, remote:2},
+  {id:'scientist',city:'richland',  title:'National lab scientist',     pay:9200, edu:3, stress:.8, wear:0, remote:2},
   {id:'foodplant',city:'pasco',     title:'Food processing line worker',pay:3000, edu:0, stress:.6, wear:.9},
   {id:'airport',  city:'pasco',     title:'Airport ground crew',        pay:3700, edu:0, stress:.5, wear:.7},
   {id:'trucker',  city:'pasco',     title:'Truck driver (CDL)',         pay:5500, edu:1, stress:.9, wear:.8},
@@ -302,12 +311,12 @@ const CARS = {
 };
 
 const FOCUS = {
-  work:     {ic:'💼', name:'Work extra hours', desc:'+15% pay, but it wears on you.', fx:{happy:-3, health:-2}, payMult:1.15, needsJob:true},
+  work:     {ic:'💼', name:'Work extra hours', desc:'+20% pay, but it wears on you.', fx:{happy:-2, health:-1.5}, payMult:1.2, needsJob:true},
   rest:     {ic:'🛋️', name:'Rest & recharge',  desc:'Sleep in, take it easy.',         fx:{happy:4, health:4}},
   community:{ic:'🤝', name:'Show up for town', desc:'Volunteer, potlucks, ballgames.',   fx:{community:4, happy:2}, cost:50},
   study:    {ic:'📚', name:'Take classes',     desc:'Work toward the next diploma.',    fx:{happy:-2}, study:true},
   outdoors: {ic:'🎣', name:'Get outside',      desc:'Fish the Touchet, hike the Blues.', fx:{health:5, happy:3}, cost:40},
-  hustle:   {ic:'🔧', name:'Side hustle',      desc:'Odd jobs and weekend gigs.',        fx:{happy:-1, health:-2}, hustle:true}
+  hustle:   {ic:'🔧', name:'Side hustle',      desc:'Weekend gigs that follow the seasons, and pay more as you get good at them.',        fx:{happy:-1, health:-1}, hustle:true}
 };
 
 let S = null;                 // game state
@@ -321,13 +330,18 @@ function migrate(s){
   const d = { slot:0, evPins:[], streakF:null, streakN:0, run:null, yearEvents:0, yearStart:null, evCd:{}, evDone:{}, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, mortgage:null, loanPay:0 };
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
   // Around the region (0.3.0): older lives count as just serviced and checked, with this year's tabs paid
-  const r = { trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, dentist:s.turn || 0, stopLast:{}, tabsYear:new Date(s.date || Date.now()).getFullYear() };
+  const r = { carpool:false, hustleWeeks:0, scoreQ:null, trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, dentist:s.turn || 0, stopLast:{}, tabsYear:new Date(s.date || Date.now()).getFullYear() };
   for (const k in r) if (s[k] === undefined) s[k] = r[k];
   if (HOMES[s.home] && HOMES[s.home].own && !s.mortgage) s.mortgage = HOMES[s.home].cost;
   return s;
 }
 const job = () => S.jobId ? jobById(S.jobId) : null;
 const commuteOneWay = () => (job() && !S.retired) ? CITIES[job().city].miles : 0;
+// #70: remote days (office jobs drive in 3 days a week) and carpools (half the gas, less wear) make long commutes livable
+const driveDays = (j = job()) => j && j.remote ? (5 - j.remote) / 5 : 1;
+const canCarpool = () => commuteOneWay() >= 20 && S.community >= 30;
+const carpooling = () => !!S.carpool && commuteOneWay() >= 20;
+const commuteGasFactor = (j = job()) => driveDays(j) * (S && S.carpool && j && CITIES[j.city].miles >= 20 ? 0.5 : 1);
 const netWorth = () => {
   const loan = S.loanLeft > 0 ? S.loanLeft * (S.loanPay || CARS.truck.pay) * 0.85 : 0;
   return S.money + S.equity + S.carValue + (S.k401 || 0) - loan;
@@ -601,7 +615,7 @@ function newGame(name, len, slot = 0, opts = {}){
     dog:false, partner:false, council:false,
     focus:'rest', applied:false, happySum:0, healthSum:0, monthsPlayed:0,
     log:[], over:false, cause:null, streakF:null, streakN:0, run:null, yearEvents:0,
-    trip:null, svc:0, tires:null, stockUntil:-1, dentist:0, stopLast:{}, tabsYear:2027 };
+    trip:null, svc:0, tires:null, stockUntil:-1, dentist:0, stopLast:{}, tabsYear:2027, carpool:false, hustleWeeks:0, scoreQ:null };
   S.yearStart = { nw: netWorth(), happy: S.happy, health: S.health, community: S.community };
   if (opts.practice) { S.practice = true; S.noEvents = true; }      // the tutorial's throwaway life: never saved, no random events
   log(`${name} turns 18 and rents a room above Main Street in Waitsburg. Time to find a job.`);
@@ -674,7 +688,7 @@ function renderHome(){
     ${statBtn('happy','Happiness', S.happy)}${statBtn('health','Health', S.health)}
     ${statBtn('community','Community', S.community)}
     <button class="stat statbtn" data-stat="net" aria-label="Net worth: what counts"><label><span>Net worth <span class="info">ⓘ</span></span></label><div style="font-weight:800;font-size:18px;margin-top:2px">${fmt(netWorth())}</div></button>
-  </div></div>
+  </div>${scoreButton()}</div>
   ${tip ? `<div class="card tip"><div>${tip.text}</div><button class="sm alt" data-tip="${tip.id}">Got it</button></div>` : ''}
   ${!j && !S.retired ? `<div class="card warn">💼 No paycheck coming in. <button class="sm" data-go="jobs">Find a job</button></div>` : ''}
   ${S.happy < 30 ? sugg('happy', 'outdoors', `😟 Happiness is low (${Math.round(S.happy)}).`) : ''}
@@ -697,6 +711,7 @@ function renderHome(){
   $('#tripchip').onclick = () => S.trip ? tripSheet(S.trip.city) : tripPicker();
   document.querySelectorAll('.fbtn').forEach(b => b.onclick = () => { S.focus = b.dataset.f; save(); render(); });
   document.querySelectorAll('[data-stat]').forEach(b => b.onclick = () => showStatInfo(b.dataset.stat));
+  if ($('#scorenow')) $('#scorenow').onclick = showScoreNow;
   document.querySelectorAll('[data-sugg]').forEach(b => b.onclick = () => { S.focus = b.dataset.sugg; save(); render(); toast(`This week: ${FOCUS[S.focus].name}`); });
   document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { tab = b.dataset.go; render(); window.scrollTo(0,0); });
   document.querySelectorAll('[data-tip]').forEach(b => b.onclick = () => { setPref('tips', [...(prefs().tips || []), b.dataset.tip]); renderHome(); });
@@ -733,7 +748,7 @@ function showStatInfo(k){
 }
 
 // weekly take-home: pay after ~15% taxes, minus commuting gas in your current vehicle
-const takeHome = x => payNow(x, S.jobId === x.id) * W * 0.85 - commuteCost(CITIES[x.city].miles) * W;
+const takeHome = x => payNow(x, S.jobId === x.id) * W * 0.85 - commuteCost(CITIES[x.city].miles, CARS[S.car], x) * W;
 function jobRow(x){
   const c = CITIES[x.city], cur = S.jobId === x.id && !S.retired, th = takeHome(x);
   const base = job() && !S.retired ? takeHome(job()) : 0, diff = th - base;
@@ -741,7 +756,7 @@ function jobRow(x){
     : S.edu < x.edu ? `<button class="sm locked" data-locked="${x.id}" aria-label="Locked: how to unlock">🔒 ${['','Cert','Assoc.','Degree'][x.edu]}</button>`
     : `<button class="sm" data-apply="${x.id}" ${S.applied?'disabled':''}>Apply</button>`;
   return `<div class="kv job${S.edu < x.edu ? ' lockedrow' : ''}"><div><div class="t">${x.title}</div>
-    <div class="s">${c.name}${c.miles ? ` · ${c.miles} mi` : ' · no commute'} · pay ${wk(payNow(x, cur))}${c.miles ? `, gas ${wk(commuteCost(c.miles))}` : ''}</div></div>
+    <div class="s">${c.name}${c.miles ? ` · ${c.miles} mi` : ' · no commute'} · pay ${wk(payNow(x, cur))}${c.miles ? `, gas ${wk(commuteCost(c.miles, CARS[S.car], x))}` : ''}${x.remote ? ` · 🏠 ${x.remote} remote days` : ''}</div></div>
     <div style="text-align:right"><div class="pay">${fmt(th)}/wk</div>
     <div class="s">${cur ? 'take-home' : base && Math.abs(diff) >= 1 ? `<span class="${diff>0?'upt':'downt'}">${diff>0?'▲':'▼'} ${fmt(Math.abs(diff))}</span>` : 'take-home'}</div>${btn}</div></div>`;
 }
@@ -777,10 +792,15 @@ function renderJobs(){
     <p class="muted" style="margin:0 0 4px;font-size:13px">Take-home is pay after taxes and gas${job() && !S.retired ? ', with ▲▼ against your current job' : ''}.</p>
     ${list.map(jobRow).join('') || '<p class="muted">No jobs match.</p>'}
   </div>`}
+  ${j && !S.retired && commuteOneWay() >= 20 ? `<div class="card"><h3>🚙 Carpool</h3>
+    ${S.carpool ? `<p class="muted" style="margin:0 0 6px">You ride with neighbors to ${CITIES[j.city].name}: half the gas, the drive wears on you less, and you stay in the loop (▲ community).</p><button class="sm alt" id="carpool">Drive alone</button>`
+      : canCarpool() ? `<p class="muted" style="margin:0 0 6px">Split the drive to ${CITIES[j.city].name} with neighbors: half the gas, less wear from the commute, and a little community.</p><button class="sm" id="carpool">Join a carpool</button>`
+      : `<p class="muted" style="margin:0">Know more people in town (community 30+) and you can join a carpool: half the gas and an easier commute.</p>`}</div>` : ''}
   ${j && !S.retired ? `<button class="btn ghost" id="quit">Quit my job</button>` : ''}
   ${LENGTHS[S.len].turns===Infinity && age()>=62 && !S.retired ? `<button class="btn primary" id="retire">Retire (Social Security ${wk(ssPay())}${S.k401>0?` + 401(k) ${wk(S.k401*0.04/12)}`:''})</button>` : ''}`;
   document.querySelectorAll('.chip[data-c]').forEach(b => b.onclick = () => { jobCity = b.dataset.c; render(); });
   if ($('#jobok')) $('#jobok').onclick = () => { jobOK = !jobOK; render(); };
+  if ($('#carpool')) $('#carpool').onclick = () => { S.carpool = !S.carpool; save(); render(); toast(S.carpool ? '🚙 You joined a carpool' : 'Driving alone again'); };
   document.querySelectorAll('[data-apply]').forEach(b => b.onclick = () => apply(b.dataset.apply));
   if ($('#quit')) $('#quit').onclick = () => {
     sheet(`<h2>Quit your job?</h2><p>You'll have no paycheck until you land another one.</p>
@@ -794,7 +814,7 @@ function renderJobs(){
     save(); render(); toast('Happy retirement!');
   };
 }
-function commuteCost(miles, car = CARS[S.car]){ return miles * 2 * WORKDAYS * cost(GAS) / car.mpg; }
+function commuteCost(miles, car = CARS[S.car], j = null){ return miles * 2 * WORKDAYS * cost(GAS) / car.mpg * (j ? commuteGasFactor(j) : 1); }
 
 function apply(id){
   const x = jobById(id); if (S.applied) return;
@@ -1029,7 +1049,8 @@ function weekTick(auto){
   }
   if (gross) lines.push(['Taxes', -(gross - k401) * (S.retired ? 0.05 : 0.15)]);
   if (!S.retired && !j && S.ui > 0) { const n = Math.min(m, S.ui); lines.push(['Unemployment benefits', 1100*S.wage*n]); S.ui -= n; }
-  if (f.hustle) lines.push(['Side hustle', cost(ri(350, 850)) * m]);
+  let gig = null;
+  if (f.hustle) { gig = currentGig(); const xp = 1 + Math.min(0.6, (S.hustleWeeks || 0) / 40); lines.push([`Side hustle: ${gig.name}`, cost(gig.pay * (0.85 + Math.random() * 0.3)) * xp * m]); S.hustleWeeks = (S.hustleWeeks || 0) + 1; }
   const home = HOMES[S.home], car = CARS[S.car];
   lines.push([home.own ? 'Mortgage' : 'Rent', -(home.own && S.mortgage ? S.mortgage : cost(home.cost))*m]);
   const trip = tripWeek(lines);                    // this week's trip around the region, if one is planned
@@ -1037,7 +1058,7 @@ function weekTick(auto){
   lines.push([stocked ? 'Food & utilities (stocked up)' : 'Food & utilities', -cost(520 - (stocked ? GROCERY_SHARE * STOCK_OFF : 0))*m]);
   lines.push(['Insurance & phone', -cost(160)*m]);
   { const y = new Date(S.date).getFullYear(); if (curMonth() === 0 && S.tabsYear !== y) { lines.push(['Vehicle tabs (DMV)', -cost(95)]); S.tabsYear = y; } }
-  const miles = (commuteOneWay()*2*WORKDAYS + ERRAND_MILES) * m;
+  const miles = (commuteOneWay()*2*WORKDAYS*commuteGasFactor() + ERRAND_MILES) * m;
   lines.push([commuteOneWay() ? 'Gas (commute + errands)' : 'Gas (errands)', -miles*cost(GAS)/car.mpg]);
   if (S.loanLeft > 0) {
     const n = Math.min(m, S.loanLeft); lines.push(['Truck payment', -(S.loanPay || CARS.truck.pay)*n]); S.loanLeft -= n;
@@ -1072,12 +1093,13 @@ function weekTick(auto){
   if (S.retired) dh += 1;
   else if (j) { dh -= j.stress; dH -= j.wear; dc += j.city==='waitsburg' ? 0.6 : j.city==='dayton' ? 0.2 : 0; }
   else dh -= 2;
-  dh -= commuteOneWay() / 40;
+  dh -= commuteOneWay() / 40 * driveDays() * (carpooling() ? 0.6 : 1);
+  if (carpooling()) dc += 0.3;                    // riding with neighbors keeps you in the loop
   dh += home.happy * 0.4 + (S.partner ? 0.6 : 0) + (S.dog ? 0.4 : 0) + kidsHome * 0.3 - (S.money < 0 ? 2 : 0);
   dc += kidsHome * 0.2;
   if (S.council) dc += 0.8;
   // worn down: pushing through low health with overtime or side hustles makes it worse, fast
-  if (S.health < 35 && (S.focus === 'work' || S.focus === 'hustle')) dH -= 2.5;
+  if (S.health < 35 && (S.focus === 'work' || S.focus === 'hustle')) dH -= 3.2;
     S.happy = clamp(S.happy + dh*m); S.health = clamp(S.health + dH*m); S.community = clamp(S.community + dc*m);
   // doing the same thing week after week loses its punch (classes excepted), and a long rut wears on you
   if (S.streakF === S.focus) S.streakN++; else { S.streakF = S.focus; S.streakN = 1; }
@@ -1092,6 +1114,7 @@ function weekTick(auto){
     if (S.streakN === RUT_WEEKS + 1) notes.push(`🔁 ${S.streakN - 1} weeks of "${f.name}" in a row. You're in a rut: try a different focus.`);
   }
   if (trip) adj(trip.fx);
+  if (gig && gig.fx) adj(Object.fromEntries(Object.entries(gig.fx).map(([st, v]) => [st, v * k])));
 
   // ---- maybe an event this week ----
   let ev = !S.noEvents && chance(0.28) ? pickEvent(curMonth()) : null;
@@ -1118,6 +1141,11 @@ function weekTick(auto){
   const oldAge = age(), oldYear = new Date(S.date).getFullYear();
   S.date += 7 * 864e5; S.ageMonths += m; S.turn++; S.jobMonths += m; S.applied = false;
   if (age() > oldAge && age() % 10 === 0) notes.push(`🎂 Happy ${age()}th birthday!`);
+  if (S.turn % 13 === 0 && !S.practice) {          // a quarterly report card in the Journal (doesn't stop skips)
+    const sc = lifeScore().score, d = S.scoreQ == null ? null : sc - S.scoreQ;
+    log(`📋 Report card: Life Score ${sc}${d == null ? '' : ` (${d >= 0 ? '+' : ''}${d} since the last one)`}.`);
+    S.scoreQ = sc;
+  }
   if (S.focus === 'work' && !job()) S.focus = 'rest';
   let review = null;
   const newYear = new Date(S.date).getFullYear();
@@ -1552,6 +1580,34 @@ function tripSheet(city){
 }
 const tripChip = () => S.trip ? `🚗 Trip: ${CITIES[S.trip.city].name} (${S.trip.stops.length})` : '🚗 Plan a trip';
 
+/* ---------- 🏆 Life Score so far (#67) ---------- */
+function scoreButton(){
+  if (S.practice) return '';
+  const sc = lifeScore(), d = S.scoreQ == null ? 0 : sc.score - S.scoreQ;
+  return `<button class="scorebtn" id="scorenow" aria-label="Life Score so far ${sc.score}, ${sc.title}: see how it adds up">
+    <span>🏆 Life Score so far</span><span><b>${sc.score}</b> ${sc.title}${S.scoreQ != null && d ? ` <span class="delta ${d>0?'up':'down'}">${d>0?'▲':'▼'}${Math.abs(d)}</span>` : ''} ›</span></button>`;
+}
+const SCORE_TIPS = {
+  happy:'Happiness is your weakest part. Rest, Get outside and trips with friends help; long commutes, overtime and debt hurt.',
+  health:'Health is your weakest part. Rest, Get outside and a doctor checkup help; physical jobs and overtime wear you down.',
+  community:'Community is your weakest part. Show up for town, help in events, work in Waitsburg, or join a carpool.',
+  wealth:'Net worth is your weakest part. A better-paying job, the 401(k), owning a home and stock-up grocery runs add up.'
+};
+function showScoreNow(){
+  const { score, title, avgH, avgHe, nw, real, parts } = lifeScore(), L = LENGTHS[S.len];
+  const part = (l, sub, v, w) => `<div class="kv"><span>${l}<br><small class="muted">${sub}</small></span><span><b>${v}</b>/100 × ${w}% = <b>${Math.round(v * w / 100)}</b></span></div>`;
+  const weakest = Object.entries(parts).sort((a, b) => a[1] - b[1])[0][0];
+  sheet(`<h2>🏆 Life Score so far: ${score}</h2>
+    <p class="muted">${title}. This is what you'd score if the game ended today.${S.scoreQ != null ? ` Last report card: ${S.scoreQ}.` : ''}</p>
+    ${part('Happiness', `average ${Math.round(avgH)} so far`, parts.happy, 30)}
+    ${part('Health', `average ${Math.round(avgHe)} so far`, parts.health, 20)}
+    ${part('Community', `now ${Math.round(S.community)}`, parts.community, 20)}
+    ${part('Net worth', `${fmt(nw)}${S.col > 1.05 ? ` (${fmt(real)} in 2027 dollars)` : ''} of ${fmt(L.target)} by the end`, parts.wealth, 30)}
+    <div class="card tip" style="margin-top:10px"><div>💡 ${SCORE_TIPS[weakest]}</div></div>
+    <p class="muted">A report card goes in your Journal every 13 weeks.</p>
+    <button class="btn primary" id="ok">Close</button>`);
+  $('#ok').onclick = closeSheet;
+}
 /* ---------- ending ---------- */
 // Life Score: average happiness 30%, average health 20%, community 20%, net worth vs. the length's target 30%
 function lifeScore(){
@@ -1814,7 +1870,7 @@ function guideHTML(){
   const W2 = 12/52;
   const pw = v => '$' + Math.round(v * W2).toLocaleString() + '/wk';
   const lenRows = Object.values(LENGTHS).map(L => `<tr><td>${L.label}</td><td>${L.turns === Infinity ? 'Age 18 until the end (retire from 62)' : L.turns + ' weeks'}</td><td>$${L.target.toLocaleString()}</td></tr>`).join('');
-  const focusRows = Object.entries(FOCUS).map(([k,f]) => `<tr><td>${f.ic} <b>${f.name}</b></td><td>${f.desc} ${fxWords(f.fx)}${f.payMult ? ', +15% pay' : ''}${f.hustle ? ', extra cash' : ''}${f.study ? ', counts toward your next diploma' : ''}</td><td>${f.cost ? pw(f.cost) : f.study ? 'tuition' : '—'}</td></tr>`).join('');
+  const focusRows = Object.entries(FOCUS).map(([k,f]) => `<tr><td>${f.ic} <b>${f.name}</b></td><td>${f.desc} ${fxWords(f.fx)}${f.payMult ? ', +20% pay' : ''}${f.hustle ? ', extra cash' : ''}${f.study ? ', counts toward your next diploma' : ''}</td><td>${f.cost ? pw(f.cost) : f.study ? 'tuition' : '—'}</td></tr>`).join('');
   const jobRows = Object.entries(CITIES).map(([ck,c]) => `<tr class="grp"><td colspan="3"><b>${c.name}</b> · ${c.miles ? c.miles + ' mi each way' : 'home, no commute'}</td></tr>` +
     JOBS.filter(x => x.city === ck).map(x => `<tr><td>${x.title}</td><td>${pw(x.pay)}</td><td>${EDU[x.edu].replace(' diploma','')}</td></tr>`).join('')).join('');
   const eduRows = [1,2,3].map(l => `<tr><td>${EDU[l]}</td><td>${STUDY_NEED[l-1]} weeks</td><td>${pw(TUITION[l-1])}</td><td>${SCHOOL[l-1]}</td></tr>`).join('');
@@ -1848,6 +1904,7 @@ function guideHTML(){
       <p><b>Debt:</b> going below $0 charges about 1.5% interest a month. At -$15,000 you get a warning, and at -$40,000 you have to leave town, which ends the game.</p>`],
     ['jobs', '💼 Jobs', `
       <p>There are 25 jobs in six towns. You always live in Waitsburg, so other towns mean a commute. You can apply for <b>one job per week</b>. Higher community standing, extra schooling and local jobs improve your odds.</p>
+      <p><b>Making a long commute work:</b> office jobs (insurance agent, courthouse clerk, professor, loan officer, lab administrator, scientist) have <b>2 remote days</b> a week, so you drive in only 3. With community 30 or more you can <b>join a carpool</b> on the Jobs tab: half the gas, the drive wears on you less, and you stay in the loop. <b>Side hustles</b> follow the seasons (harvest work in summer, plowing snow in winter, yard work, fixing cars) and pay up to 60% more as you get good at them.</p>
       <p>The list puts jobs you can apply for first. <b>✅ Can apply</b> hides the rest, and ▲▼ compares each job's take-home with your current one. 🔒 jobs need more schooling: tap one to see exactly what it takes.</p>
       <p><b>Raises:</b> after a year in a job your boss may offer about 6% (up to +50% in total). <b>Layoffs</b> depend on the job: retail and seasonal work is shakiest, public-sector and licensed work is steadiest, and you're safe for your first 9 months.</p>
       <table><tr><th>Job</th><th>Pay (2027)</th><th>Needs</th></tr>${jobRows}</table>`],
@@ -1894,6 +1951,7 @@ function guideHTML(){
       <p>Finishing a life frees its slot. Saves live on this device and in this browser.</p>
       <p><b>Menu → 📤 Back up or restore:</b> download a backup file or copy a backup code, then on another device use <b>📥 Restore from a backup</b> (on the title screen or in the same menu). You can add the backup's lives to empty slots or replace all your lives.</p>`],
     ['score', '🏆 The Life Score', `
+      <p><b>Life Score so far:</b> Home shows the score you'd get if the game ended today. Tap it for the breakdown and a tip for your weakest part. A report card goes in your Journal every 13 weeks.</p>
       <p>At the end, your life gets a score out of 100 from four parts:</p>
       <table><tr><th>Part</th><th>Measured as</th><th>Weight</th></tr>
       <tr><td>Happiness</td><td>Your average over the game: 30 → 0 points, 90 → 100</td><td>30%</td></tr>
