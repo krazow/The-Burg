@@ -149,6 +149,81 @@ await t.check('the title lists every life, and deleting one asks first', async (
   await page.click('[data-cont="0"]');
 });
 
+await t.check('End Week shows this week\'s focus, and the week strip shows what it did', async () => {
+  await page.click('[data-tab=home]');
+  await page.click('[data-f=outdoors]');
+  assert((await page.textContent('#end')).includes('Outside'), 'End Week should show the focus');
+  await endWeek();
+  await page.click('[data-tab=home]');
+  await page.waitForSelector('#strip');
+  await page.click('#strip');
+  await page.waitForSelector(`${open} >> text=Total change in cash`);
+  await page.click(`${open} #ok`);
+});
+
+await t.check('tapping a stat explains what moves it', async () => {
+  await page.click('[data-stat=community]');
+  await page.waitForSelector(`${open} >> text=Goes up with`);
+  await page.click(`${open} #ok`);
+  await page.click('[data-stat=net]');
+  await page.waitForSelector(`${open} >> text=Home equity`);
+  await page.click(`${open} #ok`);
+});
+
+await t.check('a single-choice event resolves in one tap', async () => {
+  await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Found money')));
+  await page.click(`${open} [data-i="0"]`);
+  assert(!(await page.$(open)), 'the sheet should close after one tap');
+  assert(await page.isVisible('#toast'), 'the result should show as a toast');
+});
+
+await t.check('a long streak of one focus fades, and a rut gets a warning', async () => {
+  await page.evaluate(() => { S.focus = 'rest'; S.streakF = 'rest'; S.streakN = 8; render(); });
+  assert((await page.textContent('.fdesc')).includes('weeks in a row'), 'Home should show the streak');
+  await page.click('#end');
+  await page.waitForSelector(`${open} >> text=in a rut`);
+  await clearSheets();
+  await page.click('[data-f=community]');
+});
+
+await t.check('⏭ Auto plays weeks until something needs you', async () => {
+  const before = (await S()).turn;
+  await page.click('#auto');
+  const after = (await S()).turn, sheetOpen = !!(await page.$(open));
+  assert(after > before && (sheetOpen || after - before === 26 || after >= 26), `auto played ${after - before} weeks without stopping for anything`);
+  await clearSheets();
+});
+
+await t.check('locked jobs explain how to unlock them and can set Take classes', async () => {
+  await page.click('[data-tab=jobs]');
+  await page.click('[data-locked="para"]');
+  await page.waitForSelector(`${open} >> text=Trade certificate`);
+  await page.click(`${open} #yes`);
+  const s = await S();
+  assert(s.focus === 'study' && (await page.evaluate(() => tab)) === 'home', 'should switch to Take classes on Home');
+});
+
+await t.check('the Can apply filter hides locked jobs, and jobs show take-home pay', async () => {
+  await page.click('[data-tab=jobs]');
+  assert((await page.$$('[data-locked]')).length > 0, 'expected locked jobs before filtering');
+  await page.click('#jobok');
+  assert((await page.$$('[data-locked]')).length === 0, 'locked jobs still shown');
+  assert((await page.textContent('#main')).includes('take-home') || (await page.textContent('#main')).includes('▲') || (await page.textContent('#main')).includes('▼'), 'no take-home shown');
+  await page.click('#jobok');
+  await page.click('[data-tab=home]');
+});
+
+await t.check('tips show once, and Got it hides them for good', async () => {
+  await page.evaluate(() => { setPref('tips', []); render(); });
+  const tip = await page.$('[data-tip]');
+  assert(tip, 'a tip should show for a fresh player');
+  const id = await tip.getAttribute('data-tip');
+  await tip.click();
+  assert((await page.evaluate(() => prefs().tips)).includes(id), 'dismissed tip not remembered');
+  const next = await page.$(`[data-tip="${id}"]`);
+  assert(!next, 'the same tip came back');
+});
+
 await t.check('the Waitsburg map sets this week\'s focus by place', async () => {
   await page.click('[data-tab=home]');
   await page.click('.maptog button:nth-child(2)');
@@ -178,11 +253,23 @@ await t.check('the last week ends the game with a Life Score, and Play again ret
   await page.click('#end');
   await clearSheets(1);
   await page.waitForSelector(`${open} #again`);
+  await page.waitForSelector(`${open} >> text=How the score adds up`);
   const score = Number(await page.textContent('.score'));
   assert(Number.isInteger(score) && score >= 0 && score <= 100, `bad score ${score}`);
   await page.click('#again');
   await page.waitForSelector('#start');
   assert(!(await page.$('[data-cont="0"]')), 'a finished game should leave its slot');
+});
+
+await t.check('a 2-year game shows a year in review at New Year', async () => {
+  await page.evaluate(() => { newGame('Yr', 'two', 4); S.jobId = 'farmhand'; S.date = new Date(2027, 11, 27).getTime(); tab = 'home'; render(); });
+  await page.click('#end');
+  for (let i = 0; i < 4 && !(await page.$(`${open} >> text=2027 in review`)); i++) {
+    const b = await page.$(`${open} #ok, ${open} [data-i]`); if (!b) break; await b.click();
+  }
+  await page.waitForSelector(`${open} >> text=2027 in review`);
+  await clearSheets();
+  await page.evaluate(() => { writeSlot(4, null); });
 });
 
 await t.check('with all 5 slots full, a new life asks which one to replace', async () => {
