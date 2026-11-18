@@ -1,6 +1,6 @@
 # The Burg: To-do
 
-_Last updated: November 18, 2026 (player-submitted NPCs planned; chapter demo videos)_
+_Last updated: November 18, 2026 (player-submitted NPCs planned for version 2.0)_
 
 This is the project's working to-do list: what's been done, what's next, and in what order. Every open item has a
 matching **GitHub issue** with a priority label (**P1 – now**, **P2 – soon**, **P3 – later**). The issues are the
@@ -30,12 +30,17 @@ added, finished or re-prioritized, both change in the same session.
 
 - [ ] **Manual play-test pass on real phones** (iPhone and Android install, offline, resume) — [#9](https://github.com/krazow/The-Burg/issues/9)
 
-### Be in The Burg: player-submitted NPCs
+## Later: P3
+
+- [ ] **More local content:** town-specific events, seasonal jobs — [#11](https://github.com/krazow/The-Burg/issues/11)
+
+## Version 2.0: Be in The Burg (player-submitted NPCs)
 
 Players fill in a questionnaire in the game about themselves as a Waitsburg character (where they hang out, their
 personality, how they react to the player, their own small event). Answers go to Formspree
 (`https://formspree.io/f/xyewwazg`), you review them, and approved characters ship in the next release. Full plan,
-risks and the 10-page questionnaire: [docs/npc-submissions.md](docs/npc-submissions.md). In order:
+risks and the 10-page questionnaire: [docs/npc-submissions.md](docs/npc-submissions.md). The issues are grouped in the
+[v2.0 milestone](https://github.com/krazow/The-Burg/milestone/1). Version 2.0 is released when all six are done. In order:
 
 | # | Item | Size | Issue |
 |---|---|---|---|
@@ -52,10 +57,6 @@ risks and the 10-page questionnaire: [docs/npc-submissions.md](docs/npc-submissi
 - [ ] NPC engine — [#42](https://github.com/krazow/The-Burg/issues/42)
 - [ ] NPC behavior and events — [#43](https://github.com/krazow/The-Burg/issues/43)
 - [ ] NPC QA — [#44](https://github.com/krazow/The-Burg/issues/44)
-
-## Later: P3
-
-- [ ] **More local content:** town-specific events, seasonal jobs — [#11](https://github.com/krazow/The-Burg/issues/11)
 
 ---
 
@@ -118,3 +119,4 @@ that careless play stays at or below 60 and good play at or above 70.
 | Nov 17, 2026 | **Demo videos** of the gameplay tutorial with subtitles: vertical 9:16 and widescreen 16:9, each with an .srt file (2:09). | sent in chat |
 | Nov 17, 2026 | **Chapter demo videos:** the tutorial recording split into 7 chapters, each introduced by a full-screen slide (no subtitles), in the style of the Bankroll demo: vertical 9:16 and widescreen 16:9 at 4K (3:17). | sent in chat |
 | Nov 18, 2026 | **Planned player-submitted NPCs:** analysis, the 10-page questionnaire and the work breakdown; filed #39–#44. | [plan](docs/npc-submissions.md) |
+| Nov 18, 2026 | Moved the NPC work (#39–#44) to **version 2.0**, with a [v2.0 milestone](https://github.com/krazow/The-Burg/milestone/1); removed the pronouns question from the form. | `TODO.md` |

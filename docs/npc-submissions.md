@@ -1,6 +1,7 @@
 # Be in The Burg: player-submitted NPCs
 
-_Analysis and plan, November 18, 2026. Tracked in the to-do list (TODO.md) and GitHub issues #39–#44._
+_Analysis and plan, November 18, 2026. Planned for **version 2.0**. Tracked in the to-do list (TODO.md) and GitHub issues #39–#44
+(the [v2.0 milestone](https://github.com/krazow/The-Burg/milestone/1))._
 
 A player fills in a questionnaire inside the game describing themselves as a Waitsburg character: who they are, where
 they hang out, what they're like, and how they react to the player. The answers go to the Formspree form at
