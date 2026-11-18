@@ -7,7 +7,7 @@
    Other trips take part of your week, so your focus works at 75% that week.
    Places are described, not named (no real business names).
    ============================================================ */
-const TRIP_MAX = 3, TRIP_FX = 0.28, TRIP_TIME = 0.75, STOCK_WEEKS = 4, STOCK_OFF = 0.15, GROCERY_SHARE = 360, REPEAT_WEEKS = 4;
+const TRIP_MAX = 3, TRIP_FX = 0.28, TRIP_TIME = 0.75, STOCK_WEEKS = 6, STOCK_OFF = 0.2, GROCERY_SHARE = 360, REPEAT_WEEKS = 4;
 const inSeason = (...ms) => () => ms.includes(curMonth());
 const STOP_KINDS = { errand:'🛒 Errands', car:'🛻 Car care', eat:'🍽️ Eat out', do:'🎟️ Things to do', appt:'🩺 Appointments' };
 const STOPS = [
@@ -40,6 +40,9 @@ const STOPS = [
   { id:'checkup', kind:'appt', ic:'🩺', name:'Doctor checkup', towns:['wallawalla','kennewick'], cost:250, fx:{health:6}, note:'Does more when your health is low.' }
 ];
 const stopById = id => STOPS.find(s => s.id === id);
+// B5: while you're in debt a trip is one stop at most, and the trip screens say so
+const tripMax = () => S.money < 0 ? 1 : TRIP_MAX;
+const debtTripNote = () => S.money < 0 ? `<div class="card warn">💳 You're ${fmt(-S.money)} in debt: trips cost gas and money, so they're limited to 1 stop until you're back above $0.</div>` : '';
 // why a stop can't be picked right now ('' when it can)
 function stopBlocked(s){
   if (s.min21 && age() < 21) return '21 and over';
@@ -60,7 +63,7 @@ function planTrip(city, ids){
   if (!CITIES[city] || city === 'waitsburg') return 'Pick a town to visit.';
   ids = [...new Set(ids)];
   if (!ids.length) return 'Pick at least one stop.';
-  if (ids.length > TRIP_MAX) return `Up to ${TRIP_MAX} stops a trip.`;
+  if (ids.length > tripMax()) return S.money < 0 ? 'While you\'re in debt, a trip can have only 1 stop.' : `Up to ${TRIP_MAX} stops a trip.`;
   for (const id of ids) {
     const s = stopById(id);
     if (!s || !s.towns.includes(city)) return 'That stop isn\'t in this town.';
@@ -102,7 +105,7 @@ function tripWeek(lines){
 /* ---- trip screens ---- */
 function tripPicker(){
   sheet(`<h2>🚗 Plan a trip</h2>
-    <p class="muted">One trip a week, up to ${TRIP_MAX} stops. It happens when you end the week.${S.trip ? ` You have a trip to ${CITIES[S.trip.city].name} planned.` : ''}</p>
+    <p class="muted">One trip a week, up to ${tripMax()} stop${tripMax() === 1 ? '' : 's'}. It happens when you end the week.${S.trip ? ` You have a trip to ${CITIES[S.trip.city].name} planned.` : ''}</p>${debtTripNote()}
     ${Object.entries(CITIES).filter(([k]) => k !== 'waitsburg').map(([k,c]) => {
       const gas = tripGas(k);
       return `<button class="kv job tripto" data-town="${k}"><span><span class="t">${TOWNIC[k]} ${c.name}</span><span class="s">${c.miles} mi each way · ${gas ? `gas about ${fmt(gas)}` : 'on your way home from work: no extra gas'}</span></span><span aria-hidden="true">›</span></button>`;
@@ -113,7 +116,8 @@ function tripPicker(){
 }
 function tripSheet(city){
   const c = CITIES[city], gas = tripGas(city);
-  let sel = S.trip && S.trip.city === city ? S.trip.stops.filter(id => !stopBlocked(stopById(id))) : [];
+  const max = tripMax();
+  let sel = S.trip && S.trip.city === city ? S.trip.stops.filter(id => !stopBlocked(stopById(id))).slice(0, max) : [];
   const groups = Object.entries(STOP_KINDS).map(([kind, label]) => {
     const list = townStops(city).filter(s => s.kind === kind); if (!list.length) return '';
     return `<h3 class="triph">${label}</h3>` + list.map(s => {
@@ -125,6 +129,7 @@ function tripSheet(city){
   }).join('');
   sheet(`<h2>${TOWNIC[city]} Trip to ${c.name}</h2>
     <p class="muted">${c.miles} mi each way · ${gas ? `gas about ${fmt(gas)}. A trip takes part of your week: your focus works at ${TRIP_TIME*100}%.` : 'You work here, so you\'ll stop on the way home: no extra gas or time.'}</p>
+    ${debtTripNote()}
     ${S.trip && S.trip.city !== city ? `<p class="muted">This replaces your trip to ${CITIES[S.trip.city].name}.</p>` : ''}
     ${groups}
     <p id="tripsum" class="tripsum" aria-live="polite"></p>
@@ -133,17 +138,17 @@ function tripSheet(city){
     <button class="btn ghost" id="back">Other towns</button>`);
   const sum = () => {
     const total = gas + sel.reduce((a, id) => a + stopCost(stopById(id)), 0);
-    $('#tripsum').textContent = sel.length ? `${sel.length} of ${TRIP_MAX} stops · about ${fmt(total)} in all` : `Pick up to ${TRIP_MAX} stops.`;
+    $('#tripsum').textContent = sel.length ? `${sel.length} of ${max} stop${max === 1 ? '' : 's'} · about ${fmt(total)} in all` : `Pick up to ${max} stop${max === 1 ? '' : 's'}.`;
     $('#go').disabled = !sel.length;
     document.querySelectorAll('[data-stop]').forEach(b => {
       const s = stopById(b.dataset.stop), on = sel.includes(s.id);
       b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
-      b.disabled = !!stopBlocked(s) || (!on && sel.length >= TRIP_MAX);
+      b.disabled = !!stopBlocked(s) || (!on && sel.length >= max);
     });
   };
   document.querySelectorAll('[data-stop]').forEach(b => b.onclick = () => {
     const id = b.dataset.stop;
-    sel = sel.includes(id) ? sel.filter(x => x !== id) : sel.length < TRIP_MAX ? [...sel, id] : sel; sum();
+    sel = sel.includes(id) ? sel.filter(x => x !== id) : sel.length < max ? [...sel, id] : sel; sum();
   });
   $('#go').onclick = () => {
     const err = planTrip(city, sel); if (err) return toast(err);
@@ -279,7 +284,8 @@ const STORY_EVENTS = [
       if (f.good) { adj({community:5, happy:3}); return 'The truck is a hit, and your friend tells everyone you helped build it.'; }
       adj({community:2}); return 'The truck closed, but you made some good memories painting it.'; }}]},
   // 🌊 the flood and the levee
-  { ic:'🌊', title:'Water in the basements', once:1, w:3, when:m => [1,2,3].includes(m) && S.turn > 20 && !S.chains?.levee,
+  // R10: the flood only comes within 8 weeks of high water that you didn't help sandbag
+  { ic:'🌊', title:'Water in the basements', once:1, w:12, when:() => S.highWater != null && S.turn - S.highWater <= 8 && !S.chains?.levee,
     text:'The Touchet jumped its banks overnight. Half a dozen homes near the river have water in the basement.',
     choices:() => [
       {label:'Help muck out', go:() => { adj({community:4, health:-2}); chainSet('levee', 2, { helped:true }); return 'Wet boots, heavy carpets, grateful neighbors.'; }},
@@ -373,17 +379,30 @@ function skillsCard(){
    🏪 YOUR OWN BUSINESS (#72): small, risky, can grow
    ============================================================ */
 const BIZ = {
-  wheat: { ic:'🌾', name:'Lease wheat ground', cost:6000, desc:'Lease 80 acres and hire it farmed. Pays once a year at harvest (August), more or less depending on the weather and prices.',
+  wheat: { ic:'🌾', name:'Lease wheat ground', cost:6000, desc:'Lease 80 acres and hire it farmed. Pays once a year at harvest (August), more or less depending on the weather and prices. The lease runs 5 years, then renewing costs a quarter of the price.',
     yearly:() => cost(6000) * (chance(0.15) ? 0.3 : 0.9 + Math.random() * 0.8), month:7 },
   truck: { ic:'🚚', name:'Food truck', cost:9000, desc:'Weekends at the fairgrounds and events, April through October. Takes your Side hustle weeks; pays more with the Cook skill.',
     weekly:() => [3,4,5,6,7,8,9].includes(curMonth()) && S.focus === 'hustle' ? cost(1400) * (1 + skillLv('cook') * 0.15) * (0.7 + Math.random() * 0.6) * W : 0 },
   shop:  { ic:'🪚', name:'Woodworking shop', cost:2500, desc:'Make and sell furniture from your garage. Pays a little every week; more with the Handy skill.',
     weekly:() => cost(180) * (1 + skillLv('handy') * 0.4) * (0.6 + Math.random() * 0.8) * W }
 };
-const bizValue = () => S.biz ? cost(BIZ[S.biz.type].cost) * 0.6 : 0;
+const bizValue = () => S.biz ? cost(BIZ[S.biz.type].cost) * 0.6 * (S.biz.dep ?? 1) : 0;
+const leaseCost = () => cost(BIZ.wheat.cost) * LEASE_RENEW;
+const leaseDue = () => !!(S.biz && S.biz.type === 'wheat' && S.biz.weeks >= (S.biz.lease ?? LEASE_WEEKS));
+function renewLease(){
+  if (!leaseDue()) return '';
+  const c = leaseCost(); if (S.money < c) return `You need ${fmt(c)} on hand.`;
+  S.money -= c; S.biz.lease = S.biz.weeks + LEASE_WEEKS; log(`Renewed the wheat lease for 5 more years (${fmt(c)}).`);
+  return '';
+}
 function bizWeek(lines, notes){
   const b = S.biz && BIZ[S.biz.type]; if (!b) return;
-  S.biz.weeks++;
+  S.biz.weeks++; S.biz.dep = (S.biz.dep ?? 1) * Math.pow(1 - BIZ_DEP, 1/52);   // R13: wear and age take 5% a year off its value
+  if (S.biz.type === 'wheat') {                    // R13: the lease runs 5 years, then it's renew or lose it
+    const end = S.biz.lease ?? (S.biz.lease = LEASE_WEEKS);
+    if (S.biz.weeks === end) { notes.push(`${b.ic} Your wheat lease is up. Renew it on the Life tab for ${fmt(leaseCost())} within ${LEASE_GRACE} weeks, or the landowner leases the ground to someone else.`); log('The wheat lease came up for renewal.'); }
+    if (S.biz.weeks >= end + LEASE_GRACE) { notes.push(`${b.ic} You didn't renew, so the wheat lease ended.`); log('The wheat lease ended.'); S.biz = null; return; }
+  }
   if (b.weekly) { const v = b.weekly(); if (v) { lines.push([`${b.ic} ${b.name}`, v]); S.biz.earned += v; } }
   if (b.yearly && curMonth() === b.month && S.biz.paidYear !== new Date(S.date).getFullYear()) {
     S.biz.paidYear = new Date(S.date).getFullYear(); const v = b.yearly(); lines.push([`${b.ic} Harvest check`, v]); S.biz.earned += v;
@@ -392,9 +411,11 @@ function bizWeek(lines, notes){
 }
 function bizCard(){
   if (S.biz) { const b = BIZ[S.biz.type];
+    const lease = S.biz.type === 'wheat' ? (leaseDue() ? `<div class="card warn" style="margin:6px 0">🌾 The lease is up: renew within ${Math.max(1, S.biz.lease + LEASE_GRACE - S.biz.weeks)} week${S.biz.lease + LEASE_GRACE - S.biz.weeks === 1 ? '' : 's'} or it ends. <button class="sm" id="renew">Renew for 5 years (${fmt(leaseCost())})</button></div>`
+      : `<div class="kv"><span>Lease</span><span>${Math.ceil(((S.biz.lease ?? LEASE_WEEKS) - S.biz.weeks) / 52 * 10) / 10} years left</span></div>`) : '';
     return `<div class="card"><h3>🏪 Your business</h3><div class="kv"><span>${b.ic} ${b.name}<br><small class="muted">${b.desc}</small></span><span></span></div>
       <div class="kv"><span>Earned so far</span><span><b>${fmt(S.biz.earned)}</b></span></div>
-      <div class="kv"><span>Worth if you sell</span><span>${fmt(bizValue())}</span></div>
+      <div class="kv"><span>Worth if you sell</span><span>${fmt(bizValue())}</span></div>${lease}
       <button class="sm alt" id="bizsell">Sell the business</button></div>`; }
   return `<div class="card"><h3>🏪 Start a business</h3><p class="muted" style="margin:0 0 6px">Small, risky, and it can grow. One at a time.</p>
     ${Object.entries(BIZ).map(([k,b]) => `<div class="kv job"><div><div class="t">${b.ic} ${b.name}</div><div class="s">${b.desc}</div></div><button class="sm" data-biz="${k}">${fmt(cost(b.cost))}</button></div>`).join('')}</div>`;
@@ -402,7 +423,7 @@ function bizCard(){
 function startBiz(k){
   const b = BIZ[k], c = cost(b.cost);
   if (S.money < c) return toast(`You need ${fmt(c)} on hand.`);
-  S.money -= c; S.biz = { type:k, weeks:0, earned:0, paidYear:null }; adj({happy:3}); log(`Started a business: ${b.name.toLowerCase()}.`, 'money');
+  S.money -= c; S.biz = { type:k, weeks:0, earned:0, paidYear:null, dep:1, lease: k === 'wheat' ? LEASE_WEEKS : null }; adj({happy:3}); log(`Started a business: ${b.name.toLowerCase()}.`, 'money');
   save(); render(); toast(`${b.ic} You started a ${b.name.toLowerCase()}!`);
 }
 function sellBiz(){
@@ -413,14 +434,26 @@ function sellBiz(){
    📅 WEEKLY CHALLENGE (#75): everyone gets the same dice this week; and 📤 a shareable score card
    ============================================================ */
 const NATIVE_RANDOM = Math.random;
-const isoWeek = (d = new Date()) => { const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())); const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day);
+// the week is counted in UTC, so friends in different time zones are on the same week (R9)
+const isoWeek = (d = new Date()) => { const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())); const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day);
   const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1)); return `${t.getUTCFullYear()}-W${String(Math.ceil(((t - y0) / 864e5 + 1) / 7)).padStart(2, '0')}`; };
 const weekSeed = w => [...w].reduce((a, c) => Math.imul(a ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261);
 // a seeded life keeps its dice in S.rng, so it plays the same however often it's saved and continued
+// one step of the mulberry32 dice: returns [next state, a number from 0 to 1]
+const diceStep = a => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return [a, ((t ^ t >>> 14) >>> 0) / 4294967296]; };
 function useDice(){
-  if (S && S.rng != null) Math.random = () => { let a = S.rng | 0; a = a + 0x6D2B79F5 | 0; S.rng = a; let t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  if (S && S.rng != null) Math.random = () => { const [a, v] = diceStep(S.rng | 0); S.rng = a; return v; };
   else Math.random = NATIVE_RANDOM;
+}
+// R8: a seeded life rolls its events (whether one comes, and which) with separate dice, reseeded each week from
+// S.rngEv and the week number, so the same events come in the same weeks whatever anyone chose before.
+// Returns { done() } to switch back to the everyday dice.
+function eventDice(){
+  if (!S || S.rngEv == null) return { done(){} };
+  const prev = Math.random; let a = weekSeed(`${S.rngEv}:${S.turn}`);
+  Math.random = () => { const [n, v] = diceStep(a); a = n; return v; };
+  return { done(){ Math.random = prev; } };
 }
 function startWeekly(name){
   const free = slots().indexOf(null), wkid = isoWeek();
@@ -435,9 +468,9 @@ function scoreCard(){
   g.fillStyle = '#fff'; g.textAlign = 'center'; g.font = 'bold 110px Georgia, serif'; g.fillText('The Burg', 540, 170);
   g.fillStyle = '#3d2b1f'; g.font = '600 52px system-ui, sans-serif'; g.fillText(`${S.name}'s life in Waitsburg`, 540, 380);
   g.font = '40px system-ui, sans-serif'; g.fillStyle = '#6b5b4e';
-  g.fillText(`${LENGTHS[S.len].label}${S.weekly ? ` · Weekly challenge ${S.weekly}` : ''}${mode() !== 'normal' ? ` · ${MODES[mode()].name}` : ''}`, 540, 450);
+  g.fillText(`${LENGTHS[S.len].label}${S.weekly ? ` · Weekly challenge ${S.weekly}` : ''}${mode() !== 'normal' ? ` · ${MODES[mode()].name} mode` : ''}`, 540, 450);
   g.fillStyle = '#9b2f1f'; g.font = 'bold 300px Georgia, serif'; g.fillText(String(score), 540, 800);
-  g.fillStyle = '#3d2b1f'; g.font = '600 60px system-ui, sans-serif'; g.fillText(title, 540, 900);
+  g.fillStyle = '#3d2b1f'; g.font = '600 60px system-ui, sans-serif'; g.fillText(mode() !== 'normal' ? `${title} (${MODES[mode()].name})` : title, 540, 900);
   g.font = '40px system-ui, sans-serif'; g.fillStyle = '#6b5b4e';
   const bs = BADGES.filter(b => S.badges && S.badges[b.id]).map(b => b.ic).join(' ');
   if (bs) g.fillText(bs, 540, 1010);
@@ -454,21 +487,61 @@ async function shareCard(){
 }
 
 /* ============================================================
-   🌳 LEGACY MODE (#76): when a Lifetime game ends, play on as your grown kid
+   🌳 LEGACY MODE (#76): when a Lifetime game ends, play on as your grandkid (18, since you passed in your 80s: R6)
    ============================================================ */
-function startLegacy(parent){
+const ROMAN = [[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];
+const toRoman = n => ROMAN.reduce((out, [v, r]) => { while (n >= v) { out += r; n -= v; } return out; }, '');
+const fromRoman = r => { let n = 0; for (let i = 0; i < r.length; i++) { const v = { I:1, V:5, X:10 }[r[i]], nx = { I:1, V:5, X:10 }[r[i+1]] || 0; n += v < nx ? -v : v; } return n; };
+// R5: Ann Lee → Ann Lee II → Ann Lee III, kept within 20 characters
+function heirName(name){
+  let base = String(name || 'Dusty').trim(), n = 1;
+  const m = base.match(/^(.*\S)\s+([IVX]+)$/);
+  if (m && toRoman(fromRoman(m[2])) === m[2] && fromRoman(m[2]) >= 2) { base = m[1]; n = fromRoman(m[2]); }
+  else if (/\s+Jr\.?$/.test(base)) { base = base.replace(/\s+Jr\.?$/, ''); n = 2; }
+  const suffix = ' ' + toRoman(Math.min(39, n + 1));
+  return base.slice(0, 20 - suffix.length).trim() + suffix;
+}
+// pick (or type) the grandkid's name before the next generation starts
+function legacySheet(parent){
+  const sugg = heirName(parent.name);
+  sheet(`<div class="big">🌳</div><h2 style="text-align:center">Continue as your grandkid</h2>
+    <p>${esc(parent.name)}'s grandkid just turned 18 and is staying in Waitsburg, with part of the family's savings and a name people know around town.</p>
+    <label class="field" for="heirnm">Your grandkid's name</label>
+    <input type="text" id="heirnm" maxlength="20" value="${esc(sugg)}" autocomplete="off">
+    <button class="btn primary" id="heirgo">Start the next generation</button>
+    <button class="btn ghost" id="no">Not now (back to the title screen)</button>`);
+  $('#heirgo').onclick = () => { const nm = ($('#heirnm').value.trim() || sugg).slice(0, 20); closeSheet(); startLegacy(parent, nm); };
+  $('#no').onclick = () => { closeSheet(); S = null; useDice(); renderTitle(); };
+}
+function startLegacy(parent, name = heirName(parent.name)){
   const real = Math.max(0, parent.nw), heir = Math.min(250000 * (parent.col || 1), Math.round(real * 0.5));
-  const name = `${parent.name.split(' ')[0]} Jr.`.slice(0, 20);
+  name = String(name).slice(0, 20);
   newGame(name, 'life', parent.slot ?? 0, { bg:'fresh', mode:parent.mode });
   S.gen = (parent.gen || 1) + 1; S.money = heir; S.community = clamp(Math.round(parent.community / 2) + 15);
   S.date = parent.date; S.col = parent.col; S.wage = parent.wage; S.tabsYear = new Date(S.date).getFullYear();
   S.yearStart = { nw: netWorth(), happy: S.happy, health: S.health, community: S.community };
   S.badges = {}; S.log = [];
-  log(`${name} turns 18 and picks up where ${parent.name} left off, with ${fmt(heir)} from the family and a name people know around town.`);
+  log(`${name} turns 18 and picks up where grandparent ${parent.name} left off, with ${fmt(heir)} from the family and a name people know around town.`);
   save(); render(); toast(`🌳 Generation ${S.gen}: ${name}`);
 }
 
 /* ---------- 🏆 Life Score so far (#67) ---------- */
+// R16: Relaxed and Hard scores are labeled as such, and kept apart from Normal best scores
+function modeScoreNote(){
+  const md = mode(); if (md === 'normal') return '';
+  return `<p class="muted modenote" style="text-align:center">${MODES[md].ic} <b>${MODES[md].name} mode score.</b> ${md === 'relaxed' ? 'Debt never ends a Relaxed life, so' : 'Hard'} scores are kept separately from Normal ones and aren't compared with them.</p>`;
+}
+// B10: how far through the game you are (Lifetime: age 18 to 65), for an "on track" net-worth target
+function gameProgress(){
+  const L = LENGTHS[S.len];
+  return L.turns === Infinity ? clamp((S.ageMonths / 12 - 18) / (65 - 18), 0, 1) : clamp(S.turn / L.turns, 0, 1);
+}
+function wealthTrack(real){
+  const L = LENGTHS[S.len], p = gameProgress(), want = L.target * p;
+  if (p < 0.02) return '';
+  const ok = real >= want;
+  return `<div class="kv"><span>${ok ? '✅' : '⏳'} Net worth on track?<br><small class="muted">By now (${Math.round(p * 100)}% of the way) you'd want about ${fmt(want)} in 2027 dollars</small></span><span><b>${ok ? 'On track' : `${Math.round(real / want * 100)}% there`}</b></span></div>`;
+}
 function scoreButton(){
   if (S.practice) return '';
   const sc = lifeScore(), d = S.scoreQ == null ? 0 : sc.score - S.scoreQ;
@@ -486,12 +559,14 @@ function showScoreNow(){
   const part = (l, sub, v, w) => `<div class="kv"><span>${l}<br><small class="muted">${sub}</small></span><span><b>${v}</b>/100 × ${w}% = <b>${Math.round(v * w / 100)}</b></span></div>`;
   const weakest = Object.entries(parts).sort((a, b) => a[1] - b[1])[0][0];
   sheet(`<h2>🏆 Life Score so far: ${score}</h2>
-    <p class="muted">${title}. This is what you'd score if the game ended today.${S.scoreQ != null ? ` Last report card: ${S.scoreQ}.` : ''}</p>
+    <p class="muted">${title}${mode() !== 'normal' ? ` (${MODES[mode()].name})` : ''}. This is what you'd score if the game ended today.${S.scoreQ != null ? ` Last report card: ${S.scoreQ}.` : ''}</p>
     ${part('Happiness', `average ${Math.round(avgH)} so far`, parts.happy, 30)}
     ${part('Health', `average ${Math.round(avgHe)} so far`, parts.health, 20)}
     ${part('Community', `now ${Math.round(S.community)}`, parts.community, 20)}
     ${part('Net worth', `${fmt(nw)}${S.col > 1.05 ? ` (${fmt(real)} in 2027 dollars)` : ''} of ${fmt(L.target)} by the end`, parts.wealth, 30)}
+    ${wealthTrack(real)}
     ${goalBonus() ? `<div class="kv"><span>🎯 Life goals reached</span><span><b>+${goalBonus()}</b></span></div>` : ''}
+    ${modeScoreNote()}
     <div class="card tip" style="margin-top:10px"><div>💡 ${SCORE_TIPS[weakest]}</div></div>
     <p class="muted">A report card goes in your Journal every 13 weeks.</p>
     <button class="btn primary" id="ok">Close</button>`);
@@ -528,7 +603,8 @@ function finish(reason){
     <p class="muted" style="text-align:center">${reason}</p>
     ${S.bg !== 'fresh' || mode() !== 'normal' ? `<p class="muted" style="text-align:center">${BACKGROUNDS[S.bg].ic} ${BACKGROUNDS[S.bg].name} · ${MODES[mode()].ic} ${MODES[mode()].name}</p>` : ''}
     <div class="score">${score}</div>
-    <p style="text-align:center;margin-top:0"><b>${title}</b>${isBest ? ' · <span class="tag cur">New best!</span>' : ''}</p>
+    <p style="text-align:center;margin-top:0"><b>${title}</b>${mode() !== 'normal' ? ` <span class="tag">${MODES[mode()].ic} ${MODES[mode()].name} score</span>` : ''}${isBest ? ` · <span class="tag cur">New best${mode() !== 'normal' ? ` (${MODES[mode()].name})` : ''}!</span>` : ''}</p>
+    ${modeScoreNote()}
     <h3 style="margin-top:10px">How the score adds up</h3>
     ${part('Happiness', `average ${Math.round(avgH)} (30 → 0, 90 → 100)`, parts.happy, 30)}
     ${part('Health', `average ${Math.round(avgHe)} (40 → 0, 95 → 100)`, parts.health, 20)}
@@ -544,10 +620,10 @@ function finish(reason){
     ${S.biz ? `<div class="kv"><span>🏪 Business</span><span>${BIZ[S.biz.type].name}, earned ${fmt(S.biz.earned)}</span></div>` : ''}
     ${S.gen > 1 ? `<div class="kv"><span>🌳 Generation</span><span>${S.gen}</span></div>` : ''}
     ${!S.practice ? '<button class="btn ghost" id="share">📤 Share score card</button>' : ''}
-    ${LENGTHS[S.len].turns === Infinity && (S.kids || []).length && !S.practice ? `<button class="btn primary" id="legacy">🌳 Continue as your kid</button>` : ''}
+    ${LENGTHS[S.len].turns === Infinity && (S.kids || []).length && !S.practice ? `<button class="btn primary" id="legacy">🌳 Continue as your grandkid</button>` : ''}
     <button class="btn ${LENGTHS[S.len].turns === Infinity && (S.kids || []).length && !S.practice ? 'ghost' : 'primary'}" id="again">Play again</button>`);
   const parent = { name:S.name, nw:netWorth(), community:S.community, slot:S.slot, mode:mode(), gen:S.gen || 1, date:S.date, col:S.col, wage:S.wage };
   if ($('#share')) $('#share').onclick = shareCard;
-  if ($('#legacy')) $('#legacy').onclick = () => { closeSheet(); startLegacy(parent); };
+  if ($('#legacy')) $('#legacy').onclick = () => legacySheet(parent);
   $('#again').onclick = () => { closeSheet(); S = null; useDice(); renderTitle(); };
 }

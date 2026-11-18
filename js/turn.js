@@ -64,6 +64,7 @@ function weekTick(auto){
   const L = LENGTHS[S.len], m = W, k = 0.28;
   const f = FOCUS[S.focus] || FOCUS.rest, j = S.retired ? null : job();
   const lines = [], notes = [];
+  if (syncCarpool()) log('Your carpool ended with the job change: you drive alone now.');
 
   // ---- money (constants are monthly; m converts to one week) ----
   let gross = 0;
@@ -81,15 +82,19 @@ function weekTick(auto){
   if (!S.retired && !j && S.ui > 0) { const n = Math.min(m, S.ui); lines.push(['Unemployment benefits', 1100*S.wage*n]); S.ui -= n; }
   let gig = null;
   const truckTime = S.biz && S.biz.type === 'truck' && [3,4,5,6,7,8,9].includes(curMonth());
-  if (f.hustle && !truckTime) { gig = currentGig(); const xp = 1 + Math.min(0.6, (S.hustleWeeks || 0) / 40); lines.push([`Side hustle: ${gig.name}`, cost(gig.pay * (0.85 + Math.random() * 0.3)) * xp * outAdBoost() * m]); S.hustleWeeks = (S.hustleWeeks || 0) + 1; }
+  if (f.hustle && !truckTime) { gig = currentGig(); const xp = 1 + Math.min(0.6, (S.hustleWeeks || 0) / 40); lines.push([`Side hustle: ${gig.name}`, cost(gig.pay * (0.85 + Math.random() * 0.3)) * xp * outAdBoost() * m]); S.hustleWeeks = (S.hustleWeeks || 0) + 1; S.hustleLast = S.turn; }
+  else if (S.hustleWeeks > 0 && S.turn - (S.hustleLast ?? S.turn) > HUSTLE_FADE_AFTER) S.hustleWeeks = Math.max(0, S.hustleWeeks - HUSTLE_FADE);   // B9: rusty after 6 months off
   const home = HOMES[S.home], car = CARS[S.car];
-  lines.push([home.own ? 'Mortgage' : 'Rent', -(home.own && S.mortgage ? S.mortgage : cost(home.cost))*m]);
+  const rentV = -(home.own && S.mortgage ? S.mortgage : cost(home.cost))*m;
+  lines.push([home.own ? 'Mortgage' : 'Rent', rentV]);
   bizWeek(lines, notes);
   const trip = tripWeek(lines);                    // this week's trip around the region, if one is planned
   const stocked = S.turn < S.stockUntil;
-  lines.push([stocked ? 'Food & utilities (stocked up)' : 'Food & utilities', -cost(520 - (stocked ? GROCERY_SHARE * STOCK_OFF : 0))*(1 - skillLv('cook') * 0.04)*m]);
-  lines.push(['Insurance & phone', -cost(160)*m]);
-  { const y = new Date(S.date).getFullYear(); if (curMonth() === 0 && S.tabsYear !== y) { lines.push(['Vehicle tabs (DMV)', -cost(95)]); S.tabsYear = y; } }
+  const foodV = -cost(520 - (stocked ? GROCERY_SHARE * STOCK_OFF : 0))*(1 - skillLv('cook') * 0.04)*m, insV = -cost(160)*m;
+  lines.push([stocked ? 'Food & utilities (stocked up)' : 'Food & utilities', foodV]);
+  lines.push(['Insurance & phone', insV]);
+  if (mode() === 'hard') lines.push(['Higher living costs (Hard, +10%)', (rentV + foodV + insV) * HARD_LIVING]);   // R15: 10% of rent, food and insurance
+  { const y = new Date(S.date).getFullYear(); if (curMonth() === 0 && S.tabsYear !== y) { lines.push(['Vehicle tabs (DMV)', -vehicleTabs()]); S.tabsYear = y; } }
   const miles = (commuteOneWay()*2*WORKDAYS*commuteGasFactor() + ERRAND_MILES) * m;
   lines.push([commuteOneWay() ? 'Gas (commute + errands)' : 'Gas (errands)', -miles*cost(GAS)/car.mpg]);
   if (S.loanLeft > 0) {
@@ -100,17 +105,16 @@ function weekTick(auto){
     const n = Math.min(m, S.sloanLeft); lines.push(['Student loan', -S.sloanPay*n]); S.sloanLeft -= n;
     if (S.sloanLeft < 1e-6) { S.sloanLeft = 0; notes.push('🎓 Your student loans are paid off!'); S.paidOff = true; log('Paid off the student loans.'); }
   }
-  if (mode() === 'hard') lines.push(['Higher living costs (Hard)', -cost(68)*m]);
   if (S.dog) lines.push(['Dog food & vet', -cost(45)*m]);
   if (S.partner) { lines.push(['Date nights', -cost(120)*m]); if (age() < 65) lines.push(["Partner's paycheck (part-time)", 1400*S.wage*m]); }
   const kidsHome = kidsAtHome();
-  if (kidsHome) lines.push([kidsHome > 1 ? `Kids (${kidsHome})` : 'Kid', -cost(650)*kidsHome*m]);
+  if (kidsHome) lines.push([kidsHome > 1 ? `Kids (${kidsHome})` : 'Kid', -kidCost()*kidsHome*m]);
   const a0 = age();
   if (a0 >= 50) lines.push(['Health care', -cost(a0 >= 65 ? 420 : 180)*m]);
   if (f.cost) lines.push([f.name, -cost(f.cost)*m]);
   if (f.study && S.edu < 3) {
     lines.push(['Tuition', -cost(TUITION[S.edu])*m]);
-    S.studyProg += 1;
+    S.studyProg += trip && trip.away ? TRIP_TIME : 1;     // R11: a trip week is 3/4 of a week of classes
     if (S.studyProg >= STUDY_NEED[S.edu]) { S.studyProg = 0; S.edu++; notes.push(`🎓 You earned your ${EDU[S.edu]}! New jobs unlocked.`); log(`Graduated with a ${EDU[S.edu]}.`); adj({happy:8}); }
   }
   if (S.money < 0) lines.push(['Interest on debt', S.money * (mode() === 'relaxed' ? 0.01 : 0.015) * m]);
@@ -132,7 +136,7 @@ function weekTick(auto){
   else dh -= 2;
   dh -= commuteOneWay() / 40 * driveDays() * (carpooling() ? 0.6 : 1);
   if (carpooling()) dc += 0.3;                    // riding with neighbors keeps you in the loop
-  dh += home.happy * 0.4 + (S.partner ? 0.6 : 0) + (S.dog ? 0.4 : 0) + kidsHome * 0.3 - (S.money < 0 ? 2 : 0);
+  dh += home.happy * 0.4 + (S.partner ? 0.6 : 0) + (S.dog ? 0.4 : 0) + kidsHome * kidJoy() - (S.money < 0 ? 2 : 0);
   dc += kidsHome * 0.2;
   if (S.council) dc += 0.8;
   // worn down: pushing through low health with overtime or side hustles makes it worse, fast
@@ -142,6 +146,7 @@ function weekTick(auto){
     S.happy = clamp(S.happy + dh*m); S.health = clamp(S.health + dH*m); S.community = clamp(S.community + dc*m);
   // doing the same thing week after week loses its punch (classes excepted), and a long rut wears on you
   if (S.streakF === S.focus) S.streakN++; else { S.streakF = S.focus; S.streakN = 1; }
+  S.recentF = [S.focus, ...(S.recentF || [])].slice(0, 4);
   const eff = focusEffect();
   adj(Object.fromEntries(Object.entries(f.fx).map(([st,v]) => {
     let d = v * k * (v > 0 ? eff * (trip && trip.away ? TRIP_TIME : 1) : 1);
@@ -158,7 +163,9 @@ function weekTick(auto){
   skillWeek(notes, gig);
 
   // ---- maybe an event this week ----
+  const dice = eventDice();         // R8: events roll their own dice, so a weekly challenge brings everyone the same events
   let ev = S.noEvents ? null : rollEvent(curMonth(), trip);   // town, road and work events, paced by category
+  dice.done();
   if (ev) {
     S.evCd[ev.title] = S.turn + (ev.yr ? 40 : 8);
     { const pl = eventPlace(ev); S.evPins = [{ t: ev.title, ic: ev.ic, m: pl[0], k: pl[1], turn: S.turn + 1, r: '' }, ...(S.evPins || [])].slice(0, 12); }

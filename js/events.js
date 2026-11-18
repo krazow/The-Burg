@@ -121,8 +121,8 @@ const EVENTS = [
   { ic:'🌊', title:'The Touchet is running high', yr:1, w:3, when:m => inM(m,1,2,3),
     text:'Snowmelt and rain have the river climbing. Neighbors are filling sandbags.',
     choices:() => [
-      {label:'Help sandbag', go:() => { adj({community:6, health:-2, happy:2}); return 'Muddy, cold and proud. The town held the line.'; }},
-      {label:'Stay dry', go:() => { if (S.home==='fixer' && chance(.4)) { adj({money:-cost(2500), happy:-6}); return `Water got in your basement. Cleanup cost ${fmtc(2500)}.`; } adj({community:-2}); return 'The water stayed in its banks this time.'; }}
+      {label:'Help sandbag', go:() => { adj({community:6, health:-2, happy:2}); S.highWater = null; return 'Muddy, cold and proud. The town held the line.'; }},
+      {label:'Stay dry', go:() => { S.highWater = S.turn; if (S.home==='fixer' && chance(.4)) { adj({money:-cost(2500), happy:-6}); return `Water got in your basement. Cleanup cost ${fmtc(2500)}.`; } adj({community:-2}); return 'The water stayed in its banks this time.'; }}
     ]},
   { ic:'🍷', title:'Wine country weekend', w:3, when:() => age() >= 21,
     text:'Friends are heading to Walla Walla tasting rooms on Saturday.',

@@ -31,6 +31,18 @@ const LAYOFF_RISK = { diner:1, hardware:1, lift:1, cellar:1, onion:1, retail:1, 
   elevator:.5, cna:.5, mech:.5, imaging:.5, loan:.5, hanford:.5, labadmin:.5, trucker:.5, rail:.5,
   para:.2, insure:.2, clerk:.2, co:.2, rn:.2, prof:.2, scientist:.2, farmhand:0 };
 const K401 = [0, 0.05, 0.10];
+const HARD_LIVING = 0.1;                  // Hard mode: rent, food and insurance cost 10% more (R15)
+const HUSTLE_FADE_AFTER = 26, HUSTLE_FADE = 0.5;   // side-hustle experience fades after 6 months off, half a week per week (B9)
+const LEASE_WEEKS = 260, LEASE_RENEW = 0.25, LEASE_GRACE = 8;   // a wheat lease runs 5 years; renewing costs 25% of a new lease (R13)
+const BIZ_DEP = 0.05;                     // businesses lose 5% of their value a year (R13)
+// vehicle tabs: about 1% of what the vehicle is worth, at least $60 in 2027 dollars (R14)
+const vehicleTabs = () => Math.max(cost(60), (S.carValue || 0) * 0.01);
+// kids: $650 a month each, plus $200 of childcare when you commute 20+ miles; they lift you most in weeks at home (B4)
+const KID_COST = 650, KID_CARE_COMMUTE = 200;
+const kidCost = () => cost(KID_COST + (commuteOneWay() >= 20 ? KID_CARE_COMMUTE : 0));
+const HALF_START_DIP = 5;                 // B2: a 6-month life starts with a little less happiness and health
+const studyDone = () => Math.floor(S.studyProg);   // weeks of classes done (a trip week counts 3/4, R11)
+const kidJoy = () => ['rest', 'community'].includes(S.focus) ? 0.6 : 0.1;
 const RUT_WEEKS = 8;
 // #70: side-hustle gigs follow the seasons; pay grows up to 60% with experience (40 weeks of hustling)
 const GIGS = [
@@ -46,8 +58,8 @@ const wk = v => fmt(v*W) + '/wk';
 const LENGTHS = {
   half: { label:'6 Months', sub:'26 weeks',  turns:26,       target:16000 },
   two:  { label:'2 Years',  sub:'104 weeks', turns:104,      target:90000 },
-  five: { label:'5 Years',  sub:'260 weeks', turns:260,      target:300000 },
-  life: { label:'Lifetime', sub:'18 to the end', turns:Infinity, target:3000000 }
+  five: { label:'5 Years',  sub:'260 weeks', turns:260,      target:400000 },   // B1: raised so careless long games don't coast on pay growth
+  life: { label:'Lifetime', sub:'18 to the end', turns:Infinity, target:4000000 }
 };
 
 const CITIES = {
@@ -127,11 +139,15 @@ function migrate(s){
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
   // Around the region (0.3.0): older lives count as just serviced and checked, with this year's tabs paid
   if (s.goals && !s.goalAt) s.goalAt = Object.fromEntries(s.goals.map(id => [id, 0]));
-  const r = { goalAt:{}, skills:{}, biz:null, weekly:null, rng:null, gen:1, badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false, bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0, carpool:false, hustleWeeks:0, scoreQ:null, trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, dentist:s.turn || 0, stopLast:{}, out:null, tabsYear:new Date(s.date || Date.now()).getFullYear() };
+  const r = { goalAt:{}, skills:{}, biz:null, weekly:null, rng:null, rngEv:null, carpoolJob:s.jobId ?? null, hustleLast:s.turn || 0, highWater:null, recentF:[], gen:1, badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false, bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0, carpool:false, hustleWeeks:0, scoreQ:null, trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, dentist:s.turn || 0, stopLast:{}, out:null, tabsYear:new Date(s.date || Date.now()).getFullYear() };
   for (const k in r) if (s[k] === undefined) s[k] = r[k];
   for (const [k, v] of Object.entries(EVENT_STATE())) if (s[k] === undefined) s[k] = v;
   if (!s.out || typeof s.out !== 'object') s.out = outDefault();   // Out and about (#50)
   if (HOMES[s.home] && HOMES[s.home].own && !s.mortgage) s.mortgage = HOMES[s.home].cost;
+  // weekly-challenge lives from before separate event dice get their own event dice (R8)
+  if (s.rng != null && s.rngEv == null && s.weekly) s.rngEv = weekSeed(`${s.weekly}:events`);
+  // businesses from before depreciation and lease renewals (R13): full value, and a wheat lease gets at least a season's notice
+  if (s.biz) { if (s.biz.dep == null) s.biz.dep = 1; if (s.biz.type === 'wheat' && s.biz.lease == null) s.biz.lease = Math.max(LEASE_WEEKS, (s.biz.weeks || 0) + 13); }
   return s;
 }
 const job = () => S.jobId ? jobById(S.jobId) : null;
@@ -140,6 +156,8 @@ const commuteOneWay = () => (job() && !S.retired) ? CITIES[job().city].miles : 0
 const driveDays = (j = job()) => j && j.remote ? (5 - j.remote) / 5 : 1;
 const canCarpool = () => commuteOneWay() >= 20 && S.community >= 30;
 const carpooling = () => !!S.carpool && commuteOneWay() >= 20;
+// a carpool belongs to the job you joined it for: a new job (or none) starts out driving alone (R12)
+function syncCarpool(){ if (S && S.carpool && S.carpoolJob !== S.jobId) { S.carpool = false; S.carpoolJob = null; return true; } return false; }
 const commuteGasFactor = (j = job()) => driveDays(j) * (S && S.carpool && j && CITIES[j.city].miles >= 20 ? 0.5 : 1);
 const netWorth = () => {
   const loan = S.loanLeft > 0 ? S.loanLeft * (S.loanPay || CARS.truck.pay) * 0.85 : 0;
@@ -202,8 +220,8 @@ const BACKGROUNDS = {
   fresh:      { ic:'🌾', name:'Fresh start', hint:'Standard', desc:'18, a rented room above Main Street, $1,500 and the 1998 pickup. The classic start.' },
   farm:       { ic:'🚜', name:'Farm kid', hint:'Standard', desc:'Raised in the wheat hills. You start working on the family farm and everybody knows you, but you have only $300.',
     set:s => { s.money = 300; s.community = 42; s.health = 84; s.jobId = 'farmhand'; } },
-  grad:       { ic:'🎓', name:'Grad coming home', hint:'Head start, with debt', desc:'21, back from college with an associate degree and $36,000 in student loans (about $380 a month for 10 years).',
-    set:s => { s.ageMonths = 21*12; s.edu = 2; s.money = 500; s.community = 20; s.happy = 56; s.sloanLeft = 120; s.sloanPay = 380; } },
+  grad:       { ic:'🎓', name:'Grad coming home', hint:'Head start, with debt', desc:'21, back from college with a trade certificate, 20 weeks of classes short of an associate degree, and $36,000 in student loans (about $380 a month for 10 years).',
+    set:s => { s.ageMonths = 21*12; s.edu = 1; s.studyProg = 20; s.money = 500; s.community = 20; s.happy = 56; s.sloanLeft = 120; s.sloanPay = 380; } },
   transplant: { ic:'🏙️', name:'Seattle transplant', hint:'Money, but lonely', desc:'Moved over the mountains with $6,000 saved and a used sedan. Nobody in town knows you yet, and you miss the city.',
     set:s => { s.money = 6000; s.community = 5; s.happy = 50; s.car = 'sedan'; s.carValue = 9000; s.ageMonths = 24*12; } },
   parent:     { ic:'👶', name:'Young parent', hint:'Tight money, full heart', desc:'20, with a two-year-old. Money is tight and every week counts, but the town looks out for you.',
@@ -212,7 +230,7 @@ const BACKGROUNDS = {
 const MODES = {
   relaxed: { ic:'🌤️', name:'Relaxed', desc:'Stats wear down slower, debt grows slower and never ends your game. For playing at your own pace.' },
   normal:  { ic:'⚖️', name:'Normal', desc:'The game as designed.' },
-  hard:    { ic:'🔥', name:'Hard', desc:'Stats wear down faster, more events, layoffs more likely, living costs 10% more, and debt ends the game at -$25,000.' }
+  hard:    { ic:'🔥', name:'Hard', desc:'Stats wear down faster, more events, layoffs more likely, rent, food and insurance cost 10% more, and debt ends the game at -$25,000.' }
 };
 const mode = () => (S && S.mode) || 'normal';
 const bestKey = (len, m) => m && m !== 'normal' ? `${len}-${m}` : len;

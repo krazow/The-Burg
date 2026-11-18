@@ -51,12 +51,12 @@ function guideHTML(){
       <p><b>Debt:</b> going below $0 charges about 1.5% interest a month. At -$15,000 you get a warning, and at -$40,000 you have to leave town, which ends the game.</p>`],
     ['jobs', '💼 Jobs', `
       <p>There are ${JOBS.length} jobs in six towns, including work at Waitsburg's own businesses. You always live in Waitsburg, so other towns mean a commute. You can apply for <b>one job per week</b>. Higher community standing, extra schooling and local jobs improve your odds.</p>
-      <p><b>Making a long commute work:</b> office jobs (insurance agent, courthouse clerk, professor, loan officer, lab administrator, scientist) have <b>2 remote days</b> a week, so you drive in only 3. With community 30 or more you can <b>join a carpool</b> on the Jobs tab: half the gas, the drive wears on you less, and you stay in the loop. <b>Side hustles</b> follow the seasons (harvest work in summer, plowing snow in winter, yard work, fixing cars) and pay up to 60% more as you get good at them.</p>
+      <p><b>Making a long commute work:</b> office jobs (insurance agent, courthouse clerk, professor, loan officer, lab administrator, scientist) have <b>2 remote days</b> a week, so you drive in only 3. With community 30 or more you can <b>join a carpool</b> on the Jobs tab: half the gas, the drive wears on you less, and you stay in the loop. A carpool goes with the job: when you change jobs you drive alone until you join one again. <b>Side hustles</b> follow the seasons (harvest work in summer, plowing snow in winter, yard work, fixing cars) and pay up to 60% more as you get good at them. After 6 months without a side hustle you slowly get rusty and that extra fades.</p>
       <p>The list puts jobs you can apply for first. <b>✅ Can apply</b> hides the rest, and ▲▼ compares each job's take-home with your current one. 🔒 jobs need more schooling: tap one to see exactly what it takes.</p>
       <p><b>Raises:</b> after a year in a job your boss may offer about 6% (up to +50% in total). <b>Layoffs</b> depend on the job: retail and seasonal work is shakiest, public-sector and licensed work is steadiest, and you're safe for your first 9 months.</p>
       <table><tr><th>Job</th><th>Pay (2027)</th><th>Needs</th></tr>${jobRows}</table>`],
     ['school', '🎓 School', `
-      <p>Pick <b>📚 Take classes</b> as your focus to study. Each week of classes counts toward your next diploma and charges tuition. Studying never puts you in a rut.</p>
+      <p>Pick <b>📚 Take classes</b> as your focus to study. Each week of classes counts toward your next diploma and charges tuition. A week with a trip out of town counts as 3/4 of a week of classes. Studying never puts you in a rut.</p>
       <table><tr><th>Diploma</th><th>Weeks</th><th>Tuition</th><th>Where</th></tr>${eduRows}</table>`],
     ['home', '🏡 Homes and vehicles', `
       <p>On the <b>Life</b> tab you can move or buy a home in Waitsburg (moving costs $300) and trade up your ride. Owned homes build equity and gain value. Moving out of one sells it (6% fees).</p>
@@ -67,7 +67,7 @@ function guideHTML(){
       <p>On the <b>Life</b> tab, put <b>0%, 5% or 10%</b> of each paycheck into a <b>401(k)</b> before taxes. At 5% or more your employer adds 3%. It grows about 6% a year and counts toward net worth.</p>
       <p>In <b>Lifetime</b> games you can retire from age 62 (on the Jobs tab). Retirement pays Social Security, and your 401(k) pays out about 4% a year.</p>`],
     ['family', '❤️ Family and household', `
-      <p>Life brings people and pets: a <b>partner</b> (date nights, a part-time paycheck, and happier weeks), <b>kids</b> (about $650 a month each until 18, and more joy and community), a <b>dog</b>, even a seat on the <b>town council</b> once your community standing is 60 or higher. These mostly arrive through events, so say yes when it fits your life.</p>`],
+      <p>Life brings people and pets: a <b>partner</b> (date nights, a part-time paycheck, and happier weeks), <b>kids</b> (about $650 a month each until 18, plus $200 of childcare if you commute 20+ miles; they bring the most joy in weeks you Rest or Show up for town, and more community), a <b>dog</b>, even a seat on the <b>town council</b> once your community standing is 60 or higher. These mostly arrive through events, so say yes when it fits your life.</p>`],
     ['events', '🎲 Events', `
       <p>Many weeks something happens: about 100 events tied to the seasons, the road and your work. Tap a choice to decide, and every choice shows what it did. Events with only one choice close in one tap. A few examples:</p>
       <ul><li><b>Spring:</b> Celebration Days races, the Touchet running high, tax refunds.</li>
@@ -90,8 +90,9 @@ function guideHTML(){
       <ul><li><b>Gas:</b> there and back, at your vehicle's mileage. In the town you <b>commute to</b> it's free: you stop on the way home.</li>
       <li><b>Time:</b> any other trip takes part of your week, so your focus works at ${TRIP_TIME*100}% that week.</li>
       <li><b>Groceries:</b> a stock-up run at a big store makes groceries ${STOCK_OFF*100}% cheaper for ${STOCK_WEEKS} weeks.</li>
-      <li><b>Car care:</b> an oil change cuts breakdowns for 6 months; after a year without one they're more likely. Winter tires (October–January) make sliding off Highway 12 much less likely. Your vehicle's tabs renew every January (DMV).</li>
+      <li><b>Car care:</b> an oil change cuts breakdowns for 6 months; after a year without one they're more likely. Winter tires (October–January) make sliding off Highway 12 much less likely. Your vehicle's tabs renew every January (DMV): about 1% of what the vehicle is worth, at least $60.</li>
       <li><b>Appointments:</b> skip the dentist for more than a year and a toothache gets likely. A doctor checkup does more when your health is low.</li>
+      <li><b>In debt?</b> While your cash is below $0, a trip can have only 1 stop.</li>
       <li><b>Going out:</b> doing the same thing again within ${REPEAT_WEEKS} weeks is only half as fun. Dinners and movies cost double, and do more, with your partner along.</li></ul>
       <table><tr><th>Town</th><th>Places to go</th></tr>${Object.entries(CITIES).filter(([k]) => k !== 'waitsburg').map(([k,c]) => `<tr><td>${TOWNIC[k]} <b>${c.name}</b><br><small>${c.miles} mi</small></td><td>${townStops(k).map(x => `${x.ic} ${x.name}${x.cost ? ` ($${x.cost})` : ''}${x.season ? ` <small>(${x.season})</small>` : ''}${x.min21 ? ' <small>(21+)</small>' : ''}`).join('<br>')}</td></tr>`).join('')}</table>
       <p class="muted">Prices are in 2027 dollars and rise over the years. Places are described, not named.</p>`],
@@ -109,15 +110,15 @@ function guideHTML(){
       <p><b>Badges:</b> earn them as your life unfolds. They're collected across all your lives (see them on the title screen).</p>
       <table><tr><th>Badge</th><th>How to earn it</th></tr>${BADGES.map(b => `<tr><td>${b.ic} ${b.name}</td><td>${b.desc}</td></tr>`).join('')}</table>
       <p><b>Life goals:</b> on the <b>Life</b> tab, pin up to ${GOAL_MAX} badges as goals for this life. Each one you reach <b>after</b> pinning it adds <b>${GOAL_POINTS} points</b> to your Life Score.</p>
-      <p><b>Stories:</b> some events unfold over weeks: fixing up the fixer-upper, a friend's food truck, and the flood that leads to a new levee. What you choose at each step changes what comes next.</p>
+      <p><b>Stories:</b> some events unfold over weeks: fixing up the fixer-upper, a friend's food truck, and the flood that leads to a new levee (it only comes after high water that the town didn't sandbag with your help). What you choose at each step changes what comes next.</p>
       <p><b>🏁 Challenges</b> (on the title screen): set-up stories with a goal. ${Object.values(SCENARIOS).map(c => `${c.ic} <b>${c.name}</b>: ${c.desc}`).join(' ')}</p>`],
     ['grow', '🧰 Skills and your own business', `
       <p><b>Skills</b> grow with practice and show on the Life tab (★ levels 1–3):</p>
       <ul>${Object.values(SKILLS).map(k => `<li>${k.ic} <b>${k.name}:</b> ${k.how}. ${k.perk}.</li>`).join('')}</ul>
-      <p><b>Start a business</b> on the Life tab (one at a time; it's worth 60% of what you paid if you sell):</p>
+      <p><b>Start a business</b> on the Life tab (one at a time; it's worth 60% of what you paid if you sell, less about 5% a year as it ages):</p>
       <ul>${Object.values(BIZ).map(b => `<li>${b.ic} <b>${b.name}</b> ($${b.cost.toLocaleString()}): ${b.desc}</li>`).join('')}</ul>
-      <p><b>📅 Weekly challenge</b> (title screen): a 6-month life where everyone gets the same events and dice that week. <b>📤 Share score card</b> on the end screen makes a picture of your result.</p>
-      <p><b>🌳 Legacy:</b> when a Lifetime game ends and you had kids, you can keep playing as your grown kid, with half your net worth (up to $250,000 in 2027 dollars) and some of your standing in town.</p>`],
+      <p><b>📅 Weekly challenge</b> (title screen): a 6-month life where everyone gets the same start and luck that week: the events come in the same weeks whatever you choose (what you chose earlier can still change which ones can happen). The week turns over at midnight UTC on Monday, the same moment for everyone. <b>📤 Share score card</b> on the end screen makes a picture of your result.</p>
+      <p><b>🌳 Legacy:</b> when a Lifetime game ends and you had kids, you can keep playing as your grandkid (18, with a name like Ann Lee II that you can change), with half your net worth (up to $250,000 in 2027 dollars) and some of your standing in town.</p>`],
     ['saves', '💾 Saving and loading', `
       <p>You can keep up to <b>5 lives</b>. Each one saves itself after every week.</p>
       <ul><li><b>Title screen:</b> your lives are listed with Continue and 🗑 Delete. When all 5 slots are full, a new life asks which one to replace.</li>
@@ -133,7 +134,8 @@ function guideHTML(){
       <tr><td>Health</td><td>Your average: 40 → 0, 95 → 100</td><td>20%</td></tr>
       <tr><td>Community</td><td>Where you end: 10 → 0, 90 → 100</td><td>20%</td></tr>
       <tr><td>Net worth</td><td>Against the target for your game length (in 2027 dollars)</td><td>30%</td></tr></table>
-      <p>Titles: 85+ <b>Legend of the Burg</b>, 70+ <b>Pillar of the Community</b>, 55+ <b>Solid Waitsburger</b>, 40+ <b>Getting By on Main Street</b>, below that <b>Tumbleweed</b>. Your best score for each length is kept: tap <b>🏆 Your records</b> on the title screen to see them by length and mode, with your challenges and this week's weekly challenge.</p>`],
+      <p>Titles: 85+ <b>Legend of the Burg</b>, 70+ <b>Pillar of the Community</b>, 55+ <b>Solid Waitsburger</b>, 40+ <b>Getting By on Main Street</b>, below that <b>Tumbleweed</b>. Your best score for each length is kept, and Relaxed and Hard scores are labeled and kept separately from Normal ones: tap <b>🏆 Your records</b> on the title screen to see them by length and mode, with your challenges and this week's weekly challenge.</p>
+      <p><b>On track?</b> Life Score so far also shows whether your net worth is on track for how far through the game you are (in Lifetime, counted from 18 to 65).</p>`],
     ['tips', '💡 Tips', `
       <ul><li>Rotate your focus: a little work, a little town, a little rest. Long streaks fade and ruts hurt.</li>
       <li>Classes are a long game. A certificate or degree opens jobs that pay far more.</li>
