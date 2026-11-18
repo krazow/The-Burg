@@ -1,6 +1,6 @@
 # The Burg: To-do
 
-_Last updated: November 18, 2026 (review and 90 event ideas added for you to pick)_
+_Last updated: November 18, 2026 (review bugs R1–R3 fixed)_
 
 This is the project's working to-do list: what's been done, what's next, and in what order. Every open item has a
 matching **GitHub issue** with a priority label (**P1 – now**, **P2 – soon**, **P3 – later**). The issues are the
@@ -22,7 +22,7 @@ added, finished or re-prioritized, both change in the same session.
 |---|---|---|---|
 | 1 | **Cut a new beta** (`/release now`) | `main` now has Around the region and all four gameplay phases (Life Score so far, carpools, backgrounds, modes, town goals, badges, stories, challenges, skills, businesses, weekly challenge, legacy). Beta 4 has none of it. | — |
 | 2 | **Try it, then promote** (`/release promote`) | The Android app is signed with The Burg's key since beta 4, so updates install over each other. | — |
-| 3 | **Pick from the review and the 90 events** (below) | The 🔴 review items are real bugs: backups miss badges, a life-goal exploit, and event costs that don't rise with prices. | [#90](https://github.com/krazow/The-Burg/issues/90) |
+| 3 | **Pick from the review and the 90 events** (below) | The three 🔴 review bugs are fixed; the rest is yours to pick. | [#90](https://github.com/krazow/The-Burg/issues/90) |
 
 - [ ] Cut a new beta with everything on `main`
 - [ ] Try it on your phone, then `/release promote`
@@ -315,9 +315,9 @@ old ones.
 
 <details><summary><b>Review: changes, balancing, gaps and gotchas</b> (40 items) — [#90](https://github.com/krazow/The-Burg/issues/90). 🔴 = recommended first.</summary>
 
-- [ ] 🔴 **R1** Backups don't include badges or challenge results
-- [ ] 🔴 **R2** Pin-at-the-end exploit
-- [ ] 🔴 **R3** Event costs don't rise with prices
+- [x] 🔴 **R1** Backups don't include badges or challenge results
+- [x] 🔴 **R2** Pin-at-the-end exploit
+- [x] 🔴 **R3** Event costs don't rise with prices
 - [ ] 🟠 **R4** The version label still says 0.1.0
 - [ ] 🟡 **R5** Legacy names repeat
 - [ ] 🟡 **R6** The legacy heir is 18 although the parent died in their 80s
@@ -566,3 +566,4 @@ that careless play stays at or below 60 and good play at or above 70.
 | Nov 18, 2026 | **Gameplay fixes, phase 3:** 18 badges and up to 3 life goals worth +2 Life Score each (#66), three stories that unfold over weeks (#68), four challenges on the title screen (#74). Fixes findings #80, #81, #82. Badges show as a quick message so they never interrupt play. | [PR #88](https://github.com/krazow/The-Burg/pull/88) |
 | Nov 18, 2026 | **Gameplay fixes, phase 4:** skills (#71), your own business (#72), weekly challenge and score card (#75), legacy mode (#76). Fixes finding #84. All six findings and twelve recommendations are now built. | [PR #89](https://github.com/krazow/The-Burg/pull/89) |
 | Nov 18, 2026 | **Testing round after phases 1–4:** all 7 suites, a 3× simulation (282 games), and exploratory checks (every start × mode × length, every challenge, 3 legacy generations, old saves, backups, 532 random taps) all passed. Wrote the review (40 items) and 90 balanced event ideas for you to pick (#90–#93). | [review](docs/review-and-events-2026-11-18.md) |
+| Nov 18, 2026 | **Fixed the three 🔴 review bugs (#90 R1–R3):** backups now carry badges, challenge wins and every best score; life goals count only if pinned before the badge; 31 event amounts now rise with prices and show today's price. 3 new rules checks; all suites pass (careless 60, idle 48, good play 87). | fixes PR |

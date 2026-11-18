@@ -466,7 +466,7 @@ await t.check('a winter goal spans December to February as one season', async ()
 
 // ---- Phase 3 (#66, #68, #74): badges and life goals, story chains, challenges ----
 await t.check('badges are earned once, saved across lives, and pinned goals add 2 points each', async () => {
-  const r = await ev(() => { localStorage.removeItem(BADGE_KEY); fresh('two', { jobId: 'farmhand' }); S.goals = ['job', 'dog', 'degree'];
+  const r = await ev(() => { localStorage.removeItem(BADGE_KEY); fresh('two', { jobId: 'farmhand' }); S.goals = ['job', 'dog', 'degree']; S.goalAt = { job: S.turn, dog: S.turn, degree: S.turn };
     const before = lifeScore().score - goalBonus(); const res = week(); const n1 = Object.keys(S.badges).length; S.dog = true; week();
     return { notes: (S.newBadges || []).join(' ') + res.notes.join(' '), n1, has: Object.keys(S.badges), bonus: goalBonus(), score: lifeScore().score, all: Object.keys(store.get(BADGE_KEY)) , before }; });
   assert(/Badge earned/.test(r.notes) && r.has.includes('job') && r.has.includes('dog'), JSON.stringify(r));
@@ -537,6 +537,39 @@ await t.check('legacy: a Lifetime game with kids continues as the grown kid', as
     return { btn, name: S.name, gen: S.gen, money: S.money, community: S.community, age: age(), year: new Date(S.date).getFullYear(), col: S.col }; });
   assert(r.btn && r.name === 'Pat Jr.' && r.gen === 2 && r.age === 18, JSON.stringify(r));
   assert(r.money > 100000 && r.money <= 500000 && r.community === 50 && r.year === 2080 && r.col === 2, JSON.stringify(r));
+});
+
+// ---- review fixes (#90 R1–R3): backups keep badges and challenge wins; goals must be pinned first; event costs rise with prices ----
+await t.check('backups carry badges, challenge wins and every kind of best score, and restoring merges them', async () => {
+  const r = await ev(async () => { localStorage.clear(); newGame('B', 'two', 0); save();
+    store.set(BADGE_KEY, { job: 1, dog: 1 }); store.set(CHALLENGE_KEY, { lab: 1 }); store.set(BEST_KEY, { two: 70, 'two-hard': 61, 'sc-farm': 80, 'wk-2026-W47': 77, bogus: 99 });
+    const text = JSON.stringify(backupData()); localStorage.clear(); store.set(BADGE_KEY, { homeowner: 1 });
+    const b = await readBackup(text); restoreBackup(b, 'replace');
+    return { badges: Object.keys(store.get(BADGE_KEY)).sort(), wins: store.get(CHALLENGE_KEY), best: store.get(BEST_KEY) }; });
+  assert(r.badges.join() === 'dog,homeowner,job', `badges ${r.badges}`);
+  assert(r.wins.lab, 'challenge wins lost');
+  assert(r.best.two === 70 && r.best['two-hard'] === 61 && r.best['sc-farm'] === 80 && r.best['wk-2026-W47'] === 77 && !('bogus' in r.best), JSON.stringify(r.best));
+});
+
+await t.check('pinning a badge you already earned adds no points; pinning first does', async () => {
+  const r = await ev(() => { fresh('two', { jobId: 'farmhand' }); weeks(2); tab = 'life'; render();
+    document.querySelector('#goals').click(); document.querySelector('#modal [data-goal="job"]').click(); document.querySelector('#modal [data-goal="dog"]').click(); document.querySelector('#modal #ok').click();
+    const late = goalBonus(); S.dog = true; weeks(1); const after = goalBonus(); const card = document.querySelector('#main').textContent;
+    const old = { goals: ['job'], turn: 9 }; migrate(old);
+    return { late, after, card, oldAt: old.goalAt }; });
+  assert(r.late === 0, `an already-earned badge counted: ${r.late}`);
+  assert(r.after === 2, `a badge earned after pinning should count: ${r.after}`);
+  assert(/earned before you pinned it/.test(r.card), 'the goals card should say why it does not count');
+  assert(r.oldAt && r.oldAt.job === 0, 'older saves keep their pinned goals');
+});
+
+await t.check('event costs rise with prices, and the choices show today\'s price', async () => {
+  const r = await ev(() => { fresh('two', { money: 5000 }); S.col = 2; const e = EVENTS.find(x => x.title === 'Feeling run down'); const ch = e.choices().find(c => /doctor/.test(c.label));
+    const m = S.money; ch.go(); const doc = m - S.money;
+    const ws = EVENTS.find(x => x.title === 'Windstorm'); S.home = 'fixer'; const m2 = S.money; ws.choices()[0].go(); const roof = m2 - S.money;
+    return { label: ch.label, doc, roof }; });
+  assert(near(r.doc, 700) && /\$700/.test(r.label), `doctor ${r.doc} "${r.label}"`);
+  assert(near(r.roof, 2400), `roof ${r.roof}`);
 });
 
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });

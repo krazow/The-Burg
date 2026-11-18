@@ -332,7 +332,8 @@ function migrate(s){
   const d = { slot:0, evPins:[], streakF:null, streakN:0, run:null, yearEvents:0, yearStart:null, evCd:{}, evDone:{}, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, mortgage:null, loanPay:0 };
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
   // Around the region (0.3.0): older lives count as just serviced and checked, with this year's tabs paid
-  const r = { skills:{}, biz:null, weekly:null, rng:null, gen:1, badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false, bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0, carpool:false, hustleWeeks:0, scoreQ:null, trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, dentist:s.turn || 0, stopLast:{}, tabsYear:new Date(s.date || Date.now()).getFullYear() };
+  if (s.goals && !s.goalAt) s.goalAt = Object.fromEntries(s.goals.map(id => [id, 0]));
+  const r = { goalAt:{}, skills:{}, biz:null, weekly:null, rng:null, gen:1, badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false, bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0, carpool:false, hustleWeeks:0, scoreQ:null, trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, dentist:s.turn || 0, stopLast:{}, tabsYear:new Date(s.date || Date.now()).getFullYear() };
   for (const k in r) if (s[k] === undefined) s[k] = r[k];
   if (HOMES[s.home] && HOMES[s.home].own && !s.mortgage) s.mortgage = HOMES[s.home].cost;
   return s;
@@ -414,6 +415,7 @@ const bestLabel = k => { if (k.startsWith('wk-')) return `📅 ${k.slice(3)}`; i
 /* ============================================================
    🌸 SEASON GOALS IN TOWN (#77): one town goal a season, worked toward with your weekly focus
    ============================================================ */
+const fmtc = n => fmt(cost(n));       // a price that rises with the cost of living, for event labels
 const SEASON_GOALS = [
   { key:'spring', ic:'🌸', name:'Get Celebration Days ready', months:[2,3,4], focus:['community'], need:6, fx:{community:6, happy:3},
     what:'Show up for town', done:'Celebration Days went off without a hitch, and people know you helped.' },
@@ -563,7 +565,7 @@ function saveCopySheet(){
 /* ---------- 📤 backups: move your lives between devices ---------- */
 // A backup is every saved life plus best scores. It leaves as a .json file or a "backup code" (text you can paste
 // into a message to yourself); codes are gzip-compressed when the browser can.
-function backupData(){ return { app: 'theburg', kind: 'backup', v: 1, version: APP_VERSION, exported: new Date().toISOString(), slots: slots(), best: store.get(BEST_KEY) || {} }; }
+function backupData(){ return { app: 'theburg', kind: 'backup', v: 1, version: APP_VERSION, exported: new Date().toISOString(), slots: slots(), best: store.get(BEST_KEY) || {}, badges: store.get(BADGE_KEY) || {}, challenges: store.get(CHALLENGE_KEY) || {} }; }
 const b64 = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(s); };
 const unb64 = text => Uint8Array.from(atob(text.replace(/\s+/g, '')), c => c.charCodeAt(0));
 async function backupCode(obj){
@@ -590,13 +592,19 @@ async function readBackup(text){
   const ok = g => g && typeof g === 'object' && typeof g.name === 'string' && LENGTHS[g.len] && Number.isFinite(g.money) && Number.isFinite(g.date) && Number.isFinite(g.ageMonths);
   const lives = d.slots.slice(0, SLOT_COUNT).map(g => ok(g) ? migrate(g) : null);
   if (!lives.some(Boolean)) throw new Error('That backup has no saved lives in it.');
-  return { lives, best: d.best && typeof d.best === 'object' ? d.best : {}, exported: d.exported };
+  const obj = x => x && typeof x === 'object' && !Array.isArray(x) ? x : {};
+  return { lives, best: obj(d.best), badges: obj(d.badges), challenges: obj(d.challenges), exported: d.exported };
 }
 // put a backup's lives in: 'add' fills empty slots (returns how many didn't fit), 'replace' swaps all slots
 function restoreBackup(b, mode){
   const cur = slots(), best = store.get(BEST_KEY) || {};
-  for (const [k, v] of Object.entries(b.best)) if (LENGTHS[k] && Number.isFinite(v) && !(best[k] >= v)) best[k] = v;
+  for (const [k, v] of Object.entries(b.best)) if (bestLabel(k) && Number.isFinite(v) && !(best[k] >= v)) best[k] = v;   // every mode, challenge and weekly best
   store.set(BEST_KEY, best);
+  // badges and challenge wins are a collection: keep everything from both sides
+  const badges = store.get(BADGE_KEY) || {}, wins = store.get(CHALLENGE_KEY) || {};
+  for (const k of Object.keys(b.badges || {})) if (BADGES.some(x => x.id === k)) badges[k] = 1;
+  for (const k of Object.keys(b.challenges || {})) if (SCENARIOS[k]) wins[k] = 1;
+  store.set(BADGE_KEY, badges); store.set(CHALLENGE_KEY, wins);
   let skipped = 0;
   if (mode === 'replace') store.set(SLOTS_KEY, b.lives.map((g, i) => g ? { ...g, slot: i } : null).concat(Array(SLOT_COUNT).fill(null)).slice(0, SLOT_COUNT));
   else {
@@ -700,7 +708,7 @@ function newGame(name, len, slot = 0, opts = {}){
     trip:null, svc:0, tires:null, stockUntil:-1, dentist:0, stopLast:{}, tabsYear:2027, carpool:false, hustleWeeks:0, scoreQ:null,
     bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0,
     badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false,
-    skills:{}, biz:null, weekly:null, rng:null, gen:1 };
+    skills:{}, biz:null, weekly:null, rng:null, gen:1, goalAt:{} };
   S.bg = BACKGROUNDS[opts.bg] ? opts.bg : 'fresh'; S.mode = MODES[opts.mode] ? opts.mode : 'normal';
   if (BACKGROUNDS[S.bg].set) BACKGROUNDS[S.bg].set(S);
   S.weekly = opts.weekly || null; S.rng = opts.weekly ? weekSeed(opts.weekly) : null; useDice();
@@ -1360,53 +1368,53 @@ const EVENTS = [
   { ic:'🐎', title:'Celebration Days', yr:1, w:4, when:m => inM(m,4),
     text:'Waitsburg\'s big spring weekend: parade down Main Street, horse races, and a beer garden.',
     choices:() => [
-      {label:'Go to the parade and races (-$60)', go:() => { adj({money:-60, happy:8, community:3}); return 'You cheered yourself hoarse at the races.'; }},
-      {label:'Put $100 on a long-shot horse', go:() => { if (chance(.28)) { adj({money:400, happy:10}); return 'The long shot came in! You won $500 and bragging rights.'; } adj({money:-100, happy:-1}); return 'Your horse is still running, probably.'; }},
+      {label:`Go to the parade and races (-${fmtc(60)})`, go:() => { adj({money:-cost(60), happy:8, community:3}); return 'You cheered yourself hoarse at the races.'; }},
+      {label:`Put ${fmtc(100)} on a long-shot horse`, go:() => { if (chance(.28)) { adj({money:cost(400), happy:10}); return `The long shot came in! You won ${fmtc(500)} and bragging rights.`; } adj({money:-cost(100), happy:-1}); return 'Your horse is still running, probably.'; }},
       {label:'Stay home', go:() => { adj({happy:-2}); return 'You heard the parade from your porch.'; }}
     ]},
   { ic:'🌾', title:'Harvest time', yr:1, w:5, when:m => inM(m,6,7),
     text:() => S.jobId==='farmhand' ? 'Wheat is ready and the combines run dawn to dark. The boss is paying harvest overtime.' : 'A farmer up the road is short a truck driver for wheat harvest.',
     choices:() => S.jobId==='farmhand' ? [
-      {label:'Run the combine all month', go:() => { adj({money:1500, health:-4, happy:2}); return 'Long, dusty days, but a fat harvest bonus.'; }}
+      {label:'Run the combine all month', go:() => { adj({money:cost(1500), health:-4, happy:2}); return 'Long, dusty days, but a fat harvest bonus.'; }}
     ] : [
-      {label:'Drive grain trucks on weekends', go:() => { adj({money:900, health:-3, community:4}); return 'Hauled wheat to the elevator. The farmer won\'t forget it.'; }},
+      {label:'Drive grain trucks on weekends', go:() => { adj({money:cost(900), health:-3, community:4}); return 'Hauled wheat to the elevator. The farmer won\'t forget it.'; }},
       {label:'Pass this year', go:() => 'You watched the dust plumes from town.'}
     ]},
   { ic:'❄️', title:'Snow on Highway 12', w:4, when:m => inM(m,11,0,1) && commuting(),
     text:'Overnight snow and ice on the highway. Your commute looks ugly.',
     choices:() => [
-      {label:'Drive in slow and careful', go:() => { if (chance((CARS[S.car].mpg>25 ? .3 : .2) * ditchMult())) { adj({money:-850, health:-3, happy:-4}); return 'You slid into a ditch. A tow and repairs ran $850.'; } adj({happy:-1}); return 'White knuckles the whole way, but you made it.'; }},
-      {label:'Take an unpaid day', go:() => { const p = Math.round((job()?job().pay:0)/WORKDAYS); adj({money:-p, happy:2}); return `You stayed home with coffee and lost a day's pay.`; }}
+      {label:'Drive in slow and careful', go:() => { if (chance((CARS[S.car].mpg>25 ? .3 : .2) * ditchMult())) { adj({money:-cost(850), health:-3, happy:-4}); return `You slid into a ditch. A tow and repairs ran ${fmtc(850)}.`; } adj({happy:-1}); return 'White knuckles the whole way, but you made it.'; }},
+      {label:'Take an unpaid day', go:() => { const p = Math.round((job()?payNow(job(), true):0)/WORKDAYS); adj({money:-p, happy:2}); return `You stayed home with coffee and lost a day's pay.`; }}
     ]},
   { ic:'🔧', title:'Truck trouble', w:4, when:() => chance(CARS[S.car].breakdown * 4 * careMult()),
     text:() => `Your ${CARS[S.car].name.toLowerCase()} won't start.`,
     choices:() => [
-      {label:'Take it to the shop', go:() => { const c = Math.round(ri(300, S.car==='beater'?1400:900) * (1 - skillLv('mechanic') * 0.15)); adj({money:-c, happy:-2}); return `The shop fixed it for ${fmt(c)}.`; }},
-      {label:'Fix it yourself (-$80 in parts)', if:() => skillLv('mechanic') >= 2, go:() => { adj({money:-Math.round(cost(80)), happy:2}); practice('mechanic', 1); return 'A new starter and a skinned knuckle later, it runs.'; }},
-      {label:'Call a buddy who knows engines', if:() => S.community >= 40, go:() => { adj({money:-120, community:2}); return 'Your buddy fixed it for parts and a six-pack.'; }}
+      {label:'Take it to the shop', go:() => { const c = Math.round(cost(ri(300, S.car==='beater'?1400:900)) * (1 - skillLv('mechanic') * 0.15)); adj({money:-c, happy:-2}); return `The shop fixed it for ${fmt(c)}.`; }},
+      {label:`Fix it yourself (-${fmtc(80)} in parts)`, if:() => skillLv('mechanic') >= 2, go:() => { adj({money:-Math.round(cost(80)), happy:2}); practice('mechanic', 1); return 'A new starter and a skinned knuckle later, it runs.'; }},
+      {label:'Call a buddy who knows engines', if:() => S.community >= 40, go:() => { adj({money:-cost(120), community:2}); return 'Your buddy fixed it for parts and a six-pack.'; }}
     ]},
   { ic:'🌊', title:'The Touchet is running high', yr:1, w:3, when:m => inM(m,1,2,3),
     text:'Snowmelt and rain have the river climbing. Neighbors are filling sandbags.',
     choices:() => [
       {label:'Help sandbag', go:() => { adj({community:6, health:-2, happy:2}); return 'Muddy, cold and proud. The town held the line.'; }},
-      {label:'Stay dry', go:() => { if (S.home==='fixer' && chance(.4)) { adj({money:-2500, happy:-6}); return 'Water got in your basement. Cleanup cost $2,500.'; } adj({community:-2}); return 'The water stayed in its banks this time.'; }}
+      {label:'Stay dry', go:() => { if (S.home==='fixer' && chance(.4)) { adj({money:-cost(2500), happy:-6}); return `Water got in your basement. Cleanup cost ${fmtc(2500)}.`; } adj({community:-2}); return 'The water stayed in its banks this time.'; }}
     ]},
   { ic:'🍷', title:'Wine country weekend', w:3, when:() => age() >= 21,
     text:'Friends are heading to Walla Walla tasting rooms on Saturday.',
     choices:() => [
-      {label:'Go along (-$90)', go:() => { adj({money:-90, happy:6}); return 'A sunny afternoon among the vineyards.'; }},
-      {label:'Be the designated driver (-$20)', go:() => { adj({money:-20, happy:3, community:3}); return 'Everyone got home safe, thanks to you.'; }},
+      {label:`Go along (-${fmtc(90)})`, go:() => { adj({money:-cost(90), happy:6}); return 'A sunny afternoon among the vineyards.'; }},
+      {label:`Be the designated driver (-${fmtc(20)})`, go:() => { adj({money:-cost(20), happy:3, community:3}); return 'Everyone got home safe, thanks to you.'; }},
       {label:'Not this time', go:() => 'You saved your money.'}
     ]},
   { ic:'⛷️', title:'Powder day at Bluewood', w:3, when:m => inM(m,0,1,2),
     text:'Fresh snow up above Dayton. The lifts open at nine.',
     choices:() => [
-      {label:'Hit the slopes (-$75)', go:() => { if (chance(.1)) { adj({money:-375, health:-6, happy:2}); return 'Great runs until you twisted a knee. Urgent care cost $300.'; } adj({money:-75, happy:7, health:2}); return 'Bluebird skies and fresh tracks.'; }},
+      {label:`Hit the slopes (-${fmtc(75)})`, go:() => { if (chance(.1)) { adj({money:-cost(375), health:-6, happy:2}); return `Great runs until you twisted a knee. Urgent care cost ${fmtc(300)}.`; } adj({money:-cost(75), happy:7, health:2}); return 'Bluebird skies and fresh tracks.'; }},
       {label:'Skip it', go:() => 'Maybe next storm.'}
     ]},
   { ic:'🧾', title:'Tax refund', yr:1, w:4, when:m => inM(m,2,3) && S.jobId,
     text:'Your return is in.',
-    choices:() => [{label:'Nice!', go:() => { const r = ri(300,1300); adj({money:r, happy:3}); return `The IRS sent back ${fmt(r)}.`; }}]},
+    choices:() => [{label:'Nice!', go:() => { const r = Math.round(cost(ri(300,1300))); adj({money:r, happy:3}); return `The IRS sent back ${fmt(r)}.`; }}]},
   { ic:'📈', title:'A raise', w:3, when:() => job() && !S.retired && S.jobMonths >= 12 && S.raise < 1.5,
     text:() => `Your boss at the ${job().title.toLowerCase()} job calls you in.`,
     choices:() => [{label:'Hear them out', go:() => { S.raise = Math.min(1.5, S.raise * 1.06); S.jobMonths = 0; adj({happy:5}); return `A 6% raise! You now make ${wk(payNow(job()))}.`; }}]},
@@ -1414,7 +1422,7 @@ const EVENTS = [
     text:() => `Business is slow and cuts are coming at your ${job().title.toLowerCase()} job.`,
     choices:() => [
       {label:'Ask to stay on', go:() => { if (chance(.5 + S.community*0.003)) { adj({happy:-2}); return 'They kept you on. Phew.'; } const t = job().title; S.jobId = null; S.ui = 6; adj({happy:-10}); return `You were let go from your ${t.toLowerCase()} job. Check the job board.`; }},
-      {label:'Take the severance', go:() => { const p = job().pay; S.jobId = null; adj({money:p*2, happy:-5}); return `You took two months' pay (${fmt(p*2)}) and walked.`; }}
+      {label:'Take the severance', go:() => { const p = payNow(job(), true); S.jobId = null; adj({money:p*2, happy:-5}); return `You took two months' pay (${fmt(p*2)}) and walked.`; }}
     ]},
   { ic:'🐕', title:'A friendly stray', w:3, when:() => !S.dog,
     text:'A scruffy dog follows you all the way home from the park.',
@@ -1431,55 +1439,55 @@ const EVENTS = [
   { ic:'💔', title:'A rough patch', w:1, when:() => S.partner,
     text:'You and your partner have been arguing a lot lately.',
     choices:() => [
-      {label:'Plan a getaway to the coast (-$400)', go:() => { adj({money:-400}); if (chance(.8)) { adj({happy:4}); return 'A weekend away fixed a lot.'; } S.partner = false; adj({happy:-10}); return 'It didn\'t help. You split up.'; }},
+      {label:`Plan a getaway to the coast (-${fmtc(400)})`, go:() => { adj({money:-cost(400)}); if (chance(.8)) { adj({happy:4}); return 'A weekend away fixed a lot.'; } S.partner = false; adj({happy:-10}); return 'It didn\'t help. You split up.'; }},
       {label:'Let it run its course', go:() => { if (chance(.5)) { adj({happy:1}); return 'Things settled down on their own.'; } S.partner = false; adj({happy:-10}); return 'You went your separate ways.'; }}
     ]},
   { ic:'🏛️', title:'Run for town council?', yr:1, w:5, when:() => S.community >= 60 && !S.council && age() >= 21,
     text:'People keep telling you that you should run for Waitsburg city council.',
     choices:() => [
-      {label:'Run (-$300 for signs)', go:() => { adj({money:-300}); if (chance(.65)) { S.council = true; adj({community:10, happy:5}); return 'You won the seat! Meetings are Wednesday nights.'; } adj({happy:-4}); return 'You lost by eleven votes.'; }},
+      {label:`Run (-${fmtc(300)} for signs)`, go:() => { adj({money:-cost(300)}); if (chance(.65)) { S.council = true; adj({community:10, happy:5}); return 'You won the seat! Meetings are Wednesday nights.'; } adj({happy:-4}); return 'You lost by eleven votes.'; }},
       {label:'Not for me', go:() => 'You\'ll keep helping from the sidelines.'}
     ]},
   { ic:'🎡', title:'Fair & Frontier Days', yr:1, w:3, when:m => inM(m,7,8),
     text:'The fair and rodeo are on in Walla Walla.',
     choices:() => [
-      {label:'Go for the rodeo (-$70)', go:() => { adj({money:-70, happy:7}); return 'Corn dogs, bull riding and a sunburn.'; }},
-      {label:'Enter your pie (-$20)', go:() => { adj({money:-20}); if (chance(.3)) { adj({community:6, happy:8}); return 'Blue ribbon! Your pie is famous now.'; } adj({happy:2}); return 'No ribbon, but the judges asked for seconds.'; }},
+      {label:`Go for the rodeo (-${fmtc(70)})`, go:() => { adj({money:-cost(70), happy:7}); return 'Corn dogs, bull riding and a sunburn.'; }},
+      {label:`Enter your pie (-${fmtc(20)})`, go:() => { adj({money:-cost(20)}); if (chance(.3)) { adj({community:6, happy:8}); return 'Blue ribbon! Your pie is famous now.'; } adj({happy:2}); return 'No ribbon, but the judges asked for seconds.'; }},
       {label:'Skip it', go:() => 'You\'ll go next year.'}
     ]},
   { ic:'🦌', title:'Hunting season', yr:1, w:3, when:m => inM(m,9,10),
     text:'Deer season opens in the Blue Mountains.',
     choices:() => [
-      {label:'Buy a tag and go (-$150)', go:() => { adj({money:-150}); if (chance(.5)) { adj({money:450, happy:5}); return 'You filled your tag. The freezer is full for winter.'; } adj({happy:2}); return 'No deer, but a great sunrise.'; }},
+      {label:`Buy a tag and go (-${fmtc(150)})`, go:() => { adj({money:-cost(150)}); if (chance(.5)) { adj({money:cost(450), happy:5}); return 'You filled your tag. The freezer is full for winter.'; } adj({happy:2}); return 'No deer, but a great sunrise.'; }},
       {label:'Pass', go:() => 'You stayed in town.'}
     ]},
   { ic:'🩺', title:'Feeling run down', w:5, when:() => S.health < 40,
     text:'You\'ve been tired and achy for weeks.',
     choices:() => [
-      {label:'See a doctor (-$350)', go:() => { const bad = S.health < 25; adj({money:-350, health:12}); return bad ? 'The doctor sent you to a specialist in Walla Walla. Rest and a prescription helped a lot.' : 'Some rest and a prescription helped a lot.'; }},
+      {label:`See a doctor (-${fmtc(350)})`, go:() => { const bad = S.health < 25; adj({money:-cost(350), health:12}); return bad ? 'The doctor sent you to a specialist in Walla Walla. Rest and a prescription helped a lot.' : 'Some rest and a prescription helped a lot.'; }},
       {label:'Tough it out', go:() => { adj({health:-6}); return 'You kept going. Your body kept score.'; }}
     ]},
   { ic:'🦷', title:'Toothache', w:2, when:() => S.turn - (S.dentist ?? 0) > 52,
     text:'A back tooth has been throbbing for days. It\'s been more than a year since you saw a dentist.',
     choices:() => [
-      {label:'Emergency dentist in Walla Walla (-$650)', go:() => { adj({money:-Math.round(cost(650)), health:-1}); S.dentist = S.turn; return 'A root canal later, you can chew again. A yearly checkup would have caught it.'; }},
+      {label:`Emergency dentist in Walla Walla (-${fmtc(650)})`, go:() => { adj({money:-Math.round(cost(650)), health:-1}); S.dentist = S.turn; return 'A root canal later, you can chew again. A yearly checkup would have caught it.'; }},
       {label:'Tough it out', go:() => { adj({health:-4, happy:-4}); return 'Ice packs and ibuprofen. It still hurts.'; }}
     ]},
   { ic:'🌬️', title:'Windstorm', w:2,
     text:'A big wind tears through the valley overnight.',
     choices:() => [{label:'Check the damage', go:() => {
-      if (HOMES[S.home].own) { const c = Math.round(1200 * (1 - skillLv('handy') * 0.15)); adj({money:-c, happy:-3}); practice('handy', 1); return `You lost shingles. Roof repair: ${fmt(c)}${skillLv('handy') ? ' (you did part of it yourself)' : ''}.`; }
-      adj({money:-60, happy:-1}); return 'Power was out a day and the fridge food spoiled.'; }}]},
+      if (HOMES[S.home].own) { const c = Math.round(cost(1200) * (1 - skillLv('handy') * 0.15)); adj({money:-c, happy:-3}); practice('handy', 1); return `You lost shingles. Roof repair: ${fmt(c)}${skillLv('handy') ? ' (you did part of it yourself)' : ''}.`; }
+      adj({money:-cost(60), happy:-1}); return 'Power was out a day and the fridge food spoiled.'; }}]},
   { ic:'🧅', title:'Walla Walla Sweets are in', yr:1, w:3, when:m => inM(m,5,6),
     text:'The sweet onion harvest is here.',
     choices:() => [
-      {label:'Host a backyard BBQ (-$80)', go:() => { adj({money:-80, community:4, happy:4}); return 'Grilled onions for the whole block.'; }},
-      {label:'Grab a bag (-$15)', go:() => { adj({money:-15, happy:2}); return 'Onion rings for a week.'; }}
+      {label:`Host a backyard BBQ (-${fmtc(80)})`, go:() => { adj({money:-cost(80), community:4, happy:4}); return 'Grilled onions for the whole block.'; }},
+      {label:`Grab a bag (-${fmtc(15)})`, go:() => { adj({money:-cost(15), happy:2}); return 'Onion rings for a week.'; }}
     ]},
   { ic:'🚂', title:'Festival at the Dayton Depot', yr:1, w:2, when:m => inM(m,5,6,7,8),
     text:'Dayton is throwing a summer festival around its historic train depot.',
     choices:() => [
-      {label:'Drive over (-$40)', go:() => { adj({money:-40, happy:5}); return 'Live music, old trains and good food.'; }},
+      {label:`Drive over (-${fmtc(40)})`, go:() => { adj({money:-cost(40), happy:5}); return 'Live music, old trains and good food.'; }},
       {label:'Skip it', go:() => 'Another time.'}
     ]},
   { ic:'💡', title:'A tip from a friend', w:2, when:() => S.community >= 50 && !S.retired,
@@ -1507,14 +1515,14 @@ const EVENTS = [
     ]},
   { ic:'🧥', title:'Found money', w:1,
     text:'Something crinkles in your old winter coat.',
-    choices:() => [{label:'Check the pocket', go:() => { const v = pick([20,50,100]); adj({money:v, happy:2}); return `${fmt(v)}! Today is a good day.`; }}]},
+    choices:() => [{label:'Check the pocket', go:() => { const v = Math.round(cost(pick([20,50,100]))); adj({money:v, happy:2}); return `${fmt(v)}! Today is a good day.`; }}]},
   { ic:'📜', title:'An inheritance', once:1, w:1, when:() => LENGTHS[S.len].turns===Infinity && age() >= 40,
     text:'A great-aunt in Spokane left you something in her will.',
-    choices:() => [{label:'Read the letter', go:() => { const v = ri(5,30)*1000; adj({money:v, happy:3}); return `She left you ${fmt(v)} and a note telling you to stay out of trouble.`; }}]},
+    choices:() => [{label:'Read the letter', go:() => { const v = Math.round(cost(ri(5,30)*1000)); adj({money:v, happy:3}); return `She left you ${fmt(v)} and a note telling you to stay out of trouble.`; }}]},
   { ic:'👶', title:'Starting a family?', yr:1, w:3, when:() => S.partner && age() >= 23 && age() <= 42 && S.kids.length < 3,
     text:() => S.kids.length ? 'You and your partner are talking about another one.' : 'You and your partner have been talking about kids.',
     choices:() => [
-      {label:'Have a baby (about $650/mo until they\'re 18)', go:() => { S.kids.push(S.ageMonths); adj({happy:12, community:3, health:-2}); log(S.kids.length > 1 ? `Baby number ${S.kids.length} arrived!` : 'Became a parent!'); return S.kids.length > 1 ? 'Another little Waitsburger! The house is louder and happier.' : 'A baby! Sleepless, broke and over the moon.'; }},
+      {label:`Have a baby (about ${fmtc(650)}/mo until they're 18)`, go:() => { S.kids.push(S.ageMonths); adj({happy:12, community:3, health:-2}); log(S.kids.length > 1 ? `Baby number ${S.kids.length} arrived!` : 'Became a parent!'); return S.kids.length > 1 ? 'Another little Waitsburger! The house is louder and happier.' : 'A baby! Sleepless, broke and over the moon.'; }},
       {label:'Not now', go:() => 'You decided to wait.'}
     ]},
   { ic:'✈️', title:'The trip of a lifetime', yr:1, w:2, when:() => age() >= 28 && S.money > cost(12000),
@@ -1532,7 +1540,7 @@ const EVENTS = [
   { ic:'🏀', title:'Friday night game', w:2, when:m => inM(m,0,1,2,8,9,10,11),
     text:'The home team is playing in the school gym tonight.',
     choices:() => [
-      {label:'Go cheer (-$10)', go:() => { adj({money:-10, community:3, happy:3}); return 'Half the town was there. You saw everyone.'; }},
+      {label:`Go cheer (-${fmtc(10)})`, go:() => { adj({money:-cost(10), community:3, happy:3}); return 'Half the town was there. You saw everyone.'; }},
       {label:'Stay in', go:() => 'You caught the score the next morning.'}
     ]}
 ];
@@ -1733,29 +1741,34 @@ function badgeWeek(notes){
   }
   store.set(BADGE_KEY, all);
 }
-const goalBonus = () => (S.goals || []).filter(id => S.badges && S.badges[id]).length * GOAL_POINTS;
+// a goal counts only if it was pinned before the badge was earned (no pinning old badges in the last week)
+const goalCounts = id => !!(S.badges && S.badges[id] != null && (S.goalAt || {})[id] != null && S.badges[id] > S.goalAt[id]);
+const goalBonus = () => (S.goals || []).filter(goalCounts).length * GOAL_POINTS;
 function goalsSheet(){
   let sel = [...(S.goals || [])];
   sheet(`<h2>🎯 Pick your life goals</h2>
-    <p class="muted">Pin up to ${GOAL_MAX}. Each one you reach adds ${GOAL_POINTS} points to your Life Score. You can change them any time.</p>
+    <p class="muted">Pin up to ${GOAL_MAX}. Each one you reach <b>after</b> pinning it adds ${GOAL_POINTS} points to your Life Score. You can change them any time.</p>
     ${BADGES.map(b => { const got = S.badges && S.badges[b.id];
-      return `<button class="stopbtn${sel.includes(b.id) ? ' on' : ''}" data-goal="${b.id}" aria-pressed="${sel.includes(b.id)}"><span class="t">${b.ic} ${b.name}${got ? ' ✅' : ''}</span><span class="s">${b.desc}</span></button>`; }).join('')}
+      const pinnedEarly = (S.goals || []).includes(b.id) && goalCounts(b.id);
+      return `<button class="stopbtn${sel.includes(b.id) ? ' on' : ''}" data-goal="${b.id}" aria-pressed="${sel.includes(b.id)}"><span class="t">${b.ic} ${b.name}${got ? ' ✅' : ''}</span><span class="s">${b.desc}${got && !pinnedEarly ? ' · Already earned, so it won\'t add points' : ''}</span></button>`; }).join('')}
     <p id="goalsum" class="tripsum" aria-live="polite"></p>
     <button class="btn primary" id="ok">Save my goals</button><button class="btn ghost" id="n">Cancel</button>`);
   const sum = () => { $('#goalsum').textContent = `${sel.length} of ${GOAL_MAX} picked`;
     document.querySelectorAll('[data-goal]').forEach(b => { const on = sel.includes(b.dataset.goal); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.disabled = !on && sel.length >= GOAL_MAX; }); };
   document.querySelectorAll('[data-goal]').forEach(b => b.onclick = () => { const id = b.dataset.goal;
     sel = sel.includes(id) ? sel.filter(x => x !== id) : sel.length < GOAL_MAX ? [...sel, id] : sel; sum(); });
-  $('#ok').onclick = () => { S.goals = sel; save(); closeSheet(); render(); toast(sel.length ? '🎯 Life goals saved' : 'No life goals pinned'); };
+  $('#ok').onclick = () => {
+    const at = {}; for (const id of sel) at[id] = (S.goalAt || {})[id] ?? S.turn;   // keep the week each goal was first pinned
+    S.goals = sel; S.goalAt = at; save(); closeSheet(); render(); toast(sel.length ? '🎯 Life goals saved' : 'No life goals pinned'); };
   $('#n').onclick = closeSheet;
   sum();
 }
 function goalsCard(){
   const got = Object.keys(S.badges || {}).length;
   return `<div class="card"><h3>🎯 Life goals <span class="tag">${got}/${BADGES.length} badges</span></h3>
-    ${(S.goals || []).length ? S.goals.map(id => { const b = badgeById(id); const done = S.badges && S.badges[id];
-      return b ? `<div class="kv"><span>${b.ic} ${b.name}<br><small class="muted">${b.desc}</small></span><span>${done ? `✅ +${GOAL_POINTS}` : 'Not yet'}</span></div>` : ''; }).join('')
-      : `<p class="muted" style="margin:0 0 6px">Pin up to ${GOAL_MAX} goals for this life. Each one you reach adds ${GOAL_POINTS} points to your Life Score.</p>`}
+    ${(S.goals || []).length ? S.goals.map(id => { const b = badgeById(id); const got = S.badges && S.badges[id] != null;
+      return b ? `<div class="kv"><span>${b.ic} ${b.name}<br><small class="muted">${b.desc}</small></span><span>${goalCounts(id) ? `✅ +${GOAL_POINTS}` : got ? '✅ (earned before you pinned it)' : 'Not yet'}</span></div>` : ''; }).join('')
+      : `<p class="muted" style="margin:0 0 6px">Pin up to ${GOAL_MAX} goals for this life. Each one you reach after pinning it adds ${GOAL_POINTS} points to your Life Score.</p>`}
     <button class="sm" id="goals">${(S.goals || []).length ? 'Change goals' : 'Pick life goals'}</button>
     ${got ? `<p class="muted" style="margin:8px 0 0">Earned: ${BADGES.filter(b => S.badges[b.id]).map(b => `<span title="${b.name}">${b.ic}</span>`).join(' ')}</p>` : ''}</div>`;
 }
@@ -2387,7 +2400,7 @@ function guideHTML(){
     ['goals', '🎯 Goals, stories and challenges', `
       <p><b>Badges:</b> earn them as your life unfolds. They're collected across all your lives (see them on the title screen).</p>
       <table><tr><th>Badge</th><th>How to earn it</th></tr>${BADGES.map(b => `<tr><td>${b.ic} ${b.name}</td><td>${b.desc}</td></tr>`).join('')}</table>
-      <p><b>Life goals:</b> on the <b>Life</b> tab, pin up to ${GOAL_MAX} badges as goals for this life. Each one you reach adds <b>${GOAL_POINTS} points</b> to your Life Score.</p>
+      <p><b>Life goals:</b> on the <b>Life</b> tab, pin up to ${GOAL_MAX} badges as goals for this life. Each one you reach <b>after</b> pinning it adds <b>${GOAL_POINTS} points</b> to your Life Score.</p>
       <p><b>Stories:</b> some events unfold over weeks: fixing up the fixer-upper, a friend's food truck, and the flood that leads to a new levee. What you choose at each step changes what comes next.</p>
       <p><b>🏁 Challenges</b> (on the title screen): set-up stories with a goal. ${Object.values(SCENARIOS).map(c => `${c.ic} <b>${c.name}</b>: ${c.desc}`).join(' ')}</p>`],
     ['grow', '🧰 Skills and your own business', `
