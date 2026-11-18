@@ -304,7 +304,7 @@ await t.check('Plan a trip from Home: pick a town and stops, end the week, see i
   assert(/Kennewick \(3\)/.test(chip), `chip: ${chip}`);
   await page.click('#end'); await clearSheets();
   const s = await S();
-  assert(s.trip === null && s.stockUntil > s.turn - 1 && /Trip to Kennewick/.test(s.log[0].m), `after: ${JSON.stringify({ trip: s.trip, stock: s.stockUntil, log: s.log[0] })}`);
+  assert(s.trip === null && s.stockUntil > s.turn - 1 && s.log.some(e => /Trip to Kennewick/.test(e.m)), `after: ${JSON.stringify({ trip: s.trip, stock: s.stockUntil, log: s.log[0] })}`);
   await page.click('#strip');
   const details = await page.textContent(open);
   assert(/Trip to Kennewick: gas/.test(details) && /A show at the arena/.test(details), 'the week details should list the trip');
@@ -348,6 +348,21 @@ await t.check('the title screen starts a life with a background and a mode', asy
   const s = await S();
   assert(s.bg === 'farm' && s.mode === 'hard' && s.jobId === 'farmhand', JSON.stringify({ bg: s.bg, mode: s.mode, job: s.jobId }));
   assert(/Hard/.test(await page.textContent('header.top')), 'the header should show the mode');
+});
+
+await t.check('pick life goals on the Life tab, and start a challenge from the title screen', async () => {
+  await life({ jobId: 'farmhand' }, 'life');
+  await page.click('#goals');
+  await page.click(`${open} [data-goal="dog"]`); await page.click(`${open} [data-goal="homeowner"]`);
+  await page.click(`${open} #ok`);
+  assert((await S()).goals.join() === 'dog,homeowner', 'goals not saved');
+  assert(/Good dog/.test(await page.textContent('#main')), 'goal card should list the goal');
+  await page.evaluate(() => { localStorage.clear(); S = null; render(); });
+  await page.click('#chal');
+  await page.click(`${open} [data-sc="farm"]`);
+  const s = await S();
+  assert(s.scenario === 'farm' && s.bg === 'farm' && s.len === 'five', JSON.stringify({ sc: s.scenario, bg: s.bg, len: s.len }));
+  assert(/Challenge/.test(await page.textContent('#main')), 'Home should show the challenge');
 });
 
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });

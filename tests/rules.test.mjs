@@ -285,7 +285,7 @@ await t.check('restoring adds to empty slots or replaces all, keeps the best sco
 // ---- Around the region (#57–#63): trips, groceries, car care, eating out, outings, appointments ----
 await t.check('a trip costs gas there and back plus each stop, then clears', async () => {
   const r = await ev(() => { fresh('two', { jobId: 'farmhand', date: new Date(2027, 5, 7).getTime() });
-    const err = planTrip('wallawalla', ['movies', 'bistro']); const l = week().lines; return { err, l, trip: S.trip, log: S.log[0].m }; });
+    const err = planTrip('wallawalla', ['movies', 'bistro']); const l = week().lines; return { err, l, trip: S.trip, log: (S.log.find(e => /^Trip to/.test(e.m)) || {}).m }; });
   assert(r.err === '', r.err);
   assert(near(r.l['Trip to Walla Walla: gas'], -21 * 2 * 3.89 / 15), `gas ${r.l['Trip to Walla Walla: gas']}`);
   assert(near(r.l['The movies'], -28) && near(r.l['Dinner downtown'], -60), `stops ${JSON.stringify(r.l)}`);
@@ -462,6 +462,34 @@ await t.check('a season goal counts weeks of the right focus and pays out once',
 await t.check('a winter goal spans December to February as one season', async () => {
   const r = await ev(() => { fresh('two', { date: new Date(2027, 11, 20).getTime(), focus: 'outdoors' }); weeks(3); const a = S.sgoal.id; const p = S.sgoal.prog; weeks(1); return { a, b: S.sgoal.id, p, p2: S.sgoal.prog }; });
   assert(r.a === r.b && r.a === 'winter-2027' && r.p2 >= r.p, JSON.stringify(r));
+});
+
+// ---- Phase 3 (#66, #68, #74): badges and life goals, story chains, challenges ----
+await t.check('badges are earned once, saved across lives, and pinned goals add 2 points each', async () => {
+  const r = await ev(() => { localStorage.removeItem(BADGE_KEY); fresh('two', { jobId: 'farmhand' }); S.goals = ['job', 'dog', 'degree'];
+    const before = lifeScore().score - goalBonus(); const res = week(); const n1 = Object.keys(S.badges).length; S.dog = true; week();
+    return { notes: (S.newBadges || []).join(' ') + res.notes.join(' '), n1, has: Object.keys(S.badges), bonus: goalBonus(), score: lifeScore().score, all: Object.keys(store.get(BADGE_KEY)) , before }; });
+  assert(/Badge earned/.test(r.notes) && r.has.includes('job') && r.has.includes('dog'), JSON.stringify(r));
+  assert(r.bonus === 4 && r.all.includes('job'), `bonus ${r.bonus}`);
+});
+
+await t.check('a story chain moves step by step and ends', async () => {
+  const r = await ev(() => { fresh('two', { home: 'fixer', money: 20000 }); const e = n => EVENTS.find(x => x.title === n);
+    const w0 = e('The porch is sagging').when(); e('The porch is sagging').choices()[0].go(); const s1 = { ...S.chains.fixer };
+    const early = e('The kitchen is next').when(); S.turn = S.chains.fixer.at; const ready = e('The kitchen is next').when();
+    e('The kitchen is next').choices()[0].go(); S.turn = S.chains.fixer.at; const eq = S.equity; e('The house is coming together').choices()[0].go();
+    return { w0, s1, early, ready, gain: S.equity - eq, step: S.chains.fixer.step, again: e('The porch is sagging').when(), stories: S.storiesDone }; });
+  assert(r.w0 && r.s1.step === 2 && r.s1.f.diy && !r.early && r.ready, JSON.stringify(r));
+  assert(r.gain > 6000 && r.step === 99 && !r.again && r.stories === 1, JSON.stringify(r));
+});
+
+await t.check('challenges set up the life and are judged at the end (or as soon as they are met)', async () => {
+  const r = await ev(() => { localStorage.removeItem(CHALLENGE_KEY);
+    newGame('C', 'two', 0, { bg: 'fresh', scenario: 'debtfree' }); S.noEvents = true; const debt = S.money; S.money = 500; const mid = SCENARIOS.debtfree.win();
+    newGame('L', 'five', 0, { bg: 'fresh', scenario: 'lab' }); S.noEvents = true; S.jobId = 'scientist'; const res = week();
+    return { debt, mid, note: res.notes.join(' '), won: S.scWon, stored: store.get(CHALLENGE_KEY) }; });
+  assert(r.debt === -8000 && r.mid, JSON.stringify(r));
+  assert(/Challenge complete/.test(r.note) && r.won && r.stored.lab, JSON.stringify(r));
 });
 
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });

@@ -332,7 +332,7 @@ function migrate(s){
   const d = { slot:0, evPins:[], streakF:null, streakN:0, run:null, yearEvents:0, yearStart:null, evCd:{}, evDone:{}, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, mortgage:null, loanPay:0 };
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
   // Around the region (0.3.0): older lives count as just serviced and checked, with this year's tabs paid
-  const r = { bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0, carpool:false, hustleWeeks:0, scoreQ:null, trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, dentist:s.turn || 0, stopLast:{}, tabsYear:new Date(s.date || Date.now()).getFullYear() };
+  const r = { badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false, bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0, carpool:false, hustleWeeks:0, scoreQ:null, trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, dentist:s.turn || 0, stopLast:{}, tabsYear:new Date(s.date || Date.now()).getFullYear() };
   for (const k in r) if (s[k] === undefined) s[k] = r[k];
   if (HOMES[s.home] && HOMES[s.home].own && !s.mortgage) s.mortgage = HOMES[s.home].cost;
   return s;
@@ -409,7 +409,7 @@ const MODES = {
 };
 const mode = () => (S && S.mode) || 'normal';
 const bestKey = (len, m) => m && m !== 'normal' ? `${len}-${m}` : len;
-const bestLabel = k => { const [len, m] = k.split('-'); return LENGTHS[len] ? `${LENGTHS[len].label}${m && MODES[m] ? ` (${MODES[m].name})` : ''}` : null; };
+const bestLabel = k => { if (k.startsWith('sc-')) { const sc = SCENARIOS[k.slice(3)]; return sc ? `${sc.ic} ${sc.name}` : null; } const [len, m] = k.split('-'); return LENGTHS[len] ? `${LENGTHS[len].label}${m && MODES[m] ? ` (${MODES[m].name})` : ''}` : null; };
 
 /* ============================================================
    🌸 SEASON GOALS IN TOWN (#77): one town goal a season, worked toward with your weekly focus
@@ -484,8 +484,10 @@ function renderTitle(){
       `<button class="${k==='normal'?'on':''}" data-mode="${k}" aria-pressed="${k==='normal'}">${m.ic} ${m.name}</button>`).join('')}</div>
     <div class="muted bgdesc" id="modedesc">${MODES.normal.desc}</div>
     <button class="btn ${used?'ghost':'primary'}" id="start">Start a new life</button>
+    <button class="btn ghost" id="chal">🏁 Challenges</button>
     <button class="btn ghost" id="how">❓ Help & tutorial</button>
     <button class="btn ghost" id="restore">📥 Restore from a backup</button>
+    ${Object.keys(store.get(BADGE_KEY) || {}).length ? `<div class="muted" style="margin-top:10px;font-size:13px">🏅 Badges collected across your lives: ${BADGES.filter(b => (store.get(BADGE_KEY) || {})[b.id]).map(b => b.ic).join(' ')} (${Object.keys(store.get(BADGE_KEY) || {}).length}/${BADGES.length})</div>` : ''}
     <div class="muted" style="margin-top:14px;font-size:12px">v${APP_VERSION}</div>
     <div class="best">${Object.keys(best).length ? 'Best life scores: ' + Object.entries(best).filter(([k]) => bestLabel(k)).map(([k,v]) => `${bestLabel(k)} <b>${v}</b>`).join(' · ') : ''}</div>
   </div>`;
@@ -506,6 +508,7 @@ function renderTitle(){
     newGame(name, len, free, { bg, mode: md });
   };
   $('#how').onclick = showHelp;
+  $('#chal').onclick = challengesSheet;
   $('#restore').onclick = restoreSheet;
 }
 function loadSlot(i){
@@ -689,9 +692,11 @@ function newGame(name, len, slot = 0, opts = {}){
     focus:'rest', applied:false, happySum:0, healthSum:0, monthsPlayed:0,
     log:[], over:false, cause:null, streakF:null, streakN:0, run:null, yearEvents:0,
     trip:null, svc:0, tires:null, stockUntil:-1, dentist:0, stopLast:{}, tabsYear:2027, carpool:false, hustleWeeks:0, scoreQ:null,
-    bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0 };
+    bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0,
+    badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false };
   S.bg = BACKGROUNDS[opts.bg] ? opts.bg : 'fresh'; S.mode = MODES[opts.mode] ? opts.mode : 'normal';
   if (BACKGROUNDS[S.bg].set) BACKGROUNDS[S.bg].set(S);
+  if (SCENARIOS[opts.scenario]) { S.scenario = opts.scenario; if (SCENARIOS[S.scenario].set) SCENARIOS[S.scenario].set(S); }
   S.yearStart = { nw: netWorth(), happy: S.happy, health: S.health, community: S.community };
   if (opts.practice) { S.practice = true; S.noEvents = true; }      // the tutorial's throwaway life: never saved, no random events
   log(S.bg === 'fresh' ? `${name} turns 18 and rents a room above Main Street in Waitsburg. Time to find a job.`
@@ -709,7 +714,7 @@ function render(){
   const left = L.turns === Infinity ? `Age ${age()}` : `${L.turns - S.turn} weeks left`;
   $('#app').innerHTML = `
   <header class="top">
-    <div class="row"><h2>${esc(S.name)}${S.practice ? ' <span class="tag">Practice</span>' : ''}${mode() !== 'normal' && !S.practice ? ` <span class="tag">${MODES[mode()].ic} ${MODES[mode()].name}</span>` : ''}</h2><div class="hdr-r"><div class="money">${fmt(S.money)}</div><button id="helpbtn" aria-label="Help and tutorial">?</button></div></div>
+    <div class="row"><h2>${esc(S.name)}${S.practice ? ' <span class="tag">Practice</span>' : ''}${mode() !== 'normal' && !S.practice ? ` <span class="tag">${MODES[mode()].ic} ${MODES[mode()].name}</span>` : ''}${S.scenario ? ` <span class="tag">🏁</span>` : ''}</h2><div class="hdr-r"><div class="money">${fmt(S.money)}</div><button id="helpbtn" aria-label="Help and tutorial">?</button></div></div>
     <div class="meta"><span>${dateLabel()} · age ${age()}</span><span>${left}</span></div>
     <div class="progress"><i style="width:${pct}%"></i></div>
   </header>
@@ -771,7 +776,7 @@ function renderHome(){
   ${S.happy < 30 ? sugg('happy', 'outdoors', `😟 Happiness is low (${Math.round(S.happy)}).`) : ''}
   ${S.health < 30 ? sugg('health', 'rest', `🤒 Health is low (${Math.round(S.health)}).`) : ''}
   ${S.money < -15000 ? `<div class="card warn">⚠️ Your debt is getting dangerous. Below -$40,000 you'll have to leave town.</div>` : ''}
-  <div class="card"><div class="focushead"><h3>This week's focus</h3></div>${seasonLine()}${mapToggle()}
+  <div class="card"><div class="focushead"><h3>This week's focus</h3></div>${scenarioLine()}${seasonLine()}${mapToggle()}
     ${prefs().mapView ? mapBlock('T') : `<div class="fgrid">${Object.entries(FOCUS).map(([k,x]) => {
       const dis = (x.needsJob && (!j || S.retired)) || (x.study && S.edu >= 3);
       return `<button class="fbtn ${S.focus===k?'on':''}" data-f="${k}" ${dis?'disabled':''} aria-pressed="${S.focus===k}"><span class="ic">${x.ic}</span><b>${FOCUS_SHORT[k]}</b></button>`;
@@ -915,7 +920,7 @@ function apply(id){
 
 function renderLife(){
   const h = HOMES[S.home];
-  $('#main').innerHTML = `
+  $('#main').innerHTML = `${S.practice ? '' : goalsCard()}
   <div class="card"><h3>📚 Education</h3>
     <div class="kv"><span>Highest</span><span><b>${EDU[S.edu]}</b></span></div>
     ${S.edu < 3 ? `<div class="kv"><span>Next: ${EDU[S.edu+1]}</span><span>${S.studyProg}/${STUDY_NEED[S.edu]} weeks</span></div>
@@ -953,6 +958,7 @@ function renderLife(){
     <div class="kv"><span>Prices since 2027</span><span>${S.col > 1.005 ? `+${Math.round((S.col-1)*100)}%` : 'Same'}</span></div>
     <div class="kv"><span>Town council</span><span>${S.council ? 'Council member' : '—'}</span></div>
   </div>`;
+  if ($('#goals')) $('#goals').onclick = goalsSheet;
   document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => moveHome(b.dataset.home));
   document.querySelectorAll('[data-car]').forEach(b => b.onclick = () => buyCar(b.dataset.car));
   document.querySelectorAll('[data-k401]').forEach(b => b.onclick = () => { S.k401rate = +b.dataset.k401; save(); renderLife(); toast(`Saving ${K401[S.k401rate]*100}% of each paycheck`); });
@@ -1063,6 +1069,7 @@ function playWeeks(n){
   const after = () => {
     if (res.ending) return finish(res.ending);
     render();
+    if (S.newBadges && S.newBadges.length) { toast(S.newBadges.join(' · ')); S.newBadges = []; }
     if (res.ev) showEvent(res.ev);
     else if (res.review) showReview(res.review);
     const r = S.run, dm = S.money - r.money, ch = (n, v) => Math.abs(v) < 0.5 ? `${n} unchanged` : `${n} ${v > 0 ? 'up' : 'down'} ${Math.abs(Math.round(v))}`;
@@ -1139,11 +1146,11 @@ function weekTick(auto){
   lines.push([commuteOneWay() ? 'Gas (commute + errands)' : 'Gas (errands)', -miles*cost(GAS)/car.mpg]);
   if (S.loanLeft > 0) {
     const n = Math.min(m, S.loanLeft); lines.push(['Truck payment', -(S.loanPay || CARS.truck.pay)*n]); S.loanLeft -= n;
-    if (S.loanLeft < 1e-6) { S.loanLeft = 0; notes.push('🛻 The truck is paid off!'); log('Made the last truck payment.'); }
+    if (S.loanLeft < 1e-6) { S.loanLeft = 0; notes.push('🛻 The truck is paid off!'); S.paidOff = true; log('Made the last truck payment.'); }
   }
   if (S.sloanLeft > 0) {
     const n = Math.min(m, S.sloanLeft); lines.push(['Student loan', -S.sloanPay*n]); S.sloanLeft -= n;
-    if (S.sloanLeft < 1e-6) { S.sloanLeft = 0; notes.push('🎓 Your student loans are paid off!'); log('Paid off the student loans.'); }
+    if (S.sloanLeft < 1e-6) { S.sloanLeft = 0; notes.push('🎓 Your student loans are paid off!'); S.paidOff = true; log('Paid off the student loans.'); }
   }
   if (mode() === 'hard') lines.push(['Higher living costs (Hard)', -cost(68)*m]);
   if (S.dog) lines.push(['Dog food & vet', -cost(45)*m]);
@@ -1241,6 +1248,7 @@ function weekTick(auto){
     S.yearStart = snap; S.yearEvents = 0;
   }
 
+  badgeWeek(notes); scenarioWeek(notes);
   // ---- health crises & endings ----
   let ending = null;
   if (S.health <= 0) {
@@ -1303,7 +1311,10 @@ const EVENT_PLACE = {
   'Feeling run down':['R','wallawalla'], 'Windstorm':['T','home'], 'Walla Walla Sweets are in':['R','wallawalla'],
   'Festival at the Dayton Depot':['R','dayton'], 'A tip from a friend':['T','mainst'], 'Gas prices spike':['T','hwy'],
   "Neighbor's moving day":['T','home'], 'Found money':['T','home'], 'An inheritance':['T','board'], 'Starting a family?':['T','home'],
-  'The trip of a lifetime':['R','pasco'], 'A kid heads off to college':['T','school'], 'Friday night game':['T','school'], 'Toothache':['R','wallawalla']
+  'The trip of a lifetime':['R','pasco'], 'A kid heads off to college':['T','school'], 'Friday night game':['T','school'], 'Toothache':['R','wallawalla'],
+  'The porch is sagging':['T','home'], 'The kitchen is next':['T','home'], 'The house is coming together':['T','home'],
+  "A friend's food truck":['T','mainst'], 'Opening day for the food truck':['T','fair'], 'A year of the food truck':['T','fair'],
+  'Water in the basements':['T','river'], 'A levee for the town':['T','river'], 'The levee is dedicated':['T','river']
 };
 const WORK_SPOT = { farmhand:'fields', diner:'mainst', para:'school', elevator:'elevator', insure:'mainst' };
 function eventPlace(ev){
@@ -1606,6 +1617,7 @@ function tripWeek(lines){
   }
   S.trip = null;
   if (!done.length) return null;
+  (S.towns = S.towns || {})[t.city] = 1;
   log(`Trip to ${c.name}${tripIsCommute(t.city) ? ' on the way home from work' : ''}: ${done.join(', ')}.`);
   if (S.run) S.run.happened.push({ ic:'🚗', title:`Trip to ${c.name}`, money:0 });
   return { fx, away: !tripIsCommute(t.city) };
@@ -1667,6 +1679,186 @@ function tripSheet(city){
 }
 const tripChip = () => S.trip ? `🚗 Trip: ${CITIES[S.trip.city].name} (${S.trip.stops.length})` : '🚗 Plan a trip';
 
+/* ============================================================
+   🏅 ACHIEVEMENTS AND LIFE GOALS (#66)
+   Badges are earned during a life (and collected across all your lives). Pin up to 3 as life goals on the
+   Life tab: each pinned goal you reach adds 2 points to your Life Score.
+   ============================================================ */
+const BADGES = [
+  { id:'job', ic:'💼', name:'First paycheck', desc:'Get a job.', test:() => !!S.jobId || S.retired },
+  { id:'cert', ic:'📜', name:'Certified', desc:'Earn a trade certificate.', test:() => S.edu >= 1 },
+  { id:'degree', ic:'🎓', name:'College graduate', desc:"Earn a bachelor's degree.", test:() => S.edu >= 3 },
+  { id:'wheels', ic:'🚙', name:'New wheels', desc:'Trade up from the 1998 pickup.', test:() => S.car !== 'beater' },
+  { id:'homeowner', ic:'🔑', name:'Homeowner', desc:'Buy a home.', test:() => !!HOMES[S.home].own },
+  { id:'farmhouse', ic:'🏡', name:'The farmhouse', desc:'Own the farmhouse in the wheat hills.', test:() => S.home === 'farm' },
+  { id:'paidoff', ic:'✂️', name:'Paid in full', desc:'Pay off a truck or student loan.', test:() => !!S.paidOff },
+  { id:'saver', ic:'🏦', name:'Saver', desc:'Have $25,000 in your 401(k) (2027 dollars).', test:() => (S.k401 || 0) / (S.col || 1) >= 25000 },
+  { id:'nestegg', ic:'🥚', name:'Nest egg', desc:'Reach $100,000 net worth (2027 dollars).', test:() => netWorth() / (S.col || 1) >= 100000 },
+  { id:'legend', ic:'🤝', name:'Pillar of the town', desc:'Reach community 80.', test:() => S.community >= 80 },
+  { id:'healthy', ic:'💪', name:'Picture of health', desc:'Reach health 85.', test:() => S.health >= 85 },
+  { id:'happy', ic:'😄', name:'Happy camper', desc:'Reach happiness 85.', test:() => S.happy >= 85 },
+  { id:'council', ic:'🏛️', name:'Council member', desc:'Win a seat on the town council.', test:() => !!S.council },
+  { id:'family', ic:'👶', name:'Family', desc:'Have a kid.', test:() => (S.kids || []).length > 0 },
+  { id:'dog', ic:'🐕', name:'Good dog', desc:'Adopt a dog.', test:() => !!S.dog },
+  { id:'roadtrip', ic:'🗺️', name:'Know the region', desc:'Take a trip to all five towns.', test:() => Object.keys(S.towns || {}).length >= 5 },
+  { id:'helper', ic:'🌸', name:'Town helper', desc:'Finish 4 town goals.', test:() => (S.seasonWins || 0) >= 4 },
+  { id:'retired', ic:'🎉', name:'Retired', desc:'Retire (Lifetime games).', test:() => !!S.retired }
+];
+const BADGE_KEY = 'theburg.badges.v1', GOAL_MAX = 3, GOAL_POINTS = 2;
+const badgeById = id => BADGES.find(b => b.id === id);
+// check for new badges; returns notes for any just earned
+function badgeWeek(notes){
+  if (S.practice) return;
+  S.badges = S.badges || {};
+  const all = store.get(BADGE_KEY) || {};
+  for (const b of BADGES) if (!S.badges[b.id] && b.test()) {
+    S.badges[b.id] = S.turn; all[b.id] = 1;
+    const goal = (S.goals || []).includes(b.id);
+    (S.newBadges = S.newBadges || []).push(`${b.ic} Badge earned: ${b.name}${goal ? ` (a life goal! +${GOAL_POINTS} Life Score)` : ''}`);   // a toast, not a stop
+    log(`Earned a badge: ${b.name}.`);
+  }
+  store.set(BADGE_KEY, all);
+}
+const goalBonus = () => (S.goals || []).filter(id => S.badges && S.badges[id]).length * GOAL_POINTS;
+function goalsSheet(){
+  let sel = [...(S.goals || [])];
+  sheet(`<h2>🎯 Pick your life goals</h2>
+    <p class="muted">Pin up to ${GOAL_MAX}. Each one you reach adds ${GOAL_POINTS} points to your Life Score. You can change them any time.</p>
+    ${BADGES.map(b => { const got = S.badges && S.badges[b.id];
+      return `<button class="stopbtn${sel.includes(b.id) ? ' on' : ''}" data-goal="${b.id}" aria-pressed="${sel.includes(b.id)}"><span class="t">${b.ic} ${b.name}${got ? ' ✅' : ''}</span><span class="s">${b.desc}</span></button>`; }).join('')}
+    <p id="goalsum" class="tripsum" aria-live="polite"></p>
+    <button class="btn primary" id="ok">Save my goals</button><button class="btn ghost" id="n">Cancel</button>`);
+  const sum = () => { $('#goalsum').textContent = `${sel.length} of ${GOAL_MAX} picked`;
+    document.querySelectorAll('[data-goal]').forEach(b => { const on = sel.includes(b.dataset.goal); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.disabled = !on && sel.length >= GOAL_MAX; }); };
+  document.querySelectorAll('[data-goal]').forEach(b => b.onclick = () => { const id = b.dataset.goal;
+    sel = sel.includes(id) ? sel.filter(x => x !== id) : sel.length < GOAL_MAX ? [...sel, id] : sel; sum(); });
+  $('#ok').onclick = () => { S.goals = sel; save(); closeSheet(); render(); toast(sel.length ? '🎯 Life goals saved' : 'No life goals pinned'); };
+  $('#n').onclick = closeSheet;
+  sum();
+}
+function goalsCard(){
+  const got = Object.keys(S.badges || {}).length;
+  return `<div class="card"><h3>🎯 Life goals <span class="tag">${got}/${BADGES.length} badges</span></h3>
+    ${(S.goals || []).length ? S.goals.map(id => { const b = badgeById(id); const done = S.badges && S.badges[id];
+      return b ? `<div class="kv"><span>${b.ic} ${b.name}<br><small class="muted">${b.desc}</small></span><span>${done ? `✅ +${GOAL_POINTS}` : 'Not yet'}</span></div>` : ''; }).join('')
+      : `<p class="muted" style="margin:0 0 6px">Pin up to ${GOAL_MAX} goals for this life. Each one you reach adds ${GOAL_POINTS} points to your Life Score.</p>`}
+    <button class="sm" id="goals">${(S.goals || []).length ? 'Change goals' : 'Pick life goals'}</button>
+    ${got ? `<p class="muted" style="margin:8px 0 0">Earned: ${BADGES.filter(b => S.badges[b.id]).map(b => `<span title="${b.name}">${b.ic}</span>`).join(' ')}</p>` : ''}</div>`;
+}
+
+/* ============================================================
+   📖 STORY CHAINS (#68): events that unfold over weeks. Each step waits a few weeks and depends on what you chose.
+   ============================================================ */
+const chain = id => (S.chains || {})[id] || { step:0, at:0, f:{} };
+const chainAt = (id, step) => { const c = (S.chains || {})[id]; return !!c && c.step === step && S.turn >= c.at; };
+function chainSet(id, step, flags = {}, wait = [3, 7]){
+  S.chains = S.chains || {}; const old = chain(id);
+  S.chains[id] = { step, at: S.turn + ri(wait[0], wait[1]), f: { ...old.f, ...flags } };
+}
+const chainEnd = id => chainSet(id, 99);
+const STORY_EVENTS = [
+  // 🔨 the fixer-upper
+  { ic:'🔨', title:'The porch is sagging', once:1, w:4, when:() => S.home === 'fixer' && !S.chains?.fixer,
+    text:'The front porch of your fixer-upper groans every time you step on it. Time to do something.',
+    choices:() => [
+      {label:'Fix it yourself (-$350)', go:() => { adj({money:-Math.round(cost(350)), health:-2, happy:2}); chainSet('fixer', 2, { diy:true }); return 'Two weekends, a borrowed saw and sore hands. It\'s solid now, and you learned a lot.'; }},
+      {label:'Hire a contractor (-$1,400)', go:() => { adj({money:-Math.round(cost(1400))}); chainSet('fixer', 2, { diy:false }); return 'A crew had it done in two days.'; }},
+      {label:'Leave it', go:() => { adj({happy:-2}); chainEnd('fixer'); return 'You step carefully around the soft board.'; }}
+    ]},
+  { ic:'🍳', title:'The kitchen is next', once:1, w:8, when:() => chainAt('fixer', 2) && S.home === 'fixer',
+    text:() => chain('fixer').f.diy ? 'Fixing the porch gave you ideas. The 1970s kitchen is calling.' : 'The contractor mentions the kitchen could use the same treatment.',
+    choices:() => [
+      {label:'Redo it yourself over a month (-$2,500)', go:() => { adj({money:-Math.round(cost(2500)), health:-3, happy:3}); chainSet('fixer', 3, { kitchen:'diy' }, [6, 10]); return 'Cabinets out, cabinets in. Dinner on a camp stove for a month.'; }},
+      {label:'Hire it out (-$7,000)', go:() => { adj({money:-Math.round(cost(7000))}); chainSet('fixer', 3, { kitchen:'pro' }, [6, 10]); return 'The crew is on it. Takeout for a few weeks.'; }},
+      {label:'Not now', go:() => { chainEnd('fixer'); return 'The old kitchen still works. Mostly.'; }}
+    ]},
+  { ic:'🏠', title:'The house is coming together', once:1, w:8, when:() => chainAt('fixer', 3) && S.home === 'fixer',
+    text:'Porch fixed, kitchen redone. The fixer-upper is starting to look like a real home, and it\'s worth more for it.',
+    choices:() => [{label:'Step back and look', go:() => { const diy = chain('fixer').f.kitchen === 'diy', gain = Math.round(cost(diy ? 6500 : 8000));
+      S.equity += gain; adj({happy:6, community:2}); chainEnd('fixer'); S.storiesDone = (S.storiesDone || 0) + 1;
+      return `The neighbors stopped by to see it. Your home is worth about ${fmt(gain)} more${diy ? ', and you did most of it yourself' : ''}.`; }}]},
+  // 🚚 a friend's food truck
+  { ic:'🚚', title:"A friend's food truck", once:1, w:3, when:() => S.community >= 40 && age() >= 21 && !S.chains?.truck,
+    text:'An old friend wants to start a food truck: Walla Walla sweet onion burgers. They\'re looking for a partner.',
+    choices:() => [
+      {label:'Invest $1,500', go:() => { adj({money:-Math.round(cost(1500))}); chainSet('truck', 2, { inv:true }); return 'You\'re a silent partner in a food truck. Wild.'; }},
+      {label:'Help out on weekends', go:() => { adj({community:3, health:-1}); chainSet('truck', 2, { help:true }); return 'You spent two Saturdays painting the truck and testing burgers.'; }},
+      {label:'Wish them luck', go:() => { chainEnd('truck'); return 'You promise to be their first customer.'; }}
+    ]},
+  { ic:'🍔', title:'Opening day for the food truck', once:1, w:8, when:() => chainAt('truck', 2),
+    text:'The food truck opens at the fairgrounds. The line starts early.',
+    choices:() => [{label:'See how it goes', go:() => { const c = chain('truck'), good = chance(c.f.help ? 0.75 : 0.6);
+      adj(good ? {happy:3, community:2} : {happy:-2}); chainSet('truck', 3, { good }, [20, 30]);
+      return good ? 'Sold out by two o\'clock. People are already asking when it\'s back.' : 'The grill quit at noon. Rough first day.'; }}]},
+  { ic:'📈', title:'A year of the food truck', once:1, w:8, when:() => chainAt('truck', 3),
+    text:'It\'s been a while since the food truck opened. Your friend comes by to talk.',
+    choices:() => [{label:'Hear the news', go:() => { const f = chain('truck').f; chainEnd('truck'); S.storiesDone = (S.storiesDone || 0) + 1;
+      if (f.good && f.inv) { const v = Math.round(cost(3200)); adj({money:v, happy:3}); return `The truck is a hit. Your share of the profits: ${fmt(v)}.`; }
+      if (f.inv) { adj({happy:-3}); return 'The truck didn\'t make it. Your $1,500 is gone, but your friend is still your friend.'; }
+      if (f.good) { adj({community:5, happy:3}); return 'The truck is a hit, and your friend tells everyone you helped build it.'; }
+      adj({community:2}); return 'The truck closed, but you made some good memories painting it.'; }}]},
+  // 🌊 the flood and the levee
+  { ic:'🌊', title:'Water in the basements', once:1, w:3, when:m => [1,2,3].includes(m) && S.turn > 20 && !S.chains?.levee,
+    text:'The Touchet jumped its banks overnight. Half a dozen homes near the river have water in the basement.',
+    choices:() => [
+      {label:'Help muck out', go:() => { adj({community:4, health:-2}); chainSet('levee', 2, { helped:true }); return 'Wet boots, heavy carpets, grateful neighbors.'; }},
+      {label:'Stay out of it', go:() => { adj({community:-2}); chainSet('levee', 2, { helped:false }); return 'You heard about it at the grocery store.'; }}
+    ]},
+  { ic:'🏗️', title:'A levee for the town', once:1, w:8, when:() => chainAt('levee', 2),
+    text:'After the flood, the city wants to build up the levee along the river, and it\'s asking for volunteers and donations.',
+    choices:() => [
+      {label:'Volunteer on weekends', go:() => { adj({community:3, health:-1}); chainSet('levee', 3, { vol:true }, [20, 30]); return 'Sandbags, shovels and a lot of coffee.'; }},
+      {label:'Donate $200', go:() => { adj({money:-Math.round(cost(200)), community:2}); chainSet('levee', 3, { don:true }, [20, 30]); return 'Your name is on the donor list at City Hall.'; }},
+      {label:'Pass', go:() => { chainEnd('levee'); return 'Somebody else will handle it.'; }}
+    ]},
+  { ic:'🎗️', title:'The levee is dedicated', once:1, w:8, when:() => chainAt('levee', 3),
+    text:'The new levee is finished. The town holds a ribbon cutting by the river.',
+    choices:() => [{label:'Go to the ribbon cutting', go:() => { const f = chain('levee').f; chainEnd('levee'); S.storiesDone = (S.storiesDone || 0) + 1;
+      if (f.vol) { adj({community:4, happy:3}); return 'Your name is on the plaque with the other volunteers.'; }
+      adj({community:3, happy:2}); return 'A good day for the town. The river can rise all it wants now.'; }}]}
+];
+
+/* ============================================================
+   🏁 CHALLENGE SCENARIOS (#74): set-up stories with a goal
+   ============================================================ */
+const SCENARIOS = {
+  debtfree: { ic:'💳', name:'Debt-free in 2 years', len:'two', bg:'fresh', endOnly:true,
+    desc:'You start $8,000 in debt. Finish two years with no debt and no loans.',
+    set:s => { s.money = -8000; }, win:() => S.money >= 0 && !(S.loanLeft > 0) && !(S.sloanLeft > 0) },
+  farm: { ic:'🏡', name:'Save the family farm', len:'five', bg:'farm',
+    desc:'The family farmhouse is up for sale. Buy it within five years.', win:() => S.home === 'farm' },
+  single: { ic:'👶', name:'Single parent', len:'two', bg:'parent', endOnly:true,
+    desc:'Two years with a toddler: stay out of debt and keep your average happiness at 55 or more.',
+    win:() => S.money >= 0 && (S.monthsPlayed ? S.happySum / S.monthsPlayed : S.happy) >= 55 },
+  lab: { ic:'🔬', name:'From the wheat to the lab', len:'five', bg:'fresh',
+    desc:'Become a national lab scientist in Richland within five years.', win:() => S.jobId === 'scientist' }
+};
+const CHALLENGE_KEY = 'theburg.challenges.v1';
+function scenarioWeek(notes){
+  const sc = SCENARIOS[S.scenario]; if (!sc || sc.endOnly || S.scWon) return;
+  if (sc.win()) { S.scWon = true; notes.push(`🏁 Challenge complete: <b>${sc.name}</b>! Play on as long as you like.`); log(`Completed the challenge: ${sc.name}.`); markChallenge(S.scenario); }
+}
+function markChallenge(id){ if (S.practice) return; const w = store.get(CHALLENGE_KEY) || {}; w[id] = 1; store.set(CHALLENGE_KEY, w); }
+function scenarioLine(){
+  const sc = SCENARIOS[S.scenario]; if (!sc) return '';
+  return `<div class="sgoal">${sc.ic} <b>Challenge:</b> ${sc.desc}${S.scWon ? ' ✅ Done!' : ''}</div>`;
+}
+function challengesSheet(){
+  const won = store.get(CHALLENGE_KEY) || {};
+  sheet(`<h2>🏁 Challenges</h2>
+    <p class="muted">Set-up stories with a goal. They use the name you typed and Normal mode.</p>
+    ${Object.entries(SCENARIOS).map(([k,sc]) => `<div class="kv job"><div><div class="t">${sc.ic} ${sc.name}${won[k] ? ' ✅' : ''}</div><div class="s">${sc.desc} ${LENGTHS[sc.len].label}.</div></div><button class="sm" data-sc="${k}">Start</button></div>`).join('')}
+    <button class="btn ghost" id="n">Close</button>`);
+  document.querySelectorAll('[data-sc]').forEach(b => b.onclick = () => {
+    const sc = SCENARIOS[b.dataset.sc], name = (($('#nm') && $('#nm').value.trim()) || 'Dusty').slice(0,20), free = slots().indexOf(null);
+    closeSheet();
+    const opts = { bg: sc.bg, mode: 'normal', scenario: b.dataset.sc };
+    if (free < 0) return askReplace(name, sc.len, opts);
+    newGame(name, sc.len, free, opts);
+  });
+  $('#n').onclick = closeSheet;
+}
+
 /* ---------- 🏆 Life Score so far (#67) ---------- */
 function scoreButton(){
   if (S.practice) return '';
@@ -1690,11 +1882,13 @@ function showScoreNow(){
     ${part('Health', `average ${Math.round(avgHe)} so far`, parts.health, 20)}
     ${part('Community', `now ${Math.round(S.community)}`, parts.community, 20)}
     ${part('Net worth', `${fmt(nw)}${S.col > 1.05 ? ` (${fmt(real)} in 2027 dollars)` : ''} of ${fmt(L.target)} by the end`, parts.wealth, 30)}
+    ${goalBonus() ? `<div class="kv"><span>🎯 Life goals reached</span><span><b>+${goalBonus()}</b></span></div>` : ''}
     <div class="card tip" style="margin-top:10px"><div>💡 ${SCORE_TIPS[weakest]}</div></div>
     <p class="muted">A report card goes in your Journal every 13 weeks.</p>
     <button class="btn primary" id="ok">Close</button>`);
   $('#ok').onclick = closeSheet;
 }
+EVENTS.push(...STORY_EVENTS);
 /* ---------- ending ---------- */
 // Life Score: average happiness 30%, average health 20%, community 20%, net worth vs. the length's target 30%
 function lifeScore(){
@@ -1705,15 +1899,18 @@ function lifeScore(){
   // health 40→0 and 95→100, community 10→0 and 90→100, and net worth (in 2027 dollars) against the length's target
   const nw = netWorth(), real = nw / (S.col || 1), wealth = clamp(real / L.target * 100);
   const hp = clamp((avgH - 30) / 60 * 100), he = clamp((avgHe - 40) / 55 * 100), cm = clamp((S.community - 10) / 80 * 100);
-  const score = Math.round(hp*0.3 + he*0.2 + cm*0.2 + wealth*0.3);
+  const bonus = goalBonus();                      // pinned life goals reached (#66)
+  const score = Math.min(100, Math.round(hp*0.3 + he*0.2 + cm*0.2 + wealth*0.3) + bonus);
   const title = score >= 85 ? 'Legend of the Burg' : score >= 70 ? 'Pillar of the Community' : score >= 55 ? 'Solid Waitsburger' : score >= 40 ? 'Getting By on Main Street' : 'Tumbleweed';
-  return { score, title, avgH, avgHe, nw, real, wealth, parts: { happy: Math.round(hp), health: Math.round(he), community: Math.round(cm), wealth: Math.round(wealth) } };
+  return { score, title, avgH, avgHe, nw, real, wealth, bonus, parts: { happy: Math.round(hp), health: Math.round(he), community: Math.round(cm), wealth: Math.round(wealth) } };
 }
 function finish(reason){
-  const { score, title, avgH, avgHe, nw, real, wealth, parts } = lifeScore();
+  const { score, title, avgH, avgHe, nw, real, wealth, parts, bonus } = lifeScore();
   const part = (l, sub, v, w) => `<div class="kv"><span>${l}<br><small class="muted">${sub}</small></span><span><b>${v}</b>/100 × ${w}% = <b>${Math.round(v * w / 100)}</b></span></div>`;
+  const sc = SCENARIOS[S.scenario], scWin = sc ? (S.scWon || sc.win()) : false;
+  if (sc && scWin) markChallenge(S.scenario);
   const best = store.get(BEST_KEY) || {};
-  const bk = bestKey(S.len, mode());
+  const bk = sc ? `sc-${S.scenario}` : bestKey(S.len, mode());
   const isBest = !best[bk] || score > best[bk];
   if (isBest && !S.practice) { best[bk] = score; store.set(BEST_KEY, best); }
   if (!S.practice) writeSlot(S.slot ?? 0, null);
@@ -1728,6 +1925,9 @@ function finish(reason){
     ${part('Health', `average ${Math.round(avgHe)} (40 → 0, 95 → 100)`, parts.health, 20)}
     ${part('Community', `ended at ${Math.round(S.community)} (10 → 0, 90 → 100)`, parts.community, 20)}
     ${part('Net worth', `${fmt(nw)}${S.col > 1.05 ? ` (${fmt(real)} in 2027 dollars)` : ''} of ${fmt(LENGTHS[S.len].target)}`, parts.wealth, 30)}
+    ${bonus ? `<div class="kv"><span>🎯 Life goals reached</span><span><b>+${bonus}</b></span></div>` : ''}
+    ${sc ? `<div class="card ${scWin ? 'tip' : 'warn'}" style="margin-top:10px">${sc.ic} <b>${scWin ? 'Challenge complete!' : 'Challenge not met this time.'}</b> ${sc.name}: ${sc.desc}</div>` : ''}
+    ${Object.keys(S.badges || {}).length ? `<h3 style="margin-top:10px">Badges</h3><p>${BADGES.filter(b => S.badges[b.id]).map(b => `${b.ic} ${b.name}`).join(' · ')}</p>` : ''}
     <h3 style="margin-top:10px">Your life</h3>
     ${S.kids && S.kids.length ? `<div class="kv"><span>Kids raised</span><span>${S.kids.length}</span></div>` : ''}
     <div class="kv"><span>Final age</span><span>${age()}</span></div>
@@ -2035,6 +2235,12 @@ function guideHTML(){
       <li><b>Going out:</b> doing the same thing again within ${REPEAT_WEEKS} weeks is only half as fun. Dinners and movies cost double, and do more, with your partner along.</li></ul>
       <table><tr><th>Town</th><th>Places to go</th></tr>${Object.entries(CITIES).filter(([k]) => k !== 'waitsburg').map(([k,c]) => `<tr><td>${TOWNIC[k]} <b>${c.name}</b><br><small>${c.miles} mi</small></td><td>${townStops(k).map(x => `${x.ic} ${x.name}${x.cost ? ` ($${x.cost})` : ''}${x.season ? ` <small>(${x.season})</small>` : ''}${x.min21 ? ' <small>(21+)</small>' : ''}`).join('<br>')}</td></tr>`).join('')}</table>
       <p class="muted">Prices are in 2027 dollars and rise over the years. Places are described, not named.</p>`],
+    ['goals', '🎯 Goals, stories and challenges', `
+      <p><b>Badges:</b> earn them as your life unfolds. They're collected across all your lives (see them on the title screen).</p>
+      <table><tr><th>Badge</th><th>How to earn it</th></tr>${BADGES.map(b => `<tr><td>${b.ic} ${b.name}</td><td>${b.desc}</td></tr>`).join('')}</table>
+      <p><b>Life goals:</b> on the <b>Life</b> tab, pin up to ${GOAL_MAX} badges as goals for this life. Each one you reach adds <b>${GOAL_POINTS} points</b> to your Life Score.</p>
+      <p><b>Stories:</b> some events unfold over weeks: fixing up the fixer-upper, a friend's food truck, and the flood that leads to a new levee. What you choose at each step changes what comes next.</p>
+      <p><b>🏁 Challenges</b> (on the title screen): set-up stories with a goal. ${Object.values(SCENARIOS).map(c => `${c.ic} <b>${c.name}</b>: ${c.desc}`).join(' ')}</p>`],
     ['saves', '💾 Saving and loading', `
       <p>You can keep up to <b>5 lives</b>. Each one saves itself after every week.</p>
       <ul><li><b>Title screen:</b> your lives are listed with Continue and 🗑 Delete. When all 5 slots are full, a new life asks which one to replace.</li>
