@@ -1,6 +1,6 @@
 # The Burg: To-do
 
-_Last updated: November 17, 2026 (playtest fixes merged)_
+_Last updated: November 17, 2026 (help and tutorial merged)_
 
 This is the project's working to-do list: what's been done, what's next, and in what order. Every open item has a
 matching **GitHub issue** with a priority label (**P1 – now**, **P2 – soon**, **P3 – later**). The issues are the
@@ -20,9 +20,9 @@ added, finished or re-prioritized, both change in the same session.
 
 | # | Item | Why it's next | Issue |
 |---|---|---|---|
-| 1 | **Beta 4** with the playtest fixes | All eight fixes (#20–#27) are merged to `main`. `/release now` makes 0.1.0-beta.4. | [#5](https://github.com/krazow/The-Burg/issues/5) |
+| 1 | **Beta 4** with the playtest fixes, help and tutorial | The playtest fixes (#20–#27) and the help center are merged to `main`. `/release now` makes 0.1.0-beta.4. | [#5](https://github.com/krazow/The-Burg/issues/5) |
 | 2 | **Try it, invite testers, then promote** (your action, then `/release promote`) | Puts 0.1.0 live at https://krazow.github.io/The-Burg/. | [#5](https://github.com/krazow/The-Burg/issues/5) |
-| 3 | **Delete the merged branches** (your action, optional) | `map-navigation`, `release-kit`, `balance`, `save-slots`, `menu-save-load` and `playtest-fixes` are merged. | — |
+| 3 | **Delete the merged branches** (your action, optional) | `map-navigation`, `release-kit`, `balance`, `save-slots`, `menu-save-load`, `playtest-fixes` and `help-tutorial` are merged. | — |
 
 - [ ] Beta 4 (`/release now`) — [#5](https://github.com/krazow/The-Burg/issues/5)
 - [ ] Try it, invite testers, then `/release promote` — [#5](https://github.com/krazow/The-Burg/issues/5)
@@ -85,4 +85,5 @@ that careless play stays at or below 60 and good play at or above 70.
 | Nov 17, 2026 | **Menu Save game / Load game** at the top of the in-game Menu: save to this life's slot or a copy to another; load any saved life. QA passed. | [PR #19](https://github.com/krazow/The-Burg/pull/19) |
 | Nov 17, 2026 | **Third beta: 0.1.0-beta.3** with the clearer Menu Save game / Load game. All release checks passed. | [pre-release](https://github.com/krazow/The-Burg/releases/tag/v0.1.0-beta.3) |
 | Nov 17, 2026 | **Playtest of beta 3** on a phone-sized screen: walkthrough with screenshots, tap counts and an idle-player check. Filed #20–#27; added notes to #10 and #11. | [report](docs/playtest-2026-11-17.md) |
-| Nov 17, 2026 | **Playtest fixes (#20–#27):** week results strip, focus-first Home, End Week shows the focus, ⏭ Auto and 13-week skips for 2-year games, one-tap events, tips, locked-job help, stat help and low-stat banners, score breakdown, take-home job list with a Can apply filter, year in review, and focus streaks/ruts so doing nothing scores 48. Gameplay tests: 34 checks. | [PR #28](https://github.com/krazow/The-Burg/pull/28) |
+| Nov 17, 2026 | **Playtest fixes (#20–#27):** week results strip, focus-first Home, End Week shows the focus, ⏭ Auto and 13-week skips for 2-year games, one-tap events, tips, locked-job help, stat help and low-stat banners, score breakdown, take-home job list with a Can apply filter, year in review, and focus streaks/ruts so doing nothing scores 48. Gameplay tests: 27 checks. | [PR #28](https://github.com/krazow/The-Burg/pull/28) |
+| Nov 17, 2026 | **Help center:** ❓ Help & tutorial on the start page, a **?** in the game header and in the Menu; a 15-section game guide built from the game's data; a 26-step guided practice tutorial with touch highlights that never touches saves. Gameplay tests: 30 checks. | [PR #29](https://github.com/krazow/The-Burg/pull/29) |
