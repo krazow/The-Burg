@@ -14,6 +14,7 @@ entry for every release, and the GitHub release notes are taken from it.
 - **Back up and restore your lives.** Menu → 📤 Back up or restore downloads a backup file or copies a short backup
   code. On another device, 📥 Restore from a backup (title screen or Menu) adds those lives to your empty slots or
   replaces all of them, and keeps your best scores.
+- **Android app and Windows installer** on each release, alongside the web app.
 
 ## 0.1.0 (2026-11-17)
 
