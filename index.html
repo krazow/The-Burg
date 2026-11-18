@@ -52,7 +52,7 @@ input[type=text]:focus{outline:none;border-color:var(--wheat-d)}
 .top .meta{font-size:13px;opacity:.85;margin-top:2px;display:flex;justify-content:space-between}
 .progress{height:4px;background:rgba(255,255,255,.25);border-radius:2px;margin-top:8px;overflow:hidden}
 .progress i{display:block;height:100%;background:var(--wheat)}
-main{flex:1;padding:14px 14px calc(var(--safe-b) + 140px)}
+main{flex:1;padding:14px 14px calc(var(--safe-b) + 200px)}
 .card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
 .card h3{font-size:17px;margin-bottom:8px}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
@@ -67,7 +67,22 @@ main{flex:1;padding:14px 14px calc(var(--safe-b) + 140px)}
 .fbtn.on{border-color:var(--barn);background:#fbe9e4}
 .fbtn[disabled]{opacity:.4}
 .endbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--safe-b) + 66px);width:min(492px,calc(100% - 28px));z-index:6;display:flex;gap:8px}
-.endbar .btn{margin-top:0;padding:15px 8px;font-size:16px}.endbar #end{flex:2}.endbar .ghost{flex:1;font-size:14px}
+.endbar .btn{margin-top:0;padding:10px 6px;font-size:16px;min-height:56px}.endbar #end{flex:2.2;line-height:1.15}.endbar #end small{display:block;font-size:12.5px;font-weight:600;opacity:.9;margin-top:2px}
+.endbar .ghost{flex:1;font-size:14px;padding:10px 2px}
+.weekstrip{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--safe-b) + 130px);width:min(492px,calc(100% - 28px));z-index:6;
+  display:flex;align-items:center;gap:6px;background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:7px 10px;box-shadow:0 2px 10px rgba(61,43,31,.12);text-align:left}
+.weekstrip .wl{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap}.weekstrip .wc{flex:1;display:flex;flex-wrap:wrap;gap:2px}
+.weekstrip .delta{margin:0;font-size:12.5px;padding:2px 6px}.weekstrip .more{font-size:22px;color:var(--muted);line-height:1}
+.fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.fgrid .fbtn{min-height:64px;text-align:center;padding:8px 4px}.fgrid .fbtn b{font-size:13.5px}
+.fdesc{font-size:14px;margin-top:10px;line-height:1.35}.fdesc .s{font-size:13px;color:var(--barn-d);margin-top:4px}
+.statbtn{text-align:left;padding:4px 2px;border-radius:10px;width:100%}.statbtn:active{background:#f3ead6}.statbtn label{cursor:pointer}
+.info{font-size:11px;opacity:.6}
+.sumrow{display:flex;flex-wrap:wrap;gap:6px;padding:10px}.sumchip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:8px 12px;font-size:13.5px;min-height:40px}
+.tip{display:flex;gap:10px;align-items:center;background:#eef5e9;border-color:#cfe2c3;font-size:14px}
+.warn .sm{margin-left:6px;margin-top:6px}
+.sm.locked{background:#fff;color:var(--muted);border:1.5px dashed #cdbfa5}.lockedrow .t{color:var(--muted)}
+.job > div:last-child .s{white-space:nowrap}.upt{color:#3d6b33;font-weight:700}.downt{color:var(--barn);font-weight:700}.chip.ok.on{background:var(--sage);border-color:var(--sage)}
 .warn{background:#fbe9e4;border-color:#efc2b8;color:var(--barn-d);font-size:14px;font-weight:600}
 .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px;scrollbar-width:none}
 .chip{white-space:nowrap;padding:7px 12px;border-radius:20px;border:1.5px solid var(--line);background:#fff;font-size:14px}
@@ -99,10 +114,10 @@ nav button.on{color:var(--barn)}
 .sheet .big{font-size:44px;text-align:center}
 .sheet p{margin:8px 0}
 .delta{display:inline-block;margin:3px 4px 0 0;padding:3px 8px;border-radius:8px;font-size:13px;font-weight:700}
-.delta.up{background:#e3f0dc;color:#3d6b33}.delta.down{background:#f7dfda;color:#9b2f1f}
+.delta.up{background:#e3f0dc;color:#3d6b33}.delta.flat{background:#efe6d2;color:var(--muted)}.delta.down{background:#f7dfda;color:#9b2f1f}
 @keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
 @keyframes fade{from{opacity:0}to{opacity:1}}
-.toast{position:fixed;left:50%;top:calc(var(--safe-t) + 14px);transform:translateX(-50%);background:var(--soil);color:#fff;padding:10px 16px;border-radius:12px;z-index:30;font-size:14px;max-width:90%;text-align:center}
+.toast{position:fixed;left:50%;bottom:calc(var(--safe-b) + 196px);transform:translateX(-50%);background:var(--soil);color:#fff;padding:10px 16px;border-radius:12px;z-index:30;font-size:14px;max-width:90%;text-align:center}
 .maptog{display:flex;gap:6px;margin:2px 0 10px}.maptog button{flex:1;border:1.5px solid var(--barn);background:#fff;color:var(--barn);border-radius:999px;padding:7px 10px;font-size:14px;font-weight:700}
 .maptog button.on{background:var(--barn);color:#fff}
 .maptabs{display:flex;gap:6px;margin-bottom:6px}.maptabs button{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:7px 4px;font-size:13px;font-weight:700;color:var(--muted)}
@@ -157,6 +172,9 @@ const LAYOFF_RISK = { diner:1, hardware:1, lift:1, cellar:1, onion:1, retail:1, 
   elevator:.5, cna:.5, mech:.5, imaging:.5, loan:.5, hanford:.5, labadmin:.5, trucker:.5, rail:.5,
   para:.2, insure:.2, clerk:.2, co:.2, rn:.2, prof:.2, scientist:.2, farmhand:0 };
 const K401 = [0, 0.05, 0.10];
+const RUT_WEEKS = 8;
+// how much a focus still does after repeating it: full for 4 weeks, then fading to 30%
+function focusEffect(f = S.focus, n = S.streakF === f ? S.streakN : 1){ return f === 'study' || n <= 4 ? 1 : Math.max(0.3, 1 - 0.12 * (n - 4)); }
 const wk = v => fmt(v*W) + '/wk';
 const LENGTHS = {
   half: { label:'6 Months', sub:'26 weeks',  turns:26,       target:16000 },
@@ -238,7 +256,7 @@ const age = () => Math.floor(S.ageMonths/12);
 const kidsAtHome = () => (S.kids || []).filter(b => S.ageMonths - b < 18*12).length;
 // fill in fields that older saves don't have
 function migrate(s){
-  const d = { slot:0, evCd:{}, evDone:{}, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, mortgage:null, loanPay:0 };
+  const d = { slot:0, streakF:null, streakN:0, run:null, yearEvents:0, yearStart:null, evCd:{}, evDone:{}, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, mortgage:null, loanPay:0 };
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
   if (HOMES[s.home] && HOMES[s.home].own && !s.mortgage) s.mortgage = HOMES[s.home].cost;
   return s;
@@ -403,12 +421,13 @@ function showHelp(){
 function newGame(name, len, slot = 0){
   S = { v:3, slot, name, len, turn:0, date: new Date(2027,0,4).getTime(), ageMonths:18*12, evCd:{}, evDone:{}, last:null, ui:0,
     col:1, wage:1, kids:[], k401:0, k401rate:0, mortgage:null, loanPay:0,
-    money:1500, health:82, happy:65, community:30,
+    money:1500, health:78, happy:60, community:30,
     edu:0, studyProg:0, jobId:null, jobMonths:0, raise:1, retired:false,
     home:'room', equity:0, car:'beater', carValue:2500, loanLeft:0,
     dog:false, partner:false, council:false,
     focus:'rest', applied:false, happySum:0, healthSum:0, monthsPlayed:0,
-    log:[], over:false, cause:null };
+    log:[], over:false, cause:null, streakF:null, streakN:0, run:null, yearEvents:0 };
+  S.yearStart = { nw: netWorth(), happy: S.happy, health: S.health, community: S.community };
   log(`${name} turns 18 and rents a room above Main Street in Waitsburg. Time to find a job.`);
   tab = 'jobs'; save(); render();
   toast('Welcome to the Burg! Start by finding a job.');
@@ -419,7 +438,7 @@ function render(){
   if (!S) return renderTitle();
   const L = LENGTHS[S.len];
   const pct = L.turns === Infinity ? Math.min(100, (age()-18)/(85-18)*100) : S.turn / L.turns * 100;
-  const big = L.turns === Infinity || L.turns >= 260;
+  const big = L.turns === Infinity || L.turns >= 104;
   const left = L.turns === Infinity ? `Age ${age()}` : `${L.turns - S.turn} weeks left`;
   $('#app').innerHTML = `
   <header class="top">
@@ -428,8 +447,9 @@ function render(){
     <div class="progress"><i style="width:${pct}%"></i></div>
   </header>
   <main id="main"></main>
-  ${tab==='home' ? `<div class="endbar"><button class="btn primary" id="end">End Week →</button>
-    <button class="btn ghost" id="ff4">⏩ 4 wks</button>${big ? `<button class="btn ghost" id="ff13">⏩ 13 wks</button>` : ''}</div>` : ''}
+  ${tab==='home' ? `${S.run ? `<button class="weekstrip" id="strip" aria-label="What the last ${S.run.weeks > 1 ? S.run.weeks + ' weeks' : 'week'} did: details"><span class="wl">${S.run.weeks > 1 ? `Last ${S.run.weeks} wks` : 'Last week'}</span><span class="wc">${runChips()}</span><span class="more">›</span></button>` : ''}
+    <div class="endbar"><button class="btn primary" id="end">End Week →<small>${FOCUS[S.focus].ic} ${FOCUS_SHORT[S.focus]}</small></button>
+    <button class="btn ghost" id="ff4" aria-label="Skip 4 weeks">⏩ 4</button>${big ? `<button class="btn ghost" id="ff13" aria-label="Skip 13 weeks">⏩ 13</button>` : ''}<button class="btn ghost" id="auto" aria-label="Play until something happens">⏭ Auto</button></div>` : ''}
   <nav><div class="in">
     ${[['home','🏠','Home'],['jobs','💼','Jobs'],['life','🌾','Life'],['log','📜','Journal']].map(([k,ic,l]) =>
       `<button data-tab="${k}" class="${tab===k?'on':''}"><span class="ic">${ic}</span>${l}</button>`).join('')}
@@ -442,71 +462,146 @@ function render(){
   if ($('#end')) $('#end').onclick = endTurn;
   if ($('#ff4')) $('#ff4').onclick = () => playWeeks(4);
   if ($('#ff13')) $('#ff13').onclick = () => playWeeks(13);
+  if ($('#auto')) $('#auto').onclick = () => playWeeks(26);
+  if ($('#strip')) $('#strip').onclick = showRunDetails;
   ({home:renderHome, jobs:renderJobs, life:renderLife, log:renderLog})[tab]();
   document.querySelectorAll('[data-apply]').forEach(b => b.onclick = () => apply(b.dataset.apply));
+  document.querySelectorAll('[data-locked]').forEach(b => b.onclick = () => explainLocked(b.dataset.locked));
 }
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const statColor = v => v >= 60 ? 'var(--sage)' : v >= 35 ? 'var(--wheat-d)' : 'var(--barn)';
 const statBar = (label, v) => `<div class="stat"><label><span>${label}</span><span>${Math.round(v)}</span></label>
   <div class="bar"><i style="width:${v}%;background:${statColor(v)}"></i></div></div>`;
 
+const FOCUS_SHORT = { work:'Work extra', rest:'Rest', community:'Town', study:'Classes', outdoors:'Outside', hustle:'Hustle' };
+const statBtn = (k, label, v) => `<button class="stat statbtn" data-stat="${k}" aria-label="${label} ${Math.round(v)}: what moves it">
+  <label><span>${label} <span class="info">ⓘ</span></span><span>${Math.round(v)}</span></label>
+  <div class="bar"><i style="width:${v}%;background:${statColor(v)}"></i></div></button>`;
+// one-time tips for new players (remembered across games)
+const TIPS = [
+  { id:'focus', when:() => S.turn === 0 && S.jobId, text:'👋 Pick what to spend this week on, then tap <b>End Week</b>. Your focus repeats each week until you change it.' },
+  { id:'strip', when:() => S.run && S.turn >= 1, text:'📊 The strip above End Week shows what your week did. Tap it for details. <b>⏩</b> skips ahead and <b>⏭ Auto</b> plays until something needs you.' },
+  { id:'tabs',  when:() => S.turn >= 4, text:'💼 <b>Jobs</b> has better-paying work, and 🌾 <b>Life</b> has homes, rides, savings and schooling.' }
+];
+function currentTip(){ const done = prefs().tips || []; return TIPS.find(t => !done.includes(t.id) && t.when()); }
 function renderHome(){
-  const j = job();
-  const work = S.retired ? 'Retired 🎉' : j ? `${j.title}` : 'Unemployed';
-  const where = S.retired ? '' : j ? `${CITIES[j.city].name}${CITIES[j.city].miles ? ` · ${CITIES[j.city].miles} mi each way` : ' · walk to work'}` : 'Check the Jobs tab';
+  const j = job(), f = FOCUS[S.focus];
+  const work = S.retired ? '🎉 Retired' : j ? `💼 ${j.title}${CITIES[j.city].miles ? ` · ${CITIES[j.city].name}` : ''}` : '💼 No job yet';
+  const tip = currentTip();
+  const sugg = (stat, fk, why) => S.focus === fk ? `<div class="card warn">${why} Your focus is already ${FOCUS[fk].name}.</div>`
+    : `<div class="card warn">${why} <button class="sm" data-sugg="${fk}">${FOCUS[fk].ic} ${FOCUS[fk].name} this week</button></div>`;
+  const streak = S.streakF === S.focus && S.focus !== 'study' && S.streakN >= 4
+    ? `<div class="s">🔁 ${S.streakN} weeks in a row: next week it works at ${Math.round(focusEffect(S.focus, S.streakN + 1) * 100)}%${S.streakN >= RUT_WEEKS ? ', and you\'re in a rut (−happiness)' : ''}.</div>` : '';
   $('#main').innerHTML = `
   <div class="card"><div class="stats">
-    ${statBar('Happiness', S.happy)}${statBar('Health', S.health)}
-    ${statBar('Community', S.community)}
-    <div class="stat"><label><span>Net worth</span></label><div style="font-weight:800;font-size:18px;margin-top:2px">${fmt(netWorth())}</div></div>
+    ${statBtn('happy','Happiness', S.happy)}${statBtn('health','Health', S.health)}
+    ${statBtn('community','Community', S.community)}
+    <button class="stat statbtn" data-stat="net" aria-label="Net worth: what counts"><label><span>Net worth <span class="info">ⓘ</span></span></label><div style="font-weight:800;font-size:18px;margin-top:2px">${fmt(netWorth())}</div></button>
   </div></div>
-  <div class="card">
-    <div class="kv"><span>Work</span><span><b>${work}</b></span></div>
-    ${where ? `<div class="kv"><span>Where</span><span>${where}</span></div>` : ''}
-    <div class="kv"><span>Home</span><span>${HOMES[S.home].name}</span></div>
-    <div class="kv"><span>Ride</span><span>${CARS[S.car].name}</span></div>
-    <div class="kv"><span>Schooling</span><span>${EDU[S.edu]}</span></div>
-  </div>
-  ${!j && !S.retired ? `<div class="card warn">💼 No paycheck coming in. Apply for a job on the Jobs tab.</div>` : ''}
+  ${tip ? `<div class="card tip"><div>${tip.text}</div><button class="sm alt" data-tip="${tip.id}">Got it</button></div>` : ''}
+  ${!j && !S.retired ? `<div class="card warn">💼 No paycheck coming in. <button class="sm" data-go="jobs">Find a job</button></div>` : ''}
+  ${S.happy < 30 ? sugg('happy', 'outdoors', `😟 Happiness is low (${Math.round(S.happy)}).`) : ''}
+  ${S.health < 30 ? sugg('health', 'rest', `🤒 Health is low (${Math.round(S.health)}).`) : ''}
   ${S.money < -15000 ? `<div class="card warn">⚠️ Your debt is getting dangerous. Below -$40,000 you'll have to leave town.</div>` : ''}
-  <div class="card"><h3>This week's focus</h3>${mapToggle()}
-    ${prefs().mapView ? mapBlock('T') : `<div class="focus">${Object.entries(FOCUS).map(([k,f]) => {
-      const dis = (f.needsJob && (!j || S.retired)) || (f.study && S.edu >= 3);
-      return `<button class="fbtn ${S.focus===k?'on':''}" data-f="${k}" ${dis?'disabled':''}>
-        <span class="ic">${f.ic}</span><b>${f.name}</b><small>${f.study && S.edu<3 ? `${wk(cost(TUITION[S.edu]))} · ${S.studyProg}/${STUDY_NEED[S.edu]} weeks` : f.desc}${f.cost?` (${wk(cost(f.cost))})`:''}</small></button>`;
-    }).join('')}</div>`}
+  <div class="card"><div class="focushead"><h3>This week's focus</h3></div>${mapToggle()}
+    ${prefs().mapView ? mapBlock('T') : `<div class="fgrid">${Object.entries(FOCUS).map(([k,x]) => {
+      const dis = (x.needsJob && (!j || S.retired)) || (x.study && S.edu >= 3);
+      return `<button class="fbtn ${S.focus===k?'on':''}" data-f="${k}" ${dis?'disabled':''} aria-pressed="${S.focus===k}"><span class="ic">${x.ic}</span><b>${FOCUS_SHORT[k]}</b></button>`;
+    }).join('')}</div>
+    <div class="fdesc"><b>${f.ic} ${f.name}:</b> ${f.study && S.edu < 3 ? `work toward a ${EDU[S.edu+1].toLowerCase()} (${S.studyProg}/${STUDY_NEED[S.edu]} weeks).` : f.desc}${f.study && S.edu < 3 ? ` ${wk(cost(TUITION[S.edu]))}.` : f.cost ? ` ${wk(cost(f.cost))}.` : ''}${streak}</div>`}
   </div>
-  ${S.last ? `<div class="card"><h3>Last week</h3>${S.last.lines.map(([l,v]) => `<div class="kv"><span>${l}</span><span style="color:${v<0?'var(--barn)':'var(--sage)'}">${v>0?'+':''}${fmt(v)}</span></div>`).join('')}
-    <div class="kv"><span><b>Net</b></span><span><b>${S.last.net>=0?'+':''}${fmt(S.last.net)}</b></span></div></div>` : ''}
-  <div class="muted" style="text-align:center">Each turn is one week.</div>`;
-  document.querySelectorAll('.fbtn').forEach(b => b.onclick = () => { S.focus = b.dataset.f; save(); renderHome(); });
+  <div class="card sumrow">
+    <button class="sumchip" data-go="jobs">${work}</button>
+    <button class="sumchip" data-go="life">🏠 ${HOMES[S.home].name.replace(/^Rented /,'')}</button>
+    <button class="sumchip" data-go="life">🛻 ${CARS[S.car].name}</button>
+    <button class="sumchip" data-go="life">🎓 ${EDU[S.edu].replace(' diploma','')}</button>
+  </div>`;
+  document.querySelectorAll('.fbtn').forEach(b => b.onclick = () => { S.focus = b.dataset.f; save(); render(); });
+  document.querySelectorAll('[data-stat]').forEach(b => b.onclick = () => showStatInfo(b.dataset.stat));
+  document.querySelectorAll('[data-sugg]').forEach(b => b.onclick = () => { S.focus = b.dataset.sugg; save(); render(); toast(`This week: ${FOCUS[S.focus].name}`); });
+  document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { tab = b.dataset.go; render(); window.scrollTo(0,0); });
+  document.querySelectorAll('[data-tip]').forEach(b => b.onclick = () => { setPref('tips', [...(prefs().tips || []), b.dataset.tip]); renderHome(); });
+}
+const STATINFO = {
+  happy: { t:'😊 Happiness', up:['Rest & recharge, Get outside, Show up for town', 'A partner, a dog, kids at home, a nicer home', 'Retirement'],
+    down:['Stressful jobs and long commutes', 'Work extra hours, Take classes, Side hustle', 'Debt, no job, and doing the same thing for too long'], note:'Counts for 30% of your Life Score (your average over the game).' },
+  health: { t:'❤️ Health', up:['Rest & recharge, Get outside', 'Seeing a doctor when you\'re run down'],
+    down:['Physical jobs (farm, plants, Hanford)', 'Work extra hours, Side hustle', 'Getting older'], note:'Counts for 20% of your Life Score (your average). At 0 you land in the hospital.' },
+  community: { t:'🤝 Community', up:['Show up for town', 'Working in Waitsburg (a little in Dayton)', 'Kids at home, a council seat, helping in events'],
+    down:['It fades slowly if you don\'t show up', 'Skipping out on neighbors'], note:'Counts for 20% of your Life Score. Higher standing helps you get hired.' }
+};
+function showStatInfo(k){
+  if (k === 'net') {
+    const loan = S.loanLeft > 0 ? S.loanLeft * (S.loanPay || CARS.truck.pay) * 0.85 : 0;
+    const t = LENGTHS[S.len].target;
+    sheet(`<h2>💰 Net worth</h2><p class="muted">Everything you own minus what you owe.</p>
+      <div class="kv"><span>Cash</span><span>${fmt(S.money)}</span></div>
+      <div class="kv"><span>Home equity</span><span>${fmt(S.equity)}</span></div>
+      <div class="kv"><span>${CARS[S.car].name}</span><span>${fmt(S.carValue)}</span></div>
+      <div class="kv"><span>401(k)</span><span>${fmt(S.k401 || 0)}</span></div>
+      ${loan ? `<div class="kv"><span>Truck loan</span><span>-${fmt(loan)}</span></div>` : ''}
+      <div class="kv"><span><b>Net worth</b></span><span><b>${fmt(netWorth())}</b></span></div>
+      <p class="muted">Counts for 30% of your Life Score: ${fmt(t)} (in 2027 dollars) or more by the end gets full points.</p>
+      <button class="btn primary" id="ok">Got it</button>`);
+  } else {
+    const x = STATINFO[k];
+    sheet(`<h2>${x.t}: ${Math.round(S[k])}</h2>
+      <h3>Goes up with</h3>${x.up.map(u => `<div class="logitem">▲ ${u}</div>`).join('')}
+      <h3 style="margin-top:10px">Goes down with</h3>${x.down.map(u => `<div class="logitem">▼ ${u}</div>`).join('')}
+      <p class="muted">${x.note}</p><button class="btn primary" id="ok">Got it</button>`);
+  }
+  $('#ok').onclick = closeSheet;
 }
 
+// weekly take-home: pay after ~15% taxes, minus commuting gas in your current vehicle
+const takeHome = x => payNow(x, S.jobId === x.id) * W * 0.85 - commuteCost(CITIES[x.city].miles) * W;
 function jobRow(x){
-  const c = CITIES[x.city], cur = S.jobId === x.id && !S.retired;
+  const c = CITIES[x.city], cur = S.jobId === x.id && !S.retired, th = takeHome(x);
+  const base = job() && !S.retired ? takeHome(job()) : 0, diff = th - base;
   const btn = cur ? `<span class="tag cur">Current</span>`
-    : S.edu < x.edu ? `<button class="sm" disabled>Needs ${['','cert','assoc.','degree'][x.edu]}</button>`
+    : S.edu < x.edu ? `<button class="sm locked" data-locked="${x.id}" aria-label="Locked: how to unlock">🔒 ${['','Cert','Assoc.','Degree'][x.edu]}</button>`
     : `<button class="sm" data-apply="${x.id}" ${S.applied?'disabled':''}>Apply</button>`;
-  return `<div class="kv job"><div><div class="t">${x.title}</div>
-    <div class="s">${c.name}${c.miles?` · ${c.miles} mi · ~${wk(commuteCost(c.miles))} gas`:' · no commute'} · ${EDU[x.edu].replace(' diploma','')}</div></div>
-    <div style="text-align:right"><div class="pay">${wk(payNow(x, cur))}</div>${btn}</div></div>`;
+  return `<div class="kv job${S.edu < x.edu ? ' lockedrow' : ''}"><div><div class="t">${x.title}</div>
+    <div class="s">${c.name}${c.miles ? ` · ${c.miles} mi` : ' · no commute'} · pay ${wk(payNow(x, cur))}${c.miles ? `, gas ${wk(commuteCost(c.miles))}` : ''}</div></div>
+    <div style="text-align:right"><div class="pay">${fmt(th)}/wk</div>
+    <div class="s">${cur ? 'take-home' : base && Math.abs(diff) >= 1 ? `<span class="${diff>0?'upt':'downt'}">${diff>0?'▲':'▼'} ${fmt(Math.abs(diff))}</span>` : 'take-home'}</div>${btn}</div></div>`;
+}
+let jobOK = false;
+function explainLocked(id){
+  const x = jobById(id); if (!x) return;
+  const steps = []; let weeks = 0;
+  for (let l = S.edu; l < x.edu; l++) {
+    const w = STUDY_NEED[l] - (l === S.edu ? S.studyProg : 0); weeks += w;
+    steps.push(`<div class="kv"><span>${EDU[l+1]}</span><span>${w} weeks · ${wk(cost(TUITION[l]))}</span></div>`);
+  }
+  sheet(`<h2>🔒 ${x.title}</h2><p>This job needs a <b>${EDU[x.edu].toLowerCase()}</b>. You have a ${EDU[S.edu].toLowerCase()}.</p>
+    <p class="muted">Pick <b>📚 Take classes</b> as your weekly focus to study${S.studyProg ? ` (you're ${S.studyProg}/${STUDY_NEED[S.edu]} weeks into the next one)` : ''}. About ${weeks} weeks in all:</p>
+    ${steps.join('')}
+    ${S.focus === 'study' ? '<p><b>📚 Take classes is already your focus.</b></p>' : `<button class="btn primary" id="yes">📚 Make Take classes my focus</button>`}
+    <button class="btn ghost" id="no">${S.focus === 'study' ? 'OK' : 'Not now'}</button>`);
+  if ($('#yes')) $('#yes').onclick = () => { S.focus = 'study'; save(); closeSheet(); tab = 'home'; render(); toast('This week: Take classes'); };
+  $('#no').onclick = closeSheet;
 }
 function renderJobs(){
   const j = job();
-  const list = JOBS.filter(x => jobCity === 'all' || x.city === jobCity);
+  const cur = S.jobId && !S.retired ? S.jobId : null;
+  const list = JOBS.filter(x => (jobCity === 'all' || x.city === jobCity) && (!jobOK || x.edu <= S.edu))
+    .sort((a, b) => (b.id === cur) - (a.id === cur) || (a.edu > S.edu) - (b.edu > S.edu) || (a.edu > S.edu ? a.edu - b.edu : 0) || takeHome(b) - takeHome(a));
   const mapOn = !!prefs().mapView;
   $('#main').innerHTML = `${mapToggle()}
   ${mapOn ? `<div class="card"><h3>Job board <span class="tag">${S.applied ? 'Applied this week' : '1 application per week'}</span></h3>${mapBlock('R')}</div>` : `
-  <div class="chips">${[['all','All towns'], ...Object.entries(CITIES).map(([k,c]) => [k,c.name])].map(([k,l]) =>
+  <div class="chips"><button class="chip ok ${jobOK?'on':''}" id="jobok" aria-pressed="${jobOK}">✅ Can apply</button>${[['all','All towns'], ...Object.entries(CITIES).map(([k,c]) => [k,c.name])].map(([k,l]) =>
     `<button class="chip ${jobCity===k?'on':''}" data-c="${k}">${l}</button>`).join('')}</div>
   ${jobCity!=='all' ? `<div class="card muted">${CITIES[jobCity].blurb}</div>` : ''}
   <div class="card">
     <h3>Job board <span class="tag">${S.applied ? 'Applied this week' : '1 application per week'}</span></h3>
-    ${list.map(jobRow).join('')}
+    <p class="muted" style="margin:0 0 4px;font-size:13px">Take-home is pay after taxes and gas${job() && !S.retired ? ', with ▲▼ against your current job' : ''}.</p>
+    ${list.map(jobRow).join('') || '<p class="muted">No jobs match.</p>'}
   </div>`}
   ${j && !S.retired ? `<button class="btn ghost" id="quit">Quit my job</button>` : ''}
   ${LENGTHS[S.len].turns===Infinity && age()>=62 && !S.retired ? `<button class="btn primary" id="retire">Retire (Social Security ${wk(ssPay())}${S.k401>0?` + 401(k) ${wk(S.k401*0.04/12)}`:''})</button>` : ''}`;
-  document.querySelectorAll('.chip').forEach(b => b.onclick = () => { jobCity = b.dataset.c; renderJobs(); });
+  document.querySelectorAll('.chip[data-c]').forEach(b => b.onclick = () => { jobCity = b.dataset.c; render(); });
+  if ($('#jobok')) $('#jobok').onclick = () => { jobOK = !jobOK; render(); };
   document.querySelectorAll('[data-apply]').forEach(b => b.onclick = () => apply(b.dataset.apply));
   if ($('#quit')) $('#quit').onclick = () => {
     sheet(`<h2>Quit your job?</h2><p>You'll have no paycheck until you land another one.</p>
@@ -645,30 +740,59 @@ function closeSheet(){ $('#modal').classList.add('hidden'); }
 /* ---------- turn processing (one turn = one week) ---------- */
 function endTurn(){ playWeeks(1); }
 
+// Plays up to n weeks. Skips (n > 1) stop when something needs the player: an event with a real choice,
+// a milestone note, a year in review, or the end of the game.
 function playWeeks(n){
-  const startMoney = S.money, before = {happy:S.happy, health:S.health, community:S.community};
-  let res, played = 0;
+  S.run = { weeks: 0, money: S.money, happy: S.happy, health: S.health, community: S.community, happened: [] };
+  let res;
   for (let i = 0; i < n; i++) {
-    res = weekTick(n > 1); played++;
-    if (res.ending || res.ev || res.notes.length) break;
+    res = weekTick(n > 1); S.run.weeks++;
+    if (res.ending || res.ev || res.notes.length || res.review) break;
   }
   save();
-  const dm = S.money - startMoney;
   const after = () => {
     if (res.ending) return finish(res.ending);
     render();
     if (res.ev) showEvent(res.ev);
+    else if (res.review) showReview(res.review);
   };
   if (res.notes.length) {
-    sheet(`<h2>${played > 1 ? played + ' weeks later' : 'This week'}</h2>
+    sheet(`<h2>${S.run.weeks > 1 ? S.run.weeks + ' weeks later' : 'This week'}</h2>
       ${res.notes.map(t => `<p><b>${t}</b></p>`).join('')}
-      <p><span class="delta ${dm>=0?'up':'down'}">${dm>=0?'+':''}${fmt(dm)}</span>${deltaChips(before)}</p>
+      <p>${runChips()}</p>
       <button class="btn primary" id="ok">Continue</button>`);
     $('#ok').onclick = () => { closeSheet(); after(); };
-  } else {
-    after();
-    if (!res.ending) toast(`${played > 1 ? played + ' weeks' : 'Week'} done · ${dm>=0?'+':''}${fmt(dm)}`);
-  }
+  } else after();
+}
+// what the last End Week / skip did, counting events resolved since
+function runChips(){
+  if (!S.run) return '';
+  const r = S.run, dm = S.money - r.money;
+  const d = [['😊', S.happy - r.happy], ['❤️', S.health - r.health], ['🤝', S.community - r.community]];
+  return `<span class="delta ${dm>=0?'up':'down'}">${dm>=0?'+':''}${fmt(dm)}</span>` +
+    d.map(([ic,v]) => `<span class="delta ${Math.abs(v) < 0.5 ? 'flat' : v>0?'up':'down'}">${ic} ${Math.abs(v) < 0.5 ? '±0' : (v>0?'▲':'▼') + Math.abs(Math.round(v))}</span>`).join('');
+}
+function showRunDetails(){
+  const r = S.run; if (!r) return;
+  const dm = S.money - r.money;
+  sheet(`<h2>${r.weeks > 1 ? `The last ${r.weeks} weeks` : 'This week'}</h2>
+    <p>${runChips()}</p>
+    ${S.last ? `<h3 style="margin-top:12px">${r.weeks > 1 ? 'The last week' : 'Money'}</h3>${S.last.lines.map(([l,v]) => `<div class="kv"><span>${l}</span><span style="color:${v<0?'var(--barn)':'var(--sage)'}">${v>0?'+':''}${fmt(v)}</span></div>`).join('')}
+      <div class="kv"><span><b>Paychecks and bills</b></span><span><b>${S.last.net>=0?'+':''}${fmt(S.last.net)}</b></span></div>` : ''}
+    ${r.happened.length ? `<h3 style="margin-top:12px">What happened</h3>${r.happened.map(h => `<div class="kv"><span>${h.ic} ${esc(h.title)}</span><span style="color:${h.money<0?'var(--barn)':'var(--sage)'}">${h.money ? (h.money>0?'+':'') + fmt(h.money) : ''}</span></div>`).join('')}` : ''}
+    <div class="kv"><span><b>Total change in cash</b></span><span><b>${dm>=0?'+':''}${fmt(dm)}</b></span></div>
+    <button class="btn primary" id="ok">Close</button>`);
+  $('#ok').onclick = closeSheet;
+}
+function showReview(rv){
+  const row = (l, a, b, money) => { const d = b - a; return `<div class="kv"><span>${l}</span><span>${money ? fmt(b) : Math.round(b)} <span class="delta ${Math.abs(d) < (money?1:0.5) ? 'flat' : d>0?'up':'down'}">${Math.abs(d) < (money?1:0.5) ? '±0' : (d>0?'▲':'▼') + (money ? fmt(Math.abs(d)) : Math.round(Math.abs(d)))}</span></span></div>`; };
+  sheet(`<div class="big">📅</div><h2 style="text-align:center">${rv.year} in review</h2>
+    <p class="muted" style="text-align:center">${esc(S.name)} is ${age()} now.</p>
+    ${row('Net worth', rv.start.nw, rv.end.nw, true)}${row('Happiness', rv.start.happy, rv.end.happy)}${row('Health', rv.start.health, rv.end.health)}${row('Community', rv.start.community, rv.end.community)}
+    ${rv.milestones.length ? `<h3 style="margin-top:12px">Milestones</h3>${rv.milestones.map(m => `<div class="logitem">${esc(m)}</div>`).join('')}` : '<p class="muted">A quiet year.</p>'}
+    <p class="muted">${rv.events} event${rv.events===1?'':'s'} this year.</p>
+    <button class="btn primary" id="ok">On to ${rv.year + 1}</button>`);
+  $('#ok').onclick = () => { closeSheet(); render(); };
 }
 
 function weekTick(auto){
@@ -735,7 +859,18 @@ function weekTick(auto){
   dc += kidsHome * 0.2;
   if (S.council) dc += 0.8;
   S.happy = clamp(S.happy + dh*m); S.health = clamp(S.health + dH*m); S.community = clamp(S.community + dc*m);
-  adj(Object.fromEntries(Object.entries(f.fx).map(([s,v]) => [s, v*k])));
+  // doing the same thing week after week loses its punch (classes excepted), and a long rut wears on you
+  if (S.streakF === S.focus) S.streakN++; else { S.streakF = S.focus; S.streakN = 1; }
+  const eff = focusEffect();
+  adj(Object.fromEntries(Object.entries(f.fx).map(([st,v]) => {
+    let d = v * k * (v > 0 ? eff : 1);
+    if (S.focus === 'rest' && v > 0) d *= clamp((86 - S[st]) / 20, 0, 1);   // rest tops out in the low 80s
+    return [st, d];
+  })));
+  if (S.focus !== 'study' && S.streakN > RUT_WEEKS) {
+    adj({happy: -1.2});
+    if (S.streakN === RUT_WEEKS + 1) notes.push(`🔁 ${S.streakN - 1} weeks of "${f.name}" in a row. You're in a rut: try a different focus.`);
+  }
 
   // ---- maybe an event this week ----
   let ev = chance(0.28) ? pickEvent(curMonth()) : null;
@@ -743,18 +878,32 @@ function weekTick(auto){
     S.evCd[ev.title] = S.turn + (ev.yr ? 40 : 8);
     if (ev.once) S.evDone[ev.title] = 1;
     S.evLabel = dateLabel();
+    S.yearEvents = (S.yearEvents || 0) + 1;
     if (auto) {                      // while skipping ahead, one-choice events resolve on their own
       const ch = ev.choices().filter(c => !c.if || c.if());
-      if (ch.length === 1) { const r = ch[0].go(); if (r) log(`${ev.title}: ${r}`); ev = null; }
+      if (ch.length === 1) {
+        const m0 = S.money, r = ch[0].go();
+        if (r) log(`${ev.title}: ${r}`);
+        if (S.run) S.run.happened.push({ ic: ev.ic, title: ev.title, money: S.money - m0 });
+        ev = null;
+      }
     }
   }
 
   // ---- advance one week ----
   S.happySum += S.happy * m; S.healthSum += S.health * m; S.monthsPlayed += m;
-  const oldAge = age();
+  const oldAge = age(), oldYear = new Date(S.date).getFullYear();
   S.date += 7 * 864e5; S.ageMonths += m; S.turn++; S.jobMonths += m; S.applied = false;
   if (age() > oldAge && age() % 10 === 0) notes.push(`🎂 Happy ${age()}th birthday!`);
   if (S.focus === 'work' && !job()) S.focus = 'rest';
+  let review = null;
+  const newYear = new Date(S.date).getFullYear();
+  if (newYear > oldYear) {
+    const snap = { nw: netWorth(), happy: S.happy, health: S.health, community: S.community };
+    if (S.yearStart && LENGTHS[S.len].turns > 26) review = { year: oldYear, start: S.yearStart, end: snap, events: S.yearEvents || 0,
+      milestones: S.log.filter(e => e.d.endsWith(String(oldYear)) && !e.m.includes(': ')).map(e => e.m).reverse().slice(0, 8) };
+    S.yearStart = snap; S.yearEvents = 0;
+  }
 
   // ---- health crises & endings ----
   let ending = null;
@@ -768,7 +917,7 @@ function weekTick(auto){
   }
   if (!ending && S.turn >= L.turns) ending = `${L.label} in the Burg is in the books.`;
   if (!ending && S.money < -40000) ending = `Buried in debt, ${S.name} packed up and left Waitsburg.`;
-  return { ev, notes, ending };
+  return { ev, notes, ending, review };
 }
 
 function deltaChips(before){
@@ -795,7 +944,9 @@ function showEvent(ev){
     const result = choices[+b.dataset.i].go() || '';
     const dm = S.money - mBefore;
     if (result) S.log.unshift({d: S.evLabel || dateLabel(), m: `${ev.title}: ${result}`});
+    if (S.run) S.run.happened.push({ ic: ev.ic, title: ev.title, money: dm });
     save();
+    if (choices.length === 1) { closeSheet(); render(); toast(`${ev.ic} ${result}${dm ? ` (${dm>0?'+':''}${fmt(dm)})` : ''}`); return; }
     sheet(`<div class="big">${ev.ic}</div><p>${result}</p>
       <p>${dm ? `<span class="delta ${dm>0?'up':'down'}">${dm>0?'+':''}${fmt(dm)}</span>` : ''}${deltaChips(before)}</p>
       <button class="btn primary" id="ok">Continue</button>`);
@@ -994,7 +1145,8 @@ function lifeScore(){
   return { score, title, avgH, avgHe, nw, real, wealth, parts: { happy: Math.round(hp), health: Math.round(he), community: Math.round(cm), wealth: Math.round(wealth) } };
 }
 function finish(reason){
-  const { score, title, avgH, avgHe, nw, real, wealth } = lifeScore();
+  const { score, title, avgH, avgHe, nw, real, wealth, parts } = lifeScore();
+  const part = (l, sub, v, w) => `<div class="kv"><span>${l}<br><small class="muted">${sub}</small></span><span><b>${v}</b>/100 × ${w}% = <b>${Math.round(v * w / 100)}</b></span></div>`;
   const best = store.get(BEST_KEY) || {};
   const isBest = !best[S.len] || score > best[S.len];
   if (isBest) { best[S.len] = score; store.set(BEST_KEY, best); }
@@ -1003,11 +1155,12 @@ function finish(reason){
     <p class="muted" style="text-align:center">${reason}</p>
     <div class="score">${score}</div>
     <p style="text-align:center;margin-top:0"><b>${title}</b>${isBest ? ' · <span class="tag cur">New best!</span>' : ''}</p>
-    <div class="kv"><span>Average happiness</span><span>${Math.round(avgH)}</span></div>
-    <div class="kv"><span>Average health</span><span>${Math.round(avgHe)}</span></div>
-    <div class="kv"><span>Community standing</span><span>${Math.round(S.community)}</span></div>
-    <div class="kv"><span>Net worth</span><span>${fmt(nw)} (${Math.round(wealth)}/100)</span></div>
-    ${S.col > 1.05 ? `<div class="kv"><span>…in 2027 dollars</span><span>${fmt(real)}</span></div>` : ''}
+    <h3 style="margin-top:10px">How the score adds up</h3>
+    ${part('Happiness', `average ${Math.round(avgH)} (30 → 0, 90 → 100)`, parts.happy, 30)}
+    ${part('Health', `average ${Math.round(avgHe)} (40 → 0, 95 → 100)`, parts.health, 20)}
+    ${part('Community', `ended at ${Math.round(S.community)} (10 → 0, 90 → 100)`, parts.community, 20)}
+    ${part('Net worth', `${fmt(nw)}${S.col > 1.05 ? ` (${fmt(real)} in 2027 dollars)` : ''} of ${fmt(LENGTHS[S.len].target)}`, parts.wealth, 30)}
+    <h3 style="margin-top:10px">Your life</h3>
     ${S.kids && S.kids.length ? `<div class="kv"><span>Kids raised</span><span>${S.kids.length}</span></div>` : ''}
     <div class="kv"><span>Final age</span><span>${age()}</span></div>
     <div class="kv"><span>Education</span><span>${EDU[S.edu]}</span></div>

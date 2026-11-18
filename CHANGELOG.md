@@ -3,6 +3,30 @@
 Release notes for The Burg. `/release now` turns the Unreleased section into a dated `## X.Y.Z (YYYY-MM-DD)`
 entry for every release, and the GitHub release notes are taken from it.
 
+## Unreleased
+
+### Added
+- **What your week did:** a strip above End Week shows the money (events included) and ▲▼ for happiness, health
+  and community. Tap it for the full breakdown and everything that happened.
+- **⏭ Auto** plays weeks until something needs you, and ⏩ 13 weeks is now in 2-year games too.
+- **Year in review** each New Year in 2-year, 5-year and Lifetime games: net worth and stat changes, plus the
+  year's milestones.
+- **Help when you need it:** three one-time tips for new players. Tap any stat to see what moves it. A banner
+  suggests a focus when happiness or health gets low. Locked jobs explain how to unlock them and can make "Take
+  classes" your focus.
+- **Job list:** jobs you can apply for come first, there's a ✅ Can apply filter, and each job shows take-home pay
+  after taxes and gas, with ▲▼ against your current job.
+- The ending shows how each part of the Life Score adds up.
+
+### Changed
+- **Home puts the week first:** a compact focus grid sits right under the stats, the End Week button shows your
+  focus, and your job, home, ride and schooling fit on one line that links to Jobs and Life.
+- **Doing the same thing every week fades:** a focus works at full strength for 4 weeks in a row, then less. After
+  8 weeks you're in a rut (happiness drops) until you switch. Classes are exempt. Rest now tops out in the low 80s,
+  and new lives start a little lower (happiness 60, health 78). A player who never changes focus now scores a
+  median of 48 (it was 64–76).
+- Events with only one choice close in one tap and show their result as a message.
+
 ## 0.1.0 (2026-11-17)
 
 The first release of The Burg.

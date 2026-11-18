@@ -7,7 +7,7 @@ import { serve, launch, runner, seedScript } from './helpers.mjs';
 
 const SCALE = Number(process.env.SIM_SCALE || 1);
 const GAMES = { half: 6, two: 4, five: 2, life: 1 };              // per strategy, times SIM_SCALE
-const STRATEGIES = ['planner', 'homebody', 'commuter', 'student', 'hustler', 'careless'];
+const STRATEGIES = ['planner', 'homebody', 'commuter', 'student', 'hustler', 'careless', 'idle'];
 
 const srv = await serve();
 const browser = await launch();
@@ -35,7 +35,8 @@ for (const len of Object.keys(GAMES)) {
         let ending = null, weeks = 0;
         while (!ending && weeks < 6000) {
           // job hunting
-          if (!S.retired && (strat !== 'careless' || Math.random() < 0.3)) {
+          if (strat === 'idle') { if (!S.jobId && !S.retired) apply('farmhand'); }
+          else if (!S.retired && (strat !== 'careless' || Math.random() < 0.3)) {
             const want = strat === 'homebody' ? JOBS.filter(x => x.city === 'waitsburg' && x.edu <= S.edu).sort((a, b) => b.pay - a.pay)[0] : best();
             if (want && want.id !== S.jobId && (!job() || want.pay > job().pay * S.raise * 1.1)) apply(want.id);
           }
@@ -43,7 +44,8 @@ for (const len of Object.keys(GAMES)) {
           // this week's focus
           const opts = Object.keys(FOCUS).filter(k => !(FOCUS[k].needsJob && (!job() || S.retired)) && !(FOCUS[k].study && S.edu >= 3));
           let f;
-          if (strat === 'careless') f = opts[Math.floor(Math.random() * opts.length)];
+          if (strat === 'idle') f = 'rest';                          // never touches the focus
+          else if (strat === 'careless') f = opts[Math.floor(Math.random() * opts.length)];
           else if (S.health < 45 || S.happy < 40) f = S.health < S.happy ? 'rest' : 'outdoors';
           else if (strat === 'student' && S.edu < 3) f = 'study';
           else if (strat === 'planner') f = S.edu < 2 && LENGTHS[S.len].turns > 26 ? 'study' : ['work', 'community', 'outdoors', 'work', 'community', 'rest'][weeks % 6];
@@ -110,8 +112,10 @@ for (const r of results) { weeks += r.weeks; for (const [k, v] of Object.entries
 md += `\n**Events per 100 weeks played** (${weeks.toLocaleString()} weeks in total):\n\n` +
   Object.entries(ev).sort((a, b) => b[1] - a[1]).map(([k, v]) => `- ${k}: ${(v / weeks * 100).toFixed(1)}`).join('\n') + '\n';
 const careless = med(results.filter(r => r.strat === 'careless').map(r => r.score));
+const idle = med(results.filter(r => r.strat === 'idle').map(r => r.score));
 const planner = med(results.filter(r => r.strat === 'planner' && (r.len === 'five' || r.len === 'life')).map(r => r.score));
-md += `\nCareless median **${careless}** (target 60 or below) · Planner median in 5-year and Lifetime games **${planner}** (target 70 or above).\n`;
+md += `\nIdle median **${idle}** (target 50 or below) · Careless median **${careless}** (target 60 or below) · Planner median in 5-year and Lifetime games **${planner}** (target 70 or above).\n`;
+if (idle > 50) md += `\n> ⚠️ Doing nothing scores too high (issue #20).\n`;
 if (careless > 60) md += `\n> ⚠️ Careless play scores too high (issue #7).\n`;
 if (planner < 70) md += `\n> ⚠️ Good play scores too low.\n`;
 console.log(md);
