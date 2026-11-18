@@ -13,6 +13,7 @@ added, finished or re-prioritized, both change in the same session.
   [P3](https://github.com/krazow/The-Burg/issues?q=is%3Aopen+label%3A%22P3+%E2%80%93+later%22),
   [qa](https://github.com/krazow/The-Burg/issues?q=is%3Aopen+label%3Aqa)
 - **Waiting on review:** [pull requests](https://github.com/krazow/The-Burg/pulls)
+- **✅ Build board:** [check items to have them built](https://claude.ai/artifact/465Un431Hb4B6PNB9WDx9J). It lists every open item (releases, the review, Out and about with its business-name choices, the 90 events, version 2.0). Claude checks it every hour, builds what's checked, and marks each item done with its pull request.
 
 ---
 
