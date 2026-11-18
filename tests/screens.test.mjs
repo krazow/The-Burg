@@ -83,7 +83,9 @@ for (const [label, w, h] of SIZES) {
     ['life', async () => { await page.click('[data-tab=life]'); }],
     ['journal', async () => { await page.click('[data-tab=log]'); }],
     ['home-map', async () => { await page.click('[data-tab=home]'); await page.click('#main .maptog button:nth-child(2)'); }],
-    ['region-map', async () => { await page.evaluate(() => { S.evPins = [{ t: 'Wine country weekend', ic: '🍷', m: 'R', k: 'wallawalla', turn: S.turn, r: 'A sunny afternoon.' }]; }); await page.click('.maptabs button:nth-child(2)'); await page.click('.mpin[aria-label="Walla Walla"]'); }],
+    ['main-street', async () => { await page.click('.mpin[aria-label="Main Street"]'); await page.evaluate(() => document.querySelector('.msmap').scrollIntoView({ block: 'center' })); }],
+    ['business-card', async () => { await page.evaluate(() => { S.ageMonths = 25 * 12; bizSheet('pasta'); }); }],
+    ['region-map', async () => { await page.evaluate(() => { closeSheet(); S.evPins = [{ t: 'Wine country weekend', ic: '🍷', m: 'R', k: 'wallawalla', turn: S.turn, r: 'A sunny afternoon.' }]; }); await page.click('.maptabs button:nth-child(2)'); await page.click('.mpin[aria-label="Walla Walla"]'); }],
     ['trip', async () => { await page.evaluate(() => { S.date = new Date(2027, 5, 7).getTime(); tripSheet('wallawalla'); }); await page.click('#modal [data-stop="market"]'); }],
     ['menu', async () => { await page.evaluate(() => closeSheet()); await page.click('#main .maptog button:nth-child(1)'); await page.click('[data-tab=menu]'); await page.waitForTimeout(300); }],
     ['tutorial', async () => { await page.evaluate(() => { closeSheet(); startTutorial(); }); await page.waitForTimeout(500); await page.click('#cnext'); await page.waitForTimeout(600); }]
@@ -210,7 +212,7 @@ await t.check('text contrast meets WCAG AA (4.5:1, or 3:1 for large text)', asyn
   await ctx.close();
 }
 
-const md = `## Screens and accessibility\n\n${SIZES.length} screen sizes × 10 screens, plus keyboard and screen-reader checks.\nScreenshots: \`test-results/screens/\`.\n`;
+const md = `## Screens and accessibility\n\n${SIZES.length} screen sizes × 12 screens, plus keyboard and screen-reader checks.\nScreenshots: \`test-results/screens/\`.\n`;
 console.log(md);
 if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md + '\n');
 
