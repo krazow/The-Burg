@@ -74,3 +74,4 @@ It's a static site with no build step. Serve the folder over HTTP (for example w
 - `index.html`: the whole game (markup, styles and logic)
 - `manifest.webmanifest`, `icon*.png`, `icon.svg`: install metadata and icons
 - `sw.js`: offline cache
+- `tools/make-geo.py`: bakes the real Columbia, Snake and Yakima river shapes (Natural Earth 1:10m, public domain) into `index.html`. Re-run it with the folder holding Natural Earth's `ne_10m_rivers_lake_centerlines.geojson` and `ne_10m_rivers_north_america.geojson`.

@@ -9,6 +9,8 @@ entry for every release, and the GitHub release notes are taken from it.
 - **Events happen at places.** Every event says where it takes place (the fairgrounds, the Touchet, Bluewood, Walla
   Walla, your workplace…). For 4 weeks a gold badge marks the spot on the Waitsburg or region map, and tapping the
   place shows what happened there.
+- **Real river shapes** on the region map: the Columbia, Snake and Yakima now follow their true courses (from Natural
+  Earth). The Tri-Cities pins are spread out so every town label is readable.
 
 ## 0.1.0 (2026-11-17)
 

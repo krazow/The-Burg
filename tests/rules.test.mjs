@@ -234,6 +234,17 @@ await t.check('an event is pinned where it happened, with its result, for 4 week
   assert(r.now === 1 && r.later === 0, `recent at the fairgrounds: ${r.now} then ${r.later}`);
 });
 
+await t.check('the region map uses real river shapes that cross the map', async () => {
+  const r = await ev(() => Object.fromEntries(['Columbia', 'Snake', 'Yakima'].map(n => {
+    const pts = GEO_RIVERS[n].flat(); const inMap = pts.filter(([la, lo]) => la >= RBB.s && la <= RBB.n && lo >= RBB.w && lo <= RBB.e);
+    return [n, { pts: pts.length, inMap: inMap.length }];
+  })));
+  for (const [n, x] of Object.entries(r)) assert(x.pts >= 8 && x.inMap >= 4, `${n}: ${JSON.stringify(x)}`);
+  // the Snake meets the Columbia near Pasco
+  const meet = await ev(() => { const end = GEO_RIVERS.Snake.flat().reduce((a, p) => p[1] < a[1] ? p : a); return end; });
+  assert(Math.abs(meet[0] - 46.2) < 0.1 && Math.abs(meet[1] + 119.05) < 0.1, `Snake ends at ${meet}`);
+});
+
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });
 
 await browser.close();
