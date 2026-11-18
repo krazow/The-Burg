@@ -7,7 +7,7 @@ import { serve, launch, runner, seedScript } from './helpers.mjs';
 
 const SCALE = Number(process.env.SIM_SCALE || 1);
 const GAMES = { half: 6, two: 4, five: 2, life: 1 };              // per strategy, times SIM_SCALE
-const STRATEGIES = ['planner', 'homebody', 'commuter', 'student', 'hustler', 'careless', 'idle'];
+const STRATEGIES = ['planner', 'homebody', 'commuter', 'student', 'hustler', 'careless', 'idle', 'tripper'];
 
 const srv = await serve();
 const browser = await launch();
@@ -53,6 +53,16 @@ for (const len of Object.keys(GAMES)) {
           else if (strat === 'commuter') f = weeks % 4 === 3 ? 'community' : (job() && !S.retired ? 'work' : 'rest');
           else f = ['community', 'outdoors', 'rest', 'community'][weeks % 4];
           S.focus = opts.includes(f) ? f : 'rest';
+          // trips around the region: the planner shops and keeps up car care monthly; the tripper goes out every week
+          if (strat === 'planner' && weeks % 4 === 0 && S.money > 300) {
+            const ids = ['stock']; if (S.turn - S.svc > 22) ids.push('oil'); else if (S.turn - S.dentist > 45) ids.push('dentist'); else ids.push('movies');
+            planTrip('wallawalla', ids);
+          }
+          if (strat === 'tripper') {
+            const towns = ['dayton', 'wallawalla', 'pasco', 'kennewick', 'richland'], town = towns[weeks % towns.length];
+            const fun = s => Object.values(s.fx || {}).reduce((a, v) => a + v, 0);
+            planTrip(town, townStops(town).filter(s => !stopBlocked(s)).sort((a, b) => fun(b) - fun(a)).slice(0, TRIP_MAX).map(s => s.id));
+          }
           // play the week
           const res = weekTick(false); weeks++;
           if (res.ev) {

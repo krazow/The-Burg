@@ -3,6 +3,24 @@
 Release notes for The Burg. `/release now` turns the Unreleased section into a dated `## X.Y.Z (YYYY-MM-DD)`
 entry for every release, and the GitHub release notes are taken from it.
 
+## Unreleased
+
+### Added
+- **🚗 Trips around the region.** Once a week, plan a trip to Dayton, Walla Walla, Pasco, Kennewick or Richland:
+  tap 🚗 Plan a trip on Home, or a town on the region map, and pick up to 3 stops. It happens when you end the
+  week. A trip costs gas there and back and takes part of your week (your focus works at 75%), but in the town you
+  commute to it's free: you stop on the way home.
+- **Groceries:** a stock-up run at a big store makes groceries 15% cheaper for 4 weeks.
+- **Car care:** oil changes cut breakdowns for 6 months, and after a year without one they're more likely. Winter
+  tires (October–January) make sliding off Highway 12 much less likely. A car wash, and vehicle tabs that renew each
+  January.
+- **Eating out and things to do** in each town: a small-town café, dinner downtown, tasting rooms (21+), taquerias,
+  the mall, farmers markets, college games, movies, parks, a science museum, minor-league baseball. Some are
+  seasonal. Doing the same thing again within 4 weeks is only half as fun, and dates cost double but do more.
+- **Appointments:** dentist and doctor checkups. Skip the dentist for over a year and a **Toothache** event can
+  happen.
+- The Help guide has a new "Trips around the region" section, and the Life tab shows your car care.
+
 ## 0.2.0 (2026-11-18)
 
 ### Added

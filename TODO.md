@@ -1,6 +1,6 @@
 # The Burg: To-do
 
-_Last updated: November 18, 2026 (Around the region planned)_
+_Last updated: November 18, 2026 (Around the region built)_
 
 This is the project's working to-do list: what's been done, what's next, and in what order. Every open item has a
 matching **GitHub issue** with a priority label (**P1 – now**, **P2 – soon**, **P3 – later**). The issues are the
@@ -208,7 +208,7 @@ Fest at Atelier, winter breaks). Business list, how each one appears, decisions 
 - [ ] Life systems at real places — [#53](https://github.com/krazow/The-Burg/issues/53)
 - [ ] Out and about QA — [#54](https://github.com/krazow/The-Burg/issues/54)
 
-## Soon: Around the region (Dayton, Walla Walla and the Tri-Cities)
+## Soon: Around the region (Dayton, Walla Walla and the Tri-Cities) — built, ships in the next beta
 
 Today the other towns are only places to work. This gives you reasons to go: errands, car care, eating out and
 outings, with real trade-offs (cheaper groceries in the big towns cost gas and time; skipping an oil change raises
@@ -236,13 +236,13 @@ about, and shares its visit system. Issues are in the
 | 6 | **Appointments in bigger towns:** specialists and hospital, dentist, DMV | S | [#62](https://github.com/krazow/The-Burg/issues/62) |
 | 7 | **Around the region QA:** rules, flows, screens, simulation balance | M | [#63](https://github.com/krazow/The-Burg/issues/63) |
 
-- [ ] Trips on the region map — [#57](https://github.com/krazow/The-Burg/issues/57)
-- [ ] Grocery runs — [#58](https://github.com/krazow/The-Burg/issues/58)
-- [ ] Car care and car wash — [#59](https://github.com/krazow/The-Burg/issues/59)
-- [ ] Dining out by town — [#60](https://github.com/krazow/The-Burg/issues/60)
-- [ ] Outings and attractions — [#61](https://github.com/krazow/The-Burg/issues/61)
-- [ ] Appointments in bigger towns — [#62](https://github.com/krazow/The-Burg/issues/62)
-- [ ] Around the region QA — [#63](https://github.com/krazow/The-Burg/issues/63)
+- [x] Trips on the region map — [#57](https://github.com/krazow/The-Burg/issues/57)
+- [x] Grocery runs — [#58](https://github.com/krazow/The-Burg/issues/58)
+- [x] Car care and car wash — [#59](https://github.com/krazow/The-Burg/issues/59)
+- [x] Dining out by town — [#60](https://github.com/krazow/The-Burg/issues/60)
+- [x] Outings and attractions — [#61](https://github.com/krazow/The-Burg/issues/61)
+- [x] Appointments in bigger towns — [#62](https://github.com/krazow/The-Burg/issues/62)
+- [x] Around the region QA — [#63](https://github.com/krazow/The-Burg/issues/63)
 
 ## Later: P3
 
@@ -276,7 +276,7 @@ risks and the 10-page questionnaire: [docs/npc-submissions.md](docs/npc-submissi
 
 ## QA plan
 
-`npm test` runs seven suites (about 2 minutes); CI runs them on every pull request and release: smoke (5), game rules (26), gameplay (30), flows (18, including every event choice), screens and accessibility (14: 7 rules over 7 sizes × 10 screens plus 7 keyboard and screen-reader checks), offline and updates (6), and the bot simulation. See the README's Testing section.
+`npm test` runs seven suites (about 2 minutes); CI runs them on every pull request and release: smoke (5), game rules (26), gameplay (30), flows (18, including every event choice), screens and accessibility (14: 7 rules over 7 sizes × 11 screens plus 7 keyboard and screen-reader checks), offline and updates (6), and the bot simulation. See the README's Testing section.
 
 Three layers, from cheapest to most human:
 
@@ -339,3 +339,4 @@ that careless play stays at or below 60 and good play at or above 70.
 | Nov 18, 2026 | **Planned Out and about:** researched Waitsburg's open businesses; you picked 20 (plus Ten Ton Coffee as you described it). Plan, milestone and issues #48–#54. | [plan](docs/out-and-about.md) |
 | Nov 18, 2026 | **Out and about game names:** 5 playful stand-in names per business added for you to pick from, so real business names stay out of the game. | `TODO.md` |
 | Nov 18, 2026 | **Planned Around the region:** errands, car care, dining and outings in Dayton, Walla Walla and the Tri-Cities; milestone and issues #57–#63. | `TODO.md` |
+| Nov 18, 2026 | **Around the region built (#57–#63):** weekly trips to 5 towns with 23 stops (groceries, car care, eating out, outings, appointments), toothache event, vehicle tabs, Help section. New tests: 9 rules checks, 2 flows, a trip screen at 7 sizes, and a weekly-tripper bot in the simulation (careless 53, idle 49, good play 83). | [PR](https://github.com/krazow/The-Burg/pulls) |

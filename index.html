@@ -161,6 +161,13 @@ main{flex:1;padding:14px 14px calc(var(--safe-b) + 200px)}
 @media (prefers-reduced-motion: reduce){.cring.tap,.cfinger{animation:none}}
 .sm,.chip,.maptog button,.maptabs button,.sumchip,.totop,.weekstrip,.statbtn,.toc button{min-height:44px}
 .sm{min-width:44px}.slotbtns .sm{min-width:48px}
+.triph{margin:12px 0 4px;font-size:15px}
+.stopbtn{display:block;width:100%;text-align:left;border:2px solid var(--line);background:#fff;border-radius:12px;padding:9px 12px;margin:6px 0;min-height:48px}
+.stopbtn .t{display:block;font-weight:700;font-size:15px}.stopbtn .s{display:block;font-size:13px;color:var(--muted);margin-top:2px}
+.stopbtn.on{border-color:var(--barn);background:#fbe9e4}.stopbtn:disabled{opacity:.6}
+.tripsum{font-weight:700;margin:10px 0 0}
+.sumchip.on{border-color:var(--barn);background:#fbe9e4}
+.tripto{width:100%;text-align:left;background:#fff;border:0;border-bottom:1px dashed var(--line);min-height:52px;font:inherit;color:inherit;cursor:pointer}.tripto > span:first-child{display:flex;flex-direction:column}
 #helpbtn{width:44px;height:44px}
 :focus-visible{outline:3px solid #1f5fae;outline-offset:2px}
 .top :focus-visible,.helphead :focus-visible{outline-color:#fff}
@@ -313,6 +320,9 @@ const kidsAtHome = () => (S.kids || []).filter(b => S.ageMonths - b < 18*12).len
 function migrate(s){
   const d = { slot:0, evPins:[], streakF:null, streakN:0, run:null, yearEvents:0, yearStart:null, evCd:{}, evDone:{}, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, mortgage:null, loanPay:0 };
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
+  // Around the region (0.3.0): older lives count as just serviced and checked, with this year's tabs paid
+  const r = { trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, dentist:s.turn || 0, stopLast:{}, tabsYear:new Date(s.date || Date.now()).getFullYear() };
+  for (const k in r) if (s[k] === undefined) s[k] = r[k];
   if (HOMES[s.home] && HOMES[s.home].own && !s.mortgage) s.mortgage = HOMES[s.home].cost;
   return s;
 }
@@ -590,7 +600,8 @@ function newGame(name, len, slot = 0, opts = {}){
     home:'room', equity:0, car:'beater', carValue:2500, loanLeft:0,
     dog:false, partner:false, council:false,
     focus:'rest', applied:false, happySum:0, healthSum:0, monthsPlayed:0,
-    log:[], over:false, cause:null, streakF:null, streakN:0, run:null, yearEvents:0 };
+    log:[], over:false, cause:null, streakF:null, streakN:0, run:null, yearEvents:0,
+    trip:null, svc:0, tires:null, stockUntil:-1, dentist:0, stopLast:{}, tabsYear:2027 };
   S.yearStart = { nw: netWorth(), happy: S.happy, health: S.health, community: S.community };
   if (opts.practice) { S.practice = true; S.noEvents = true; }      // the tutorial's throwaway life: never saved, no random events
   log(`${name} turns 18 and rents a room above Main Street in Waitsburg. Time to find a job.`);
@@ -681,7 +692,9 @@ function renderHome(){
     <button class="sumchip" data-go="life">🏠 ${HOMES[S.home].name.replace(/^Rented /,'')}</button>
     <button class="sumchip" data-go="life">🛻 ${CARS[S.car].name}</button>
     <button class="sumchip" data-go="life">🎓 ${EDU[S.edu].replace(' diploma','')}</button>
+    <button class="sumchip${S.trip ? ' on' : ''}" id="tripchip">${tripChip()}</button>
   </div>`;
+  $('#tripchip').onclick = () => S.trip ? tripSheet(S.trip.city) : tripPicker();
   document.querySelectorAll('.fbtn').forEach(b => b.onclick = () => { S.focus = b.dataset.f; save(); render(); });
   document.querySelectorAll('[data-stat]').forEach(b => b.onclick = () => showStatInfo(b.dataset.stat));
   document.querySelectorAll('[data-sugg]').forEach(b => b.onclick = () => { S.focus = b.dataset.sugg; save(); render(); toast(`This week: ${FOCUS[S.focus].name}`); });
@@ -828,6 +841,7 @@ function renderLife(){
       return `<div class="kv job"><div><div class="t">${c.name}</div><div class="s">${c.mpg} mpg${c.pay?` · ${wk(cur && S.loanPay ? S.loanPay : cost(c.pay))} for 5 years`:''}</div></div>${btn}</div>`;
     }).join('')}
     <p class="muted">Trade-in value of your ride: ${fmt(S.carValue)}${S.loanLeft>0?` · ${Math.ceil(S.loanLeft/W)} weekly payments left`:''}</p>
+    <p class="muted">🔧 ${S.turn - (S.svc ?? 0) <= 26 ? 'Oil changed recently: fewer breakdowns.' : S.turn - (S.svc ?? 0) <= 52 ? `Last oil change ${S.turn - (S.svc ?? 0)} weeks ago.` : 'Overdue for an oil change: breakdowns are more likely.'} ${S.tires === S.car ? '❄️ Winter tires on.' : ''} Get car care on a trip to Dayton, Walla Walla or the Tri-Cities.</p>
   </div>
   <div class="card"><h3>🏦 Retirement savings (401(k))</h3>
     <div class="kv"><span>Balance</span><span><b>${fmt(S.k401)}</b></span></div>
@@ -870,7 +884,7 @@ function buyCar(k){
     <p>Your ${CARS[S.car].name.toLowerCase()} trades in for ${fmt(S.carValue)}. You pay ${fmt(Math.max(0,price))} now${c.pay?`, then ${wk(cost(c.pay))} for 5 years`:''}.</p>
     <button class="btn primary" id="y">Buy it</button><button class="btn ghost" id="n">Cancel</button>`);
   $('#y').onclick = () => {
-    S.money -= price; S.car = k; S.carValue = cost(c.value); S.loanLeft = c.months || 0; S.loanPay = c.pay ? cost(c.pay) : 0;
+    S.money -= price; S.car = k; S.carValue = cost(c.value); S.loanLeft = c.months || 0; S.loanPay = c.pay ? cost(c.pay) : 0; S.svc = S.turn;
     adj({happy:5}); log(`Drove home a ${c.name.toLowerCase()}.`);
     closeSheet(); save(); render();
   };
@@ -1018,8 +1032,11 @@ function weekTick(auto){
   if (f.hustle) lines.push(['Side hustle', cost(ri(350, 850)) * m]);
   const home = HOMES[S.home], car = CARS[S.car];
   lines.push([home.own ? 'Mortgage' : 'Rent', -(home.own && S.mortgage ? S.mortgage : cost(home.cost))*m]);
-  lines.push(['Food & utilities', -cost(520)*m]);
+  const trip = tripWeek(lines);                    // this week's trip around the region, if one is planned
+  const stocked = S.turn < S.stockUntil;
+  lines.push([stocked ? 'Food & utilities (stocked up)' : 'Food & utilities', -cost(520 - (stocked ? GROCERY_SHARE * STOCK_OFF : 0))*m]);
   lines.push(['Insurance & phone', -cost(160)*m]);
+  { const y = new Date(S.date).getFullYear(); if (curMonth() === 0 && S.tabsYear !== y) { lines.push(['Vehicle tabs (DMV)', -cost(95)]); S.tabsYear = y; } }
   const miles = (commuteOneWay()*2*WORKDAYS + ERRAND_MILES) * m;
   lines.push([commuteOneWay() ? 'Gas (commute + errands)' : 'Gas (errands)', -miles*cost(GAS)/car.mpg]);
   if (S.loanLeft > 0) {
@@ -1066,7 +1083,7 @@ function weekTick(auto){
   if (S.streakF === S.focus) S.streakN++; else { S.streakF = S.focus; S.streakN = 1; }
   const eff = focusEffect();
   adj(Object.fromEntries(Object.entries(f.fx).map(([st,v]) => {
-    let d = v * k * (v > 0 ? eff : 1);
+    let d = v * k * (v > 0 ? eff * (trip && trip.away ? TRIP_TIME : 1) : 1);
     if (S.focus === 'rest' && v > 0) d *= clamp((86 - S[st]) / 20, 0, 1);   // rest tops out in the low 80s
     return [st, d];
   })));
@@ -1074,6 +1091,7 @@ function weekTick(auto){
     adj({happy: -1.2});
     if (S.streakN === RUT_WEEKS + 1) notes.push(`🔁 ${S.streakN - 1} weeks of "${f.name}" in a row. You're in a rut: try a different focus.`);
   }
+  if (trip) adj(trip.fx);
 
   // ---- maybe an event this week ----
   let ev = !S.noEvents && chance(0.28) ? pickEvent(curMonth()) : null;
@@ -1170,7 +1188,7 @@ const EVENT_PLACE = {
   'Feeling run down':['R','wallawalla'], 'Windstorm':['T','home'], 'Walla Walla Sweets are in':['R','wallawalla'],
   'Festival at the Dayton Depot':['R','dayton'], 'A tip from a friend':['T','mainst'], 'Gas prices spike':['T','hwy'],
   "Neighbor's moving day":['T','home'], 'Found money':['T','home'], 'An inheritance':['T','board'], 'Starting a family?':['T','home'],
-  'The trip of a lifetime':['R','pasco'], 'A kid heads off to college':['T','school'], 'Friday night game':['T','school']
+  'The trip of a lifetime':['R','pasco'], 'A kid heads off to college':['T','school'], 'Friday night game':['T','school'], 'Toothache':['R','wallawalla']
 };
 const WORK_SPOT = { farmhand:'fields', diner:'mainst', para:'school', elevator:'elevator', insure:'mainst' };
 function eventPlace(ev){
@@ -1218,10 +1236,10 @@ const EVENTS = [
   { ic:'❄️', title:'Snow on Highway 12', w:4, when:m => inM(m,11,0,1) && commuting(),
     text:'Overnight snow and ice on the highway. Your commute looks ugly.',
     choices:() => [
-      {label:'Drive in slow and careful', go:() => { if (chance(CARS[S.car].mpg>25 ? .3 : .2)) { adj({money:-850, health:-3, happy:-4}); return 'You slid into a ditch. A tow and repairs ran $850.'; } adj({happy:-1}); return 'White knuckles the whole way, but you made it.'; }},
+      {label:'Drive in slow and careful', go:() => { if (chance((CARS[S.car].mpg>25 ? .3 : .2) * ditchMult())) { adj({money:-850, health:-3, happy:-4}); return 'You slid into a ditch. A tow and repairs ran $850.'; } adj({happy:-1}); return 'White knuckles the whole way, but you made it.'; }},
       {label:'Take an unpaid day', go:() => { const p = Math.round((job()?job().pay:0)/WORKDAYS); adj({money:-p, happy:2}); return `You stayed home with coffee and lost a day's pay.`; }}
     ]},
-  { ic:'🔧', title:'Truck trouble', w:4, when:() => chance(CARS[S.car].breakdown * 4),
+  { ic:'🔧', title:'Truck trouble', w:4, when:() => chance(CARS[S.car].breakdown * 4 * careMult()),
     text:() => `Your ${CARS[S.car].name.toLowerCase()} won't start.`,
     choices:() => [
       {label:'Take it to the shop', go:() => { const c = ri(300, S.car==='beater'?1400:900); adj({money:-c, happy:-2}); return `The shop fixed it for ${fmt(c)}.`; }},
@@ -1298,8 +1316,14 @@ const EVENTS = [
   { ic:'🩺', title:'Feeling run down', w:5, when:() => S.health < 40,
     text:'You\'ve been tired and achy for weeks.',
     choices:() => [
-      {label:'See a doctor (-$350)', go:() => { adj({money:-350, health:12}); return 'Some rest and a prescription helped a lot.'; }},
+      {label:'See a doctor (-$350)', go:() => { const bad = S.health < 25; adj({money:-350, health:12}); return bad ? 'The doctor sent you to a specialist in Walla Walla. Rest and a prescription helped a lot.' : 'Some rest and a prescription helped a lot.'; }},
       {label:'Tough it out', go:() => { adj({health:-6}); return 'You kept going. Your body kept score.'; }}
+    ]},
+  { ic:'🦷', title:'Toothache', w:2, when:() => S.turn - (S.dentist ?? 0) > 52,
+    text:'A back tooth has been throbbing for days. It\'s been more than a year since you saw a dentist.',
+    choices:() => [
+      {label:'Emergency dentist in Walla Walla (-$650)', go:() => { adj({money:-Math.round(cost(650)), health:-1}); S.dentist = S.turn; return 'A root canal later, you can chew again. A yearly checkup would have caught it.'; }},
+      {label:'Tough it out', go:() => { adj({health:-4, happy:-4}); return 'Ice packs and ibuprofen. It still hurts.'; }}
     ]},
   { ic:'🌬️', title:'Windstorm', w:2,
     text:'A big wind tears through the valley overnight.',
@@ -1372,6 +1396,161 @@ const EVENTS = [
       {label:'Stay in', go:() => 'You caught the score the next morning.'}
     ]}
 ];
+
+/* ============================================================
+   🚗 AROUND THE REGION (#57–#63): trips to Dayton, Walla Walla and the Tri-Cities
+   Plan one trip a week (from Home or by tapping a town on the region map): a town and up to 3 stops.
+   It happens when you end the week: gas there and back, each stop's cost and its effect.
+   The town you commute to costs no extra gas or time: you run the errands on the way home.
+   Other trips take part of your week, so your focus works at 75% that week.
+   Places are described, not named (no real business names).
+   ============================================================ */
+const TRIP_MAX = 3, TRIP_FX = 0.28, TRIP_TIME = 0.75, STOCK_WEEKS = 4, STOCK_OFF = 0.15, GROCERY_SHARE = 360, REPEAT_WEEKS = 4;
+const inSeason = (...ms) => () => ms.includes(curMonth());
+const STOP_KINDS = { errand:'🛒 Errands', car:'🛻 Car care', eat:'🍽️ Eat out', do:'🎟️ Things to do', appt:'🩺 Appointments' };
+const STOPS = [
+  { id:'stock', kind:'errand', ic:'🛒', name:'Stock-up grocery run', towns:['wallawalla','kennewick','pasco','richland'], cost:0,
+    note:`Big-store prices: groceries cost ${STOCK_OFF*100}% less for the next ${STOCK_WEEKS} weeks.` },
+  { id:'oil', kind:'car', ic:'🔧', name:'Oil change and tune-up', towns:['dayton','wallawalla','kennewick','pasco'], cost:90,
+    note:'Fewer breakdowns for 6 months. After a year without one, breakdowns get more likely.' },
+  { id:'tires', kind:'car', ic:'❄️', name:'Winter tires', towns:['wallawalla','kennewick','pasco'], cost:480, when:inSeason(9,10,11,0), season:'October–January',
+    ok:() => S.tires !== S.car, note:'Much less likely to slide off Highway 12 in the snow. Good for as long as you keep this vehicle.' },
+  { id:'wash', kind:'car', ic:'🧽', name:'Car wash', towns:['wallawalla','kennewick','richland'], cost:15, fx:{happy:2},
+    note:'Extra satisfying after harvest dust (August–September) or winter road grime.' },
+  { id:'cafe', kind:'eat', ic:'🥪', name:'Lunch at a small-town café', towns:['dayton'], cost:18, fx:{happy:3, community:1} },
+  { id:'bistro', kind:'eat', ic:'🍝', name:'Dinner downtown', towns:['wallawalla'], cost:60, fx:{happy:5}, date:true },
+  { id:'tasting', kind:'eat', ic:'🍷', name:'A tasting room', towns:['wallawalla'], cost:35, fx:{happy:4}, min21:true, date:true },
+  { id:'taco', kind:'eat', ic:'🌮', name:'Taquerias and food trucks', towns:['pasco'], cost:16, fx:{happy:4} },
+  { id:'court', kind:'eat', ic:'🍔', name:'The mall food court', towns:['kennewick'], cost:14, fx:{happy:2} },
+  { id:'riverdine', kind:'eat', ic:'🐟', name:'Dinner by the river', towns:['richland'], cost:45, fx:{happy:4}, date:true },
+  { id:'depot', kind:'do', ic:'🚂', name:'The old depot and the courthouse', towns:['dayton'], cost:0, fx:{happy:2, community:1} },
+  { id:'market', kind:'do', ic:'🥕', name:'Farmers market', towns:['wallawalla','pasco'], cost:20, fx:{happy:3, community:2}, when:inSeason(4,5,6,7,8,9), season:'May–October' },
+  { id:'college', kind:'do', ic:'🎓', name:'A college game or concert', towns:['wallawalla'], cost:15, fx:{happy:4, community:1}, when:inSeason(0,1,2,3,4,8,9,10,11), season:'during the school year' },
+  { id:'movies', kind:'do', ic:'🎬', name:'The movies', towns:['wallawalla','kennewick'], cost:28, fx:{happy:3}, date:true },
+  { id:'mall', kind:'do', ic:'🛍️', name:'The mall', towns:['kennewick'], cost:40, fx:{happy:2} },
+  { id:'park', kind:'do', ic:'🌳', name:'A picnic at Columbia Park', towns:['kennewick'], cost:5, fx:{health:3, happy:3}, when:inSeason(3,4,5,6,7,8,9), season:'April–October' },
+  { id:'arena', kind:'do', ic:'🎟️', name:'A show at the arena', towns:['kennewick'], cost:55, fx:{happy:5} },
+  { id:'riverwalk', kind:'do', ic:'🚶', name:'A walk in the riverfront park', towns:['richland'], cost:0, fx:{health:3, happy:2} },
+  { id:'museum', kind:'do', ic:'🔬', name:'The science museum', towns:['richland'], cost:15, fx:{happy:3} },
+  { id:'confluence', kind:'do', ic:'🏞️', name:'The state park where the rivers meet', towns:['pasco'], cost:10, fx:{health:3, happy:3}, when:inSeason(3,4,5,6,7,8,9), season:'April–October' },
+  { id:'baseball', kind:'do', ic:'⚾', name:'A minor-league ball game', towns:['pasco'], cost:25, fx:{happy:5}, when:inSeason(5,6,7,8), season:'June–September' },
+  { id:'dentist', kind:'appt', ic:'🦷', name:'Dentist checkup', towns:['wallawalla','kennewick'], cost:120, fx:{health:3}, note:'A checkup a year keeps toothaches away.' },
+  { id:'checkup', kind:'appt', ic:'🩺', name:'Doctor checkup', towns:['wallawalla','kennewick'], cost:250, fx:{health:6}, note:'Does more when your health is low.' }
+];
+const stopById = id => STOPS.find(s => s.id === id);
+// why a stop can't be picked right now ('' when it can)
+function stopBlocked(s){
+  if (s.min21 && age() < 21) return '21 and over';
+  if (s.when && !s.when()) return `Only ${s.season}`;
+  if (s.ok && !s.ok()) return s.id === 'tires' ? 'Already on this vehicle' : 'Not now';
+  return '';
+}
+const townStops = city => STOPS.filter(s => s.towns.includes(city));
+const tripIsCommute = city => !S.retired && job() && job().city === city;
+const tripGas = city => tripIsCommute(city) ? 0 : CITIES[city].miles * 2 * cost(GAS) / CARS[S.car].mpg;
+// a stop costs more with your partner along on a dinner or a movie
+const stopCost = s => cost(s.cost) * (s.date && S.partner ? 2 : 1);
+// breakdown odds: lower within 6 months of an oil change, higher after a year without one
+function careMult(){ const w = S.turn - (S.svc ?? 0); return w <= 26 ? 0.6 : w <= 52 ? 1 : 1.4; }
+const ditchMult = () => S.tires === S.car ? 0.4 : 1;
+// plan this week's trip; returns '' or why it can't be planned
+function planTrip(city, ids){
+  if (!CITIES[city] || city === 'waitsburg') return 'Pick a town to visit.';
+  ids = [...new Set(ids)];
+  if (!ids.length) return 'Pick at least one stop.';
+  if (ids.length > TRIP_MAX) return `Up to ${TRIP_MAX} stops a trip.`;
+  for (const id of ids) {
+    const s = stopById(id);
+    if (!s || !s.towns.includes(city)) return 'That stop isn\'t in this town.';
+    const why = stopBlocked(s); if (why) return `${s.name}: ${why.toLowerCase()}.`;
+  }
+  S.trip = { city, stops: ids };
+  return '';
+}
+// runs inside weekTick's money step: adds the trip's lines, does its errands and returns the stat effects
+function tripWeek(lines){
+  const t = S.trip; if (!t || !CITIES[t.city]) { S.trip = null; return null; }
+  const c = CITIES[t.city], fx = { happy:0, health:0, community:0 }, done = [];
+  const gas = tripGas(t.city);
+  if (gas) lines.push([`Trip to ${c.name}: gas`, -gas]);
+  for (const id of t.stops) {
+    const s = stopById(id); if (!s || stopBlocked(s)) continue;
+    if (s.cost) lines.push([s.name, -stopCost(s)]);
+    const half = S.turn - ((S.stopLast || {})[id] ?? -99) < REPEAT_WEEKS ? 0.5 : 1;   // again so soon: less special
+    let mult = half;
+    if (s.date && S.partner) mult += 0.4;
+    if (s.id === 'wash' && [7,8,11,0,1].includes(curMonth())) mult += 0.5;
+    if (s.id === 'checkup' && S.health < 50) mult *= 1.7;
+    for (const [k, v] of Object.entries(s.fx || {})) fx[k] += v * mult * TRIP_FX;   // same scale as a week's focus
+    if (s.id === 'stock') S.stockUntil = S.turn + STOCK_WEEKS;
+    if (s.id === 'oil') S.svc = S.turn;
+    if (s.id === 'tires') S.tires = S.car;
+    if (s.id === 'dentist') S.dentist = S.turn;
+    (S.stopLast = S.stopLast || {})[id] = S.turn;
+    done.push(s.name.charAt(0).toLowerCase() + s.name.slice(1));
+  }
+  S.trip = null;
+  if (!done.length) return null;
+  log(`Trip to ${c.name}${tripIsCommute(t.city) ? ' on the way home from work' : ''}: ${done.join(', ')}.`);
+  if (S.run) S.run.happened.push({ ic:'🚗', title:`Trip to ${c.name}`, money:0 });
+  return { fx, away: !tripIsCommute(t.city) };
+}
+
+/* ---- trip screens ---- */
+function tripPicker(){
+  sheet(`<h2>🚗 Plan a trip</h2>
+    <p class="muted">One trip a week, up to ${TRIP_MAX} stops. It happens when you end the week.${S.trip ? ` You have a trip to ${CITIES[S.trip.city].name} planned.` : ''}</p>
+    ${Object.entries(CITIES).filter(([k]) => k !== 'waitsburg').map(([k,c]) => {
+      const gas = tripGas(k);
+      return `<button class="kv job tripto" data-town="${k}"><span><span class="t">${TOWNIC[k]} ${c.name}</span><span class="s">${c.miles} mi each way · ${gas ? `gas about ${fmt(gas)}` : 'on your way home from work: no extra gas'}</span></span><span aria-hidden="true">›</span></button>`;
+    }).join('')}
+    <button class="btn ghost" id="n">Close</button>`);
+  document.querySelectorAll('[data-town]').forEach(b => b.onclick = () => tripSheet(b.dataset.town));
+  $('#n').onclick = closeSheet;
+}
+function tripSheet(city){
+  const c = CITIES[city], gas = tripGas(city);
+  let sel = S.trip && S.trip.city === city ? S.trip.stops.filter(id => !stopBlocked(stopById(id))) : [];
+  const groups = Object.entries(STOP_KINDS).map(([kind, label]) => {
+    const list = townStops(city).filter(s => s.kind === kind); if (!list.length) return '';
+    return `<h3 class="triph">${label}</h3>` + list.map(s => {
+      const why = stopBlocked(s);
+      const what = [s.cost ? fmt(stopCost(s)) : 'Free', s.fx ? fxWords(s.fx) : ''].filter(Boolean).join(' · ');
+      return `<button class="stopbtn${sel.includes(s.id) ? ' on' : ''}" data-stop="${s.id}" aria-pressed="${sel.includes(s.id)}" ${why ? 'disabled' : ''}>
+        <span class="t">${s.ic} ${s.name}</span><span class="s">${why ? why : what}${s.date && S.partner && !why ? ' · for two' : ''}</span>${s.note && !why ? `<span class="s">${s.note}</span>` : ''}</button>`;
+    }).join('');
+  }).join('');
+  sheet(`<h2>${TOWNIC[city]} Trip to ${c.name}</h2>
+    <p class="muted">${c.miles} mi each way · ${gas ? `gas about ${fmt(gas)}. A trip takes part of your week: your focus works at ${TRIP_TIME*100}%.` : 'You work here, so you\'ll stop on the way home: no extra gas or time.'}</p>
+    ${S.trip && S.trip.city !== city ? `<p class="muted">This replaces your trip to ${CITIES[S.trip.city].name}.</p>` : ''}
+    ${groups}
+    <p id="tripsum" class="tripsum" aria-live="polite"></p>
+    <button class="btn primary" id="go">Plan this trip</button>
+    ${S.trip ? '<button class="btn ghost" id="cancel">Cancel my trip</button>' : ''}
+    <button class="btn ghost" id="back">Other towns</button>`);
+  const sum = () => {
+    const total = gas + sel.reduce((a, id) => a + stopCost(stopById(id)), 0);
+    $('#tripsum').textContent = sel.length ? `${sel.length} of ${TRIP_MAX} stops · about ${fmt(total)} in all` : `Pick up to ${TRIP_MAX} stops.`;
+    $('#go').disabled = !sel.length;
+    document.querySelectorAll('[data-stop]').forEach(b => {
+      const s = stopById(b.dataset.stop), on = sel.includes(s.id);
+      b.classList.toggle('on', on); b.setAttribute('aria-pressed', on);
+      b.disabled = !!stopBlocked(s) || (!on && sel.length >= TRIP_MAX);
+    });
+  };
+  document.querySelectorAll('[data-stop]').forEach(b => b.onclick = () => {
+    const id = b.dataset.stop;
+    sel = sel.includes(id) ? sel.filter(x => x !== id) : sel.length < TRIP_MAX ? [...sel, id] : sel; sum();
+  });
+  $('#go').onclick = () => {
+    const err = planTrip(city, sel); if (err) return toast(err);
+    save(); closeSheet(); render(); toast(`🚗 Trip to ${c.name} planned for this week`);
+  };
+  if ($('#cancel')) $('#cancel').onclick = () => { S.trip = null; save(); closeSheet(); render(); toast('Trip canceled'); };
+  $('#back').onclick = tripPicker;
+  sum();
+}
+const tripChip = () => S.trip ? `🚗 Trip: ${CITIES[S.trip.city].name} (${S.trip.stops.length})` : '🚗 Plan a trip';
 
 /* ---------- ending ---------- */
 // Life Score: average happiness 30%, average health 20%, community 20%, net worth vs. the length's target 30%
@@ -1533,6 +1712,7 @@ function regionDetail(k){
   const drive = c.miles ? `${c.miles} mi each way · about ${Math.round(c.miles*1.1+3)} min · ~${wk(commuteCost(c.miles))} gas in your ${CARS[S.car].name.toLowerCase()}` : 'Home. No commute: you can walk to work.';
   return `<div class="card mapdet"><h3>${TOWNIC[k]} ${c.name}</h3>
     <p class="muted" style="margin:0 0 4px">${drive}</p><p style="margin:0 0 6px;font-size:14px">${c.blurb}</p>
+    ${k !== 'waitsburg' ? `<button class="sm" onclick="TRIPTO('${k}')">🚗 ${S.trip && S.trip.city === k ? 'Change my trip' : 'Plan a trip'} here (${townStops(k).filter(s => !stopBlocked(s)).length} places to go)</button>` : ''}
     ${recentList('R', k)}${jobs.map(jobRow).join('')}</div>`;
 }
 
@@ -1611,12 +1791,13 @@ function mapBlock(defSide){
       <button role="tab" aria-selected="${side==='T'}" class="${side==='T'?'on':''}" onclick="MAPTAB('T')">🏡 Waitsburg</button>
       <button role="tab" aria-selected="${side==='R'}" class="${side==='R'?'on':''}" onclick="MAPTAB('R')">🛣️ The region</button></div>
     ${side === 'T' ? townSVG() : regionSVG()}
-    <div class="mapcap">${side === 'T' ? 'Tap a place to spend your week there. Dashed circles are just for looking.' : 'Tap a town to see the drive and its jobs.'}${(S.evPins || []).some(p => p.m === side && S.turn - p.turn <= 4) ? ' A gold badge marks where something happened lately.' : ''}</div>
+    <div class="mapcap">${side === 'T' ? 'Tap a place to spend your week there. Dashed circles are just for looking.' : 'Tap a town to see the drive, its jobs and places to go.'}${(S.evPins || []).some(p => p.m === side && S.turn - p.turn <= 4) ? ' A gold badge marks where something happened lately.' : ''}</div>
     ${MAPSEL ? (side === 'T' ? townDetail(MAPSEL) : regionDetail(MAPSEL)) : ''}`;
 }
 window.MAPTAP = k => { MAPSEL = MAPSEL === k ? null : k; render(); };
 window.MAPTAB = s => { MAPSIDE = s; MAPSEL = null; render(); };
 window.MAPPREF = v => { setPref('mapView', !!v); MAPSIDE = null; MAPSEL = null; render(); };
+window.TRIPTO = k => tripSheet(k);
 window.MAPFOCUS = f => { S.focus = f; save(); render(); toast(`This week: ${FOCUS[f].name}`); };
 
 /* ============================================================
@@ -1692,9 +1873,19 @@ function guideHTML(){
     ['maps', '🗺️ Maps', `
       <p>Home and Jobs both have a <b>📋 List / 🗺️ Map</b> switch, and the game remembers your choice.</p>
       <ul><li><b>🏡 Waitsburg:</b> tap a place to spend your week there. Home is Rest, Main Street is Show up for town, the library is classes, the river is Get outside, the bulletin board is a side hustle, and your workplace or Highway 12 is Work extra hours. Dashed circles are just for looking.</li>
-      <li><b>🛣️ The region:</b> the six towns along US-12 and the rivers. Tap a town for its drive, gas cost and jobs, and apply right there. After each week your 🛻 drives your commute.</li></ul>
+      <li><b>🛣️ The region:</b> the six towns along US-12 and the rivers. Tap a town for its drive, gas cost and jobs, apply right there, or plan a trip. After each week your 🛻 drives your commute.</li></ul>
       <p><b>📍 Where things happen:</b> every event takes place somewhere (the fairgrounds, the Touchet, Bluewood, your workplace). The event tells you where, and for 4 weeks a gold badge marks the spot on the map. Tap the place to see what happened there.</p>
       <p class="muted">River shapes for the Columbia, Snake and Yakima come from <b>Natural Earth</b> (public domain). The Walla Walla and Touchet rivers and the roads are drawn by hand.</p>`],
+    ['trips', '🚗 Trips around the region', `
+      <p>Once a week you can take a <b>trip</b> to Dayton, Walla Walla or the Tri-Cities: tap <b>🚗 Plan a trip</b> on Home, or a town on the region map. Pick a town and up to ${TRIP_MAX} stops. The trip happens when you end the week.</p>
+      <ul><li><b>Gas:</b> there and back, at your vehicle's mileage. In the town you <b>commute to</b> it's free: you stop on the way home.</li>
+      <li><b>Time:</b> any other trip takes part of your week, so your focus works at ${TRIP_TIME*100}% that week.</li>
+      <li><b>Groceries:</b> a stock-up run at a big store makes groceries ${STOCK_OFF*100}% cheaper for ${STOCK_WEEKS} weeks.</li>
+      <li><b>Car care:</b> an oil change cuts breakdowns for 6 months; after a year without one they're more likely. Winter tires (October–January) make sliding off Highway 12 much less likely. Your vehicle's tabs renew every January (DMV).</li>
+      <li><b>Appointments:</b> skip the dentist for more than a year and a toothache gets likely. A doctor checkup does more when your health is low.</li>
+      <li><b>Going out:</b> doing the same thing again within ${REPEAT_WEEKS} weeks is only half as fun. Dinners and movies cost double, and do more, with your partner along.</li></ul>
+      <table><tr><th>Town</th><th>Places to go</th></tr>${Object.entries(CITIES).filter(([k]) => k !== 'waitsburg').map(([k,c]) => `<tr><td>${TOWNIC[k]} <b>${c.name}</b><br><small>${c.miles} mi</small></td><td>${townStops(k).map(x => `${x.ic} ${x.name}${x.cost ? ` ($${x.cost})` : ''}${x.season ? ` <small>(${x.season})</small>` : ''}${x.min21 ? ' <small>(21+)</small>' : ''}`).join('<br>')}</td></tr>`).join('')}</table>
+      <p class="muted">Prices are in 2027 dollars and rise over the years. Places are described, not named.</p>`],
     ['saves', '💾 Saving and loading', `
       <p>You can keep up to <b>5 lives</b>. Each one saves itself after every week.</p>
       <ul><li><b>Title screen:</b> your lives are listed with Continue and 🗑 Delete. When all 5 slots are full, a new life asks which one to replace.</li>
