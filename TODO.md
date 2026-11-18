@@ -1,6 +1,6 @@
 # The Burg: To-do
 
-_Last updated: November 18, 2026 (gameplay fixes complete: all 4 phases)_
+_Last updated: November 18, 2026 (review and 90 event ideas added for you to pick)_
 
 This is the project's working to-do list: what's been done, what's next, and in what order. Every open item has a
 matching **GitHub issue** with a priority label (**P1 – now**, **P2 – soon**, **P3 – later**). The issues are the
@@ -20,9 +20,13 @@ added, finished or re-prioritized, both change in the same session.
 
 | # | Item | Why it's next | Issue |
 |---|---|---|---|
-| 1 | **Try beta 4, then promote** (`/release promote`) | [0.2.0-beta.4](https://github.com/krazow/The-Burg/releases/tag/v0.2.0-beta.4) is the first build with the Android app signed by The Burg's own key, plus the Help guide fix. Anyone with an earlier test APK uninstalls once. | — |
+| 1 | **Cut a new beta** (`/release now`) | `main` now has Around the region and all four gameplay phases (Life Score so far, carpools, backgrounds, modes, town goals, badges, stories, challenges, skills, businesses, weekly challenge, legacy). Beta 4 has none of it. | — |
+| 2 | **Try it, then promote** (`/release promote`) | The Android app is signed with The Burg's key since beta 4, so updates install over each other. | — |
+| 3 | **Pick from the review and the 90 events** (below) | The 🔴 review items are real bugs: backups miss badges, a life-goal exploit, and event costs that don't rise with prices. | [#90](https://github.com/krazow/The-Burg/issues/90) |
 
-- [ ] Try 0.2.0-beta.4 (web at [/beta/](https://krazow.github.io/The-Burg/beta/), APK, Windows installer), then `/release promote`
+- [ ] Cut a new beta with everything on `main`
+- [ ] Try it on your phone, then `/release promote`
+- [ ] Pick review items and events to build
 
 ## Soon: P2
 
@@ -302,6 +306,163 @@ The six problems the analysis found, most important first. Each one closes when 
 - [x] Start your own business — [#72](https://github.com/krazow/The-Burg/issues/72)
 - [x] Legacy mode: play on as your kid — [#76](https://github.com/krazow/The-Burg/issues/76)
 
+## Your picks: review and new events
+
+From the testing round after the gameplay fixes. **Pick what you want and tell me**; picked items move into a build
+list. Details, balance notes and how each fits the game: [docs/review-and-events-2026-11-18.md](docs/review-and-events-2026-11-18.md).
+Building any event pack needs event pacing by category first (review item G5), so new events don't crowd out the
+old ones.
+
+<details><summary><b>Review: changes, balancing, gaps and gotchas</b> (40 items) — [#90](https://github.com/krazow/The-Burg/issues/90). 🔴 = recommended first.</summary>
+
+- [ ] 🔴 **R1** Backups don't include badges or challenge results
+- [ ] 🔴 **R2** Pin-at-the-end exploit
+- [ ] 🔴 **R3** Event costs don't rise with prices
+- [ ] 🟠 **R4** The version label still says 0.1.0
+- [ ] 🟡 **R5** Legacy names repeat
+- [ ] 🟡 **R6** The legacy heir is 18 although the parent died in their 80s
+- [ ] 🟡 **R7** Weekly challenge best scores pile up
+- [ ] 🟡 **R8** "Same dice" isn't "same events"
+- [ ] 🟡 **R9** Weekly challenge week boundaries
+- [ ] 🟡 **R10** The flood story can start without high water
+- [ ] 🟡 **R11** Trips don't slow down classes
+- [ ] 🟡 **R12** The carpool setting sticks
+- [ ] 🟡 **R13** Business value rises with prices forever
+- [ ] ⚪ **R14** Vehicle tabs are a flat $95
+- [ ] ⚪ **R15** Hard mode's +10% living costs
+- [ ] ⚪ **R16** Relaxed mode
+- [ ] 🟠 **B1** Careless play in long games
+- [ ] 🟠 **B2** Doing nothing in 6-month games
+- [ ] 🟠 **B3** The grad start is very strong
+- [ ] 🟠 **B4** The young parent isn't harder
+- [ ] 🟠 **B5** Weekly trips forever end in debt in Lifetime games
+- [ ] 🟠 **B6** Stock-up runs barely pay off from the Tri-Cities
+- [ ] 🟠 **B7** Story rewards were trimmed once
+- [ ] 🟠 **B8** The long-commute overtime grinder
+- [ ] ⚪ **B9** Side hustle experience never fades
+- [ ] ⚪ **B10** Life Score so far looks harsh early
+- [ ] 🟡 **G1** The tutorial doesn't show the new features
+- [ ] 🟡 **G2** The title screen is long
+- [ ] 🟡 **G3** The screen checks don't cover the newest pop-ups
+- [ ] 🟡 **G4** Score cards need checking on real devices
+- [ ] 🟡 **G5** Events will thin out as more are added
+- [ ] 🟡 **G6** No in-game "What's new"
+- [ ] ⚪ **G7** Best scores per mode and challenge
+- [ ] ⚪ **G8** Journal filters
+- [ ] ⚪ **G9** Out and about
+- [ ] ⚪ **G10** A beta with all of this
+- [ ] 🟡 **T1** The careless and idle ceilings are report-only
+- [ ] 🟡 **T2** The full test run takes about 15 minutes
+- [ ] ⚪ **T3** index.html is about 2,400 lines
+- [ ] ⚪ **T4** The exploratory tests
+
+</details>
+
+<details><summary><b>Event pack A: 30 events in Waitsburg</b> — [#91](https://github.com/krazow/The-Burg/issues/91)</summary>
+
+- [ ] **W1** Preston Park cleanup day (April)
+- [ ] **W2** Bruce House museum open house (June)
+- [ ] **W3** Fourth of July parade (July)
+- [ ] **W4** Trout opener on Coppei Creek (April)
+- [ ] **W5** Library book sale (October)
+- [ ] **W6** FFA bake sale (Any)
+- [ ] **W7** Neighbor's chickens loose in your yard (Spring–summer)
+- [ ] **W8** Ice storm knocks out power (Dec–Feb)
+- [ ] **W9** Frozen pipes (Dec–Feb, homeowners)
+- [ ] **W10** Citywide yard sale (June)
+- [ ] **W11** School fundraiser auction (March)
+- [ ] **W12** Fire district pancake breakfast (May)
+- [ ] **W13** Smoke from a wheat-field fire (August)
+- [ ] **W14** Mice in the walls (October)
+- [ ] **W15** An old friend moves back (Any)
+- [ ] **W16** Snow day (Dec–Feb)
+- [ ] **W17** Community potluck at Town Hall (Fall)
+- [ ] **W18** "Lost dog" poster (Any, no dog)
+- [ ] **W19** Pour beer at the Celebration Days beer garden (May, 21+)
+- [ ] **W20** Town Hall roof fundraiser (Any)
+- [ ] **W21** Adopt a Main Street flower basket (April)
+- [ ] **W22** Little League needs a coach (March, community 30+)
+- [ ] **W23** A cross-country cyclist asks for water (Summer)
+- [ ] **W24** Late frost kills the garden (May, homeowners)
+- [ ] **W25** Christmas lights contest (December)
+- [ ] **W26** Neighbor's tree takes out your fence (After a Windstorm, homeowners)
+- [ ] **W27** Barn dance at the fairgrounds (October)
+- [ ] **W28** Wild turkeys strut down Main Street (Spring)
+- [ ] **W29** Graduation party invitations (June)
+- [ ] **W30** Rattlesnake in the woodpile (Summer)
+
+</details>
+
+<details><summary><b>Event pack B: 30 events on the road and in other towns</b> — [#92](https://github.com/krazow/The-Burg/issues/92)</summary>
+
+- [ ] **R-1** Deer on Highway 12 at dusk (Commuters, Oct–Jan)
+- [ ] **R-2** Stuck behind a wheat truck (Harvest, Jul–Aug)
+- [ ] **R-3** Fog in the Touchet Valley (Nov–Jan)
+- [ ] **R-4** Flat tire on US-12 (Any)
+- [ ] **R-5** Speeding ticket (Commuters)
+- [ ] **R-6** Road-construction detour (Summer)
+- [ ] **R-7** A stranded driver on the shoulder (Any)
+- [ ] **R-8** Your carpool buddy is always late (Carpoolers)
+- [ ] **R-9** An audiobook habit on the commute (Commute 40+ miles)
+- [ ] **R-10** Dust storm near the Tri-Cities (Summer)
+- [ ] **R-11** Hot-air balloon festival in Walla Walla (May)
+- [ ] **R-12** A free college lecture in Walla Walla (School year)
+- [ ] **R-13** A friend is in the hospital in Walla Walla (Any)
+- [ ] **R-14** Wine release weekend in Walla Walla (Spring and fall, 21+)
+- [ ] **R-15** Train crossing in Pasco (Pasco commuters)
+- [ ] **R-16** Cheap flight deal out of Pasco (Any, money $1,000+)
+- [ ] **R-17** Spring festival in Pasco (May)
+- [ ] **R-18** Hydroplane races on the Columbia (July)
+- [ ] **R-19** Fourth of July fireworks in Columbia Park (July)
+- [ ] **R-20** Clearance sale at the mall (January and August)
+- [ ] **R-21** A test drive at a dealership (Kennewick or Pasco trips)
+- [ ] **R-22** Riverfront 5K in Richland (April and September)
+- [ ] **R-23** Hanford history tour (Any, Richland trips)
+- [ ] **R-24** Classic car show in Dayton (June)
+- [ ] **R-25** Bluewood season pass sale (October)
+- [ ] **R-26** Chains required on the road to Bluewood (Dec–Feb, Dayton trips)
+- [ ] **R-27** Wrong pump at the gas station (Any, low weight)
+- [ ] **R-28** A lost wallet in a Walla Walla parking lot (Any)
+- [ ] **R-29** Pothole season (March)
+- [ ] **R-30** A friendly regular at the gas station (Commuters, once)
+
+</details>
+
+<details><summary><b>Event pack C: 30 events at work</b> — [#93](https://github.com/krazow/The-Burg/issues/93)</summary>
+
+- [ ] **J1** Your performance review (Any job, 26+ weeks in)
+- [ ] **J2** A promotion offer (Any job, 52+ weeks in)
+- [ ] **J3** Mandatory overtime week (Field and service)
+- [ ] **J4** A coworker conflict (Any)
+- [ ] **J5** Free training course (Any job)
+- [ ] **J6** Hurt on the job (Field and transport)
+- [ ] **J7** Employee of the month (Any; odds up with People)
+- [ ] **J8** New manager (Any)
+- [ ] **J9** Holiday party (December)
+- [ ] **J10** Train the new hire (Any, 26+ weeks in)
+- [ ] **J11** A big mistake at work (Any, 15% weight)
+- [ ] **J12** Equipment breaks down (Field and transport)
+- [ ] **J13** Flu going around (Dec–Feb)
+- [ ] **J14** A customer compliment (Service and care)
+- [ ] **J15** A rude customer (Service)
+- [ ] **J16** Workplace fundraiser (Any)
+- [ ] **J17** The boss offers a weekend gig (Field and trades)
+- [ ] **J18** Conference trip (Office and care)
+- [ ] **J19** A coworker retires (Any)
+- [ ] **J20** New software rollout (Office)
+- [ ] **J21** Payroll error: a late paycheck (Any, low weight)
+- [ ] **J22** Year-end bonus (Office and care, December)
+- [ ] **J23** Lunchroom potluck (Any)
+- [ ] **J24** Cover a double shift (Service, care and field)
+- [ ] **J25** Harvest crunch (Elevator, cellar hand, onion shed, Jul–Sep)
+- [ ] **J26** Safety inspection (Field and transport)
+- [ ] **J27** A recruiter calls (Any, community 30+)
+- [ ] **J28** A remote-day trial (Office jobs without remote days)
+- [ ] **J29** Health plan choice (Any, January)
+- [ ] **J30** A work friend's wedding (Any)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
@@ -404,3 +565,4 @@ that careless play stays at or below 60 and good play at or above 70.
 | Nov 18, 2026 | **Gameplay fixes, phase 2:** five ways a life can begin (#69), Relaxed and Hard modes with best scores per mode (#73, fixing finding #83), and a town goal each season (#77). The sim now also plays every start and mode; careless 58, idle 49, good play 88. | [PR #87](https://github.com/krazow/The-Burg/pull/87) |
 | Nov 18, 2026 | **Gameplay fixes, phase 3:** 18 badges and up to 3 life goals worth +2 Life Score each (#66), three stories that unfold over weeks (#68), four challenges on the title screen (#74). Fixes findings #80, #81, #82. Badges show as a quick message so they never interrupt play. | [PR #88](https://github.com/krazow/The-Burg/pull/88) |
 | Nov 18, 2026 | **Gameplay fixes, phase 4:** skills (#71), your own business (#72), weekly challenge and score card (#75), legacy mode (#76). Fixes finding #84. All six findings and twelve recommendations are now built. | [PR #89](https://github.com/krazow/The-Burg/pull/89) |
+| Nov 18, 2026 | **Testing round after phases 1–4:** all 7 suites, a 3× simulation (282 games), and exploratory checks (every start × mode × length, every challenge, 3 legacy generations, old saves, backups, 532 random taps) all passed. Wrote the review (40 items) and 90 balanced event ideas for you to pick (#90–#93). | [review](docs/review-and-events-2026-11-18.md) |
