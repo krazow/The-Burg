@@ -1,6 +1,6 @@
 // More gameplay flows, by tapping like a player: the Life tab (homes, vehicles, 401(k)), quitting and retiring,
-// the hospital, the debt ending, family and council events, every event's every choice, and a Lifetime game to its
-// end. Run with: npm run test:flows
+// the hospital, the debt ending, family and council events, every event's every choice, trips around the region,
+// and a Lifetime game to its end. Run with: npm run test:flows
 import { serve, launch, runner, seedScript, assert, near } from './helpers.mjs';
 
 const srv = await serve();
@@ -287,6 +287,45 @@ await t.check('the Journal lists what happened, newest first', async () => {
   await page.click('[data-tab=log]');
   const items = await page.$$eval('.logitem', els => els.map(e => e.textContent));
   assert(items[0].includes('Second thing') && items[1].includes('First thing'), items.slice(0, 2).join(' | '));
+});
+
+await t.check('Plan a trip from Home: pick a town and stops, end the week, see it in the Journal', async () => {
+  await life({ jobId: 'farmhand', money: 2000, date: new Date(2027, 5, 7).getTime() });
+  await page.click('#tripchip');
+  await page.click(`${open} [data-town="kennewick"]`);
+  await page.click(`${open} [data-stop="stock"]`);
+  await page.click(`${open} [data-stop="park"]`);
+  await page.click(`${open} [data-stop="arena"]`);
+  const fourthOff = await page.$eval(`${open} [data-stop="movies"]`, b => b.disabled);
+  const sum = await page.textContent('#tripsum');
+  assert(fourthOff && /3 of 3 stops/.test(sum), `limit: disabled=${fourthOff} sum="${sum}"`);
+  await page.click(`${open} #go`);
+  const chip = await page.textContent('#tripchip');
+  assert(/Kennewick \(3\)/.test(chip), `chip: ${chip}`);
+  await page.click('#end'); await clearSheets();
+  const s = await S();
+  assert(s.trip === null && s.stockUntil > s.turn - 1 && /Trip to Kennewick/.test(s.log[0].m), `after: ${JSON.stringify({ trip: s.trip, stock: s.stockUntil, log: s.log[0] })}`);
+  await page.click('#strip');
+  const details = await page.textContent(open);
+  assert(/Trip to Kennewick: gas/.test(details) && /A show at the arena/.test(details), 'the week details should list the trip');
+  await page.click(`${open} #ok`);
+});
+
+await t.check('Plan a trip from the region map, change it, then cancel it', async () => {
+  await life({ jobId: 'farmhand', date: new Date(2027, 2, 1).getTime() });
+  await page.evaluate(() => { setPref('mapView', true); MAPSIDE = 'R'; render(); });
+  await page.click('.mpin[aria-label="Dayton"]');
+  await page.click('#main .mapdet button:has-text("Plan a trip")');
+  await page.click(`${open} [data-stop="cafe"]`); await page.click(`${open} #go`);
+  await page.click('.mpin[aria-label="Dayton"]'); await page.click('.mpin[aria-label="Dayton"]');
+  const label = await page.textContent('#main .mapdet');
+  assert(/Change my trip/.test(label), 'the town card should offer to change the planned trip');
+  await page.click('#main .mapdet button:has-text("Change my trip")');
+  const pressed = await page.$eval(`${open} [data-stop="cafe"]`, b => b.getAttribute('aria-pressed'));
+  assert(pressed === 'true', 'the planned stop should be selected');
+  await page.click(`${open} #cancel`);
+  assert((await S()).trip === null, 'trip not canceled');
+  await page.evaluate(() => { setPref('mapView', false); MAPSIDE = null; render(); });
 });
 
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });

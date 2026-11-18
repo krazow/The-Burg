@@ -1,6 +1,6 @@
 // Game-rules tests: check the game's math and rules directly, without tapping through screens.
 // Pay, taxes, bills, gas, rising prices, loans, the 401(k), retirement, the Life Score, focus streaks and ruts,
-// events, health, debt, school, family, save migration. Run with: npm run test:rules
+// events, health, debt, school, family, save migration, trips around the region. Run with: npm run test:rules
 import { serve, launch, runner, seedScript, assert, near } from './helpers.mjs';
 
 const srv = await serve();
@@ -280,6 +280,92 @@ await t.check('restoring adds to empty slots or replaces all, keeps the best sco
   assert(r.replaced.join() === 'A,B,,,', `replace: ${r.replaced}`);
   assert(r.errs.every(x => x === 'ok'), r.errs.join('; '));
   assert(r.skippedFull === 2 && r.slotsOk, `full slots skipped ${r.skippedFull}`);
+});
+
+// ---- Around the region (#57–#63): trips, groceries, car care, eating out, outings, appointments ----
+await t.check('a trip costs gas there and back plus each stop, then clears', async () => {
+  const r = await ev(() => { fresh('two', { jobId: 'farmhand', date: new Date(2027, 5, 7).getTime() });
+    const err = planTrip('wallawalla', ['movies', 'bistro']); const l = week().lines; return { err, l, trip: S.trip, log: S.log[0].m }; });
+  assert(r.err === '', r.err);
+  assert(near(r.l['Trip to Walla Walla: gas'], -21 * 2 * 3.89 / 15), `gas ${r.l['Trip to Walla Walla: gas']}`);
+  assert(near(r.l['The movies'], -28) && near(r.l['Dinner downtown'], -60), `stops ${JSON.stringify(r.l)}`);
+  assert(r.trip === null && /Trip to Walla Walla: the movies, dinner downtown/.test(r.log), `after: ${JSON.stringify(r.trip)} / ${r.log}`);
+});
+
+await t.check('in the town you commute to, a trip costs no extra gas or time', async () => {
+  const r = await ev(() => {
+    fresh('two', { jobId: 'cellar', focus: 'outdoors', happy: 50, health: 50, date: new Date(2027, 5, 7).getTime() });
+    planTrip('wallawalla', ['movies']); const a = week().lines; const h1 = S.health;
+    fresh('two', { jobId: 'farmhand', focus: 'outdoors', happy: 50, health: 50, date: new Date(2027, 5, 7).getTime() });
+    planTrip('wallawalla', ['movies']); week(); const h2 = S.health;
+    fresh('two', { jobId: 'cellar', focus: 'outdoors', happy: 50, health: 50, date: new Date(2027, 5, 7).getTime() }); week(); const h3 = S.health;
+    fresh('two', { jobId: 'farmhand', focus: 'outdoors', happy: 50, health: 50, date: new Date(2027, 5, 7).getTime() }); week(); const h4 = S.health;
+    return { gas: a['Trip to Walla Walla: gas'], h1, h2, h3, h4 };
+  });
+  assert(r.gas === undefined, `commuter paid trip gas ${r.gas}`);
+  assert(near(r.h1, r.h3, 0.001), `commute-town trip changed the focus: ${r.h1} vs ${r.h3}`);
+  assert(r.h2 < r.h4, `a trip out of town should take some of the week: ${r.h2} vs ${r.h4}`);
+});
+
+await t.check('trip planning: up to 3 stops, in that town, in season, 21+ for tasting', async () => {
+  const r = await ev(() => {
+    fresh('two', { date: new Date(2027, 0, 4).getTime() });
+    return { four: planTrip('wallawalla', ['movies', 'bistro', 'dentist', 'checkup']), wrongTown: planTrip('dayton', ['movies']),
+      offSeason: planTrip('pasco', ['baseball']), under21: planTrip('wallawalla', ['tasting']), none: planTrip('pasco', []),
+      home: planTrip('waitsburg', ['movies']), ok: planTrip('dayton', ['cafe', 'depot', 'oil']) };
+  });
+  assert(r.four && r.wrongTown && r.offSeason && r.under21 && r.none && r.home, JSON.stringify(r));
+  assert(r.ok === '', `a good trip was refused: ${r.ok}`);
+  const adult = await ev(() => { fresh('two', { ageMonths: 22 * 12, date: new Date(2027, 6, 5).getTime() }); return [planTrip('wallawalla', ['tasting']), planTrip('pasco', ['baseball', 'market'])]; });
+  assert(adult.every(x => x === ''), JSON.stringify(adult));
+});
+
+await t.check('a stock-up grocery run makes groceries 15% cheaper for 4 weeks', async () => {
+  const r = await ev(() => { fresh('two', { date: new Date(2027, 5, 7).getTime() }); planTrip('kennewick', ['stock']);
+    const out = [week().lines]; for (let i = 0; i < 4; i++) out.push(week().lines); return out.map(l => l['Food & utilities (stocked up)'] ?? l['Food & utilities']); });
+  const cheap = -(520 - 360 * 0.15) * W;
+  assert(r.slice(0, 4).every(v => near(v, cheap, 0.02)), `stocked weeks ${r}`);
+  assert(r[4] < cheap * 1.05, `week 5 should be back to full price: ${r[4]}`);
+});
+
+await t.check('oil changes lower breakdown odds; a year without one raises them; winter tires cut ditch odds', async () => {
+  const r = await ev(() => { fresh('two'); const a = careMult(); S.turn = 40; const b = careMult(); S.turn = 60; const c = careMult();
+    S.date = new Date(2027, 10, 1).getTime(); planTrip('wallawalla', ['oil', 'tires']); week(); const d = careMult();
+    return { a, b, c, d, ditch: ditchMult(), tiresAgain: planTrip('wallawalla', ['tires']) }; });
+  assert(r.a === 0.6 && r.b === 1 && r.c === 1.4 && r.d === 0.6, JSON.stringify(r));
+  assert(r.ditch === 0.4 && r.tiresAgain, `tires ${JSON.stringify(r)}`);
+});
+
+await t.check('going out again within 4 weeks is half as fun; a date costs double and does more', async () => {
+  const r = await ev(() => {
+    const go = (extra, again) => { fresh('two', { happy: 50, focus: 'study', date: new Date(2027, 5, 7).getTime(), ...extra });
+      if (again) S.stopLast = { arena: S.turn - 1 };
+      const h0 = S.happy; S.noEvents = true; planTrip('kennewick', ['arena']); const l = week().lines;
+      const h1 = S.happy; fresh('two', { happy: 50, focus: 'study', date: new Date(2027, 5, 7).getTime(), ...extra }); week(); return { gain: h1 - S.happy, cost: l['A show at the arena'] }; };
+    return { first: go({}), again: go({}, true) };
+  });
+  assert(near(r.again.gain, r.first.gain / 2, 0.05), `repeat ${r.again.gain} vs ${r.first.gain}`);
+  const date = await ev(() => { fresh('two', { partner: true, date: new Date(2027, 5, 7).getTime() }); planTrip('wallawalla', ['movies']); return week().lines['The movies']; });
+  assert(near(date, -56), `a date at the movies ${date}`);
+});
+
+await t.check('vehicle tabs renew once each January', async () => {
+  const r = await ev(() => { fresh('five'); const first = weeks(52) && S.log; let tabs = 0, n = 0;
+    fresh('five'); for (let i = 0; i < 120; i++) { const l = week().lines; if (l['Vehicle tabs (DMV)']) { tabs++; n = l['Vehicle tabs (DMV)']; } } return { tabs, n }; });
+  assert(r.tabs === 2, `tabs charged ${r.tabs} times in 120 weeks from January 2027 (2027 is prepaid)`);
+  assert(r.n < -95 && r.n > -110, `tabs ${r.n}`);
+});
+
+await t.check('a toothache can only come after a year without the dentist', async () => {
+  const r = await ev(() => { fresh('two'); const e = EVENTS.find(x => x.title === 'Toothache'); const a = e.when(); S.turn = 60; const b = e.when();
+    S.dentist = 55; const c = e.when(); S.dentist = 0; e.choices()[0].go(); return { a, b, c, d: e.when(), place: EVENT_PLACE['Toothache'] }; });
+  assert(!r.a && r.b && !r.c && !r.d, JSON.stringify(r));
+  assert(r.place[1] === 'wallawalla', 'toothache place');
+});
+
+await t.check('older saves get the trip fields', async () => {
+  const r = await ev(() => { const old = { turn: 30, date: new Date(2028, 3, 1).getTime() }; migrate(old); return old; });
+  assert(r.trip === null && r.svc === 30 && r.dentist === 30 && r.tabsYear === 2028 && r.stockUntil === -1, JSON.stringify(r));
 });
 
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });
