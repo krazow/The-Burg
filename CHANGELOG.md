@@ -3,9 +3,21 @@
 Release notes for The Burg. `/release now` turns the Unreleased section into a dated `## X.Y.Z (YYYY-MM-DD)`
 entry for every release, and the GitHub release notes are taken from it.
 
-## Unreleased
+## 0.2.0 (2026-11-18)
 
 ### Added
+- **Events happen at places.** Every event says where it takes place (the fairgrounds, the Touchet, Bluewood, Walla
+  Walla, your workplace…). For 4 weeks a gold badge marks the spot on the Waitsburg or region map, and tapping the
+  place shows what happened there.
+- **Real river shapes** on the region map: the Columbia, Snake and Yakima now follow their true courses (from Natural
+  Earth). The Tri-Cities pins are spread out so every town label is readable.
+- **Back up and restore your lives.** Menu → 📤 Back up or restore downloads a backup file or copies a short backup
+  code. On another device, 📥 Restore from a backup (title screen or Menu) adds those lives to your empty slots or
+  replaces all of them, and keeps your best scores.
+- **Android app and Windows installer** on each release, alongside the web app. The Android app is signed with
+  The Burg's own release key, so future updates install over it. (If you installed an earlier test APK, uninstall it
+  once first.)
+
 - **🚗 Trips around the region.** Once a week, plan a trip to Dayton, Walla Walla, Pasco, Kennewick or Richland:
   tap 🚗 Plan a trip on Home, or a town on the region map, and pick up to 3 stops. It happens when you end the
   week. A trip costs gas there and back and takes part of your week (your focus works at 75%), but in the town you
@@ -56,6 +68,8 @@ entry for every release, and the GitHub release notes are taken from it.
   side hustler 50 (was 37). Overworking while your health is low is more dangerous than before.
 
 ### Fixed
+- **Help guide:** the contents list was stuck to the bottom of the screen, covering the guide's text. It now scrolls
+  with the page like everything else.
 - **Backups now include your badges and challenge wins**, and restoring keeps every best score (modes, challenges and
   weekly challenges were dropped before). Restoring adds to the badges you already have; it never removes any.
 - **Life goals count only if you pin them before earning the badge.** Pinning badges you already had no longer adds
@@ -63,25 +77,6 @@ entry for every release, and the GitHub release notes are taken from it.
 - **Event costs rise with prices.** 31 event amounts (the doctor, the roof, the toothache, tows, the shop, tax refunds,
   found money, the inheritance and more) were fixed dollar amounts, so they got cheap in long games. They now rise
   with the cost of living, and the choices show today's price. A day's pay and severance now use your current pay.
-
-## 0.2.0 (2026-11-18)
-
-### Added
-- **Events happen at places.** Every event says where it takes place (the fairgrounds, the Touchet, Bluewood, Walla
-  Walla, your workplace…). For 4 weeks a gold badge marks the spot on the Waitsburg or region map, and tapping the
-  place shows what happened there.
-- **Real river shapes** on the region map: the Columbia, Snake and Yakima now follow their true courses (from Natural
-  Earth). The Tri-Cities pins are spread out so every town label is readable.
-- **Back up and restore your lives.** Menu → 📤 Back up or restore downloads a backup file or copies a short backup
-  code. On another device, 📥 Restore from a backup (title screen or Menu) adds those lives to your empty slots or
-  replaces all of them, and keeps your best scores.
-- **Android app and Windows installer** on each release, alongside the web app. The Android app is signed with
-  The Burg's own release key, so future updates install over it. (If you installed an earlier test APK, uninstall it
-  once first.)
-
-### Fixed
-- **Help guide:** the contents list was stuck to the bottom of the screen, covering the guide's text. It now scrolls
-  with the page like everything else.
 
 ## 0.1.0 (2026-11-17)
 
