@@ -55,6 +55,15 @@ entry for every release, and the GitHub release notes are taken from it.
   in simulated 5-year games a sensible long-commuter now scores 73 (was 66), an overtime grinder 51 (was 46) and a
   side hustler 50 (was 37). Overworking while your health is low is more dangerous than before.
 
+### Fixed
+- **Backups now include your badges and challenge wins**, and restoring keeps every best score (modes, challenges and
+  weekly challenges were dropped before). Restoring adds to the badges you already have; it never removes any.
+- **Life goals count only if you pin them before earning the badge.** Pinning badges you already had no longer adds
+  points. Goals pinned in older saves still count.
+- **Event costs rise with prices.** 31 event amounts (the doctor, the roof, the toothache, tows, the shop, tax refunds,
+  found money, the inheritance and more) were fixed dollar amounts, so they got cheap in long games. They now rise
+  with the cost of living, and the choices show today's price. A day's pay and severance now use your current pay.
+
 ## 0.2.0 (2026-11-18)
 
 ### Added
