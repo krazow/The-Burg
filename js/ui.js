@@ -260,7 +260,7 @@ function newGame(name, len, slot = 0, opts = {}){
     trip:null, svc:0, tires:null, stockUntil:-1, dentist:0, stopLast:{}, tabsYear:2027, carpool:false, hustleWeeks:0, scoreQ:null,
     bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0,
     badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false,
-    skills:{}, biz:null, weekly:null, rng:null, gen:1, goalAt:{} };
+    skills:{}, biz:null, weekly:null, rng:null, gen:1, goalAt:{}, out:outDefault() };
   S.bg = BACKGROUNDS[opts.bg] ? opts.bg : 'fresh'; S.mode = MODES[opts.mode] ? opts.mode : 'normal';
   if (BACKGROUNDS[S.bg].set) BACKGROUNDS[S.bg].set(S);
   S.weekly = opts.weekly || null; S.rng = opts.weekly ? weekSeed(opts.weekly) : null; useDice();
@@ -350,6 +350,7 @@ function renderHome(){
       return `<button class="fbtn ${S.focus===k?'on':''}" data-f="${k}" ${dis?'disabled':''} aria-pressed="${S.focus===k}"><span class="ic">${x.ic}</span><b>${FOCUS_SHORT[k]}</b></button>`;
     }).join('')}</div>
     <div class="fdesc"><b>${f.ic} ${f.name}:</b> ${f.study && S.edu < 3 ? `work toward a ${EDU[S.edu+1].toLowerCase()} (${S.studyProg}/${STUDY_NEED[S.edu]} weeks).` : f.desc}${f.study && S.edu < 3 ? ` ${wk(cost(TUITION[S.edu]))}.` : f.cost ? ` ${wk(cost(f.cost))}.` : ''}${streak}</div>`}
+    ${outButton()}
   </div>
   <div class="card sumrow">
     <button class="sumchip" data-go="jobs">${work}</button>
@@ -359,6 +360,7 @@ function renderHome(){
     <button class="sumchip${S.trip ? ' on' : ''}" id="tripchip">${tripChip()}</button>
   </div>`;
   $('#tripchip').onclick = () => S.trip ? tripSheet(S.trip.city) : tripPicker();
+  $('#outbtn').onclick = outSheet;
   document.querySelectorAll('.fbtn').forEach(b => b.onclick = () => { S.focus = b.dataset.f; save(); render(); });
   document.querySelectorAll('[data-stat]').forEach(b => b.onclick = () => showStatInfo(b.dataset.stat));
   if ($('#scorenow')) $('#scorenow').onclick = showScoreNow;
@@ -406,7 +408,7 @@ function jobRow(x){
     : S.edu < x.edu ? `<button class="sm locked" data-locked="${x.id}" aria-label="Locked: how to unlock">🔒 ${['','Cert','Assoc.','Degree'][x.edu]}</button>`
     : `<button class="sm" data-apply="${x.id}" ${S.applied?'disabled':''}>Apply</button>`;
   return `<div class="kv job${S.edu < x.edu ? ' lockedrow' : ''}"><div><div class="t">${x.title}</div>
-    <div class="s">${c.name}${c.miles ? ` · ${c.miles} mi` : ' · no commute'} · pay ${wk(payNow(x, cur))}${c.miles ? `, gas ${wk(commuteCost(c.miles, CARS[S.car], x))}` : ''}${x.remote ? ` · 🏠 ${x.remote} remote days` : ''}</div></div>
+    <div class="s">${x.where ? esc(x.where) + ', ' : ''}${c.name}${c.miles ? ` · ${c.miles} mi` : ' · no commute'} · pay ${wk(payNow(x, cur))}${c.miles ? `, gas ${wk(commuteCost(c.miles, CARS[S.car], x))}` : ''}${x.remote ? ` · 🏠 ${x.remote} remote days` : ''}</div></div>
     <div style="text-align:right"><div class="pay">${fmt(th)}/wk</div>
     <div class="s">${cur ? 'take-home' : base && Math.abs(diff) >= 1 ? `<span class="${diff>0?'upt':'downt'}">${diff>0?'▲':'▼'} ${fmt(Math.abs(diff))}</span>` : 'take-home'}</div>${btn}</div></div>`;
 }
@@ -469,7 +471,7 @@ function commuteCost(miles, car = CARS[S.car], j = null){ return miles * 2 * WOR
 function apply(id){
   const x = jobById(id); if (S.applied) return;
   S.applied = true;
-  let p = 0.5 + S.community * 0.004 + (S.edu > x.edu ? 0.12 : 0) + (x.city === 'waitsburg' ? 0.1 : 0) + skillLv('people') * 0.04;
+  let p = 0.5 + S.community * 0.004 + (S.edu > x.edu ? 0.12 : 0) + (x.city === 'waitsburg' ? 0.1 : 0) + skillLv('people') * 0.04 + outLookBonus();
   if (!S.jobId) p += 0.08;
   if (S.practice || chance(Math.min(0.92, p))) {
     S.jobId = id; S.jobMonths = 0; S.raise = 1;
@@ -488,7 +490,7 @@ function apply(id){
 
 function renderLife(){
   const h = HOMES[S.home];
-  $('#main').innerHTML = `${S.practice ? '' : goalsCard()}${S.practice ? '' : skillsCard()}${S.practice ? '' : bizCard()}
+  $('#main').innerHTML = `${S.practice ? '' : goalsCard()}${S.practice ? '' : skillsCard()}${S.practice ? '' : bizCard()}${S.practice ? '' : townLifeCard()}
   <div class="card"><h3>📚 Education</h3>
     <div class="kv"><span>Highest</span><span><b>${EDU[S.edu]}</b></span></div>
     ${S.edu < 3 ? `<div class="kv"><span>Next: ${EDU[S.edu+1]}</span><span>${S.studyProg}/${STUDY_NEED[S.edu]} weeks</span></div>
@@ -540,12 +542,12 @@ function moveHome(k){
   const need = (x.own ? cost(x.down) : 0) + cost(300);
   if (S.money + sale < need) return toast(`You need ${fmt(need - sale)} on hand (down payment + moving).`);
   sheet(`<h2>${x.own ? 'Buy' : 'Move to'} ${x.name}?</h2>
-    <p>${x.own ? `Down payment ${fmt(cost(x.down))}, then ${wk(cost(x.cost))} mortgage (locked in).` : `Rent is ${wk(cost(x.cost))}.`} Moving costs ${fmt(cost(300))}.</p>
+    <p>${x.own ? `Down payment ${fmt(cost(x.down))}, then ${wk(cost(x.cost))} mortgage (locked in) from Standard Bearer Bank, with the closing papers at Mother Hubbard's Legal Cupboard.` : `Rent is ${wk(cost(x.cost))}.`} Moving costs ${fmt(cost(300))}.</p>
     ${old.own ? `<p>You'll sell your current place and pocket ${fmt(sale)}.</p>` : ''}
     <button class="btn primary" id="y">Do it</button><button class="btn ghost" id="n">Cancel</button>`);
   $('#y').onclick = () => {
     S.money += sale - need; S.equity = x.own ? cost(x.down) : 0; S.mortgage = x.own ? cost(x.cost) : null; S.home = k;
-    adj({happy:4}); log(`Moved into the ${x.name.toLowerCase()}.`);
+    adj({happy:4}); outMoved(); log(`Moved into the ${x.name.toLowerCase()}.`);
     closeSheet(); save(); render();
   };
   $('#n').onclick = closeSheet;
@@ -554,7 +556,7 @@ function buyCar(k){
   const c = CARS[k], price = cost(k==='sedan' ? c.price : c.down) - Math.round(S.carValue);
   if (S.money < price) return toast(`You need ${fmt(price)} after your trade-in.`);
   sheet(`<h2>Get the ${c.name.toLowerCase()}?</h2>
-    <p>Your ${CARS[S.car].name.toLowerCase()} trades in for ${fmt(S.carValue)}. You pay ${fmt(Math.max(0,price))} now${c.pay?`, then ${wk(cost(c.pay))} for 5 years`:''}.</p>
+    <p>Your ${CARS[S.car].name.toLowerCase()} trades in for ${fmt(S.carValue)}. You pay ${fmt(Math.max(0,price))} now${c.pay?`, then ${wk(cost(c.pay))} for 5 years (financed through Standard Bearer Bank)`:''}.</p>
     <button class="btn primary" id="y">Buy it</button><button class="btn ghost" id="n">Cancel</button>`);
   $('#y').onclick = () => {
     S.money -= price; S.car = k; S.carValue = cost(c.value); S.loanLeft = c.months || 0; S.loanPay = c.pay ? cost(c.pay) : 0; S.svc = S.turn;
