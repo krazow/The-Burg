@@ -105,6 +105,20 @@ const uniq = a => [...new Set(a.map(x => x.replace(/^[^/]+\/ /, '')))];
 
 await t.check('nothing is wider than the screen at any size', async () => { assert(!problems.overflow.length, problems.overflow.slice(0, 5).join('; ')); });
 await t.check('End Week, the week strip and the tab bar stay on-screen and never overlap', async () => { assert(!problems.bars.length, problems.bars.slice(0, 5).join('; ')); });
+await t.check('the Help guide scrolls normally: its contents list and sections are not pinned over the text', async () => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  const page = await ctx.newPage();
+  await page.goto(srv.url, { waitUntil: 'load' });
+  await page.click('#how');
+  const r = await page.evaluate(() => {
+    const toc = document.querySelector('#helpview .toc'), first = document.querySelector('#g-start p');
+    first.scrollIntoView({ block: 'center' });
+    const b = first.getBoundingClientRect(), top = document.elementFromPoint(b.left + 20, b.top + b.height / 2);
+    return { pos: getComputedStyle(toc).position, covered: !first.contains(top) && top !== first, by: top && (top.className || top.tagName) };
+  });
+  assert(r.pos === 'static' && !r.covered, `contents list is ${r.pos}; guide text covered by ${r.by}`);
+  await ctx.close();
+});
 await t.check('no code leftovers on screen ("${", stray "}", undefined, NaN)', async () => { assert(!problems.leftover.length, uniq(problems.leftover).slice(0, 5).join('; ')); });
 await t.check('every button has a name a screen reader can say', async () => { assert(!problems.unnamed.length, problems.unnamed.slice(0, 5).join('; ')); });
 await t.check('content gets at least 45% of the screen between the header and the bottom bars (portrait and landscape)', async () => { assert(!problems.room.length, problems.room.slice(0, 5).join('; ')); });
