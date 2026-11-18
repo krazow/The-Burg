@@ -3,6 +3,34 @@
 Release notes for The Burg. `/release now` turns the Unreleased section into a dated `## X.Y.Z (YYYY-MM-DD)`
 entry for every release, and the GitHub release notes are taken from it.
 
+## Unreleased
+
+### Added
+- **Out and about:** 20 Waitsburg businesses under stand-in names, with pins on a new Main Street close-up map and business cards. Visit up to 2 a week for a small boost; real seasons and winter breaks apply, and drinks are 21 and over.
+- 7 jobs at local businesses (barista, grocery clerk, bank teller, medical assistant, reporter, ag tech, trades apprentice), and 10 business events such as the every-other-week bluegrass jam and Grenache Fest.
+- An "Around town" card on the Life tab: the bank, clinic, grocery and local trades.
+- 30 events on the road and in other towns, and 30 events at work.
+- "🏆 Your records": best scores by length and mode, challenges, and this week's weekly challenge.
+- A one-time "What's new" sheet after an update.
+- Journal filter chips: All, Money, Events, Milestones, Trips.
+- Heirs get a numbered name (Ann Lee II, III…) that you can change.
+
+### Changed
+- Events are paced by kind: town 14%, road 8% (long commute or trip week) and work 8% (with a job) each week; Hard mode raises each.
+- The title screen puts Name, Game length and Start first; backgrounds and modes are under "More options".
+- Balance: higher net-worth targets for 5-year and Lifetime games; 6-month games start a little lower; the grad, young parent, trips in debt, stock-up runs, overtime grinding and side-hustle experience were all rebalanced.
+- Businesses lose value over time, and the wheat lease must be renewed every 5 years.
+- Vehicle tabs scale with the vehicle's value; Hard mode's extra costs are 10% of rent, food and insurance.
+- Relaxed and Hard scores are labeled everywhere; Life Score so far says whether you're on track.
+- The weekly challenge brings the same events in the same weeks whatever you choose, and its week is counted in UTC.
+- The game code is split into 8 script files.
+
+### Fixed
+- The flood story only follows high water you didn't prepare for.
+- Out-of-town trips now slow class progress, and a carpool ends when you change jobs.
+- Only the current week's weekly-challenge best is kept.
+- An event in the New Year week no longer skips the year in review.
+
 ## 0.2.0 (2026-11-18)
 
 ### Added
