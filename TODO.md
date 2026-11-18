@@ -1,6 +1,6 @@
 # The Burg: To-do
 
-_Last updated: November 17, 2026 (0.2.0-beta.2; Help guide fix; demo videos)_
+_Last updated: November 18, 2026 (player-submitted NPCs planned; chapter demo videos)_
 
 This is the project's working to-do list: what's been done, what's next, and in what order. Every open item has a
 matching **GitHub issue** with a priority label (**P1 – now**, **P2 – soon**, **P3 – later**). The issues are the
@@ -29,6 +29,29 @@ added, finished or re-prioritized, both change in the same session.
 ## Soon: P2
 
 - [ ] **Manual play-test pass on real phones** (iPhone and Android install, offline, resume) — [#9](https://github.com/krazow/The-Burg/issues/9)
+
+### Be in The Burg: player-submitted NPCs
+
+Players fill in a questionnaire in the game about themselves as a Waitsburg character (where they hang out, their
+personality, how they react to the player, their own small event). Answers go to Formspree
+(`https://formspree.io/f/xyewwazg`), you review them, and approved characters ship in the next release. Full plan,
+risks and the 10-page questionnaire: [docs/npc-submissions.md](docs/npc-submissions.md). In order:
+
+| # | Item | Size | Issue |
+|---|---|---|---|
+| 1 | **Policy and Formspree setup** (your decisions): 18+, no romance with player NPCs, first names only, human review, removal on request; privacy note; honeypot, spam filter, monthly export (free plan: 50/month, 30-day history) | S | [#39](https://github.com/krazow/The-Burg/issues/39) |
+| 2 | **In-game questionnaire** (🙋 Be in the game): 10 pages, draft saved, preview card, send with offline queue | L | [#40](https://github.com/krazow/The-Burg/issues/40) |
+| 3 | **Import and review tool:** Formspree export → `data/npcs.json`, flags identifying or unsafe text, removal list | M | [#41](https://github.com/krazow/The-Burg/issues/41) |
+| 4 | **NPC engine:** friendship saved per life, map pins at hangouts, meetings, 👥 People screen | L | [#42](https://github.com/krazow/The-Burg/issues/42) |
+| 5 | **NPC behavior:** offers, asks, reactions, personal events, NPCs in today's anonymous events; capped effects | L | [#43](https://github.com/krazow/The-Burg/issues/43) |
+| 6 | **NPC QA:** rules, flows with a mocked Formspree, screens, simulation balance with NPCs | M | [#44](https://github.com/krazow/The-Burg/issues/44) |
+
+- [ ] Policy and Formspree setup — [#39](https://github.com/krazow/The-Burg/issues/39)
+- [ ] In-game questionnaire — [#40](https://github.com/krazow/The-Burg/issues/40)
+- [ ] Import and review tool — [#41](https://github.com/krazow/The-Burg/issues/41)
+- [ ] NPC engine — [#42](https://github.com/krazow/The-Burg/issues/42)
+- [ ] NPC behavior and events — [#43](https://github.com/krazow/The-Burg/issues/43)
+- [ ] NPC QA — [#44](https://github.com/krazow/The-Burg/issues/44)
 
 ## Later: P3
 
@@ -93,3 +116,5 @@ that careless play stays at or below 60 and good play at or above 70.
 | Nov 17, 2026 | **0.2.0-beta.2:** all release checks passed; the APK still used a throwaway key (#37). Merged branches were deleted. | [pre-release](https://github.com/krazow/The-Burg/releases/tag/v0.2.0-beta.2) |
 | Nov 17, 2026 | **Help guide fix:** the contents list was pinned to the bottom of the screen over the guide's text (since 0.1.0). Found while recording the demo video; new screens check. | [PR #38](https://github.com/krazow/The-Burg/pull/38) |
 | Nov 17, 2026 | **Demo videos** of the gameplay tutorial with subtitles: vertical 9:16 and widescreen 16:9, each with an .srt file (2:09). | sent in chat |
+| Nov 17, 2026 | **Chapter demo videos:** the tutorial recording split into 7 chapters, each introduced by a full-screen slide (no subtitles), in the style of the Bankroll demo: vertical 9:16 and widescreen 16:9 at 4K (3:17). | sent in chat |
+| Nov 18, 2026 | **Planned player-submitted NPCs:** analysis, the 10-page questionnaire and the work breakdown; filed #39–#44. | [plan](docs/npc-submissions.md) |
