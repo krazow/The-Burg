@@ -572,6 +572,99 @@ await t.check('event costs rise with prices, and the choices show today\'s price
   assert(near(r.roof, 2400), `roof ${r.roof}`);
 });
 
+// ---- event pacing by category (G5) and the road and work events ----
+await t.check('events are paced by category: town 14%, road 8% (long commute or trip), work 8% (a job); Hard ×1.25', async () => {
+  const r = await ev(() => {
+    const odds = (extra, trip = null) => { fresh('two', extra); return eventOdds(trip); };
+    const o = {
+      none: odds({}), farm: odds({ jobId: 'farmhand' }), rn: odds({ jobId: 'rn' }), dayton: odds({ jobId: 'hardware' }),
+      daytonTrip: odds({ jobId: 'hardware' }, { city: 'kennewick' }), retired: odds({ retired: true }),
+      hard: odds({ jobId: 'rn', mode: 'hard' })
+    };
+    // over many weeks, each category comes at its own rate, and never more than one event a week
+    fresh('two', { jobId: 'rn' }); const n = 6000, seen = { town: 0, road: 0, work: 0 };
+    for (let i = 0; i < n; i++) { const e = rollEvent(4, null); if (e) seen[evCat(e)]++; }
+    fresh('two', {}); let noJobRoadWork = 0;
+    for (let i = 0; i < 2000; i++) { const e = rollEvent(4, null); if (e && evCat(e) !== 'town') noJobRoadWork++; }
+    const groups = JOBS.filter(j => !JOB_GROUP[j.id]).map(j => j.id);
+    return { o, rate: Object.fromEntries(Object.entries(seen).map(([k, v]) => [k, v / n])), noJobRoadWork, groups };
+  });
+  const { o } = r, eq = (x, y) => Math.abs(x - y) < 1e-9;
+  assert(eq(o.none.town, .14) && o.none.road === 0 && o.none.work === 0, `no job: ${JSON.stringify(o.none)}`);
+  assert(o.farm.road === 0 && eq(o.farm.work, .08), `Waitsburg job: ${JSON.stringify(o.farm)}`);
+  assert(eq(o.rn.road, .08) && eq(o.rn.work, .08), `Walla Walla commute: ${JSON.stringify(o.rn)}`);
+  assert(o.dayton.road === 0 && eq(o.daytonTrip.road, .08), `an 11-mile commute has no road events unless you take a trip: ${JSON.stringify([o.dayton, o.daytonTrip])}`);
+  assert(o.retired.work === 0 && o.retired.road === 0, `retired: ${JSON.stringify(o.retired)}`);
+  assert(eq(o.hard.town, .175) && eq(o.hard.road, .1) && eq(o.hard.work, .1), `Hard: ${JSON.stringify(o.hard)}`);
+  assert(Math.abs(r.rate.town - .14) < .02 && Math.abs(r.rate.road - .08) < .015 && Math.abs(r.rate.work - .08) < .015, `rates ${JSON.stringify(r.rate)}`);
+  assert(r.noJobRoadWork === 0, 'road or work events came with no job and no trip');
+  assert(!r.groups.length, `jobs without a job group: ${r.groups}`);
+});
+
+await t.check('road events happen in the town you drive to, work events at your workplace', async () => {
+  const r = await ev(() => {
+    const place = t => eventPlace(EVENTS.find(e => e.title === t));
+    fresh('two', { jobId: 'rn' }); rollEvent(4, null); const commute = place('Flat tire on US-12'), work = place('Holiday party');
+    fresh('two', { jobId: 'farmhand' }); rollEvent(4, { city: 'richland' }); const trip = place('Flat tire on US-12'), farmWork = place('Holiday party');
+    const tour = EVENTS.find(e => e.title === 'Hanford history tour').when(4);
+    fresh('two', { jobId: 'farmhand' }); rollEvent(4, null); const noTour = EVENTS.find(e => e.title === 'Hanford history tour').when(4);
+    fresh('two', { jobId: 'rn' }); const cats = new Set(); for (let i = 0; i < 300; i++) { const e = pickEvent(4, 'road'); if (e) cats.add(evCat(e)); }
+    return { commute, work, trip, farmWork, tour, noTour, cats: [...cats] };
+  });
+  assert(r.commute.join() === 'R,wallawalla' && r.work.join() === 'R,wallawalla', `commute ${r.commute}, work ${r.work}`);
+  assert(r.trip.join() === 'R,richland' && r.farmWork.join() === 'T,fields', `trip ${r.trip}, farm work ${r.farmWork}`);
+  assert(r.tour && !r.noTour, 'the Hanford tour should need a Richland trip');
+  assert(r.cats.join() === 'road', `road picks: ${r.cats}`);
+});
+
+await t.check('road and work events: prices rise, and skills, remote days, carpools and plans change them', async () => {
+  const r = await ev(() => {
+    const E = t => EVENTS.find(e => e.title === t), open = e => e.choices().filter(c => !c.if || c.if());
+    // cost(): a ticket at twice the prices costs twice as much, and the label says so
+    fresh('two', { jobId: 'rn', money: 5000 }); S.col = 2; const tk = open(E('Speeding ticket'))[0]; let m = S.money; tk.go(); const ticket = { label: tk.label, paid: m - S.money };
+    // Mechanic skill opens changing a flat yourself, and practices it
+    fresh('two', { jobId: 'rn' }); const flat0 = open(E('Flat tire on US-12')).length; S.skills = { mechanic: 8 }; const flat1 = open(E('Flat tire on US-12')); flat1[0].go();
+    // carpool: the late-buddy event needs one, and leaving ends it
+    fresh('two', { jobId: 'rn', community: 40 }); const noPool = E('Your carpool buddy is always late').when(4); S.carpool = true;
+    const pool = E('Your carpool buddy is always late').when(4); open(E('Your carpool buddy is always late'))[1].go();
+    // remote-day trial: office jobs with a long drive; saves 40% of a month's commute gas (remote days already counted)
+    fresh('two', { jobId: 'insure' }); const nearOffice = E('A remote-day trial').when(0);
+    fresh('two', { jobId: 'loan', money: 0 }); const farOffice = E('A remote-day trial').when(0); open(E('A remote-day trial'))[0].go();
+    const gas = commuteCost(62, CARS.beater, job()) * .4, saved = S.money;
+    // the better health plan halves doctor bills; a season pass makes powder days free
+    fresh('two', { jobId: 'rn', money: 5000, health: 30 }); open(E('Health plan choice'))[1].go(); m = S.money; open(E('Feeling run down'))[0].go(); const doc = m - S.money;
+    S.date = new Date(2027, 9, 10).getTime(); S.skiPass = skiSeason(); S.date = new Date(2028, 0, 10).getTime(); const passOk = skiPass(); m = S.money; const pd = open(E('Powder day at Bluewood'))[0]; const rnd = Math.random; Math.random = () => .5; pd.go(); Math.random = rnd; const ski = { label: pd.label, paid: m - S.money };
+    // a recruiter makes your next application a sure thing; a clearance-sale outfit helps a little
+    fresh('two', { jobId: 'farmhand', community: 40 }); open(E('A recruiter calls'))[0].go(); const old = Math.random; Math.random = () => .999;
+    render(); apply('scientist'); Math.random = old; closeSheet(); const hired = S.jobId;
+    return { ticket, flat0, flat1: flat1.length, noPool, pool, nearOffice, farOffice, gas, saved, doc, passOk, ski, hired };
+  });
+  assert(near(r.ticket.paid, 320) && /\$320/.test(r.ticket.label), `ticket ${JSON.stringify(r.ticket)}`);
+  assert(r.flat0 === 1 && r.flat1 === 2, `flat tire choices ${r.flat0} → ${r.flat1}`);
+  assert(!r.noPool && r.pool, 'the carpool event should need a carpool');
+  assert(!r.nearOffice && r.farOffice && near(r.saved, Math.round(r.gas), 0.001) && r.gas > 0, `remote trial ${JSON.stringify(r)}`);
+  assert(near(r.doc, 175), `doctor with better coverage ${r.doc}`);
+  assert(r.passOk && Math.abs(r.ski.paid) < 0.01, `powder day with a pass ${JSON.stringify(r.ski)}`);
+  assert(/season pass/.test(r.ski.label), `powder day label ${r.ski.label}`);
+  assert(r.hired === 'scientist', `a recruiter's sure thing: ${r.hired}`);
+});
+
+await t.check('events keep the skill, carpool and promotion state they change, and older saves get it', async () => {
+  const r = await ev(() => {
+    const E = t => EVENTS.find(e => e.title === t);
+    fresh('two', { jobId: 'rn', community: 40, carpool: true }); E('Your carpool buddy is always late').choices()[1].go(); const carpool = S.carpool;
+    fresh('two', { jobId: 'cellar', jobMonths: 20 }); const r0 = S.raise; E('A promotion offer').choices()[0].go(); const r1 = S.raise;
+    const h0 = S.happy; S.focus = 'rest'; S.noEvents = true; eventUpkeep(); const stress = h0 - S.happy;
+    fresh('two', { jobId: 'cellar', skills: {} }); E('Train the new hire').choices()[0].go(); const people = S.skills.people;
+    const old = { turn: 5, date: new Date(2028, 3, 1).getTime() }; migrate(old);
+    return { carpool, r0, r1, stress, people, old: { hp: old.healthPlan, pass: old.skiPass, hire: old.hireBy, promo: old.promo } };
+  });
+  assert(r.carpool === false, 'leaving the carpool should end it');
+  assert(near(r.r1, r.r0 * 1.12) && near(r.stress, 0.3 * 12 / 52), `promotion ${JSON.stringify(r)}`);
+  assert(r.people === 2, `mentoring should practice People twice: ${r.people}`);
+  assert(r.old.hp === null && r.old.pass === null && r.old.hire === -1 && r.old.promo === null, JSON.stringify(r.old));
+});
+
 // ---- review gaps (G6, G8, R7) ----
 await t.check('Journal entries get a kind when logged, and older entries are sorted by their text', async () => {
   const r = await ev(() => { fresh('two'); S.log = []; log('Something odd happened'); log('Hired as Diner cook in Waitsburg!'); log('Picked by hand', 'mile');
