@@ -1,6 +1,6 @@
 # The Burg: To-do
 
-_Last updated: November 18, 2026 (gameplay recommendations added)_
+_Last updated: November 18, 2026 (gameplay findings prioritized)_
 
 This is the project's working to-do list: what's been done, what's next, and in what order. Every open item has a
 matching **GitHub issue** with a priority label (**P1 – now**, **P2 – soon**, **P3 – later**). The issues are the
@@ -252,6 +252,28 @@ the only way to grow, and there's one difficulty for everyone. Full analysis:
 [docs/gameplay-recommendations-2026-11-18.md](docs/gameplay-recommendations-2026-11-18.md). In the suggested
 order (small, high-impact ones first):
 
+### What I found (prioritized)
+
+The six problems the analysis found, most important first. Each one closes when the recommendations that fix it ship.
+
+| Priority | Finding | Evidence | Fixed by | Issue |
+|---|---|---|---|---|
+| 1 (P2) | **Long commutes and side hustles don't pay off** | Commuter bot 45 and hustler bot 40 vs 80 for staying in town (5-year games). A balance problem with a small fix. | [#70](https://github.com/krazow/The-Burg/issues/70) | [#79](https://github.com/krazow/The-Burg/issues/79) |
+| 2 (P2) | **No goals until the very end** | The Life Score only shows when the game ends. | [#67](https://github.com/krazow/The-Burg/issues/67), [#66](https://github.com/krazow/The-Burg/issues/66), [#74](https://github.com/krazow/The-Burg/issues/74), [#76](https://github.com/krazow/The-Burg/issues/76) | [#80](https://github.com/krazow/The-Burg/issues/80) |
+| 3 (P2) | **Many weeks have no decisions** | An event about 1 week in 4; events never build into a story. | [#77](https://github.com/krazow/The-Burg/issues/77), [#68](https://github.com/krazow/The-Burg/issues/68) | [#81](https://github.com/krazow/The-Burg/issues/81) |
+| 4 (P3) | **Every life starts the same** | Always 18, the room above Main Street, $1,500 and the 1998 pickup. | [#69](https://github.com/krazow/The-Burg/issues/69), [#74](https://github.com/krazow/The-Burg/issues/74) | [#82](https://github.com/krazow/The-Burg/issues/82) |
+| 5 (P3) | **One difficulty for everyone** | Nothing gentler for casual players, nothing harder for experienced ones. | [#73](https://github.com/krazow/The-Burg/issues/73) | [#83](https://github.com/krazow/The-Burg/issues/83) |
+| 6 (P3) | **School is the only way to grow** | Nothing to build or invest in beyond homes, vehicles and the 401(k). | [#71](https://github.com/krazow/The-Burg/issues/71), [#72](https://github.com/krazow/The-Burg/issues/72) | [#84](https://github.com/krazow/The-Burg/issues/84) |
+
+- [ ] 1. Long commutes and side hustles don't pay off — [#79](https://github.com/krazow/The-Burg/issues/79)
+- [ ] 2. No goals until the very end — [#80](https://github.com/krazow/The-Burg/issues/80)
+- [ ] 3. Many weeks have no decisions — [#81](https://github.com/krazow/The-Burg/issues/81)
+- [ ] 4. Every life starts the same — [#82](https://github.com/krazow/The-Burg/issues/82)
+- [ ] 5. One difficulty for everyone — [#83](https://github.com/krazow/The-Burg/issues/83)
+- [ ] 6. School is the only way to grow — [#84](https://github.com/krazow/The-Burg/issues/84)
+
+### Recommendations
+
 | # | Item | Size | Issue |
 |---|---|---|---|
 | 1 | **Life Score so far on Home** | S | [#67](https://github.com/krazow/The-Burg/issues/67) |
@@ -377,3 +399,4 @@ that careless play stays at or below 60 and good play at or above 70.
 | Nov 18, 2026 | **Planned Around the region:** errands, car care, dining and outings in Dayton, Walla Walla and the Tri-Cities; milestone and issues #57–#63. | `TODO.md` |
 | Nov 18, 2026 | **Around the region built (#57–#63):** weekly trips to 5 towns with 23 stops (groceries, car care, eating out, outings, appointments), toothache event, vehicle tabs, Help section. New tests: 9 rules checks, 2 flows, a trip screen at 7 sizes, and a weekly-tripper bot in the simulation (careless 53, idle 49, good play 83). | [PR](https://github.com/krazow/The-Burg/pulls) |
 | Nov 18, 2026 | **Gameplay analysis:** 6 observations and 12 recommendations (features and styles of play), filed as #66–#77 under Soon. | [analysis](docs/gameplay-recommendations-2026-11-18.md) |
+| Nov 18, 2026 | **Gameplay findings** added to the to-do and prioritized (#79–#84): commutes and side hustles first, then goals, quiet weeks, same starts, difficulty, ways to grow. | `TODO.md` |

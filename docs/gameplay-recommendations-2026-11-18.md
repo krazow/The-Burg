@@ -1,7 +1,7 @@
 # Gameplay analysis and recommendations
 
 _November 18, 2026. Based on the game's code and the bot play-test (104 simulated games, 8 strategies) run while
-building Around the region. Tracked under "Soon: Gameplay recommendations" in TODO.md, issues #66–#77._
+building Around the region. Tracked under "Soon: Gameplay recommendations" in TODO.md: findings #79–#84 (prioritized) and recommendations #66–#77._
 
 ## What the play-tests and the code show
 
