@@ -82,6 +82,8 @@ for (const { len, strat, g, opts, label } of JOBS_LIST) {
             const fun = s => Object.values(s.fx || {}).reduce((a, v) => a + v, 0);
             planTrip(town, townStops(town).filter(s => !stopBlocked(s)).sort((a, b) => fun(b) - fun(a)).slice(0, TRIP_MAX).map(s => s.id));
           }
+          // Out and about: the planner gets coffee most weeks and a night out now and then
+          if (strat === 'planner' && S.money > 1000) { visit('bean', 'coffee'); if (weeks % 6 === 2) visit('gulch', 'game'); }
           // play the week
           const res = weekTick(false); weeks++;
           if (res.ev) {

@@ -97,9 +97,9 @@ function tripWeek(lines){
   S.trip = null;
   if (!done.length) return null;
   (S.towns = S.towns || {})[t.city] = 1;
-  log(`Trip to ${c.name}${tripIsCommute(t.city) ? ' on the way home from work' : ''}: ${done.join(', ')}.`);
+  log(`Trip to ${c.name}${tripIsCommute(t.city) ? ' on the way home from work' : ''}: ${done.join(', ')}.`, 'trip');
   if (S.run) S.run.happened.push({ ic:'🚗', title:`Trip to ${c.name}`, money:0 });
-  return { fx, away: !tripIsCommute(t.city) };
+  return { fx, away: !tripIsCommute(t.city), city: t.city };
 }
 
 /* ---- trip screens ---- */
@@ -196,7 +196,7 @@ function badgeWeek(notes){
     S.badges[b.id] = S.turn; all[b.id] = 1;
     const goal = (S.goals || []).includes(b.id);
     (S.newBadges = S.newBadges || []).push(`${b.ic} Badge earned: ${b.name}${goal ? ` (a life goal! +${GOAL_POINTS} Life Score)` : ''}`);   // a toast, not a stop
-    log(`Earned a badge: ${b.name}.`);
+    log(`Earned a badge: ${b.name}.`, 'mile');
   }
   store.set(BADGE_KEY, all);
 }
@@ -248,14 +248,14 @@ const STORY_EVENTS = [
     text:'The front porch of your fixer-upper groans every time you step on it. Time to do something.',
     choices:() => [
       {label:'Fix it yourself (-$350)', go:() => { adj({money:-Math.round(cost(350) * (1 - skillLv('handy') * 0.15)), health:-2, happy:2}); practice('handy', 3); chainSet('fixer', 2, { diy:true }); return 'Two weekends, a borrowed saw and sore hands. It\'s solid now, and you learned a lot.'; }},
-      {label:'Hire a contractor (-$1,400)', go:() => { adj({money:-Math.round(cost(1400))}); chainSet('fixer', 2, { diy:false }); return 'A crew had it done in two days.'; }},
+      {label:'Hire Tim\'s Trim & Timber (-$1,400)', go:() => { adj({money:-Math.round(cost(1400))}); chainSet('fixer', 2, { diy:false }); return 'Tim\'s Trim & Timber had it done in two days.'; }},
       {label:'Leave it', go:() => { adj({happy:-2}); chainEnd('fixer'); return 'You step carefully around the soft board.'; }}
     ]},
   { ic:'🍳', title:'The kitchen is next', once:1, w:8, when:() => chainAt('fixer', 2) && S.home === 'fixer',
     text:() => chain('fixer').f.diy ? 'Fixing the porch gave you ideas. The 1970s kitchen is calling.' : 'The contractor mentions the kitchen could use the same treatment.',
     choices:() => [
       {label:'Redo it yourself over a month (-$2,500)', go:() => { adj({money:-Math.round(cost(2500) * (1 - skillLv('handy') * 0.15)), health:-3, happy:3}); practice('handy', 4); chainSet('fixer', 3, { kitchen:'diy' }, [6, 10]); return 'Cabinets out, cabinets in. Dinner on a camp stove for a month.'; }},
-      {label:'Hire it out (-$7,000)', go:() => { adj({money:-Math.round(cost(7000))}); chainSet('fixer', 3, { kitchen:'pro' }, [6, 10]); return 'The crew is on it. Takeout for a few weeks.'; }},
+      {label:'Hire Sharp Point Builders (-$7,000)', go:() => { adj({money:-Math.round(cost(7000))}); chainSet('fixer', 3, { kitchen:'pro' }, [6, 10]); return 'The crew is on it. Takeout for a few weeks.'; }},
       {label:'Not now', go:() => { chainEnd('fixer'); return 'The old kitchen still works. Mostly.'; }}
     ]},
   { ic:'🏠', title:'The house is coming together', once:1, w:8, when:() => chainAt('fixer', 3) && S.home === 'fixer',
@@ -323,7 +323,7 @@ const SCENARIOS = {
 const CHALLENGE_KEY = 'theburg.challenges.v1';
 function scenarioWeek(notes){
   const sc = SCENARIOS[S.scenario]; if (!sc || sc.endOnly || S.scWon) return;
-  if (sc.win()) { S.scWon = true; notes.push(`🏁 Challenge complete: <b>${sc.name}</b>! Play on as long as you like.`); log(`Completed the challenge: ${sc.name}.`); markChallenge(S.scenario); }
+  if (sc.win()) { S.scWon = true; notes.push(`🏁 Challenge complete: <b>${sc.name}</b>! Play on as long as you like.`); log(`Completed the challenge: ${sc.name}.`, 'mile'); markChallenge(S.scenario); }
 }
 function markChallenge(id){ if (S.practice) return; const w = store.get(CHALLENGE_KEY) || {}; w[id] = 1; store.set(CHALLENGE_KEY, w); }
 function scenarioLine(){
@@ -361,7 +361,7 @@ function practice(k, n, notes){
   S.skills = S.skills || {}; const before = skillLv(k);
   S.skills[k] = Math.min(60, (S.skills[k] || 0) + n);
   const after = skillLv(k);
-  if (after > before) { (S.newBadges = S.newBadges || []).push(`${SKILLS[k].ic} ${SKILLS[k].name} skill: level ${after}`); log(`${SKILLS[k].name} skill reached level ${after}: ${SKILLS[k].perk.toLowerCase()}.`); }
+  if (after > before) { (S.newBadges = S.newBadges || []).push(`${SKILLS[k].ic} ${SKILLS[k].name} skill: level ${after}`); log(`${SKILLS[k].name} skill reached level ${after}: ${SKILLS[k].perk.toLowerCase()}.`, 'mile'); }
 }
 function skillWeek(notes, gig){
   if (S.practice) return;
@@ -423,11 +423,11 @@ function bizCard(){
 function startBiz(k){
   const b = BIZ[k], c = cost(b.cost);
   if (S.money < c) return toast(`You need ${fmt(c)} on hand.`);
-  S.money -= c; S.biz = { type:k, weeks:0, earned:0, paidYear:null, dep:1, lease: k === 'wheat' ? LEASE_WEEKS : null }; adj({happy:3}); log(`Started a business: ${b.name.toLowerCase()}.`);
+  S.money -= c; S.biz = { type:k, weeks:0, earned:0, paidYear:null, dep:1, lease: k === 'wheat' ? LEASE_WEEKS : null }; adj({happy:3}); log(`Started a business: ${b.name.toLowerCase()}.`, 'money');
   save(); render(); toast(`${b.ic} You started a ${b.name.toLowerCase()}!`);
 }
 function sellBiz(){
-  const v = bizValue(), b = BIZ[S.biz.type]; S.money += v; log(`Sold the ${b.name.toLowerCase()} for ${fmt(v)}.`); S.biz = null; save(); render(); toast(`Sold for ${fmt(v)}`);
+  const v = bizValue(), b = BIZ[S.biz.type]; S.money += v; log(`Sold the ${b.name.toLowerCase()} for ${fmt(v)}.`, 'money'); S.biz = null; save(); render(); toast(`Sold for ${fmt(v)}`);
 }
 
 /* ============================================================

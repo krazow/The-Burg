@@ -42,7 +42,15 @@ input[type=text]:focus{outline:none;border-color:var(--wheat-d)}
 .btn.primary:active{transform:translateY(2px);box-shadow:0 1px 0 var(--barn-d)}
 .btn.ghost{border:2px solid var(--line);background:var(--paper)}
 .btn[disabled]{opacity:.45;pointer-events:none}
-.best{margin-top:18px;font-size:14px;color:var(--muted)}
+.btn.bigstart{padding:18px;font-size:19px;margin-top:16px}
+.moreopts{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;margin-top:12px;padding:10px 14px;border:2px dashed var(--line);border-radius:14px;background:var(--paper);text-align:left;min-height:48px}
+.moreopts .s{display:block;font-size:13px;color:var(--muted);font-weight:400;margin-top:2px}.moreopts .caret{font-size:18px;color:var(--muted)}
+.morepanel{border:1.5px solid var(--line);border-top:0;border-radius:0 0 14px 14px;padding:0 10px 10px;margin-top:-6px;background:#fffaf0}
+.rec{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0;background:#fff;border-radius:10px;overflow:hidden}
+.rec caption{text-align:left;font-size:13px;color:var(--muted);padding:2px 0 6px}
+.rec th,.rec td{border-bottom:1px solid var(--line);padding:8px 4px;text-align:center}.rec th[scope=row],.rec thead th:first-child{text-align:left}
+.rec thead th{font-size:12px;color:var(--muted);font-weight:700}
+.wnlist{padding-left:4px;list-style:none;margin:8px 0}.wnlist li{margin:8px 0;line-height:1.4;font-size:15px}
 
 /* Game header */
 .top{background:var(--barn);color:#fff;padding:calc(var(--safe-t) + 12px) 16px 12px;position:sticky;top:0;z-index:5}
@@ -160,7 +168,7 @@ main{flex:1;padding:14px 14px calc(var(--safe-b) + 200px)}
 .chint{font-size:13.5px;color:var(--barn);font-weight:700}
 @media (prefers-reduced-motion: reduce){.cring.tap,.cfinger{animation:none}}
 .sm,.chip,.maptog button,.maptabs button,.sumchip,.totop,.weekstrip,.statbtn,.toc button{min-height:44px}
-.sm{min-width:44px}.slotbtns .sm{min-width:48px}
+.sm,.chip{min-width:44px}.slotbtns .sm{min-width:48px}
 .triph{margin:12px 0 4px;font-size:15px}
 .stopbtn{display:block;width:100%;text-align:left;border:2px solid var(--line);background:#fff;border-radius:12px;padding:9px 12px;margin:6px 0;min-height:48px}
 .stopbtn .t{display:block;font-weight:700;font-size:15px}.stopbtn .s{display:block;font-size:13px;color:var(--muted);margin-top:2px}
@@ -194,6 +202,7 @@ main{flex:1;padding:14px 14px calc(var(--safe-b) + 200px)}
 @media (prefers-reduced-motion: reduce){.evbadge.fresh circle{animation:none}}
 .code{width:100%;font:12px/1.35 ui-monospace,Menlo,Consolas,monospace;border:2px solid var(--line);border-radius:10px;padding:8px;background:#fff;color:var(--soil);word-break:break-all;resize:vertical}
 .warnline{color:var(--barn-d);font-weight:600}
+.outbtn{margin-top:10px;padding:10px 12px}.outbtn small{display:block;font-size:13px;font-weight:600;margin-top:2px}
 .score{font-size:64px;font-weight:800;text-align:center;color:var(--barn);font-family:Georgia,serif}
 </style>
 </head>
@@ -209,6 +218,7 @@ main{flex:1;padding:14px 14px calc(var(--safe-b) + 200px)}
 <script src="js/turn.js"></script>
 <script src="js/events.js"></script>
 <script src="js/features.js"></script>
+<script src="js/outabout.js"></script>
 <script src="js/maps.js"></script>
 <script src="js/help.js"></script>
 <script src="js/boot.js"></script>

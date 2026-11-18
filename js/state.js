@@ -139,8 +139,10 @@ function migrate(s){
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
   // Around the region (0.3.0): older lives count as just serviced and checked, with this year's tabs paid
   if (s.goals && !s.goalAt) s.goalAt = Object.fromEntries(s.goals.map(id => [id, 0]));
-  const r = { goalAt:{}, skills:{}, biz:null, weekly:null, rng:null, rngEv:null, carpoolJob:s.jobId ?? null, hustleLast:s.turn || 0, highWater:null, recentF:[], gen:1, badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false, bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0, carpool:false, hustleWeeks:0, scoreQ:null, trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, dentist:s.turn || 0, stopLast:{}, tabsYear:new Date(s.date || Date.now()).getFullYear() };
+  const r = { goalAt:{}, skills:{}, biz:null, weekly:null, rng:null, rngEv:null, carpoolJob:s.jobId ?? null, hustleLast:s.turn || 0, highWater:null, recentF:[], gen:1, badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false, bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0, carpool:false, hustleWeeks:0, scoreQ:null, trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, dentist:s.turn || 0, stopLast:{}, out:null, tabsYear:new Date(s.date || Date.now()).getFullYear() };
   for (const k in r) if (s[k] === undefined) s[k] = r[k];
+  for (const [k, v] of Object.entries(EVENT_STATE())) if (s[k] === undefined) s[k] = v;
+  if (!s.out || typeof s.out !== 'object') s.out = outDefault();   // Out and about (#50)
   if (HOMES[s.home] && HOMES[s.home].own && !s.mortgage) s.mortgage = HOMES[s.home].cost;
   // weekly-challenge lives from before separate event dice get their own event dice (R8)
   if (s.rng != null && s.rngEv == null && s.weekly) s.rngEv = weekSeed(`${s.weekly}:events`);
@@ -169,7 +171,17 @@ function adj(o){
   if (o.money) S.money += o.money;
   ['happy','health','community'].forEach(k => { if (o[k]) S[k] = clamp(S[k] + o[k]); });
 }
-function log(msg){ S.log.unshift({d: dateLabel(), m: msg}); if (S.log.length > 120) S.log.length = 120; }
+// G8: each Journal entry has a kind (k) for the filter chips: 'money', 'ev' (events), 'mile' (milestones) or 'trip'.
+// Callers can pass one; otherwise (and for entries from older saves) simple text rules decide.
+function logKind(m){
+  m = String(m || '');
+  if (/^Trip to /.test(m)) return 'trip';
+  if (/^(Earned a badge|📋 Report card|Helped the town|Completed the challenge|Graduated with)|skill reached level/.test(m)) return 'mile';
+  if (typeof STORY_EVENTS !== 'undefined' && STORY_EVENTS.some(e => m.startsWith(e.title + ':'))) return 'mile';
+  if (/^(Hired as|Applied for|Quit the job|Retired at|Moved into|Drove home|Started a business|Sold the|Made the last truck payment|Paid off the)/.test(m)) return 'money';
+  return 'ev';
+}
+function log(msg, k){ S.log.unshift({d: dateLabel(), m: msg, k: k || logKind(msg)}); if (S.log.length > 120) S.log.length = 120; }
 /* ---------- save slots: up to 5 lives, each auto-saving to its own slot ---------- */
 const SLOTS_KEY = 'theburg.slots.v1', SLOT_COUNT = 5;
 function slots(){
@@ -249,7 +261,7 @@ function seasonWeek(notes){
   S.sgoal.prog++;
   if (S.sgoal.prog >= g.need) {
     S.sgoal.done = true; adj(g.fx); S.seasonWins = (S.seasonWins || 0) + 1;
-    notes.push(`${g.ic} Town goal done: ${g.name}! ${g.done}`); log(`Helped the town: ${g.name.toLowerCase()}.`);
+    notes.push(`${g.ic} Town goal done: ${g.name}! ${g.done}`); log(`Helped the town: ${g.name.toLowerCase()}.`, 'mile');
   }
 }
 function seasonLine(){

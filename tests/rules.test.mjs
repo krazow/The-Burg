@@ -594,7 +594,7 @@ await t.check('R5: heirs get Roman numerals within 20 characters, and the name c
 
 await t.check('R8: in the weekly challenge, events come in the same weeks whatever you choose', async () => {
   const r = await ev(() => { const run = (pickLast, focus) => { localStorage.clear(); newGame('W', 'half', 0, { weekly: '2026-W47' }); S.jobId = 'farmhand'; S.focus = focus;
-      const out = []; for (let i = 0; i < 26; i++) { if (focus === 'hustle' && i % 3 === 0) planTrip('wallawalla', ['movies']);
+      const out = []; for (let i = 0; i < 26; i++) {   // no trips: a trip week adds the chance of a road event, by design
         const res = weekTick(false); if (res.ev) { const ch = res.ev.choices().filter(c => !c.if || c.if()); ch[pickLast ? ch.length - 1 : 0].go(); out.push(`${S.turn}:${res.ev.title}`); } }
       return { weeks: out.map(x => x.split(':')[0]).join(), titles: out, rng: S.rng, rngEv: S.rngEv }; };
     const a = run(false, 'rest'), b = run(true, 'hustle');
@@ -693,6 +693,222 @@ await t.check('B10: Life Score so far shows whether net worth is on track for th
     S.money = 1000; showScoreNow(); const b = document.querySelector('#sheet').textContent; closeSheet(); return { a, b }; });
   assert(/Net worth on track\?/.test(r.a) && /On track/.test(r.a) && /50% of the way/.test(r.a), r.a.slice(0, 400));
   assert(/% there/.test(r.b), 'a low net worth should show how far along it is');
+});
+
+// ---- event pacing by category (G5) and the road and work events ----
+await t.check('events are paced by category: town 14%, road 8% (long commute or trip), work 8% (a job); Hard ×1.25', async () => {
+  const r = await ev(() => {
+    const odds = (extra, trip = null) => { fresh('two', extra); return eventOdds(trip); };
+    const o = {
+      none: odds({}), farm: odds({ jobId: 'farmhand' }), rn: odds({ jobId: 'rn' }), dayton: odds({ jobId: 'hardware' }),
+      daytonTrip: odds({ jobId: 'hardware' }, { city: 'kennewick' }), retired: odds({ retired: true }),
+      hard: odds({ jobId: 'rn', mode: 'hard' })
+    };
+    // over many weeks, each category comes at its own rate, and never more than one event a week
+    fresh('two', { jobId: 'rn' }); const n = 6000, seen = { town: 0, road: 0, work: 0 };
+    for (let i = 0; i < n; i++) { const e = rollEvent(4, null); if (e) seen[evCat(e)]++; }
+    fresh('two', {}); let noJobRoadWork = 0;
+    for (let i = 0; i < 2000; i++) { const e = rollEvent(4, null); if (e && evCat(e) !== 'town') noJobRoadWork++; }
+    const groups = JOBS.filter(j => !JOB_GROUP[j.id]).map(j => j.id);
+    return { o, rate: Object.fromEntries(Object.entries(seen).map(([k, v]) => [k, v / n])), noJobRoadWork, groups };
+  });
+  const { o } = r, eq = (x, y) => Math.abs(x - y) < 1e-9;
+  assert(eq(o.none.town, .14) && o.none.road === 0 && o.none.work === 0, `no job: ${JSON.stringify(o.none)}`);
+  assert(o.farm.road === 0 && eq(o.farm.work, .08), `Waitsburg job: ${JSON.stringify(o.farm)}`);
+  assert(eq(o.rn.road, .08) && eq(o.rn.work, .08), `Walla Walla commute: ${JSON.stringify(o.rn)}`);
+  assert(o.dayton.road === 0 && eq(o.daytonTrip.road, .08), `an 11-mile commute has no road events unless you take a trip: ${JSON.stringify([o.dayton, o.daytonTrip])}`);
+  assert(o.retired.work === 0 && o.retired.road === 0, `retired: ${JSON.stringify(o.retired)}`);
+  assert(eq(o.hard.town, .175) && eq(o.hard.road, .1) && eq(o.hard.work, .1), `Hard: ${JSON.stringify(o.hard)}`);
+  assert(Math.abs(r.rate.town - .14) < .02 && Math.abs(r.rate.road - .08) < .015 && Math.abs(r.rate.work - .08) < .015, `rates ${JSON.stringify(r.rate)}`);
+  assert(r.noJobRoadWork === 0, 'road or work events came with no job and no trip');
+  assert(!r.groups.length, `jobs without a job group: ${r.groups}`);
+});
+
+await t.check('road events happen in the town you drive to, work events at your workplace', async () => {
+  const r = await ev(() => {
+    const place = t => eventPlace(EVENTS.find(e => e.title === t));
+    fresh('two', { jobId: 'rn' }); rollEvent(4, null); const commute = place('Flat tire on US-12'), work = place('Holiday party');
+    fresh('two', { jobId: 'farmhand' }); rollEvent(4, { city: 'richland' }); const trip = place('Flat tire on US-12'), farmWork = place('Holiday party');
+    const tour = EVENTS.find(e => e.title === 'Hanford history tour').when(4);
+    fresh('two', { jobId: 'farmhand' }); rollEvent(4, null); const noTour = EVENTS.find(e => e.title === 'Hanford history tour').when(4);
+    fresh('two', { jobId: 'rn' }); const cats = new Set(); for (let i = 0; i < 300; i++) { const e = pickEvent(4, 'road'); if (e) cats.add(evCat(e)); }
+    return { commute, work, trip, farmWork, tour, noTour, cats: [...cats] };
+  });
+  assert(r.commute.join() === 'R,wallawalla' && r.work.join() === 'R,wallawalla', `commute ${r.commute}, work ${r.work}`);
+  assert(r.trip.join() === 'R,richland' && r.farmWork.join() === 'T,fields', `trip ${r.trip}, farm work ${r.farmWork}`);
+  assert(r.tour && !r.noTour, 'the Hanford tour should need a Richland trip');
+  assert(r.cats.join() === 'road', `road picks: ${r.cats}`);
+});
+
+await t.check('road and work events: prices rise, and skills, remote days, carpools and plans change them', async () => {
+  const r = await ev(() => {
+    const E = t => EVENTS.find(e => e.title === t), open = e => e.choices().filter(c => !c.if || c.if());
+    // cost(): a ticket at twice the prices costs twice as much, and the label says so
+    fresh('two', { jobId: 'rn', money: 5000 }); S.col = 2; const tk = open(E('Speeding ticket'))[0]; let m = S.money; tk.go(); const ticket = { label: tk.label, paid: m - S.money };
+    // Mechanic skill opens changing a flat yourself, and practices it
+    fresh('two', { jobId: 'rn' }); const flat0 = open(E('Flat tire on US-12')).length; S.skills = { mechanic: 8 }; const flat1 = open(E('Flat tire on US-12')); flat1[0].go();
+    // carpool: the late-buddy event needs one, and leaving ends it
+    fresh('two', { jobId: 'rn', community: 40 }); const noPool = E('Your carpool buddy is always late').when(4); S.carpool = true;
+    const pool = E('Your carpool buddy is always late').when(4); open(E('Your carpool buddy is always late'))[1].go();
+    // remote-day trial: office jobs with a long drive; saves 40% of a month's commute gas (remote days already counted)
+    fresh('two', { jobId: 'insure' }); const nearOffice = E('A remote-day trial').when(0);
+    fresh('two', { jobId: 'loan', money: 0 }); const farOffice = E('A remote-day trial').when(0); open(E('A remote-day trial'))[0].go();
+    const gas = commuteCost(62, CARS.beater, job()) * .4, saved = S.money;
+    // the better health plan halves doctor bills; a season pass makes powder days free
+    fresh('two', { jobId: 'rn', money: 5000, health: 30 }); open(E('Health plan choice'))[1].go(); m = S.money; open(E('Feeling run down'))[0].go(); const doc = m - S.money;
+    S.date = new Date(2027, 9, 10).getTime(); S.skiPass = skiSeason(); S.date = new Date(2028, 0, 10).getTime(); const passOk = skiPass(); m = S.money; const pd = open(E('Powder day at Bluewood'))[0]; const rnd = Math.random; Math.random = () => .5; pd.go(); Math.random = rnd; const ski = { label: pd.label, paid: m - S.money };
+    // a recruiter makes your next application a sure thing; a clearance-sale outfit helps a little
+    fresh('two', { jobId: 'farmhand', community: 40 }); open(E('A recruiter calls'))[0].go(); const old = Math.random; Math.random = () => .999;
+    render(); apply('scientist'); Math.random = old; closeSheet(); const hired = S.jobId;
+    return { ticket, flat0, flat1: flat1.length, noPool, pool, nearOffice, farOffice, gas, saved, doc, passOk, ski, hired };
+  });
+  assert(near(r.ticket.paid, 320) && /\$320/.test(r.ticket.label), `ticket ${JSON.stringify(r.ticket)}`);
+  assert(r.flat0 === 1 && r.flat1 === 2, `flat tire choices ${r.flat0} → ${r.flat1}`);
+  assert(!r.noPool && r.pool, 'the carpool event should need a carpool');
+  assert(!r.nearOffice && r.farOffice && near(r.saved, Math.round(r.gas), 0.001) && r.gas > 0, `remote trial ${JSON.stringify(r)}`);
+  assert(near(r.doc, 175), `doctor with better coverage ${r.doc}`);
+  assert(r.passOk && Math.abs(r.ski.paid) < 0.01, `powder day with a pass ${JSON.stringify(r.ski)}`);
+  assert(/season pass/.test(r.ski.label), `powder day label ${r.ski.label}`);
+  assert(r.hired === 'scientist', `a recruiter's sure thing: ${r.hired}`);
+});
+
+await t.check('events keep the skill, carpool and promotion state they change, and older saves get it', async () => {
+  const r = await ev(() => {
+    const E = t => EVENTS.find(e => e.title === t);
+    fresh('two', { jobId: 'rn', community: 40, carpool: true }); E('Your carpool buddy is always late').choices()[1].go(); const carpool = S.carpool;
+    fresh('two', { jobId: 'cellar', jobMonths: 20 }); const r0 = S.raise; E('A promotion offer').choices()[0].go(); const r1 = S.raise;
+    const h0 = S.happy; S.focus = 'rest'; S.noEvents = true; eventUpkeep(); const stress = h0 - S.happy;
+    fresh('two', { jobId: 'cellar', skills: {} }); E('Train the new hire').choices()[0].go(); const people = S.skills.people;
+    const old = { turn: 5, date: new Date(2028, 3, 1).getTime() }; migrate(old);
+    return { carpool, r0, r1, stress, people, old: { hp: old.healthPlan, pass: old.skiPass, hire: old.hireBy, promo: old.promo } };
+  });
+  assert(r.carpool === false, 'leaving the carpool should end it');
+  assert(near(r.r1, r.r0 * 1.12) && near(r.stress, 0.3 * 12 / 52), `promotion ${JSON.stringify(r)}`);
+  assert(r.people === 2, `mentoring should practice People twice: ${r.people}`);
+  assert(r.old.hp === null && r.old.pass === null && r.old.hire === -1 && r.old.promo === null, JSON.stringify(r.old));
+});
+
+// ---- review gaps (G6, G8, R7) ----
+await t.check('Journal entries get a kind when logged, and older entries are sorted by their text', async () => {
+  const r = await ev(() => { fresh('two'); S.log = []; log('Something odd happened'); log('Hired as Diner cook in Waitsburg!'); log('Picked by hand', 'mile');
+    return { stored: S.log.map(e => e.k), kinds: ['Trip to Pasco: taquerias.', 'Earned a badge: Saver.', 'Cook skill reached level 2: food costs.', 'Helped the town: stock the food bank.',
+      'Graduated with a Trade certificate.', 'The porch is sagging: Two weekends.', 'Made the last truck payment.', 'Started a business: food truck.', 'Windstorm: The roof held.', 'Completed the challenge: Single parent.'].map(logKind) }; });
+  assert(r.stored.join() === 'mile,money,ev', `stored ${r.stored}`);
+  assert(r.kinds.join() === 'trip,mile,mile,mile,mile,mile,money,money,ev,mile', `kinds ${r.kinds}`);
+});
+
+await t.check('weekly-challenge bests from earlier weeks are dropped when the game loads; other bests stay', async () => {
+  const r = await ev(() => { store.set(BEST_KEY, { two: 60, 'sc-lab': 70, 'wk-2020-W10': 90, ['wk-' + isoWeek()]: 55 }); pruneWeekly(); return store.get(BEST_KEY); });
+  assert(r.two === 60 && r['sc-lab'] === 70 && !('wk-2020-W10' in r) && Object.keys(r).length === 3, JSON.stringify(r));
+});
+
+await t.check('What\'s new ignores beta tags, compares versions as numbers, and lists the 0.2.0 features', async () => {
+  const r = await ev(() => ({ v: baseVersion(), n: (WHATS_NEW['0.2.0'] || []).length, order: verNum('0.10.0') > verNum('0.9.9') && verNum('0.2.0-beta.3') === verNum('0.2.0') }));
+  assert(/^\d+\.\d+\.\d+$/.test(r.v) && r.n >= 12 && r.order, JSON.stringify(r));
+});
+
+// ---- Out and about (#48–#54): Waitsburg's businesses ----
+await t.check('no real business names appear anywhere in js/ or index.html (stand-in names only)', async () => {
+  const fs = await import('node:fs');
+  const REAL = ['Bar Bacetto', 'Bacetto', 'Wolfling', 'Atelier Waitsburg', 'Royal Block', 'Laht Neppur', 'Whiskey Canyon', "Mr. C's", "Mr C's", 'Ten Ton',
+    'Waitsburg Grocery', 'Simply Sawdust', 'Gaudy Gals', "Nancy's Dream", 'Blush Salon', 'Banner Bank', 'Waitsburg Clinic', 'The Times', 'Stone and Sky',
+    'Hubbard Law', 'Karl Law', 'McGregor', 'Affordable Concrete', 'Chisel Point', "Tim's Carpentry", 'L-C Applicators'];
+  const files = ['index.html', ...fs.readdirSync('js').filter(f => f.endsWith('.js')).map(f => 'js/' + f)];
+  const hits = [];
+  for (const f of files) { const s = fs.readFileSync(f, 'utf8').toLowerCase(); for (const n of REAL) if (s.includes(n.toLowerCase())) hits.push(`${n} in ${f}`); }
+  assert(!hits.length, hits.join('; '));
+});
+
+await t.check('places keep their real open days and seasons: winter breaks, the grill, the garden season, Tonnage\'s jam weeks', async () => {
+  const r = await ev(() => { fresh('two', { ageMonths: 30 * 12, money: 5000 });
+    const at = (m, turn = 0) => { S.date = new Date(2027, m, 10).getTime(); S.turn = turn; };
+    const open = id => !placeClosed(placeById(id));
+    at(0); const janShop = open('shavings'), janJunque = open('junque'), janGarden = open('garden'), janGrill = actBlocked(placeById('lad'), actOf(placeById('lad'), 'grill'));
+    at(2); const marShop = open('shavings');
+    at(3); const aprGarden = open('garden');
+    at(7); const augGarden = open('garden'), augGrill = actBlocked(placeById('lad'), actOf(placeById('lad'), 'grill')), augPint = open('lad');
+    at(7, 10); const jamEven = open('tonnage'); at(7, 11); const jamOdd = open('tonnage'); at(4, 11); const festival = open('tonnage');
+    return { janShop, janJunque, janGarden, janGrill, marShop, aprGarden, augGarden, augGrill, augPint, jamEven, jamOdd, festival, checked: PLACES_CHECKED }; });
+  assert(!r.janShop && !r.janJunque && r.marShop, `winter breaks: ${JSON.stringify(r)}`);
+  assert(!r.janGarden && r.aprGarden && !r.augGarden, 'the garden center is a spring business');
+  assert(/Only/.test(r.janGrill) && r.augGrill === '' && r.augPint, `grill season: ${r.janGrill} / ${r.augGrill}`);
+  assert(r.jamEven && !r.jamOdd && r.festival, 'Tonnage opens only on jam weeks (every other week) and festival days');
+  assert(/^\d{4}-\d{2}-\d{2}$/.test(r.checked), 'places need a last-checked date');
+});
+
+await t.check('drinks are 21 and over: hidden and refused before 21', async () => {
+  const r = await ev(() => { fresh('two', { ageMonths: 19 * 12, money: 5000 }); S.date = new Date(2027, 5, 10).getTime(); S.turn = 2;
+    const young = { pasta: shownActs(placeById('pasta')).map(a => a.id), brick: visit('brick', 'night').err, gather: shownActs(placeById('gather')).length, grill: visit('lad', 'grill').err || 'ok' };
+    S.ageMonths = 21 * 12; const old = { pasta: shownActs(placeById('pasta')).map(a => a.id), brick: visit('brick', 'night').err || 'ok' };
+    return { young, old }; });
+  assert(r.young.pasta.join() === 'dinner' && r.young.brick === '21 and over' && r.young.gather === 0 && r.young.grill === 'ok', JSON.stringify(r.young));
+  assert(r.old.pasta.join() === 'dinner,wine' && r.old.brick === 'ok', JSON.stringify(r.old));
+});
+
+await t.check('visits: 2 a week, once per place, half as special within 4 weeks, capped per stat, and they cost money', async () => {
+  const r = await ev(() => { fresh('two', { ageMonths: 30 * 12, money: 5000, happy: 50, health: 50, community: 30 }); S.date = new Date(2027, 5, 10).getTime(); S.turn = 2;
+    const m0 = S.money, h0 = S.happy; const a = visit('pasta', 'dinner'); const paid = m0 - S.money, gain = S.happy - h0;
+    const again = visit('pasta', 'wine').err; visit('bean', 'coffee'); const third = visit('mrq', 'bbq').err;
+    S.turn = 3; const h1 = S.happy; visit('pasta', 'dinner'); const half = S.happy - h1;
+    S.turn = 9; S.happy = 50; visit('pasta', 'dinner'); visit('rouge', 'spa'); const capped = S.out.gain.happy;
+    const info = visit('bank', 'banker');
+    return { a: !!a.msg, paid, gain, again, third, half, capped, info: info.info, n: S.out.n }; });
+  assert(r.a && near(r.paid, 45) && near(r.gain, 6 * 0.28), `first dinner: paid ${r.paid}, +${r.gain}`);
+  assert(/this week/.test(r.again) && /2 visits/.test(r.third), `limits: ${r.again} / ${r.third}`);
+  assert(near(r.half, 3 * 0.28), `a repeat within 4 weeks should be half: ${r.half}`);
+  assert(r.capped <= 3 + 1e-9, `visits added ${r.capped} happiness in one week (cap 3)`);
+  assert(r.info === 'bank' && r.n === 2, 'talking to the banker should not use a visit');
+});
+
+await t.check('visits are saved: new lives and older saves get them, and they ride along in slots', async () => {
+  const r = await ev(() => { const old = migrate({ turn: 5 }); fresh('two', { ageMonths: 30 * 12 }); S.date = new Date(2027, 5, 10).getTime();
+    const fresh0 = JSON.stringify(S.out); visit('bean', 'coffee'); save(); const saved = slots()[S.slot].out;
+    return { old: old.out, fresh0, saved }; });
+  assert(r.old && r.old.n === 0 && r.old.will === false, `migrate: ${JSON.stringify(r.old)}`);
+  assert(JSON.parse(r.fresh0).n === 0, 'newGame needs Out and about defaults');
+  assert(r.saved && r.saved.n === 1 && r.saved.last.bean != null, `slot: ${JSON.stringify(r.saved)}`);
+});
+
+await t.check('little extras: a haircut helps applications, a Tattler ad raises hustle pay, a woodworking class eases a rut', async () => {
+  const r = await ev(() => { fresh('two', { ageMonths: 30 * 12, money: 5000 }); S.date = new Date(2027, 5, 10).getTime(); S.turn = 4;
+    const look0 = outLookBonus(); visit('rouge', 'cut'); const look1 = outLookBonus(); S.turn = 7; const look2 = outLookBonus();
+    S.focus = 'hustle'; visit('tattler', 'ad'); const boost = outAdBoost();
+    S.streakF = 'rest'; S.streakN = 9; S.turn = 20; visit('shavings', 'class'); const rut = S.streakN;
+    return { look0, look1, look2, boost, rut }; });
+  assert(r.look0 === 0 && r.look1 > 0 && r.look2 === 0, `look ${r.look0}/${r.look1}/${r.look2}`);
+  assert(near(r.boost, 1.15) && r.rut === 7, `ad ${r.boost}, rut ${r.rut}`);
+});
+
+await t.check('jobs at local businesses: balanced pay, school where needed, and a spot on the town map', async () => {
+  const r = await ev(() => { const ids = ['diner', 'barista', 'grocer', 'reporter', 'teller', 'apprentice', 'medasst', 'agtech'];
+    const out = ids.map(id => { const j = jobById(id); fresh('two', { jobId: id }); const spot = townPlaces().find(p => p.work); return { id, pay: j.pay, edu: j.edu, where: j.where, place: !!placeById(j.place), city: j.city, spot: spot && spot.k }; });
+    const edu0 = JOBS.filter(j => j.edu === 0 && !ids.includes(j.id)).map(j => j.pay), edu1 = JOBS.filter(j => j.edu === 1 && !ids.includes(j.id)).map(j => j.pay);
+    return { out, lo0: Math.min(...edu0), hi0: Math.max(...edu0), lo1: Math.min(...edu1), hi1: Math.max(...edu1), cook: jobById('diner').title }; });
+  assert(r.cook === 'Line cook', `diner cook should be a line cook: ${r.cook}`);
+  for (const j of r.out) {
+    assert(j.city === 'waitsburg' && j.where && j.place && j.spot, `${j.id}: ${JSON.stringify(j)}`);
+    const [lo, hi] = j.edu === 0 ? [r.lo0 - 300, r.hi0] : [r.lo1, r.hi1];
+    assert(j.pay >= lo && j.pay <= hi, `${j.id} pays ${j.pay}, outside ${lo}–${hi}`);
+  }
+  assert(r.out.find(j => j.id === 'medasst').edu >= 1 && r.out.find(j => j.id === 'agtech').edu >= 1, 'medical assistant and ag tech need school');
+  assert(r.out.find(j => j.id === 'diner').spot === 'gulch', 'the line cook works at the sports bar pin');
+});
+
+await t.check('business events: at their places, on their days; the doctor and the inheritance moved to the clinic and the law office', async () => {
+  const r = await ev(() => { fresh('life', { ageMonths: 30 * 12, money: 5000 });
+    const titles = OUT_EVENTS.map(e => e.title); const places = Object.fromEntries(titles.map(t => [t, eventPlace(EVENTS.find(e => e.title === t))]));
+    const pickN = n => { const seen = {}; for (let i = 0; i < n; i++) { const e = pickEvent(curMonth()); if (e) seen[e.title] = 1; } return seen; };
+    S.date = new Date(2027, 7, 10).getTime(); S.turn = 10; const even = pickN(600); S.turn = 11; const odd = pickN(600);
+    S.date = new Date(2027, 3, 10).getTime(); const april = pickN(600); S.ageMonths = 19 * 12; const aprYoung = pickN(600);
+    const run = EVENTS.find(e => e.title === 'Feeling run down'), inh = EVENTS.find(e => e.title === 'An inheritance');
+    return { places, jamEven: !!even['Bluegrass jam at Tonnage'], jamOdd: !!odd['Bluegrass jam at Tonnage'], fest: !!april['Grenache Fest'], festYoung: !!aprYoung['Grenache Fest'],
+      run: [run.text, run.choices()[0].label, eventPlace(run)], inh: [inh.text, eventPlace(inh)], n: titles.length }; });
+  assert(r.n >= 9, `only ${r.n} business events`);
+  assert(r.places['Cookout at Mr. Q\'s'][1] === 'mrq' && r.places['The grill is open at Laughing Lad'][1] === 'lad' && r.places['Grenache Fest'][1] === 'mainst', JSON.stringify(r.places));
+  assert(r.jamEven && !r.jamOdd, 'the jam comes every other week');
+  assert(r.fest && !r.festYoung, 'Grenache Fest is 21 and over');
+  assert(/Burg Clinic/.test(r.run[0]) && /doctor/.test(r.run[1]) && r.run[2][1] === 'mainst', JSON.stringify(r.run));
+  assert(/Mother Hubbard/.test(r.inh[0]) && r.inh[1][1] === 'mainst', JSON.stringify(r.inh));
 });
 
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });

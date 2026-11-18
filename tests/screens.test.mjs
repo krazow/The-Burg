@@ -15,6 +15,7 @@ const browser = await launch();
 const t = runner();
 fs.mkdirSync('test-results/screens', { recursive: true });
 const report = [];
+let SCREEN_COUNT = 0;
 
 // runs inside the page: checks the screen as it is right now
 const audit = () => {
@@ -81,13 +82,25 @@ for (const [label, w, h] of SIZES) {
     ['home', async () => { await page.evaluate(() => { closeHelp(); localStorage.clear(); setPref('tips', ['focus','strip','tabs']); newGame('Screens', 'two', 0); S.noEvents = true; S.jobId = 'farmhand'; tab = 'home'; render(); }); await page.click('#end'); await page.waitForTimeout(300); }],
     ['jobs', async () => { await page.click('[data-tab=jobs]'); }],
     ['life', async () => { await page.click('[data-tab=life]'); }],
+    ['life-skills-biz', async () => { await page.evaluate(() => { S.money = 9000; S.skills = { handy: 30, cook: 10, people: 50 }; S.goals = ['dog']; S.goalAt = { dog: 0 }; S.biz = { type: 'shop', weeks: 5, earned: 140, paidYear: null }; render(); }); }],
     ['journal', async () => { await page.click('[data-tab=log]'); }],
     ['home-map', async () => { await page.click('[data-tab=home]'); await page.click('#main .maptog button:nth-child(2)'); }],
-    ['region-map', async () => { await page.evaluate(() => { S.evPins = [{ t: 'Wine country weekend', ic: '🍷', m: 'R', k: 'wallawalla', turn: S.turn, r: 'A sunny afternoon.' }]; }); await page.click('.maptabs button:nth-child(2)'); await page.click('.mpin[aria-label="Walla Walla"]'); }],
+    ['main-street', async () => { await page.click('.mpin[aria-label="Main Street"]'); await page.evaluate(() => document.querySelector('.msmap').scrollIntoView({ block: 'center' })); }],
+    ['business-card', async () => { await page.evaluate(() => { S.ageMonths = 25 * 12; bizSheet('pasta'); }); }],
+    ['region-map', async () => { await page.evaluate(() => { closeSheet(); S.evPins = [{ t: 'Wine country weekend', ic: '🍷', m: 'R', k: 'wallawalla', turn: S.turn, r: 'A sunny afternoon.' }]; }); await page.click('.maptabs button:nth-child(2)'); await page.click('.mpin[aria-label="Walla Walla"]'); }],
     ['trip', async () => { await page.evaluate(() => { S.date = new Date(2027, 5, 7).getTime(); tripSheet('wallawalla'); }); await page.click('#modal [data-stop="market"]'); }],
     ['menu', async () => { await page.evaluate(() => closeSheet()); await page.click('#main .maptog button:nth-child(1)'); await page.click('[data-tab=menu]'); await page.waitForTimeout(300); }],
-    ['tutorial', async () => { await page.evaluate(() => { closeSheet(); startTutorial(); }); await page.waitForTimeout(500); await page.click('#cnext'); await page.waitForTimeout(600); }]
+    ['tutorial', async () => { await page.evaluate(() => { closeSheet(); startTutorial(); }); await page.waitForTimeout(500); await page.click('#cnext'); await page.waitForTimeout(600); }],
+    // the newer pop-ups (G3): life goals, the end screen, the title screen's options, challenges, weekly challenge, records and What's new
+    ['life-goals', async () => { await page.evaluate(() => { endTutorial(false); $('#toast').classList.add('hidden'); tab = 'life'; render(); }); await page.click('#goals'); }],
+    ['end', async () => { await page.evaluate(() => { closeSheet(); S.badges = { job: 1, dog: 3 }; finish('You chose to wrap things up.'); }); }],
+    ['title-options', async () => { await page.evaluate(() => { closeSheet(); S = null; useDice(); renderTitle(); }); await page.click('#moreopts'); }],
+    ['challenges', async () => { await page.click('#chal'); }],
+    ['weekly', async () => { await page.evaluate(() => closeSheet()); await page.click('#weekly'); }],
+    ['records', async () => { await page.evaluate(() => { closeSheet(); store.set(CHALLENGE_KEY, { farm: 1 }); const b = store.get(BEST_KEY) || {}; b['half-hard'] = 41; b['sc-farm'] = 77; b['wk-' + isoWeek()] = 63; store.set(BEST_KEY, b); renderTitle(); }); await page.click('#records'); }],
+    ['whats-new', async () => { await page.evaluate(() => { closeSheet(); store.set(SEEN_KEY, '0.1.0'); whatsNew(); }); }]
   ];
+  SCREEN_COUNT = screens.length;
   for (const [screen, go] of screens) {
     await go();
     await page.waitForTimeout(250);
@@ -96,7 +109,7 @@ for (const [label, w, h] of SIZES) {
     const where = `${label} ${w}×${h} / ${screen}`;
     if (a.overflow > 1) problems.overflow.push(`${where}: ${a.overflow}px too wide`);
     for (const k of ['unnamed', 'tiny', 'smallText', 'contrast', 'bars', 'leftover']) for (const x of a[k]) problems[k].push(`${where}: ${x}`);
-    if (['home', 'jobs', 'life'].includes(screen) && a.room < 0.45) problems.room.push(`${where}: ${Math.round(a.room * 100)}% of the screen`);
+    if (['home', 'jobs', 'life', 'life-skills-biz'].includes(screen) && a.room < 0.45) problems.room.push(`${where}: ${Math.round(a.room * 100)}% of the screen`);
   }
   if (errors.length) problems.unnamed.push(`${label}: page error ${errors[0]}`);
   await page.evaluate(() => endTutorial(false)).catch(() => {});
@@ -210,7 +223,7 @@ await t.check('text contrast meets WCAG AA (4.5:1, or 3:1 for large text)', asyn
   await ctx.close();
 }
 
-const md = `## Screens and accessibility\n\n${SIZES.length} screen sizes × 10 screens, plus keyboard and screen-reader checks.\nScreenshots: \`test-results/screens/\`.\n`;
+const md = `## Screens and accessibility\n\n${SIZES.length} screen sizes × ${SCREEN_COUNT} screens, plus keyboard and screen-reader checks.\nScreenshots: \`test-results/screens/\`.\n`;
 console.log(md);
 if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md + '\n');
 
