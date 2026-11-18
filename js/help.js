@@ -25,6 +25,7 @@ function guideHTML(){
       <p>You're 18 and just moved into a rented room above Main Street in <b>Waitsburg, WA</b>, with $1,500, a 1998 pickup and a high school diploma. Make the best life you can before the game ends.</p>
       <p>Choose a game length when you start a new life:</p>
       <table><tr><th>Length</th><th>How long</th><th>Net worth for full points</th></tr>${lenRows}</table>
+      <p>Backgrounds and modes are under <b>More options</b>, below Start.</p>
       <p><b>How your life begins:</b> ${Object.values(BACKGROUNDS).map(b => `${b.ic} <b>${b.name}</b> (${b.hint.toLowerCase()}): ${b.desc}`).join(' ')}</p>
       <p><b>Mode:</b> ${Object.values(MODES).map(m => `${m.ic} <b>${m.name}</b>: ${m.desc}`).join(' ')} Best scores are kept separately for each mode.</p>
       <p><b>First moves:</b> find a job on the <b>Jobs</b> tab, pick a weekly focus on <b>Home</b>, and tap <b>End Week</b>. Want to see it done? Play the <b>gameplay tutorial</b> at the top of this page.</p>`],
@@ -110,14 +111,14 @@ function guideHTML(){
       <p>Finishing a life frees its slot. Saves live on this device and in this browser.</p>
       <p><b>Menu → 📤 Back up or restore:</b> download a backup file or copy a backup code, then on another device use <b>📥 Restore from a backup</b> (on the title screen or in the same menu). You can add the backup's lives to empty slots or replace all your lives.</p>`],
     ['score', '🏆 The Life Score', `
-      <p><b>Life Score so far:</b> Home shows the score you'd get if the game ended today. Tap it for the breakdown and a tip for your weakest part. A report card goes in your Journal every 13 weeks.</p>
+      <p><b>Life Score so far:</b> Home shows the score you'd get if the game ended today. Tap it for the breakdown and a tip for your weakest part. A report card goes in your Journal every 13 weeks. In the <b>📜 Journal</b>, the chips at the top show just Money, Events, Milestones (badges, skills, report cards, town goals, stories) or Trips.</p>
       <p>At the end, your life gets a score out of 100 from four parts:</p>
       <table><tr><th>Part</th><th>Measured as</th><th>Weight</th></tr>
       <tr><td>Happiness</td><td>Your average over the game: 30 → 0 points, 90 → 100</td><td>30%</td></tr>
       <tr><td>Health</td><td>Your average: 40 → 0, 95 → 100</td><td>20%</td></tr>
       <tr><td>Community</td><td>Where you end: 10 → 0, 90 → 100</td><td>20%</td></tr>
       <tr><td>Net worth</td><td>Against the target for your game length (in 2027 dollars)</td><td>30%</td></tr></table>
-      <p>Titles: 85+ <b>Legend of the Burg</b>, 70+ <b>Pillar of the Community</b>, 55+ <b>Solid Waitsburger</b>, 40+ <b>Getting By on Main Street</b>, below that <b>Tumbleweed</b>. Your best score for each length is kept.</p>`],
+      <p>Titles: 85+ <b>Legend of the Burg</b>, 70+ <b>Pillar of the Community</b>, 55+ <b>Solid Waitsburger</b>, 40+ <b>Getting By on Main Street</b>, below that <b>Tumbleweed</b>. Your best score for each length is kept: tap <b>🏆 Your records</b> on the title screen to see them by length and mode, with your challenges and this week's weekly challenge.</p>`],
     ['tips', '💡 Tips', `
       <ul><li>Rotate your focus: a little work, a little town, a little rest. Long streaks fade and ruts hurt.</li>
       <li>Classes are a long game. A certificate or degree opens jobs that pay far more.</li>
