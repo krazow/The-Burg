@@ -3,72 +3,37 @@
 Release notes for The Burg. `/release now` turns the Unreleased section into a dated `## X.Y.Z (YYYY-MM-DD)`
 entry for every release, and the GitHub release notes are taken from it.
 
-## Unreleased
-
-### Added
-- **What your week did:** a strip above End Week shows the money (events included) and ▲▼ for happiness, health
-  and community. Tap it for the full breakdown and everything that happened.
-- **⏭ Auto** plays weeks until something needs you, and ⏩ 13 weeks is now in 2-year games too.
-- **Year in review** each New Year in 2-year, 5-year and Lifetime games: net worth and stat changes, plus the
-  year's milestones.
-- **Help when you need it:** three one-time tips for new players. Tap any stat to see what moves it. A banner
-  suggests a focus when happiness or health gets low. Locked jobs explain how to unlock them and can make "Take
-  classes" your focus.
-- **Job list:** jobs you can apply for come first, there's a ✅ Can apply filter, and each job shows take-home pay
-  after taxes and gas, with ▲▼ against your current job.
-- The ending shows how each part of the Life Score adds up.
-- **❓ Help** on the title screen, as a **?** in the in-game header, and in the Menu. It holds a full **game guide**:
-  getting started, your week, stats, money, jobs, school, homes and vehicles, savings, family, events, maps,
-  saving, the Life Score, tips, and installing. The tables come from the game's own numbers.
-- **Gameplay tutorial** under Help: a guided practice life where a pulsing ring and a 👆 show exactly what to tap,
-  and each of the 26 steps waits for your tap. It never touches your saves or settings, and puts you back where you
-  were.
-
-### Fixed
-- **Landscape phones:** a compact header, the week strip and End Week share one row, and the tab bar is slimmer, so
-  content gets well over half the screen.
-- **Every button and map pin is at least 44 × 44 px**, so they're easier to tap.
-- **Keyboard and screen readers:** a visible focus ring. Menus and messages open as dialogs that keep Tab inside and
-  close with Escape, returning you to where you were. Map pins open with Enter, and Help focuses its Close button.
-  The whole tutorial works with Enter alone. Week results and tutorial steps are read aloud, and the current tab
-  and chosen focus are announced.
-- **Health can now really suffer:** it pulls back toward normal more slowly, and pushing through low health with
-  overtime or side hustles drags it down fast. About two years of nonstop overtime in a hard job lands you in the
-  hospital, while a balanced life stays healthy.
-- Text contrast now meets WCAG AA everywhere: darker grey and green text, and the "Current" and "Home" tags.
-
-### Changed
-- **Home puts the week first:** a compact focus grid sits right under the stats, the End Week button shows your
-  focus, and your job, home, ride and schooling fit on one line that links to Jobs and Life.
-- **Doing the same thing every week fades:** a focus works at full strength for 4 weeks in a row, then less. After
-  8 weeks you're in a rut (happiness drops) until you switch. Classes are exempt. Rest now tops out in the low 80s,
-  and new lives start a little lower (happiness 60, health 78). A player who never changes focus now scores a
-  median of 48 (it was 64–76).
-- Events with only one choice close in one tap and show their result as a message.
-
 ## 0.1.0 (2026-11-17)
 
 The first release of The Burg.
 
 ### Added
-- A turn-based life sim set in Waitsburg, WA. Each turn is one week: pick a focus (work extra, rest, show up for
-  town, take classes, get outside or a side hustle), pay the bills and drive Highway 12.
-- Four game lengths: 6 months, 2 years, 5 years and Lifetime (age 18 until the end, with retirement from 62), and
-  ⏩ 4-week and 13-week skips that stop when something happens.
-- 25 jobs across Waitsburg, Dayton, Walla Walla, Kennewick, Richland and Pasco. Farther jobs pay more but cost gas
-  and wear you down, and schooling (trade certificate, associate, bachelor's) unlocks better ones. Layoff risk
-  depends on the job.
-- Homes to rent or buy, vehicles to upgrade, a 401(k) with an employer match, and family life: partners, kids,
-  helping with college and the trip of a lifetime.
-- Prices rise 3% a year and pay 2.5% a year, so raises matter. Mortgages and truck loans lock in when you buy.
-- About 30 seasonal local events, from Celebration Days and wheat harvest to snow on Highway 12, the Touchet
-  running high, powder days at Bluewood and Walla Walla Sweets.
-- Tappable maps: a Waitsburg town map where you pick your week by place, and a region map of the six towns with
+- **A turn-based life sim set in Waitsburg, WA.** Each turn is one week: pick a focus (work extra, rest, show up for
+  town, take classes, get outside or a side hustle), pay the bills and drive Highway 12. Four game lengths: 6 months,
+  2 years, 5 years and Lifetime (age 18 until the end, with retirement from 62).
+- **Home puts the week first:** your stats, a focus grid, and an End Week button that shows your focus. A strip
+  above it shows what the last week did (money with events included, and ▲▼ for each stat). Tap it for every
+  paycheck, bill and event. ⏩ 4 and ⏩ 13 skip ahead and **⏭ Auto** plays until something needs you.
+- **Mix it up:** a focus works at full strength for 4 weeks in a row, then fades, and after 8 weeks you're in a rut.
+  Rest tops out in the low 80s. Pushing through low health with overtime is dangerous, and about two years of
+  nonstop overtime in a hard job lands you in the hospital.
+- **25 jobs in six towns** (Waitsburg, Dayton, Walla Walla, Kennewick, Richland, Pasco). The list shows take-home pay
+  after taxes and gas, puts jobs you can apply for first, and compares each with your current job. Locked jobs
+  explain the schooling they need. Layoff risk depends on the job.
+- **A whole life:** homes to rent or buy, vehicles to upgrade, school (certificate, associate, bachelor's), a 401(k)
+  with an employer match, partners, kids, college, and prices that rise 3% a year while pay rises 2.5%.
+- **About 30 seasonal local events**, from Celebration Days and wheat harvest to snow on Highway 12, the Touchet
+  running high and powder days at Bluewood. Events with one choice close in one tap.
+- **Tappable maps:** a Waitsburg town map where you pick your week by place, and a region map of the six towns with
   the rivers, US-12, each town's jobs and your truck driving the commute.
-- A Life Score from happiness, health, community standing and net worth (Lifetime counts in 2027 dollars), with
-  your best score saved for each length.
-- Up to 5 saved lives. Each life auto-saves to its own slot, and the title screen lists them all to continue or
-  delete. In the Menu, **💾 Save game** saves to this life's slot or a copy to another slot as a checkpoint, and
-  **📂 Load game** switches to any saved life. With all 5 slots full, starting a new life asks which one to replace.
-  A game saved in the first beta moves into slot 1.
-- Installable as an app, and works offline.
+- **A Life Score** from happiness, health, community and net worth (Lifetime counts in 2027 dollars). The ending
+  shows how each part adds up, and your best score for each length is kept. Each New Year brings a year in review.
+- **Up to 5 saved lives,** each auto-saving to its own slot. The Menu's 💾 Save game saves now or makes a copy as a
+  checkpoint, and 📂 Load game switches lives.
+- **Help:** ❓ Help & tutorial on the title screen, a **?** in the game header and in the Menu. A 15-section game
+  guide, and a 26-step guided practice tutorial that shows you exactly what to tap. Tips for new players, tap any
+  stat to see what moves it, and banners suggest a focus when happiness or health gets low.
+- **Accessible:** every button is at least 44 × 44 px, text meets WCAG AA contrast, it works with a keyboard and
+  screen readers (focus rings, dialogs, spoken week results), and it has a landscape layout for phones.
+- **Installable** as an app, and works offline.
+
