@@ -1,6 +1,6 @@
 # The Burg: To-do
 
-_Last updated: November 18, 2026 (player-submitted NPCs planned for version 2.0)_
+_Last updated: November 18, 2026 (0.2.0-beta.4: Android app signed with The Burg's key)_
 
 This is the project's working to-do list: what's been done, what's next, and in what order. Every open item has a
 matching **GitHub issue** with a priority label (**P1 – now**, **P2 – soon**, **P3 – later**). The issues are the
@@ -20,11 +20,9 @@ added, finished or re-prioritized, both change in the same session.
 
 | # | Item | Why it's next | Issue |
 |---|---|---|---|
-| 1 | **Add the Android signing secrets** (your action) | The APK builds, but with a throwaway key, so every update would need an uninstall. Add the three secrets (the same key as Bankroll works). | [#37](https://github.com/krazow/The-Burg/issues/37) |
-| 2 | **Cut beta 3, try it, then promote** (`/release now` after the secrets, then `/release promote`) | 0.2.0-beta.2 is out ([pre-release](https://github.com/krazow/The-Burg/releases/tag/v0.2.0-beta.2)), but its APK still used a throwaway key, and the Help guide fix (PR #38) came after it. | [#37](https://github.com/krazow/The-Burg/issues/37) |
+| 1 | **Try beta 4, then promote** (`/release promote`) | [0.2.0-beta.4](https://github.com/krazow/The-Burg/releases/tag/v0.2.0-beta.4) is the first build with the Android app signed by The Burg's own key, plus the Help guide fix. Anyone with an earlier test APK uninstalls once. | — |
 
-- [ ] Android signing secrets — [#37](https://github.com/krazow/The-Burg/issues/37)
-- [ ] Beta 3 with the signed APK and the Help fix, then `/release promote`
+- [ ] Try 0.2.0-beta.4 (web at [/beta/](https://krazow.github.io/The-Burg/beta/), APK, Windows installer), then `/release promote`
 
 ## Soon: P2
 
@@ -121,3 +119,4 @@ that careless play stays at or below 60 and good play at or above 70.
 | Nov 18, 2026 | **Planned player-submitted NPCs:** analysis, the 10-page questionnaire and the work breakdown; filed #39–#44. | [plan](docs/npc-submissions.md) |
 | Nov 18, 2026 | Moved the NPC work (#39–#44) to **version 2.0**, with a [v2.0 milestone](https://github.com/krazow/The-Burg/milestone/1); removed the pronouns question from the form. | `TODO.md` |
 | Nov 18, 2026 | **0.2.0-beta.3** with the Help guide fix: all release checks passed, but the APK still used the throwaway key; the signing secrets weren't visible to the workflow (#37). | [pre-release](https://github.com/krazow/The-Burg/releases/tag/v0.2.0-beta.3) |
+| Nov 18, 2026 | **Android signing (#37):** made The Burg's own release key; secrets added. **0.2.0-beta.4** passed every check and its APK is signed with the new key (certificate confirmed in the downloaded APK). | [pre-release](https://github.com/krazow/The-Burg/releases/tag/v0.2.0-beta.4) |
