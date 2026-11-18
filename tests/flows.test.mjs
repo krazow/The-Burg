@@ -342,6 +342,7 @@ await t.check('Life Score so far opens its breakdown from Home; a commuter can j
 await t.check('the title screen starts a life with a background and a mode', async () => {
   await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); render(); });
   await page.fill('#nm', 'Kid');
+  await page.click('#moreopts');
   await page.click('[data-bg="farm"]'); await page.click('[data-mode="hard"]');
   assert(/family farm/.test(await page.textContent('#bgdesc')) && /more events/i.test(await page.textContent('#modedesc')), 'descriptions should follow the picks');
   await page.click('#start');
@@ -382,6 +383,76 @@ await t.check('the weekly challenge starts a seeded 6-month life from the title 
   await page.evaluate(() => { S.noEvents = true; finish('done'); });
   assert(await page.$(`${open} #share`), 'no share button');
   await page.click(`${open} #again`);
+});
+
+// ---- review gaps (G2, G6, G7, G8, R7) ----
+await t.check('title screen: Start comes before a closed "More options" panel, which opens, sums up the picks and is remembered', async () => {
+  await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); renderTitle(); });
+  const order = await page.evaluate(() => { const y = s => document.querySelector(s).getBoundingClientRect().top; return { start: y('#start'), more: y('#moreopts'), chal: y('#chal') }; });
+  assert(order.start < order.more && order.more < order.chal, JSON.stringify(order));
+  assert(await page.isHidden('#morepanel') && (await page.getAttribute('#moreopts', 'aria-expanded')) === 'false', 'the panel should start closed');
+  await page.click('#moreopts');
+  assert(await page.isVisible('[data-bg="grad"]') && (await page.getAttribute('#moreopts', 'aria-expanded')) === 'true', 'the panel did not open');
+  await page.click('[data-bg="grad"]'); await page.click('[data-mode="relaxed"]');
+  assert(/Grad coming home · .*Relaxed/.test(await page.textContent('#moresum')), await page.textContent('#moresum'));
+  await page.evaluate(() => renderTitle());
+  assert(await page.isVisible('#morepanel'), 'open panel not remembered');
+  await page.click('#moreopts');
+  await page.evaluate(() => renderTitle());
+  assert(await page.isHidden('#morepanel'), 'closed panel not remembered');
+});
+
+await t.check('title screen: "Your records" shows best scores by length and mode, challenges, and only this week\'s weekly best', async () => {
+  await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); renderTitle(); });
+  assert(!(await page.$('#records')), 'no records button before any life is finished');
+  assert(!(await page.$('.title .best')), 'the old long best-score line should be gone');
+  await page.evaluate(() => { store.set(BEST_KEY, { two: 66, 'half-hard': 48, 'life-relaxed': 71, 'sc-farm': 80, ['wk-' + isoWeek()]: 59, 'wk-2001-W01': 99 });
+    store.set(CHALLENGE_KEY, { farm: 1 }); pruneWeekly(); renderTitle(); });
+  const kept = await page.evaluate(() => Object.keys(store.get(BEST_KEY)));
+  assert(!kept.includes('wk-2001-W01') && kept.includes('wk-' + await page.evaluate(() => isoWeek())), `old weekly bests should be pruned: ${kept}`);
+  await page.click('#records');
+  const rows = await page.$$eval(`${open} table.rec tbody tr`, trs => trs.map(tr => [...tr.children].map(c => c.textContent.trim())));
+  assert(rows.length === 4 && rows[1][0] === '2 Years' && rows[1][2] === '66' && rows[0][3] === '48' && rows[3][1] === '71' && rows[0][1] === '–', JSON.stringify(rows));
+  const txt = await page.textContent(open);
+  assert(/1\/4 completed/.test(txt) && /Save the family farm ✅/.test(txt) && /best 80/.test(txt) && /Your best this week59/.test(txt) && !/99/.test(txt), txt.slice(0, 300));
+  await page.keyboard.press('Escape');
+  assert(await page.isHidden('#modal'), 'Escape should close the records');
+});
+
+await t.check('What\'s new shows once to returning players after an update, never to new players or in the tutorial', async () => {
+  const r = await page.evaluate(() => { localStorage.clear(); closeSheet(); S = null; renderTitle();
+    const fresh = whatsNew(), freshSeen = store.get(SEEN_KEY);
+    store.set(SEEN_KEY, '0.1.0'); newGame('Old', 'half', 0); save(); S = null; renderTitle();
+    const first = whatsNew(), text = document.querySelector('#sheet').textContent; closeSheet();
+    const again = whatsNew();
+    store.set(SEEN_KEY, '0.1.0'); TUT = { i: 0 }; const tut = whatsNew(); TUT = null;
+    return { fresh, freshSeen, first, text, again, tut, v: baseVersion() }; });
+  assert(!r.fresh && r.freshSeen === r.v, 'a brand-new player should not see it (but it counts as seen)');
+  assert(r.first && /What's new in 0\.2\.0/.test(r.text) && /Trips around the region/.test(r.text) && /Legacy/.test(r.text), r.text.slice(0, 200));
+  assert(!r.again && !r.tut, JSON.stringify(r));
+  await page.evaluate(() => closeSheet());
+});
+
+await t.check('Journal filter chips: Money, Events, Milestones and Trips, with old entries classified by their text', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => { S.log = [];
+    log('Hired as Wheat farm hand in Waitsburg!'); log('Earned a badge: Good dog.'); log('Trip to Dayton: lunch at a small-town café.');
+    log('Celebration Days: You ran the pie booth.'); log('📋 Report card: Life Score 51.');
+    S.log.push({ d: 'Week of Jan 4, 2027', m: 'Drove home a used sedan.' }, { d: 'Week of Jan 4, 2027', m: 'A year of the food truck: The truck is a hit.' });
+    render(); });
+  await page.click('[data-tab=log]');
+  const count = () => page.$$eval('.logitem', els => els.length);
+  assert((await count()) === 7, 'All should list everything');
+  const kinds = {};
+  for (const k of ['money', 'ev', 'mile', 'trip']) { await page.click(`[data-lf="${k}"]`); kinds[k] = await page.$$eval('.logitem', els => els.map(e => e.textContent)); }
+  assert(kinds.money.length === 2 && kinds.money.some(x => /sedan/.test(x)), `money ${kinds.money}`);
+  assert(kinds.ev.length === 1 && /Celebration/.test(kinds.ev[0]), `events ${kinds.ev}`);
+  assert(kinds.mile.length === 3 && kinds.mile.some(x => /food truck/.test(x)) && kinds.mile.some(x => /Report card/.test(x)), `milestones ${kinds.mile}`);
+  assert(kinds.trip.length === 1, `trips ${kinds.trip}`);
+  assert((await page.getAttribute('[data-lf="trip"]', 'aria-pressed')) === 'true', 'the chosen chip should be pressed');
+  await page.evaluate(() => { S.log = S.log.filter(e => !/Trip/.test(e.m)); renderLog(); });
+  assert(/Nothing under trips yet/.test(await page.textContent('#main')), 'empty filter message');
+  await page.click('[data-lf="all"]');
 });
 
 await t.check('Out and about: visit every business from Home, with its card, limits and results', async () => {

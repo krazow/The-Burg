@@ -572,6 +572,25 @@ await t.check('event costs rise with prices, and the choices show today\'s price
   assert(near(r.roof, 2400), `roof ${r.roof}`);
 });
 
+// ---- review gaps (G6, G8, R7) ----
+await t.check('Journal entries get a kind when logged, and older entries are sorted by their text', async () => {
+  const r = await ev(() => { fresh('two'); S.log = []; log('Something odd happened'); log('Hired as Diner cook in Waitsburg!'); log('Picked by hand', 'mile');
+    return { stored: S.log.map(e => e.k), kinds: ['Trip to Pasco: taquerias.', 'Earned a badge: Saver.', 'Cook skill reached level 2: food costs.', 'Helped the town: stock the food bank.',
+      'Graduated with a Trade certificate.', 'The porch is sagging: Two weekends.', 'Made the last truck payment.', 'Started a business: food truck.', 'Windstorm: The roof held.', 'Completed the challenge: Single parent.'].map(logKind) }; });
+  assert(r.stored.join() === 'mile,money,ev', `stored ${r.stored}`);
+  assert(r.kinds.join() === 'trip,mile,mile,mile,mile,mile,money,money,ev,mile', `kinds ${r.kinds}`);
+});
+
+await t.check('weekly-challenge bests from earlier weeks are dropped when the game loads; other bests stay', async () => {
+  const r = await ev(() => { store.set(BEST_KEY, { two: 60, 'sc-lab': 70, 'wk-2020-W10': 90, ['wk-' + isoWeek()]: 55 }); pruneWeekly(); return store.get(BEST_KEY); });
+  assert(r.two === 60 && r['sc-lab'] === 70 && !('wk-2020-W10' in r) && Object.keys(r).length === 3, JSON.stringify(r));
+});
+
+await t.check('What\'s new ignores beta tags, compares versions as numbers, and lists the 0.2.0 features', async () => {
+  const r = await ev(() => ({ v: baseVersion(), n: (WHATS_NEW['0.2.0'] || []).length, order: verNum('0.10.0') > verNum('0.9.9') && verNum('0.2.0-beta.3') === verNum('0.2.0') }));
+  assert(/^\d+\.\d+\.\d+$/.test(r.v) && r.n >= 12 && r.order, JSON.stringify(r));
+});
+
 // ---- Out and about (#48–#54): Waitsburg's businesses ----
 await t.check('no real business names appear anywhere in js/ or index.html (stand-in names only)', async () => {
   const fs = await import('node:fs');
