@@ -1,6 +1,6 @@
 # The Burg: To-do
 
-_Last updated: November 17, 2026 (landscape, accessibility and hospital fixes merged)_
+_Last updated: November 17, 2026 (0.1.0 live; 0.2.0 beta with map events, real rivers, backups, Android and Windows)_
 
 This is the project's working to-do list: what's been done, what's next, and in what order. Every open item has a
 matching **GitHub issue** with a priority label (**P1 – now**, **P2 – soon**, **P3 – later**). The issues are the
@@ -20,25 +20,21 @@ added, finished or re-prioritized, both change in the same session.
 
 | # | Item | Why it's next | Issue |
 |---|---|---|---|
-| 1 | **Beta 4** with the playtest fixes, help, tutorial, accessibility and landscape fixes | All merged to `main` and passing 7 test suites. `/release now` makes 0.1.0-beta.4. | [#5](https://github.com/krazow/The-Burg/issues/5) |
-| 2 | **Try it, invite testers, then promote** (your action, then `/release promote`) | Puts 0.1.0 live at https://krazow.github.io/The-Burg/. | [#5](https://github.com/krazow/The-Burg/issues/5) |
-| 3 | **Delete the merged branches** (your action, optional) | `map-navigation`, `release-kit`, `balance`, `save-slots`, `menu-save-load`, `playtest-fixes`, `help-tutorial`, `more-tests` and `found-issues` are merged. | — |
+| 1 | **Add the Android signing secrets** (your action) | The APK builds, but with a throwaway key, so every update would need an uninstall. Add the three secrets (the same key as Bankroll works). | [#37](https://github.com/krazow/The-Burg/issues/37) |
+| 2 | **Try 0.2.0-beta.1, then promote** ( after the secrets, then ) | Map events, real rivers, backups, Android APK and Windows installer: https://krazow.github.io/The-Burg/beta/ and the [pre-release](https://github.com/krazow/The-Burg/releases/tag/v0.2.0-beta.1). | [#37](https://github.com/krazow/The-Burg/issues/37) |
+| 3 | **Delete the merged branches** (your action, optional) | Claude sessions can't delete branches (the proxy blocks it). 13 merged branches: , , , , , , , , , , , , . | — |
 
-- [ ] Beta 4 (`/release now`) — [#5](https://github.com/krazow/The-Burg/issues/5)
-- [ ] Try it, invite testers, then `/release promote` — [#5](https://github.com/krazow/The-Burg/issues/5)
+- [ ] Android signing secrets — [#37](https://github.com/krazow/The-Burg/issues/37)
+- [ ] Try 0.2.0 beta, then 
 - [ ] Delete merged branches
 
 ## Soon: P2
 
-- [ ] **Events happen at places on the map** — [#8](https://github.com/krazow/The-Burg/issues/8)
 - [ ] **Manual play-test pass on real phones** (iPhone and Android install, offline, resume) — [#9](https://github.com/krazow/The-Burg/issues/9)
 
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs — [#11](https://github.com/krazow/The-Burg/issues/11)
-- [ ] **Real river shapes on the region map** — [#12](https://github.com/krazow/The-Burg/issues/12)
-- [ ] **Save backup** (export/import a save to move it between devices) — [#13](https://github.com/krazow/The-Burg/issues/13)
-- [ ] **Windows and Android builds through the kit** — [#14](https://github.com/krazow/The-Burg/issues/14)
 
 ---
 
@@ -90,3 +86,9 @@ that careless play stays at or below 60 and good play at or above 70.
 | Nov 17, 2026 | **Help center:** ❓ Help & tutorial on the start page, a **?** in the game header and in the Menu; a 15-section game guide built from the game's data; a 26-step guided practice tutorial with touch highlights that never touches saves. Gameplay tests: 30 checks. | [PR #29](https://github.com/krazow/The-Burg/pull/29) |
 | Nov 17, 2026 | **More test suites:** game rules (24), flows (18, all 56 event choices), screens and accessibility (7 sizes × 10 screens), offline and updates (6). Fixed WCAG AA contrast and small map-pin targets; filed #31 (landscape). | [PR #30](https://github.com/krazow/The-Burg/pull/30) |
 | Nov 17, 2026 | **Found issues fixed:** landscape layout (#31), every target 44 × 44 px and keyboard/screen-reader support (#10), and hospital tuning (overwork is now dangerous). Tests: rules 26, screens 14. | [PR #32](https://github.com/krazow/The-Burg/pull/32) |
+| Nov 17, 2026 | **0.1.0 released to production** (beta 4 → promote): https://krazow.github.io/The-Burg/. Tester invite posted on #5. | [release](https://github.com/krazow/The-Burg/releases/tag/v0.1.0) |
+| Nov 17, 2026 | **Events happen at places on the map (#8):** every event has a place; gold badges and "Recently here" on both maps. Added a screens check for code leftovers. | [PR #33](https://github.com/krazow/The-Burg/pull/33) |
+| Nov 17, 2026 | **Real river shapes (#12):** Columbia, Snake and Yakima from Natural Earth via ; Tri-Cities labels fixed. | [PR #34](https://github.com/krazow/The-Burg/pull/34) |
+| Nov 17, 2026 | **Save backup (#13):** download a backup file or copy a backup code; restore by adding to empty slots or replacing all. | [PR #35](https://github.com/krazow/The-Burg/pull/35) |
+| Nov 17, 2026 | **Android and Windows builds (#14):** APK () and Windows installer (port 47920) on every release. | [PR #36](https://github.com/krazow/The-Burg/pull/36) |
+| Nov 17, 2026 | **0.2.0-beta.1:** all of the above; QA, Android, Windows, deploy and live smoke test passed. The APK used a throwaway key ([#37]({B}37)). | [pre-release](https://github.com/krazow/The-Burg/releases/tag/v0.2.0-beta.1) |
