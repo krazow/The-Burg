@@ -167,6 +167,8 @@ main{flex:1;padding:14px 14px calc(var(--safe-b) + 200px)}
 .stopbtn.on{border-color:var(--barn);background:#fbe9e4}.stopbtn:disabled{opacity:.6}
 .tripsum{font-weight:700;margin:10px 0 0}
 .sumchip.on{border-color:var(--barn);background:#fbe9e4}
+.bgs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}.bgdesc{font-size:13.5px;margin:6px 4px 0;min-height:36px}
+.sgoal{font-size:13.5px;background:#fffaf0;border:1.5px dashed var(--line);border-radius:10px;padding:8px 10px;margin:0 0 10px}
 .scorebtn{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;margin-top:10px;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:#fffaf0;font-size:14.5px;min-height:44px;text-align:left}.scorebtn b{font-size:17px;color:var(--barn)}
 .tripto{width:100%;text-align:left;background:#fff;border:0;border-bottom:1px dashed var(--line);min-height:52px;font:inherit;color:inherit;cursor:pointer}.tripto > span:first-child{display:flex;flex-direction:column}
 #helpbtn{width:44px;height:44px}
@@ -330,7 +332,7 @@ function migrate(s){
   const d = { slot:0, evPins:[], streakF:null, streakN:0, run:null, yearEvents:0, yearStart:null, evCd:{}, evDone:{}, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, mortgage:null, loanPay:0 };
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
   // Around the region (0.3.0): older lives count as just serviced and checked, with this year's tabs paid
-  const r = { carpool:false, hustleWeeks:0, scoreQ:null, trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, dentist:s.turn || 0, stopLast:{}, tabsYear:new Date(s.date || Date.now()).getFullYear() };
+  const r = { bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0, carpool:false, hustleWeeks:0, scoreQ:null, trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, dentist:s.turn || 0, stopLast:{}, tabsYear:new Date(s.date || Date.now()).getFullYear() };
   for (const k in r) if (s[k] === undefined) s[k] = r[k];
   if (HOMES[s.home] && HOMES[s.home].own && !s.mortgage) s.mortgage = HOMES[s.home].cost;
   return s;
@@ -344,7 +346,8 @@ const carpooling = () => !!S.carpool && commuteOneWay() >= 20;
 const commuteGasFactor = (j = job()) => driveDays(j) * (S && S.carpool && j && CITIES[j.city].miles >= 20 ? 0.5 : 1);
 const netWorth = () => {
   const loan = S.loanLeft > 0 ? S.loanLeft * (S.loanPay || CARS.truck.pay) * 0.85 : 0;
-  return S.money + S.equity + S.carValue + (S.k401 || 0) - loan;
+  const sloan = S.sloanLeft > 0 ? S.sloanLeft * S.sloanPay * 0.85 : 0;
+  return S.money + S.equity + S.carValue + (S.k401 || 0) - loan - sloan;
 };
 const curMonth = () => new Date(S.date).getMonth();
 const dateLabel = () => { const d = new Date(S.date); return `Week of ${MONTHS[d.getMonth()].slice(0,3)} ${d.getDate()}, ${d.getFullYear()}`; };
@@ -385,6 +388,63 @@ function slotCard(g, i, buttons){
 }
 function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.remove('hidden'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.add('hidden'), 2200); }
 
+/* ============================================================
+   🎬 HOW A LIFE BEGINS (#69) and 🎚️ MODES (#73)
+   ============================================================ */
+const BACKGROUNDS = {
+  fresh:      { ic:'🌾', name:'Fresh start', hint:'Standard', desc:'18, a rented room above Main Street, $1,500 and the 1998 pickup. The classic start.' },
+  farm:       { ic:'🚜', name:'Farm kid', hint:'Standard', desc:'Raised in the wheat hills. You start working on the family farm and everybody knows you, but you have only $300.',
+    set:s => { s.money = 300; s.community = 42; s.health = 84; s.jobId = 'farmhand'; } },
+  grad:       { ic:'🎓', name:'Grad coming home', hint:'Head start, with debt', desc:'21, back from college with an associate degree and $36,000 in student loans (about $380 a month for 10 years).',
+    set:s => { s.ageMonths = 21*12; s.edu = 2; s.money = 500; s.community = 20; s.happy = 56; s.sloanLeft = 120; s.sloanPay = 380; } },
+  transplant: { ic:'🏙️', name:'Seattle transplant', hint:'Money, but lonely', desc:'Moved over the mountains with $6,000 saved and a used sedan. Nobody in town knows you yet, and you miss the city.',
+    set:s => { s.money = 6000; s.community = 5; s.happy = 50; s.car = 'sedan'; s.carValue = 9000; s.ageMonths = 24*12; } },
+  parent:     { ic:'👶', name:'Young parent', hint:'Tight money, full heart', desc:'20, with a two-year-old. Money is tight and every week counts, but the town looks out for you.',
+    set:s => { s.ageMonths = 20*12; s.kids = [s.ageMonths - 24]; s.money = 800; s.community = 36; s.happy = 64; } }
+};
+const MODES = {
+  relaxed: { ic:'🌤️', name:'Relaxed', desc:'Stats wear down slower, debt grows slower and never ends your game. For playing at your own pace.' },
+  normal:  { ic:'⚖️', name:'Normal', desc:'The game as designed.' },
+  hard:    { ic:'🔥', name:'Hard', desc:'Stats wear down faster, more events, layoffs more likely, living costs 10% more, and debt ends the game at -$25,000.' }
+};
+const mode = () => (S && S.mode) || 'normal';
+const bestKey = (len, m) => m && m !== 'normal' ? `${len}-${m}` : len;
+const bestLabel = k => { const [len, m] = k.split('-'); return LENGTHS[len] ? `${LENGTHS[len].label}${m && MODES[m] ? ` (${MODES[m].name})` : ''}` : null; };
+
+/* ============================================================
+   🌸 SEASON GOALS IN TOWN (#77): one town goal a season, worked toward with your weekly focus
+   ============================================================ */
+const SEASON_GOALS = [
+  { key:'spring', ic:'🌸', name:'Get Celebration Days ready', months:[2,3,4], focus:['community'], need:6, fx:{community:6, happy:3},
+    what:'Show up for town', done:'Celebration Days went off without a hitch, and people know you helped.' },
+  { key:'summer', ic:'🌾', name:'Bring in the harvest', months:[5,6,7], focus:['work','hustle','community'], need:5, fx:{community:5, happy:2},
+    what:'Work extra, Side hustle or Show up for town', done:'The wheat is in. The whole valley breathes out, and you were part of it.' },
+  { key:'fall', ic:'🍂', name:'Stock the food bank before winter', months:[8,9,10], focus:['community'], need:5, fx:{community:6, happy:3},
+    what:'Show up for town', done:'The food bank shelves are full going into winter.' },
+  { key:'winter', ic:'❄️', name:'Holiday food drive and shoveling for neighbors', months:[11,0,1], focus:['community','outdoors'], need:4, fx:{community:5, happy:4},
+    what:'Show up for town or Get outside', done:'Every older neighbor on your street had a clear walk and a full pantry.' }
+];
+const seasonGoal = () => SEASON_GOALS.find(g => g.months.includes(curMonth()));
+// the season's year label, so winter's December–February counts as one season
+const seasonId = g => { const d = new Date(S.date), y = d.getFullYear(); return `${g.key}-${g.key === 'winter' && d.getMonth() <= 1 ? y - 1 : y}`; };
+function seasonWeek(notes){
+  const g = seasonGoal(); if (!g || S.practice) return;
+  const id = seasonId(g);
+  if (!S.sgoal || S.sgoal.id !== id) S.sgoal = { id, prog:0, done:false };
+  if (S.sgoal.done || !g.focus.includes(S.focus)) return;
+  S.sgoal.prog++;
+  if (S.sgoal.prog >= g.need) {
+    S.sgoal.done = true; adj(g.fx); S.seasonWins = (S.seasonWins || 0) + 1;
+    notes.push(`${g.ic} Town goal done: ${g.name}! ${g.done}`); log(`Helped the town: ${g.name.toLowerCase()}.`);
+  }
+}
+function seasonLine(){
+  const g = seasonGoal(); if (!g || S.practice) return '';
+  const st = S.sgoal && S.sgoal.id === seasonId(g) ? S.sgoal : { prog:0, done:false };
+  const end = MONTHS[g.months[g.months.length - 1]];
+  return `<div class="sgoal">${g.ic} <b>Town goal:</b> ${g.name} · ${st.done ? '✅ done!' : `${st.prog}/${g.need} weeks of ${g.what} (until the end of ${end})`}</div>`;
+}
+
 /* ---------- title screen ---------- */
 const SCENE = `<svg class="scene" viewBox="0 0 420 170" aria-hidden="true">
   <rect width="420" height="170" rx="18" fill="#cfe5f2"/>
@@ -415,12 +475,25 @@ function renderTitle(){
     <label class="field">Game length</label>
     <div class="lengths">${Object.entries(LENGTHS).map(([k,L]) =>
       `<button class="len ${k===len?'on':''}" data-len="${k}" aria-pressed="${k===len}"><b>${L.label}</b><span>${L.sub}</span></button>`).join('')}</div>
+    <label class="field">How your life begins</label>
+    <div class="bgs" role="group" aria-label="How your life begins">${Object.entries(BACKGROUNDS).map(([k,b]) =>
+      `<button class="chip ${k==='fresh'?'on':''}" data-bg="${k}" aria-pressed="${k==='fresh'}">${b.ic} ${b.name}</button>`).join('')}</div>
+    <div class="muted bgdesc" id="bgdesc">${BACKGROUNDS.fresh.desc} <b>${BACKGROUNDS.fresh.hint}.</b></div>
+    <label class="field">Mode</label>
+    <div class="maptog" role="group" aria-label="Mode">${Object.entries(MODES).map(([k,m]) =>
+      `<button class="${k==='normal'?'on':''}" data-mode="${k}" aria-pressed="${k==='normal'}">${m.ic} ${m.name}</button>`).join('')}</div>
+    <div class="muted bgdesc" id="modedesc">${MODES.normal.desc}</div>
     <button class="btn ${used?'ghost':'primary'}" id="start">Start a new life</button>
     <button class="btn ghost" id="how">❓ Help & tutorial</button>
     <button class="btn ghost" id="restore">📥 Restore from a backup</button>
     <div class="muted" style="margin-top:14px;font-size:12px">v${APP_VERSION}</div>
-    <div class="best">${Object.keys(best).length ? 'Best life scores: ' + Object.entries(best).filter(([k]) => LENGTHS[k]).map(([k,v]) => `${LENGTHS[k].label} <b>${v}</b>`).join(' · ') : ''}</div>
+    <div class="best">${Object.keys(best).length ? 'Best life scores: ' + Object.entries(best).filter(([k]) => bestLabel(k)).map(([k,v]) => `${bestLabel(k)} <b>${v}</b>`).join(' · ') : ''}</div>
   </div>`;
+  let bg = 'fresh', md = 'normal';
+  document.querySelectorAll('[data-bg]').forEach(b => b.onclick = () => { bg = b.dataset.bg;
+    document.querySelectorAll('[data-bg]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#bgdesc').innerHTML = `${BACKGROUNDS[bg].desc} <b>${BACKGROUNDS[bg].hint}.</b>`; });
+  document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { md = b.dataset.mode;
+    document.querySelectorAll('[data-mode]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#modedesc').textContent = MODES[md].desc; });
   document.querySelectorAll('.len').forEach(b => b.onclick = () => {
     len = b.dataset.len; document.querySelectorAll('.len').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
   });
@@ -429,8 +502,8 @@ function renderTitle(){
   $('#start').onclick = () => {
     const name = ($('#nm').value.trim() || 'Dusty').slice(0,20);
     const free = slots().indexOf(null);
-    if (free < 0) return askReplace(name, len);
-    newGame(name, len, free);
+    if (free < 0) return askReplace(name, len, { bg, mode: md });
+    newGame(name, len, free, { bg, mode: md });
   };
   $('#how').onclick = showHelp;
   $('#restore').onclick = restoreSheet;
@@ -448,11 +521,11 @@ function askDelete(i){
   $('#yes').onclick = () => { writeSlot(i, null); closeSheet(); renderTitle(); toast('Deleted'); };
   $('#no').onclick = closeSheet;
 }
-function askReplace(name, len){
+function askReplace(name, len, opts = {}){
   sheet(`<h2>All ${SLOT_COUNT} slots are full</h2><p>Pick a life to replace with ${esc(name)}'s new one. The old one is deleted.</p>
     <div class="slots">${slots().map((g,i) => slotCard(g, i, `<button class="sm" data-over="${i}">Replace</button>`)).join('')}</div>
     <button class="btn ghost" id="no">Cancel</button>`);
-  document.querySelectorAll('[data-over]').forEach(b => b.onclick = () => { closeSheet(); newGame(name, len, +b.dataset.over); });
+  document.querySelectorAll('[data-over]').forEach(b => b.onclick = () => { closeSheet(); newGame(name, len, +b.dataset.over, opts); });
   $('#no').onclick = closeSheet;
 }
 // Menu: save a copy of this life to another slot (a checkpoint you can go back to)
@@ -615,11 +688,15 @@ function newGame(name, len, slot = 0, opts = {}){
     dog:false, partner:false, council:false,
     focus:'rest', applied:false, happySum:0, healthSum:0, monthsPlayed:0,
     log:[], over:false, cause:null, streakF:null, streakN:0, run:null, yearEvents:0,
-    trip:null, svc:0, tires:null, stockUntil:-1, dentist:0, stopLast:{}, tabsYear:2027, carpool:false, hustleWeeks:0, scoreQ:null };
+    trip:null, svc:0, tires:null, stockUntil:-1, dentist:0, stopLast:{}, tabsYear:2027, carpool:false, hustleWeeks:0, scoreQ:null,
+    bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0 };
+  S.bg = BACKGROUNDS[opts.bg] ? opts.bg : 'fresh'; S.mode = MODES[opts.mode] ? opts.mode : 'normal';
+  if (BACKGROUNDS[S.bg].set) BACKGROUNDS[S.bg].set(S);
   S.yearStart = { nw: netWorth(), happy: S.happy, health: S.health, community: S.community };
   if (opts.practice) { S.practice = true; S.noEvents = true; }      // the tutorial's throwaway life: never saved, no random events
-  log(`${name} turns 18 and rents a room above Main Street in Waitsburg. Time to find a job.`);
-  tab = 'jobs'; save(); render();
+  log(S.bg === 'fresh' ? `${name} turns 18 and rents a room above Main Street in Waitsburg. Time to find a job.`
+    : `${name} starts a new life in Waitsburg: ${BACKGROUNDS[S.bg].name.toLowerCase()}. ${BACKGROUNDS[S.bg].desc}`);
+  tab = S.jobId ? 'home' : 'jobs'; save(); render();
   if (!opts.practice) toast('Welcome to the Burg! Start by finding a job.');
 }
 
@@ -632,7 +709,7 @@ function render(){
   const left = L.turns === Infinity ? `Age ${age()}` : `${L.turns - S.turn} weeks left`;
   $('#app').innerHTML = `
   <header class="top">
-    <div class="row"><h2>${esc(S.name)}${S.practice ? ' <span class="tag">Practice</span>' : ''}</h2><div class="hdr-r"><div class="money">${fmt(S.money)}</div><button id="helpbtn" aria-label="Help and tutorial">?</button></div></div>
+    <div class="row"><h2>${esc(S.name)}${S.practice ? ' <span class="tag">Practice</span>' : ''}${mode() !== 'normal' && !S.practice ? ` <span class="tag">${MODES[mode()].ic} ${MODES[mode()].name}</span>` : ''}</h2><div class="hdr-r"><div class="money">${fmt(S.money)}</div><button id="helpbtn" aria-label="Help and tutorial">?</button></div></div>
     <div class="meta"><span>${dateLabel()} · age ${age()}</span><span>${left}</span></div>
     <div class="progress"><i style="width:${pct}%"></i></div>
   </header>
@@ -694,7 +771,7 @@ function renderHome(){
   ${S.happy < 30 ? sugg('happy', 'outdoors', `😟 Happiness is low (${Math.round(S.happy)}).`) : ''}
   ${S.health < 30 ? sugg('health', 'rest', `🤒 Health is low (${Math.round(S.health)}).`) : ''}
   ${S.money < -15000 ? `<div class="card warn">⚠️ Your debt is getting dangerous. Below -$40,000 you'll have to leave town.</div>` : ''}
-  <div class="card"><div class="focushead"><h3>This week's focus</h3></div>${mapToggle()}
+  <div class="card"><div class="focushead"><h3>This week's focus</h3></div>${seasonLine()}${mapToggle()}
     ${prefs().mapView ? mapBlock('T') : `<div class="fgrid">${Object.entries(FOCUS).map(([k,x]) => {
       const dis = (x.needsJob && (!j || S.retired)) || (x.study && S.edu >= 3);
       return `<button class="fbtn ${S.focus===k?'on':''}" data-f="${k}" ${dis?'disabled':''} aria-pressed="${S.focus===k}"><span class="ic">${x.ic}</span><b>${FOCUS_SHORT[k]}</b></button>`;
@@ -1064,6 +1141,11 @@ function weekTick(auto){
     const n = Math.min(m, S.loanLeft); lines.push(['Truck payment', -(S.loanPay || CARS.truck.pay)*n]); S.loanLeft -= n;
     if (S.loanLeft < 1e-6) { S.loanLeft = 0; notes.push('🛻 The truck is paid off!'); log('Made the last truck payment.'); }
   }
+  if (S.sloanLeft > 0) {
+    const n = Math.min(m, S.sloanLeft); lines.push(['Student loan', -S.sloanPay*n]); S.sloanLeft -= n;
+    if (S.sloanLeft < 1e-6) { S.sloanLeft = 0; notes.push('🎓 Your student loans are paid off!'); log('Paid off the student loans.'); }
+  }
+  if (mode() === 'hard') lines.push(['Higher living costs (Hard)', -cost(68)*m]);
   if (S.dog) lines.push(['Dog food & vet', -cost(45)*m]);
   if (S.partner) { lines.push(['Date nights', -cost(120)*m]); if (age() < 65) lines.push(["Partner's paycheck (part-time)", 1400*S.wage*m]); }
   const kidsHome = kidsAtHome();
@@ -1076,7 +1158,7 @@ function weekTick(auto){
     S.studyProg += 1;
     if (S.studyProg >= STUDY_NEED[S.edu]) { S.studyProg = 0; S.edu++; notes.push(`🎓 You earned your ${EDU[S.edu]}! New jobs unlocked.`); log(`Graduated with a ${EDU[S.edu]}.`); adj({happy:8}); }
   }
-  if (S.money < 0) lines.push(['Interest on debt', S.money * 0.015 * m]);
+  if (S.money < 0) lines.push(['Interest on debt', S.money * (mode() === 'relaxed' ? 0.01 : 0.015) * m]);
   const net = lines.reduce((a,[,v]) => a + v, 0);
   S.money += net;
   S.last = { lines: lines.filter(([,v]) => Math.round(v)), net };
@@ -1100,6 +1182,8 @@ function weekTick(auto){
   if (S.council) dc += 0.8;
   // worn down: pushing through low health with overtime or side hustles makes it worse, fast
   if (S.health < 35 && (S.focus === 'work' || S.focus === 'hustle')) dH -= 3.2;
+  if (mode() === 'relaxed') { if (dh < 0) dh *= 0.6; if (dH < 0) dH *= 0.6; if (dc < 0) dc *= 0.6; }
+  if (mode() === 'hard') { if (dh < 0) dh *= 1.25; if (dH < 0) dH *= 1.25; if (dc < 0) dc *= 1.25; }
     S.happy = clamp(S.happy + dh*m); S.health = clamp(S.health + dH*m); S.community = clamp(S.community + dc*m);
   // doing the same thing week after week loses its punch (classes excepted), and a long rut wears on you
   if (S.streakF === S.focus) S.streakN++; else { S.streakF = S.focus; S.streakN = 1; }
@@ -1114,10 +1198,11 @@ function weekTick(auto){
     if (S.streakN === RUT_WEEKS + 1) notes.push(`🔁 ${S.streakN - 1} weeks of "${f.name}" in a row. You're in a rut: try a different focus.`);
   }
   if (trip) adj(trip.fx);
+  seasonWeek(notes);
   if (gig && gig.fx) adj(Object.fromEntries(Object.entries(gig.fx).map(([st, v]) => [st, v * k])));
 
   // ---- maybe an event this week ----
-  let ev = !S.noEvents && chance(0.28) ? pickEvent(curMonth()) : null;
+  let ev = !S.noEvents && chance(mode() === 'hard' ? 0.33 : 0.28) ? pickEvent(curMonth()) : null;
   if (ev) {
     S.evCd[ev.title] = S.turn + (ev.yr ? 40 : 8);
     { const pl = eventPlace(ev); S.evPins = [{ t: ev.title, ic: ev.ic, m: pl[0], k: pl[1], turn: S.turn + 1, r: '' }, ...(S.evPins || [])].slice(0, 12); }
@@ -1167,7 +1252,9 @@ function weekTick(auto){
     if (chance(p) || age() >= 102) ending = `${S.name} passed peacefully at age ${age()}, with the whole town at the service.`;
   }
   if (!ending && S.turn >= L.turns) ending = `${L.label} in the Burg is in the books.`;
-  if (!ending && S.money < -40000) ending = `Buried in debt, ${S.name} packed up and left Waitsburg.`;
+  const debtEnd = mode() === 'hard' ? -25000 : -40000;
+  if (!ending && mode() !== 'relaxed' && S.money < debtEnd) ending = `Buried in debt, ${S.name} packed up and left Waitsburg.`;
+  if (mode() === 'relaxed' && S.money < -40000) S.money = -40000;   // Relaxed: a debt counselor stops the slide
   return { ev, notes, ending, review };
 }
 
@@ -1298,7 +1385,7 @@ const EVENTS = [
   { ic:'📈', title:'A raise', w:3, when:() => job() && !S.retired && S.jobMonths >= 12 && S.raise < 1.5,
     text:() => `Your boss at the ${job().title.toLowerCase()} job calls you in.`,
     choices:() => [{label:'Hear them out', go:() => { S.raise = Math.min(1.5, S.raise * 1.06); S.jobMonths = 0; adj({happy:5}); return `A 6% raise! You now make ${wk(payNow(job()))}.`; }}]},
-  { ic:'📉', title:'Layoffs', yr:1, w:() => 0.8 * (LAYOFF_RISK[S.jobId] ?? .5), when:() => job() && !S.retired && S.jobMonths >= 9,
+  { ic:'📉', title:'Layoffs', yr:1, w:() => 0.8 * (LAYOFF_RISK[S.jobId] ?? .5) * (mode() === 'hard' ? 1.6 : 1), when:() => job() && !S.retired && S.jobMonths >= 9,
     text:() => `Business is slow and cuts are coming at your ${job().title.toLowerCase()} job.`,
     choices:() => [
       {label:'Ask to stay on', go:() => { if (chance(.5 + S.community*0.003)) { adj({happy:-2}); return 'They kept you on. Phew.'; } const t = job().title; S.jobId = null; S.ui = 6; adj({happy:-10}); return `You were let go from your ${t.toLowerCase()} job. Check the job board.`; }},
@@ -1626,12 +1713,14 @@ function finish(reason){
   const { score, title, avgH, avgHe, nw, real, wealth, parts } = lifeScore();
   const part = (l, sub, v, w) => `<div class="kv"><span>${l}<br><small class="muted">${sub}</small></span><span><b>${v}</b>/100 × ${w}% = <b>${Math.round(v * w / 100)}</b></span></div>`;
   const best = store.get(BEST_KEY) || {};
-  const isBest = !best[S.len] || score > best[S.len];
-  if (isBest && !S.practice) { best[S.len] = score; store.set(BEST_KEY, best); }
+  const bk = bestKey(S.len, mode());
+  const isBest = !best[bk] || score > best[bk];
+  if (isBest && !S.practice) { best[bk] = score; store.set(BEST_KEY, best); }
   if (!S.practice) writeSlot(S.slot ?? 0, null);
   S.over = true;
   sheet(`<h2 style="text-align:center">${esc(S.name)}'s life in the Burg</h2>
     <p class="muted" style="text-align:center">${reason}</p>
+    ${S.bg !== 'fresh' || mode() !== 'normal' ? `<p class="muted" style="text-align:center">${BACKGROUNDS[S.bg].ic} ${BACKGROUNDS[S.bg].name} · ${MODES[mode()].ic} ${MODES[mode()].name}</p>` : ''}
     <div class="score">${score}</div>
     <p style="text-align:center;margin-top:0"><b>${title}</b>${isBest ? ' · <span class="tag cur">New best!</span>' : ''}</p>
     <h3 style="margin-top:10px">How the score adds up</h3>
@@ -1882,10 +1971,13 @@ function guideHTML(){
       <p>You're 18 and just moved into a rented room above Main Street in <b>Waitsburg, WA</b>, with $1,500, a 1998 pickup and a high school diploma. Make the best life you can before the game ends.</p>
       <p>Choose a game length when you start a new life:</p>
       <table><tr><th>Length</th><th>How long</th><th>Net worth for full points</th></tr>${lenRows}</table>
+      <p><b>How your life begins:</b> ${Object.values(BACKGROUNDS).map(b => `${b.ic} <b>${b.name}</b> (${b.hint.toLowerCase()}): ${b.desc}`).join(' ')}</p>
+      <p><b>Mode:</b> ${Object.values(MODES).map(m => `${m.ic} <b>${m.name}</b>: ${m.desc}`).join(' ')} Best scores are kept separately for each mode.</p>
       <p><b>First moves:</b> find a job on the <b>Jobs</b> tab, pick a weekly focus on <b>Home</b>, and tap <b>End Week</b>. Want to see it done? Play the <b>gameplay tutorial</b> at the top of this page.</p>`],
     ['week', '📅 Your week', `
       <p>Each turn is <b>one week</b>. On <b>Home</b>, pick one <b>focus</b> for the week, then tap <b>End Week</b>. The button shows your focus, and it repeats every week until you change it.</p>
       <table><tr><th>Focus</th><th>What it does</th><th>Cost</th></tr>${focusRows}</table>
+      <p><b>Town goals:</b> each season the town has a goal you work toward with your focus: ${SEASON_GOALS.map(g => `${g.ic} <b>${g.name}</b> (${g.need} weeks of ${g.what})`).join(', ')}. Finish it before the season ends for a boost in community and happiness. Your progress shows above the focus buttons.</p>
       <p><b>Mix it up.</b> A focus works at full strength for 4 weeks in a row, then fades (down to 30%). After 8 weeks of the same thing you're <b>in a rut</b>, and happiness drops every week until you switch. Classes are the exception: study as long as you like.</p>
       <p><b>Skipping ahead:</b> <b>⏩ 4</b> and <b>⏩ 13</b> play several weeks with the same focus. <b>⏭ Auto</b> plays until something needs you (up to 26 weeks). Skips stop when an event needs a choice, at a milestone, or at New Year.</p>
       <p><b>What the week did:</b> the strip above End Week shows your money (events included) and ▲▼ for each stat. Tap it to see every paycheck, bill and event.</p>`],

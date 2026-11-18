@@ -17,20 +17,27 @@ const browser = await launch();
 const t = runner();
 const results = [];
 
-for (const len of Object.keys(GAMES)) {
-  for (const strat of STRATEGIES) {
-    for (let g = 0; g < Math.max(1, Math.round(GAMES[len] * SCALE)); g++) {
-      const seed = (len.length * 7919 + STRATEGIES.indexOf(strat) * 104729 + g * 1299709) >>> 0;
+// every background and mode, played 2 years by a good and a careless player (and idle for the modes)
+const VARIANTS = (process.env.SIM_ONLY || process.env.SIM_LEN) && !process.env.SIM_VARIANTS ? [] : [
+  ...['farm', 'grad', 'transplant', 'parent'].flatMap(bg => ['planner', 'careless'].map(strat => ({ len: 'two', strat, opts: { bg }, label: bg }))),
+  ...['relaxed', 'hard'].flatMap(mode => ['planner', 'careless', 'idle'].map(strat => ({ len: 'two', strat, opts: { mode }, label: mode })))];
+const JOBS_LIST = [];
+for (const len of Object.keys(GAMES)) for (const strat of STRATEGIES) for (let g = 0; g < Math.max(1, Math.round(GAMES[len] * SCALE)); g++) JOBS_LIST.push({ len, strat, g, opts: {}, label: 'normal' });
+for (const v of VARIANTS) for (let g = 0; g < 4; g++) JOBS_LIST.push({ ...v, g });
+for (const { len, strat, g, opts, label } of JOBS_LIST) {
+  {
+    {
+      const seed = (len.length * 7919 + STRATEGIES.indexOf(strat) * 104729 + g * 1299709) >>> 0;   // backgrounds and modes reuse the normal games' dice, so they compare directly
       const ctx = await browser.newContext({ serviceWorkers: 'block' });
       await ctx.addInitScript(seedScript(seed));
       const page = await ctx.newPage();
       const errors = [];
       page.on('pageerror', e => errors.push(String(e)));
       await page.goto(srv.url, { waitUntil: 'load' });
-      const r = await page.evaluate(([len, strat]) => {
+      const r = await page.evaluate(([len, strat, opts]) => {
         // ---- the bot, running inside the game page ----
         render = () => {}; toast = () => {};   // skip redrawing the screen: just the rules
-        newGame('Bot', len);
+        newGame('Bot', len, 0, opts);
         S.k401rate = { planner: 2, homebody: 1, commuter: 1, student: 1 }[strat] || 0;
         const bad = [], events = {};
         const best = () => JOBS.filter(x => x.edu <= S.edu).sort((a, b) =>
@@ -83,8 +90,8 @@ for (const len of Object.keys(GAMES)) {
         const sc = lifeScore();
         return { weeks, ending, bad, events, score: sc.score, parts: sc.parts, nw: Math.round(sc.real), age: age(), edu: S.edu, kids: S.kids.length,
                  debt: /debt/.test(ending || ''), endedOk: !!ending };
-      }, [len, strat]);
-      r.len = len; r.strat = strat; r.errors = errors;
+      }, [len, strat, opts]);
+      r.len = len; r.strat = strat; r.errors = errors; r.label = label;
       results.push(r);
       await ctx.close();
     }
@@ -118,17 +125,24 @@ const med = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[M
 const money = n => (n < 0 ? '-$' : '$') + Math.abs(n).toLocaleString();
 let md = `## The Burg balance report\n\n${results.length} simulated games (SIM_SCALE=${SCALE}).\n\n| Length | Strategy | Games | Median score | Score range | Median net worth (2027 $) | Debt endings |\n|---|---|---|---|---|---|---|\n`;
 for (const len of Object.keys(GAMES)) for (const strat of STRATEGIES) {
-  const rs = results.filter(r => r.len === len && r.strat === strat); if (!rs.length) continue;
+  const rs = results.filter(r => r.len === len && r.strat === strat && r.label === 'normal'); if (!rs.length) continue;
   const sc = rs.map(r => r.score);
   md += `| ${len} | ${strat} | ${rs.length} | ${med(sc)} | ${Math.min(...sc)}–${Math.max(...sc)} | ${money(med(rs.map(r => r.nw)))} | ${rs.filter(r => r.debt).length} |\n`;
+}
+if (VARIANTS.length) {
+  md += `\n**Backgrounds and modes** (2-year games):\n\n| Start or mode | Strategy | Games | Median score | Median net worth | Debt endings |\n|---|---|---|---|---|---|\n`;
+  for (const lab of [...new Set(VARIANTS.map(v => v.label))]) for (const strat of ['planner', 'careless', 'idle']) {
+    const rs = results.filter(r => r.label === lab && r.strat === strat); if (!rs.length) continue;
+    md += `| ${lab} | ${strat} | ${rs.length} | ${med(rs.map(r => r.score))} | ${money(med(rs.map(r => r.nw)))} | ${rs.filter(r => r.debt).length} |\n`;
+  }
 }
 const ev = {}; let weeks = 0;
 for (const r of results) { weeks += r.weeks; for (const [k, v] of Object.entries(r.events)) ev[k] = (ev[k] || 0) + v; }
 md += `\n**Events per 100 weeks played** (${weeks.toLocaleString()} weeks in total):\n\n` +
   Object.entries(ev).sort((a, b) => b[1] - a[1]).map(([k, v]) => `- ${k}: ${(v / weeks * 100).toFixed(1)}`).join('\n') + '\n';
-const careless = med(results.filter(r => r.strat === 'careless').map(r => r.score));
-const idle = med(results.filter(r => r.strat === 'idle').map(r => r.score));
-const planner = med(results.filter(r => r.strat === 'planner' && (r.len === 'five' || r.len === 'life')).map(r => r.score));
+const careless = med(results.filter(r => r.label === 'normal' && r.strat === 'careless').map(r => r.score));
+const idle = med(results.filter(r => r.label === 'normal' && r.strat === 'idle').map(r => r.score));
+const planner = med(results.filter(r => r.label === 'normal' && r.strat === 'planner' && (r.len === 'five' || r.len === 'life')).map(r => r.score));
 md += `\nIdle median **${idle}** (target 50 or below) · Careless median **${careless}** (target 60 or below) · Planner median in 5-year and Lifetime games **${planner}** (target 70 or above).\n`;
 if (idle > 50) md += `\n> ⚠️ Doing nothing scores too high (issue #20).\n`;
 if (careless > 60) md += `\n> ⚠️ Careless play scores too high (issue #7).\n`;
