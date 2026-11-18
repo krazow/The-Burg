@@ -25,8 +25,17 @@ entry for every release, and the GitHub release notes are taken from it.
   were.
 
 ### Fixed
+- **Landscape phones:** a compact header, the week strip and End Week share one row, and the tab bar is slimmer, so
+  content gets well over half the screen.
+- **Every button and map pin is at least 44 × 44 px**, so they're easier to tap.
+- **Keyboard and screen readers:** a visible focus ring. Menus and messages open as dialogs that keep Tab inside and
+  close with Escape, returning you to where you were. Map pins open with Enter, and Help focuses its Close button.
+  The whole tutorial works with Enter alone. Week results and tutorial steps are read aloud, and the current tab
+  and chosen focus are announced.
+- **Health can now really suffer:** it pulls back toward normal more slowly, and pushing through low health with
+  overtime or side hustles drags it down fast. About two years of nonstop overtime in a hard job lands you in the
+  hospital, while a balanced life stays healthy.
 - Text contrast now meets WCAG AA everywhere: darker grey and green text, and the "Current" and "Home" tags.
-- Map pins are easier to tap: each has a larger invisible touch area (at least 24 × 24 px even on small phones).
 
 ### Changed
 - **Home puts the week first:** a compact focus grid sits right under the stats, the End Week button shows your
