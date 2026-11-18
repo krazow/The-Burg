@@ -35,6 +35,13 @@ entry for every release, and the GitHub release notes are taken from it.
 - **Town goals each season:** get Celebration Days ready (spring), bring in the harvest (summer), stock the food bank
   (fall), the holiday food drive and shoveling for neighbors (winter). Work toward them with your weekly focus.
 
+- **Badges and life goals:** 18 badges to earn (collected across all your lives). Pin up to 3 as life goals on the
+  Life tab; each one you reach adds 2 points to your Life Score.
+- **Stories that unfold over weeks:** fixing up the fixer-upper, a friend's food truck, and the flood that leads to a
+  new levee. Each step depends on what you chose before.
+- **🏁 Challenges** on the title screen: Debt-free in 2 years, Save the family farm, Single parent, and From the
+  wheat to the lab.
+
 ### Changed
 - **Work extra hours** now pays +20% (was +15%) and wears on you less. Long commutes and side hustles were traps:
   in simulated 5-year games a sensible long-commuter now scores 73 (was 66), an overtime grinder 51 (was 46) and a
