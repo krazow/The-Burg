@@ -3,7 +3,7 @@
 Release notes for The Burg. `/release now` turns the Unreleased section into a dated `## X.Y.Z (YYYY-MM-DD)`
 entry for every release, and the GitHub release notes are taken from it.
 
-## Unreleased
+## 0.2.0 (2026-11-17)
 
 ### Added
 - **Events happen at places.** Every event says where it takes place (the fairgrounds, the Touchet, Bluewood, Walla
