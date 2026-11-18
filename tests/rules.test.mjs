@@ -660,7 +660,7 @@ await t.check('R16: the end screen and score sheet label Relaxed and Hard scores
 
 await t.check('B2: a 6-month life starts with a little less happiness and health', async () => {
   const r = await ev(() => { newGame('H', 'half', 0); const h = [S.happy, S.health]; newGame('T', 'two', 0); return { h, t: [S.happy, S.health] }; });
-  assert(r.h[0] === r.t[0] - 6 && r.h[1] === r.t[1] - 6, JSON.stringify(r));
+  assert(r.h[0] === r.t[0] - 10 && r.h[1] === r.t[1] - 10, JSON.stringify(r));
 });
 
 await t.check('B4: kids cost more for long commuters and lift you most in weeks at home', async () => {

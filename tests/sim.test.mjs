@@ -1,11 +1,15 @@
 // Play-test simulation: bot players with different habits play whole games at every length.
 // Fails on anything impossible (errors, NaN, stats outside 0–100, games that never end).
-// Prints a balance report (and adds it to the GitHub Actions job summary).
+// Prints a balance report (and adds it to the GitHub Actions job summary). In the full run it also fails when
+// careless play or doing nothing scores too high (T1/B7), so a change can't quietly break the balance.
 // Run with: npm run test:sim     More games: SIM_SCALE=3 npm run test:sim
+// On GitHub pull requests the simulation runs at half scale (T2); pushes to main and releases run it in full.
 import fs from 'node:fs';
 import { serve, launch, runner, seedScript } from './helpers.mjs';
 
-const SCALE = Number(process.env.SIM_SCALE || 1);
+const SCALE = Number(process.env.SIM_SCALE || (process.env.GITHUB_EVENT_NAME === 'pull_request' ? 0.5 : 1));
+const FILTERED = !!(process.env.SIM_ONLY || process.env.SIM_LEN || process.env.SIM_VARIANTS);   // a tuning run: no balance ceilings
+const CEILING = { careless: 62, idle: 52 };                     // the targets (60 and 50) plus a small margin for dice
 let GAMES = { half: 6, two: 4, five: 2, life: 1 };              // per strategy, times SIM_SCALE
 let STRATEGIES = ['planner', 'homebody', 'commuter', 'student', 'hustler', 'careless', 'idle', 'tripper', 'roadie'];
 // for tuning: SIM_ONLY=commuter,hustler and/or SIM_LEN=five,two run a subset (CI always runs everything)
@@ -65,7 +69,8 @@ for (const { len, strat, g, opts, label } of JOBS_LIST) {
           else f = ['community', 'outdoors', 'rest', 'community'][weeks % 4];
           S.focus = opts.includes(f) ? f : 'rest';
           if (!['careless', 'idle'].includes(strat) && canCarpool()) S.carpool = true;   // sensible players share the drive
-          if (!S.biz && strat === 'planner' && S.money > 40000) startBiz('wheat');            // businesses: a planner leases wheat ground,
+          if (!S.biz && strat === 'planner' && S.money > 40000) startBiz('wheat');            // businesses: a planner leases wheat ground (and renews it),
+          if (strat === 'planner' && leaseDue()) renewLease();
           if (!S.biz && strat === 'homebody' && S.money > 8000) startBiz('shop');             // a homebody opens a woodshop
           // trips around the region: the planner shops and keeps up car care monthly; the tripper goes out every week
           if (strat === 'planner' && weeks % 4 === 0 && S.money > 300) {
@@ -150,6 +155,15 @@ if (idle > 50) md += `\n> ⚠️ Doing nothing scores too high (issue #20).\n`;
 if (careless > 60) md += `\n> ⚠️ Careless play scores too high (issue #7).\n`;
 if (planner < 70) md += `\n> ⚠️ Good play scores too low.\n`;
 console.log(md);
+// ---- balance ceilings (T1/B7): these fail the full run, not a filtered tuning run ----
+if (!FILTERED) {
+  await t.check(`careless play scores ${CEILING.careless} or below (median ${careless})`, async () => {
+    if (careless > CEILING.careless) throw new Error(`careless median ${careless} is above ${CEILING.careless}`);
+  });
+  await t.check(`doing nothing scores ${CEILING.idle} or below (median ${idle})`, async () => {
+    if (idle > CEILING.idle) throw new Error(`idle median ${idle} is above ${CEILING.idle}`);
+  });
+}
 if (process.env.SIM_DEBUG) for (const len of Object.keys(GAMES)) for (const st of STRATEGIES) { const rs = results.filter(r => r.len===len && r.strat===st); const avg = k => Math.round(rs.reduce((a,r)=>a+r.parts[k],0)/rs.length); console.log(len.padEnd(5), st.padEnd(9), 'happy', avg('happy'), 'health', avg('health'), 'comm', avg('community'), 'wealth', avg('wealth'), 'kids', rs.map(r=>r.kids).join(',')); }
 fs.mkdirSync('test-results', { recursive: true });
 fs.writeFileSync('test-results/balance-report.md', md);

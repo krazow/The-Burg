@@ -40,7 +40,7 @@ const vehicleTabs = () => Math.max(cost(60), (S.carValue || 0) * 0.01);
 // kids: $650 a month each, plus $200 of childcare when you commute 20+ miles; they lift you most in weeks at home (B4)
 const KID_COST = 650, KID_CARE_COMMUTE = 200;
 const kidCost = () => cost(KID_COST + (commuteOneWay() >= 20 ? KID_CARE_COMMUTE : 0));
-const HALF_START_DIP = 6;                 // B2: a 6-month life starts with a little less happiness and health
+const HALF_START_DIP = 10;                // B2: a 6-month life starts with a little less happiness and health
 const studyDone = () => Math.floor(S.studyProg);   // weeks of classes done (a trip week counts 3/4, R11)
 const kidJoy = () => ['rest', 'community'].includes(S.focus) ? 0.6 : 0.1;
 const RUT_WEEKS = 8;
@@ -58,8 +58,8 @@ const wk = v => fmt(v*W) + '/wk';
 const LENGTHS = {
   half: { label:'6 Months', sub:'26 weeks',  turns:26,       target:16000 },
   two:  { label:'2 Years',  sub:'104 weeks', turns:104,      target:90000 },
-  five: { label:'5 Years',  sub:'260 weeks', turns:260,      target:300000 },
-  life: { label:'Lifetime', sub:'18 to the end', turns:Infinity, target:3000000 }
+  five: { label:'5 Years',  sub:'260 weeks', turns:260,      target:400000 },   // B1: raised so careless long games don't coast on pay growth
+  life: { label:'Lifetime', sub:'18 to the end', turns:Infinity, target:4000000 }
 };
 
 const CITIES = {
