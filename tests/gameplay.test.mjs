@@ -343,6 +343,9 @@ await t.check('a save from before slots moves into a slot', async () => {
     localStorage.clear(); localStorage.setItem('theburg.save.v2', JSON.stringify(g));
   });
   await page.reload({ waitUntil: 'load' });
+  // a player from an older version is welcomed back with What's new first
+  assert(/What's new/.test(await page.textContent(`${open} h2`)), 'a returning player should see What\'s new');
+  await page.click(`${open} #ok`);
   await page.click('[data-cont="0"]');
   const s = await S();
   assert(s.name === 'Oldtimer' && s.turn === 9 && s.slot === 0, 'old save was not moved');
