@@ -405,6 +405,65 @@ await t.check('Life Score so far shows on Home and a report card lands in the Jo
   assert(/weakest part/.test(r.sheetText) && /if the game ended today/.test(r.sheetText), 'score sheet text');
 });
 
+// ---- Phase 2 (#69, #73, #77): backgrounds, modes, season goals ----
+await t.check('each background starts a life the way it says', async () => {
+  const r = await ev(() => Object.fromEntries(Object.keys(BACKGROUNDS).map(bg => { newGame('B', 'two', 0, { bg }); S.noEvents = true;
+    const s0 = { age: age(), money: S.money, job: S.jobId, edu: S.edu, car: S.car, kids: kidsAtHome(), community: S.community, sloan: S.sloanLeft };
+    const l = week().lines; return [bg, { ...s0, loanLine: l['Student loan'] }]; })));
+  assert(r.fresh.age === 18 && r.fresh.money === 1500 && !r.fresh.job, `fresh ${JSON.stringify(r.fresh)}`);
+  assert(r.farm.job === 'farmhand' && r.farm.money === 300 && r.farm.community > 40, `farm ${JSON.stringify(r.farm)}`);
+  assert(r.grad.age === 21 && r.grad.edu === 2 && r.grad.sloan === 120 && near(r.grad.loanLine, -380 * W), `grad ${JSON.stringify(r.grad)}`);
+  assert(r.transplant.money === 6000 && r.transplant.car === 'sedan' && r.transplant.community < 10, `transplant ${JSON.stringify(r.transplant)}`);
+  assert(r.parent.age === 20 && r.parent.kids === 1, `parent ${JSON.stringify(r.parent)}`);
+});
+
+await t.check('the student loan counts against net worth and ends after 10 years', async () => {
+  const r = await ev(() => { newGame('G', 'five', 0, { bg: 'grad' }); S.noEvents = true; const nw0 = netWorth(), m0 = S.money;
+    let done = false; for (let i = 0; i < 530 && !done; i++) { weekTick(false); if (S.sloanLeft === 0) done = i; } return { gap: m0 + S.carValue - nw0, done }; });
+  assert(r.gap > 35000, `loan should lower net worth by ~$39k: ${r.gap}`);
+  assert(r.done > 515 && r.done < 525, `paid off after ${r.done} weeks (expected ~520)`);
+});
+
+await t.check('Relaxed softens drains and never ends in debt; Hard costs more and ends in debt sooner', async () => {
+  const r = await ev(() => {
+    const drop = md => { newGame('M', 'two', 0, { mode: md }); S.noEvents = true; S.happy = 80; S.jobId = null; S.focus = 'study'; weeks(8); return S.happy; };
+    const relaxed = drop('relaxed'), normal = drop('normal');
+    newGame('M', 'two', 0, { mode: 'relaxed' }); S.noEvents = true; S.money = -45000; const rEnd = week().ending, rMoney = S.money;
+    newGame('M', 'two', 0, { mode: 'hard' }); S.noEvents = true; S.money = -26000; const hEnd = week().ending;
+    newGame('M', 'two', 0, { mode: 'hard' }); S.noEvents = true; const hCost = week().lines['Higher living costs (Hard)'];
+    newGame('M', 'two', 0, { mode: 'hard' }); S.jobId = 'diner'; S.jobMonths = 12; const lay = EVENTS.find(e => e.title === 'Layoffs').w();
+    newGame('M', 'two', 0); S.jobId = 'diner'; S.jobMonths = 12; const layN = EVENTS.find(e => e.title === 'Layoffs').w();
+    return { relaxed, normal, rEnd, rMoney, hEnd, hCost, lay, layN };
+  });
+  assert(r.relaxed > r.normal + 1, `relaxed ${r.relaxed} vs normal ${r.normal}`);
+  assert(!r.rEnd && r.rMoney >= -40000, `relaxed debt ${r.rEnd} ${r.rMoney}`);
+  assert(/debt/.test(r.hEnd || '') && near(r.hCost, -68 * W) && near(r.lay, r.layN * 1.6), JSON.stringify(r));
+});
+
+await t.check('best scores are kept per mode', async () => {
+  const r = await ev(() => { localStorage.clear(); newGame('A', 'half', 0, { mode: 'hard' }); S.noEvents = true; weeks(26); finish('done'); closeSheet();
+    const b = store.get(BEST_KEY); return { keys: Object.keys(b), label: bestLabel('half-hard') }; });
+  assert(r.keys.includes('half-hard') && !r.keys.includes('half') && r.label === '6 Months (Hard)', JSON.stringify(r));
+});
+
+await t.check('a season goal counts weeks of the right focus and pays out once', async () => {
+  const r = await ev(() => { fresh('two', { date: new Date(2027, 2, 1).getTime(), focus: 'community', community: 30 }); tab = 'home'; render();
+    const line = document.querySelector('.sgoal').textContent; let note = null, c5 = 0;
+    for (let i = 0; i < 6; i++) { const res = week(); if (i === 4) c5 = S.community; if (res.notes.some(n => /Town goal done/.test(n))) note = i; }
+    const done = { ...S.sgoal }, wins = S.seasonWins; weeks(2);
+    fresh('two', { date: new Date(2027, 2, 1).getTime(), focus: 'rest' }); weeks(4);
+    return { line, note, done, wins, after: S.seasonWins, restProg: S.sgoal.prog };
+  });
+  assert(/Celebration Days/.test(r.line) && /0\/6/.test(r.line), r.line);
+  assert(r.note === 5 && r.done.done && r.wins === 1, JSON.stringify(r));
+  assert(r.restProg === 0, 'Rest should not count toward the spring goal');
+});
+
+await t.check('a winter goal spans December to February as one season', async () => {
+  const r = await ev(() => { fresh('two', { date: new Date(2027, 11, 20).getTime(), focus: 'outdoors' }); weeks(3); const a = S.sgoal.id; const p = S.sgoal.prog; weeks(1); return { a, b: S.sgoal.id, p, p2: S.sgoal.prog }; });
+  assert(r.a === r.b && r.a === 'winter-2027' && r.p2 >= r.p, JSON.stringify(r));
+});
+
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });
 
 await browser.close();

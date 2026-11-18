@@ -339,6 +339,17 @@ await t.check('Life Score so far opens its breakdown from Home; a commuter can j
   assert(/Drive alone/.test(await page.textContent('#carpool')), 'carpool button should switch');
 });
 
+await t.check('the title screen starts a life with a background and a mode', async () => {
+  await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); render(); });
+  await page.fill('#nm', 'Kid');
+  await page.click('[data-bg="farm"]'); await page.click('[data-mode="hard"]');
+  assert(/family farm/.test(await page.textContent('#bgdesc')) && /more events/i.test(await page.textContent('#modedesc')), 'descriptions should follow the picks');
+  await page.click('#start');
+  const s = await S();
+  assert(s.bg === 'farm' && s.mode === 'hard' && s.jobId === 'farmhand', JSON.stringify({ bg: s.bg, mode: s.mode, job: s.jobId }));
+  assert(/Hard/.test(await page.textContent('header.top')), 'the header should show the mode');
+});
+
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });
 
 await browser.close();

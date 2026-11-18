@@ -1,6 +1,6 @@
 # The Burg: To-do
 
-_Last updated: November 18, 2026 (gameplay fixes, phase 1 of 4)_
+_Last updated: November 18, 2026 (gameplay fixes, phase 2 of 4)_
 
 This is the project's working to-do list: what's been done, what's next, and in what order. Every open item has a
 matching **GitHub issue** with a priority label (**P1 – now**, **P2 – soon**, **P3 – later**). The issues are the
@@ -269,7 +269,7 @@ The six problems the analysis found, most important first. Each one closes when 
 - [ ] 2. No goals until the very end — [#80](https://github.com/krazow/The-Burg/issues/80)
 - [ ] 3. Many weeks have no decisions — [#81](https://github.com/krazow/The-Burg/issues/81)
 - [ ] 4. Every life starts the same — [#82](https://github.com/krazow/The-Burg/issues/82)
-- [ ] 5. One difficulty for everyone — [#83](https://github.com/krazow/The-Burg/issues/83)
+- [x] 5. One difficulty for everyone — [#83](https://github.com/krazow/The-Burg/issues/83)
 - [ ] 6. School is the only way to grow — [#84](https://github.com/krazow/The-Burg/issues/84)
 
 ### Recommendations
@@ -291,9 +291,9 @@ The six problems the analysis found, most important first. Each one closes when 
 
 - [x] Life Score so far on Home — [#67](https://github.com/krazow/The-Burg/issues/67)
 - [x] Fix long commutes and side hustles — [#70](https://github.com/krazow/The-Burg/issues/70)
-- [ ] Starting backgrounds — [#69](https://github.com/krazow/The-Burg/issues/69)
-- [ ] Relaxed and Hard modes — [#73](https://github.com/krazow/The-Burg/issues/73)
-- [ ] Season goals in town — [#77](https://github.com/krazow/The-Burg/issues/77)
+- [x] Starting backgrounds — [#69](https://github.com/krazow/The-Burg/issues/69)
+- [x] Relaxed and Hard modes — [#73](https://github.com/krazow/The-Burg/issues/73)
+- [x] Season goals in town — [#77](https://github.com/krazow/The-Burg/issues/77)
 - [ ] Life goals and achievements — [#66](https://github.com/krazow/The-Burg/issues/66)
 - [ ] Story chains: events that unfold over weeks — [#68](https://github.com/krazow/The-Burg/issues/68)
 - [ ] Challenge scenarios — [#74](https://github.com/krazow/The-Burg/issues/74)
@@ -401,3 +401,4 @@ that careless play stays at or below 60 and good play at or above 70.
 | Nov 18, 2026 | **Gameplay analysis:** 6 observations and 12 recommendations (features and styles of play), filed as #66–#77 under Soon. | [analysis](docs/gameplay-recommendations-2026-11-18.md) |
 | Nov 18, 2026 | **Gameplay findings** added to the to-do and prioritized (#79–#84): commutes and side hustles first, then goals, quiet weeks, same starts, difficulty, ways to grow. | `TODO.md` |
 | Nov 18, 2026 | **Gameplay fixes, phase 1:** live Life Score on Home with quarterly report cards (#67); carpools, remote days, seasonal side-hustle gigs and a gentler Work extra hours (#70), fixing finding #79. Sim, 5-year games: sensible long-commuter 66 → 73, overtime grinder 46 → 51, side hustler 37 → 50; careless 54, idle 49, good play 86. | [PR #86](https://github.com/krazow/The-Burg/pull/86) |
+| Nov 18, 2026 | **Gameplay fixes, phase 2:** five ways a life can begin (#69), Relaxed and Hard modes with best scores per mode (#73, fixing finding #83), and a town goal each season (#77). The sim now also plays every start and mode; careless 58, idle 49, good play 88. | [PR #87](https://github.com/krazow/The-Burg/pull/87) |

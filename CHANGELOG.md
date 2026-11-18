@@ -27,6 +27,14 @@ entry for every release, and the GitHub release notes are taken from it.
 - **Side-hustle gigs** follow the seasons (harvest work, plowing snow, yard work, fixing cars) and pay up to 60% more
   with experience.
 
+- **How your life begins:** pick a start on the title screen: Fresh start, Farm kid (a job on the family farm),
+  Grad coming home (a degree and student loans), Seattle transplant (savings and a sedan, but nobody knows you) or
+  Young parent (a toddler and a tight budget).
+- **Relaxed and Hard modes:** Relaxed wears down slower and never ends in debt; Hard wears down faster, has more
+  events and layoffs, costs 10% more and ends in debt at -$25,000. Best scores are kept per mode.
+- **Town goals each season:** get Celebration Days ready (spring), bring in the harvest (summer), stock the food bank
+  (fall), the holiday food drive and shoveling for neighbors (winter). Work toward them with your weekly focus.
+
 ### Changed
 - **Work extra hours** now pays +20% (was +15%) and wears on you less. Long commutes and side hustles were traps:
   in simulated 5-year games a sensible long-commuter now scores 73 (was 66), an overtime grinder 51 (was 46) and a
