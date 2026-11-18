@@ -4,6 +4,11 @@ Life in The Burg: a turn-based life sim set in Waitsburg, WA, built as an instal
 
 You live in Waitsburg and work anywhere from Waitsburg and Dayton to Walla Walla, Kennewick, Richland or Pasco. Each turn is one week: pick a focus, pay the bills, drive Highway 12, and handle whatever life in the Burg throws at you.
 
+## Help
+
+Tap **❓ Help & tutorial** on the title screen, or **?** in the game's header, for the full game guide and a guided
+practice tutorial that shows you what to tap, step by step.
+
 ## Game lengths
 
 - **6 Months** (26 weeks)
@@ -30,7 +35,7 @@ Your Life Score blends average happiness (30%), average health (20%), community 
 
 - **Smoke** (`tests/smoke.test.mjs`): the app opens cleanly, the service worker installs, and it opens offline.
 - **Gameplay** (`tests/gameplay.test.mjs`): taps through the core loop: start a game, get hired, end weeks,
-  answer an event, skip ahead, save and continue, both maps, and the ending screen.
+  answer an event, skip ahead, save and continue, both maps, help and the full tutorial, and the ending screen.
 - **Play-test simulation** (`tests/sim.test.mjs`): seven bot players (planner, homebody, commuter, student,
   hustler, careless, idle) play full games at every length. It fails on errors or impossible values, and writes a balance report
   to `test-results/balance-report.md` (and the Actions job summary). Use `SIM_SCALE=3` for more games and `SIM_DEBUG=1` to see each part of the score.

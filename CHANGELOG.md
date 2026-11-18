@@ -17,6 +17,12 @@ entry for every release, and the GitHub release notes are taken from it.
 - **Job list:** jobs you can apply for come first, there's a ✅ Can apply filter, and each job shows take-home pay
   after taxes and gas, with ▲▼ against your current job.
 - The ending shows how each part of the Life Score adds up.
+- **❓ Help** on the title screen, as a **?** in the in-game header, and in the Menu. It holds a full **game guide**:
+  getting started, your week, stats, money, jobs, school, homes and vehicles, savings, family, events, maps,
+  saving, the Life Score, tips, and installing. The tables come from the game's own numbers.
+- **Gameplay tutorial** under Help: a guided practice life where a pulsing ring and a 👆 show exactly what to tap,
+  and each of the 26 steps waits for your tap. It never touches your saves or settings, and puts you back where you
+  were.
 
 ### Changed
 - **Home puts the week first:** a compact focus grid sits right under the stats, the End Week button shows your

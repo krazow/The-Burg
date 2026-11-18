@@ -272,6 +272,59 @@ await t.check('a 2-year game shows a year in review at New Year', async () => {
   await page.evaluate(() => { writeSlot(4, null); });
 });
 
+await t.check('Help on the title screen opens the guide, and its contents jump to sections', async () => {
+  await page.evaluate(() => { S = null; renderTitle(); });
+  await page.click('#how');
+  await page.waitForSelector('#helpview:not(.hidden) #tutstart');
+  const sections = await page.$$eval('#helpview .guide section', els => els.map(e => e.id));
+  assert(sections.length >= 14, `guide has only ${sections.length} sections`);
+  assert((await page.$$('#helpview .toc button')).length === sections.length, 'contents should list every section');
+  try {
+    await page.click('#helpview .toc button:has-text("Jobs")');
+    let top = 9999;
+    for (let i = 0; i < 20 && top > 160; i++) { await page.waitForTimeout(150); top = await page.$eval('#g-jobs', e => e.getBoundingClientRect().top); }
+    assert(top < 160, `Jobs section not scrolled into view (top ${Math.round(top)})`);
+    assert((await page.textContent('#g-jobs')).includes('National lab scientist'), 'job table missing');
+  } finally { await page.click('#helpclose'); }
+  assert(await page.isHidden('#helpview'), 'Close should hide help');
+});
+
+await t.check('the gameplay tutorial walks through every step by tapping, then leaves saves and settings alone', async () => {
+  await page.evaluate(() => { localStorage.clear(); setPref('mapView', false); newGame('Mine', 'two', 0); S.turn = 7; save(); tab = 'home'; render(); });
+  const before = await page.evaluate(() => JSON.stringify(slots().map(g => g && { ...g, savedAt: 0 })));
+  await page.click('#helpbtn');
+  await page.click('#tutstart');
+  let steps = 0;
+  for (let guard = 0; guard < 80; guard++) {
+    await page.waitForTimeout(450);
+    const st = await page.evaluate(() => TUT ? { i: TUT.i, sel: TSTEPS[TUT.i].sel || null, tap: !!TSTEPS[TUT.i].tap, shown: !document.querySelector('#coach').classList.contains('hidden') } : null);
+    if (!st) break;
+    if (!st.shown) continue;
+    steps = Math.max(steps, st.i + 1);
+    if (st.tap) { const box = await (await page.$(st.sel)).boundingBox(); await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2); }
+    else await page.click('#cnext');
+  }
+  const total = await page.evaluate(() => TSTEPS.length);
+  assert(steps === total, `tutorial reached step ${steps} of ${total}`);
+  const s = await S();
+  assert(s.name === 'Mine' && s.turn === 7 && !s.practice, 'the real life was not restored');
+  assert((await page.evaluate(() => JSON.stringify(slots().map(g => g && { ...g, savedAt: 0 })))) === before, 'the tutorial changed the saves');
+  assert(!(await page.evaluate(() => prefs().mapView)), 'the tutorial left the map setting on');
+});
+
+await t.check('the tutorial dims everything but the highlighted spot, and Skip tutorial returns to the game', async () => {
+  await page.click('#helpbtn');
+  await page.click('#tutstart');
+  await page.waitForSelector('#coach:not(.hidden) .cdim');
+  await page.click('#cnext');                                   // step 1 → the Apply step
+  await page.waitForSelector('#coach:not(.hidden) .cring.tap');
+  const blocked = await page.evaluate(() => { const r = document.querySelector('nav [data-tab="life"]').getBoundingClientRect(); const el = document.elementFromPoint(r.left + r.width/2, r.top + r.height/2); return el.classList.contains('cdim'); });
+  assert(blocked, 'taps outside the highlighted spot should be blocked');
+  await page.click('#cskip');
+  const s = await S();
+  assert(s.name === 'Mine' && !(await page.$('#coach:not(.hidden)')), 'Skip did not return to the real game');
+});
+
 await t.check('with all 5 slots full, a new life asks which one to replace', async () => {
   await page.evaluate(() => { for (let i = 0; i < 5; i++) { newGame('Life' + (i+1), 'half', i); save(); } S = null; renderTitle(); });
   assert((await page.$$('[data-cont]')).length === 5, 'title should list five lives');
