@@ -225,6 +225,62 @@ await t.check('region events (Bluewood, Walla Walla) are marked on the region ma
   await page.click('#main .maptog button:nth-child(1)');
 });
 
+await t.check('backup: Menu downloads a backup file of every life', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => { S.turn = 12; save(); });
+  await page.click('[data-tab=menu]'); await page.click('#backup');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#bkfile')]);
+  assert(/^the-burg-backup-\d{4}-\d{2}-\d{2}\.json$/.test(dl.suggestedFilename()), dl.suggestedFilename());
+  const path = await dl.path();
+  const data = JSON.parse((await import('node:fs')).readFileSync(path, 'utf8'));
+  assert(data.app === 'theburg' && data.slots[0].name === 'Flow' && data.slots[0].turn === 12, 'backup file content wrong');
+  globalThis.__backupFile = path;
+  await page.click(`${open} #no`);
+});
+
+await t.check('backup: a copied code restores the lives on a "new device" from the title screen', async () => {
+  await page.click('[data-tab=menu]'); await page.click('#backup');
+  await page.click('#bkcode');
+  await page.waitForSelector('#bkcodetext');
+  const code = await page.inputValue('#bkcodetext');
+  assert(code.startsWith('BURG'), 'no backup code shown');
+  await page.click(`${open} #no`);
+  await page.evaluate(() => { localStorage.clear(); S = null; renderTitle(); });   // a fresh device
+  assert((await page.$$('[data-cont]')).length === 0, 'expected no lives on the new device');
+  await page.click('#restore');
+  await page.fill('#rscode', code);
+  await page.click('#rscheck');
+  await page.waitForSelector('#rsadd');
+  assert((await page.textContent('#rsout')).includes('Flow'), 'preview does not list the life');
+  await page.click('#rsadd');
+  await page.waitForSelector('[data-cont="0"]');
+  await page.click('[data-cont="0"]');
+  assert((await S()).name === 'Flow' && (await S()).turn === 12, 'restored life is wrong');
+});
+
+await t.check('backup: restoring from a file can replace all lives, after a warning', async () => {
+  await page.evaluate(() => { localStorage.clear(); for (let i = 0; i < 3; i++) { newGame('Old' + i, 'half', i); save(); } S = null; renderTitle(); });
+  await page.click('#restore');
+  await page.setInputFiles('#rsfile', globalThis.__backupFile);
+  await page.waitForSelector('#rsrep');
+  await page.click('#rsrep');
+  await page.waitForSelector('#rsyes');
+  await page.click('#rsback');
+  await page.waitForSelector('#rsrep');
+  await page.click('#rsrep'); await page.click('#rsyes');
+  const names = await page.evaluate(() => slots().map(g => g && g.name));
+  assert(names.join() === 'Flow,,,,', `after replace: ${names}`);
+});
+
+await t.check('backup: junk is rejected with a plain message', async () => {
+  await page.click('#restore');
+  await page.fill('#rscode', 'not a backup at all');
+  await page.click('#rscheck');
+  await page.waitForSelector('#rsout .warnline');
+  assert((await page.textContent('#rsout')).includes("doesn't look like a backup"), await page.textContent('#rsout'));
+  await page.click(`${open} #no`);
+});
+
 await t.check('the Journal lists what happened, newest first', async () => {
   await life({ jobId: 'farmhand' });
   await page.evaluate(() => { log('First thing'); log('Second thing'); render(); });
