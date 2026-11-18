@@ -243,14 +243,14 @@ const STORY_EVENTS = [
     text:'The front porch of your fixer-upper groans every time you step on it. Time to do something.',
     choices:() => [
       {label:'Fix it yourself (-$350)', go:() => { adj({money:-Math.round(cost(350) * (1 - skillLv('handy') * 0.15)), health:-2, happy:2}); practice('handy', 3); chainSet('fixer', 2, { diy:true }); return 'Two weekends, a borrowed saw and sore hands. It\'s solid now, and you learned a lot.'; }},
-      {label:'Hire a contractor (-$1,400)', go:() => { adj({money:-Math.round(cost(1400))}); chainSet('fixer', 2, { diy:false }); return 'A crew had it done in two days.'; }},
+      {label:'Hire Tim\'s Trim & Timber (-$1,400)', go:() => { adj({money:-Math.round(cost(1400))}); chainSet('fixer', 2, { diy:false }); return 'Tim\'s Trim & Timber had it done in two days.'; }},
       {label:'Leave it', go:() => { adj({happy:-2}); chainEnd('fixer'); return 'You step carefully around the soft board.'; }}
     ]},
   { ic:'🍳', title:'The kitchen is next', once:1, w:8, when:() => chainAt('fixer', 2) && S.home === 'fixer',
     text:() => chain('fixer').f.diy ? 'Fixing the porch gave you ideas. The 1970s kitchen is calling.' : 'The contractor mentions the kitchen could use the same treatment.',
     choices:() => [
       {label:'Redo it yourself over a month (-$2,500)', go:() => { adj({money:-Math.round(cost(2500) * (1 - skillLv('handy') * 0.15)), health:-3, happy:3}); practice('handy', 4); chainSet('fixer', 3, { kitchen:'diy' }, [6, 10]); return 'Cabinets out, cabinets in. Dinner on a camp stove for a month.'; }},
-      {label:'Hire it out (-$7,000)', go:() => { adj({money:-Math.round(cost(7000))}); chainSet('fixer', 3, { kitchen:'pro' }, [6, 10]); return 'The crew is on it. Takeout for a few weeks.'; }},
+      {label:'Hire Sharp Point Builders (-$7,000)', go:() => { adj({money:-Math.round(cost(7000))}); chainSet('fixer', 3, { kitchen:'pro' }, [6, 10]); return 'The crew is on it. Takeout for a few weeks.'; }},
       {label:'Not now', go:() => { chainEnd('fixer'); return 'The old kitchen still works. Mostly.'; }}
     ]},
   { ic:'🏠', title:'The house is coming together', once:1, w:8, when:() => chainAt('fixer', 3) && S.home === 'fixer',

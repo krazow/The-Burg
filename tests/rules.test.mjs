@@ -591,6 +591,110 @@ await t.check('What\'s new ignores beta tags, compares versions as numbers, and 
   assert(/^\d+\.\d+\.\d+$/.test(r.v) && r.n >= 12 && r.order, JSON.stringify(r));
 });
 
+// ---- Out and about (#48–#54): Waitsburg's businesses ----
+await t.check('no real business names appear anywhere in js/ or index.html (stand-in names only)', async () => {
+  const fs = await import('node:fs');
+  const REAL = ['Bar Bacetto', 'Bacetto', 'Wolfling', 'Atelier Waitsburg', 'Royal Block', 'Laht Neppur', 'Whiskey Canyon', "Mr. C's", "Mr C's", 'Ten Ton',
+    'Waitsburg Grocery', 'Simply Sawdust', 'Gaudy Gals', "Nancy's Dream", 'Blush Salon', 'Banner Bank', 'Waitsburg Clinic', 'The Times', 'Stone and Sky',
+    'Hubbard Law', 'Karl Law', 'McGregor', 'Affordable Concrete', 'Chisel Point', "Tim's Carpentry", 'L-C Applicators'];
+  const files = ['index.html', ...fs.readdirSync('js').filter(f => f.endsWith('.js')).map(f => 'js/' + f)];
+  const hits = [];
+  for (const f of files) { const s = fs.readFileSync(f, 'utf8').toLowerCase(); for (const n of REAL) if (s.includes(n.toLowerCase())) hits.push(`${n} in ${f}`); }
+  assert(!hits.length, hits.join('; '));
+});
+
+await t.check('places keep their real open days and seasons: winter breaks, the grill, the garden season, Tonnage\'s jam weeks', async () => {
+  const r = await ev(() => { fresh('two', { ageMonths: 30 * 12, money: 5000 });
+    const at = (m, turn = 0) => { S.date = new Date(2027, m, 10).getTime(); S.turn = turn; };
+    const open = id => !placeClosed(placeById(id));
+    at(0); const janShop = open('shavings'), janJunque = open('junque'), janGarden = open('garden'), janGrill = actBlocked(placeById('lad'), actOf(placeById('lad'), 'grill'));
+    at(2); const marShop = open('shavings');
+    at(3); const aprGarden = open('garden');
+    at(7); const augGarden = open('garden'), augGrill = actBlocked(placeById('lad'), actOf(placeById('lad'), 'grill')), augPint = open('lad');
+    at(7, 10); const jamEven = open('tonnage'); at(7, 11); const jamOdd = open('tonnage'); at(4, 11); const festival = open('tonnage');
+    return { janShop, janJunque, janGarden, janGrill, marShop, aprGarden, augGarden, augGrill, augPint, jamEven, jamOdd, festival, checked: PLACES_CHECKED }; });
+  assert(!r.janShop && !r.janJunque && r.marShop, `winter breaks: ${JSON.stringify(r)}`);
+  assert(!r.janGarden && r.aprGarden && !r.augGarden, 'the garden center is a spring business');
+  assert(/Only/.test(r.janGrill) && r.augGrill === '' && r.augPint, `grill season: ${r.janGrill} / ${r.augGrill}`);
+  assert(r.jamEven && !r.jamOdd && r.festival, 'Tonnage opens only on jam weeks (every other week) and festival days');
+  assert(/^\d{4}-\d{2}-\d{2}$/.test(r.checked), 'places need a last-checked date');
+});
+
+await t.check('drinks are 21 and over: hidden and refused before 21', async () => {
+  const r = await ev(() => { fresh('two', { ageMonths: 19 * 12, money: 5000 }); S.date = new Date(2027, 5, 10).getTime(); S.turn = 2;
+    const young = { pasta: shownActs(placeById('pasta')).map(a => a.id), brick: visit('brick', 'night').err, gather: shownActs(placeById('gather')).length, grill: visit('lad', 'grill').err || 'ok' };
+    S.ageMonths = 21 * 12; const old = { pasta: shownActs(placeById('pasta')).map(a => a.id), brick: visit('brick', 'night').err || 'ok' };
+    return { young, old }; });
+  assert(r.young.pasta.join() === 'dinner' && r.young.brick === '21 and over' && r.young.gather === 0 && r.young.grill === 'ok', JSON.stringify(r.young));
+  assert(r.old.pasta.join() === 'dinner,wine' && r.old.brick === 'ok', JSON.stringify(r.old));
+});
+
+await t.check('visits: 2 a week, once per place, half as special within 4 weeks, capped per stat, and they cost money', async () => {
+  const r = await ev(() => { fresh('two', { ageMonths: 30 * 12, money: 5000, happy: 50, health: 50, community: 30 }); S.date = new Date(2027, 5, 10).getTime(); S.turn = 2;
+    const m0 = S.money, h0 = S.happy; const a = visit('pasta', 'dinner'); const paid = m0 - S.money, gain = S.happy - h0;
+    const again = visit('pasta', 'wine').err; visit('bean', 'coffee'); const third = visit('mrq', 'bbq').err;
+    S.turn = 3; const h1 = S.happy; visit('pasta', 'dinner'); const half = S.happy - h1;
+    S.turn = 9; S.happy = 50; visit('pasta', 'dinner'); visit('rouge', 'spa'); const capped = S.out.gain.happy;
+    const info = visit('bank', 'banker');
+    return { a: !!a.msg, paid, gain, again, third, half, capped, info: info.info, n: S.out.n }; });
+  assert(r.a && near(r.paid, 45) && near(r.gain, 6 * 0.28), `first dinner: paid ${r.paid}, +${r.gain}`);
+  assert(/this week/.test(r.again) && /2 visits/.test(r.third), `limits: ${r.again} / ${r.third}`);
+  assert(near(r.half, 3 * 0.28), `a repeat within 4 weeks should be half: ${r.half}`);
+  assert(r.capped <= 3 + 1e-9, `visits added ${r.capped} happiness in one week (cap 3)`);
+  assert(r.info === 'bank' && r.n === 2, 'talking to the banker should not use a visit');
+});
+
+await t.check('visits are saved: new lives and older saves get them, and they ride along in slots', async () => {
+  const r = await ev(() => { const old = migrate({ turn: 5 }); fresh('two', { ageMonths: 30 * 12 }); S.date = new Date(2027, 5, 10).getTime();
+    const fresh0 = JSON.stringify(S.out); visit('bean', 'coffee'); save(); const saved = slots()[S.slot].out;
+    return { old: old.out, fresh0, saved }; });
+  assert(r.old && r.old.n === 0 && r.old.will === false, `migrate: ${JSON.stringify(r.old)}`);
+  assert(JSON.parse(r.fresh0).n === 0, 'newGame needs Out and about defaults');
+  assert(r.saved && r.saved.n === 1 && r.saved.last.bean != null, `slot: ${JSON.stringify(r.saved)}`);
+});
+
+await t.check('little extras: a haircut helps applications, a Tattler ad raises hustle pay, a woodworking class eases a rut', async () => {
+  const r = await ev(() => { fresh('two', { ageMonths: 30 * 12, money: 5000 }); S.date = new Date(2027, 5, 10).getTime(); S.turn = 4;
+    const look0 = outLookBonus(); visit('rouge', 'cut'); const look1 = outLookBonus(); S.turn = 7; const look2 = outLookBonus();
+    S.focus = 'hustle'; visit('tattler', 'ad'); const boost = outAdBoost();
+    S.streakF = 'rest'; S.streakN = 9; S.turn = 20; visit('shavings', 'class'); const rut = S.streakN;
+    return { look0, look1, look2, boost, rut }; });
+  assert(r.look0 === 0 && r.look1 > 0 && r.look2 === 0, `look ${r.look0}/${r.look1}/${r.look2}`);
+  assert(near(r.boost, 1.15) && r.rut === 7, `ad ${r.boost}, rut ${r.rut}`);
+});
+
+await t.check('jobs at local businesses: balanced pay, school where needed, and a spot on the town map', async () => {
+  const r = await ev(() => { const ids = ['diner', 'barista', 'grocer', 'reporter', 'teller', 'apprentice', 'medasst', 'agtech'];
+    const out = ids.map(id => { const j = jobById(id); fresh('two', { jobId: id }); const spot = townPlaces().find(p => p.work); return { id, pay: j.pay, edu: j.edu, where: j.where, place: !!placeById(j.place), city: j.city, spot: spot && spot.k }; });
+    const edu0 = JOBS.filter(j => j.edu === 0 && !ids.includes(j.id)).map(j => j.pay), edu1 = JOBS.filter(j => j.edu === 1 && !ids.includes(j.id)).map(j => j.pay);
+    return { out, lo0: Math.min(...edu0), hi0: Math.max(...edu0), lo1: Math.min(...edu1), hi1: Math.max(...edu1), cook: jobById('diner').title }; });
+  assert(r.cook === 'Line cook', `diner cook should be a line cook: ${r.cook}`);
+  for (const j of r.out) {
+    assert(j.city === 'waitsburg' && j.where && j.place && j.spot, `${j.id}: ${JSON.stringify(j)}`);
+    const [lo, hi] = j.edu === 0 ? [r.lo0 - 300, r.hi0] : [r.lo1, r.hi1];
+    assert(j.pay >= lo && j.pay <= hi, `${j.id} pays ${j.pay}, outside ${lo}–${hi}`);
+  }
+  assert(r.out.find(j => j.id === 'medasst').edu >= 1 && r.out.find(j => j.id === 'agtech').edu >= 1, 'medical assistant and ag tech need school');
+  assert(r.out.find(j => j.id === 'diner').spot === 'gulch', 'the line cook works at the sports bar pin');
+});
+
+await t.check('business events: at their places, on their days; the doctor and the inheritance moved to the clinic and the law office', async () => {
+  const r = await ev(() => { fresh('life', { ageMonths: 30 * 12, money: 5000 });
+    const titles = OUT_EVENTS.map(e => e.title); const places = Object.fromEntries(titles.map(t => [t, eventPlace(EVENTS.find(e => e.title === t))]));
+    const pickN = n => { const seen = {}; for (let i = 0; i < n; i++) { const e = pickEvent(curMonth()); if (e) seen[e.title] = 1; } return seen; };
+    S.date = new Date(2027, 7, 10).getTime(); S.turn = 10; const even = pickN(600); S.turn = 11; const odd = pickN(600);
+    S.date = new Date(2027, 3, 10).getTime(); const april = pickN(600); S.ageMonths = 19 * 12; const aprYoung = pickN(600);
+    const run = EVENTS.find(e => e.title === 'Feeling run down'), inh = EVENTS.find(e => e.title === 'An inheritance');
+    return { places, jamEven: !!even['Bluegrass jam at Tonnage'], jamOdd: !!odd['Bluegrass jam at Tonnage'], fest: !!april['Grenache Fest'], festYoung: !!aprYoung['Grenache Fest'],
+      run: [run.text, run.choices()[0].label, eventPlace(run)], inh: [inh.text, eventPlace(inh)], n: titles.length }; });
+  assert(r.n >= 9, `only ${r.n} business events`);
+  assert(r.places['Cookout at Mr. Q\'s'][1] === 'mrq' && r.places['The grill is open at Laughing Lad'][1] === 'lad' && r.places['Grenache Fest'][1] === 'mainst', JSON.stringify(r.places));
+  assert(r.jamEven && !r.jamOdd, 'the jam comes every other week');
+  assert(r.fest && !r.festYoung, 'Grenache Fest is 21 and over');
+  assert(/Burg Clinic/.test(r.run[0]) && /doctor/.test(r.run[1]) && r.run[2][1] === 'mainst', JSON.stringify(r.run));
+  assert(/Mother Hubbard/.test(r.inh[0]) && r.inh[1][1] === 'mainst', JSON.stringify(r.inh));
+});
+
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });
 
 await browser.close();

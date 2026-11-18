@@ -138,7 +138,7 @@ const EVENTS = [
       {label:'Find it a home', go:() => { adj({community:3}); return 'A family on Main Street took it in.'; }}
     ]},
   { ic:'☕', title:'Someone catches your eye', w:2, when:() => !S.partner && age() >= 19 && age() < 75,
-    text:'You keep running into the same person at the coffee shop on Main.',
+    text:'You keep running into the same person at Howlin\' Bean on Main Street.',
     choices:() => [
       {label:'Ask them out', go:() => { if (chance(.6)) { S.partner = true; adj({happy:10}); log('Started dating someone special.'); return 'They said yes! You\'re seeing each other now.'; } adj({happy:-3}); return 'They\'re flattered but not interested. Ouch.'; }},
       {label:'Just smile', go:() => 'Maybe next time.'}
@@ -169,9 +169,9 @@ const EVENTS = [
       {label:'Pass', go:() => 'You stayed in town.'}
     ]},
   { ic:'🩺', title:'Feeling run down', w:5, when:() => S.health < 40,
-    text:'You\'ve been tired and achy for weeks.',
+    text:'You\'ve been tired and achy for weeks. The Burg Clinic on Main Street can see you this week.',
     choices:() => [
-      {label:`See a doctor (-${fmtc(350)})`, go:() => { const bad = S.health < 25; adj({money:-cost(350), health:12}); return bad ? 'The doctor sent you to a specialist in Walla Walla. Rest and a prescription helped a lot.' : 'Some rest and a prescription helped a lot.'; }},
+      {label:`See a doctor at The Burg Clinic (-${fmtc(350)})`, go:() => { const bad = S.health < 25; adj({money:-cost(350), health:12}); return bad ? 'The doctor sent you to a specialist in Walla Walla. Rest and a prescription helped a lot.' : 'Some rest and a prescription helped a lot.'; }},
       {label:'Tough it out', go:() => { adj({health:-6}); return 'You kept going. Your body kept score.'; }}
     ]},
   { ic:'🦷', title:'Toothache', w:2, when:() => S.turn - (S.dentist ?? 0) > 52,
@@ -183,7 +183,7 @@ const EVENTS = [
   { ic:'🌬️', title:'Windstorm', w:2,
     text:'A big wind tears through the valley overnight.',
     choices:() => [{label:'Check the damage', go:() => {
-      if (HOMES[S.home].own) { const c = Math.round(cost(1200) * (1 - skillLv('handy') * 0.15)); adj({money:-c, happy:-3}); practice('handy', 1); return `You lost shingles. Roof repair: ${fmt(c)}${skillLv('handy') ? ' (you did part of it yourself)' : ''}.`; }
+      if (HOMES[S.home].own) { const c = Math.round(cost(1200) * (1 - skillLv('handy') * 0.15)); adj({money:-c, happy:-3}); practice('handy', 1); return `You lost shingles. Sharp Point Builders fixed the roof: ${fmt(c)}${skillLv('handy') ? ' (you did part of it yourself)' : ''}.`; }
       adj({money:-cost(60), happy:-1}); return 'Power was out a day and the fridge food spoiled.'; }}]},
   { ic:'🧅', title:'Walla Walla Sweets are in', yr:1, w:3, when:m => inM(m,5,6),
     text:'The sweet onion harvest is here.',
@@ -224,7 +224,7 @@ const EVENTS = [
     text:'Something crinkles in your old winter coat.',
     choices:() => [{label:'Check the pocket', go:() => { const v = Math.round(cost(pick([20,50,100]))); adj({money:v, happy:2}); return `${fmt(v)}! Today is a good day.`; }}]},
   { ic:'📜', title:'An inheritance', once:1, w:1, when:() => LENGTHS[S.len].turns===Infinity && age() >= 40,
-    text:'A great-aunt in Spokane left you something in her will.',
+    text:'A letter from Mother Hubbard\'s Legal Cupboard on Main Street: a great-aunt in Spokane left you something in her will.',
     choices:() => [{label:'Read the letter', go:() => { const v = Math.round(cost(ri(5,30)*1000)); adj({money:v, happy:3}); return `She left you ${fmt(v)} and a note telling you to stay out of trouble.`; }}]},
   { ic:'👶', title:'Starting a family?', yr:1, w:3, when:() => S.partner && age() >= 23 && age() <= 42 && S.kids.length < 3,
     text:() => S.kids.length ? 'You and your partner are talking about another one.' : 'You and your partner have been talking about kids.',

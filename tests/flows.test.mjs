@@ -455,6 +455,49 @@ await t.check('Journal filter chips: Money, Events, Milestones and Trips, with o
   await page.click('[data-lf="all"]');
 });
 
+await t.check('Out and about: visit every business from Home, with its card, limits and results', async () => {
+  const ids = await page.evaluate(() => PLACES.map(p => p.id));
+  for (const id of ids) {
+    await life({ jobId: 'farmhand', money: 5000, ageMonths: 30 * 12, partner: false }, 'home');
+    await setup(() => { S.date = new Date(2027, 4, 10).getTime(); S.turn = 4; render(); });
+    await page.click('#outbtn');
+    await page.click(`${open} [data-place="${id}"]`);
+    const btn = await page.$(`${open} [data-act]:not([disabled])`);
+    assert(btn, `${id}: nothing to do in May`);
+    const before = (await S()).money;
+    await btn.click();
+    const out = await page.textContent('#sheet');
+    const info = await page.$(`${open} #back`) && !(await page.$(`${open} #bizout b`));
+    assert(info ? /Bank|trades/.test(out) : (await page.textContent('#bizout')).length > 5, `${id}: no result shown`);
+    if (!info) assert((await S()).out.n === 1 && (await S()).money <= before, `${id}: the visit was not counted`);
+    await page.click(`${open} #no`);
+  }
+  await page.click('#outbtn');
+  assert((await page.textContent('#outbtn')).includes('left this week'), 'the button should count visits left');
+  await page.click(`${open} #no`);
+});
+
+await t.check('the Main Street close-up opens from the town map, and its pins open business cards by tap or keyboard', async () => {
+  await life({ jobId: 'diner', ageMonths: 30 * 12 }, 'home');
+  await page.click('#main .maptog button:nth-child(2)');
+  await page.click('.mpin[aria-label="Main Street"]');
+  assert(await page.$('.msmap'), 'no Main Street close-up');
+  assert((await page.$$('.msmap .mspin')).length >= 13, 'Main Street businesses missing');
+  await page.click('.mspin[data-biz="bean"]');
+  assert((await page.textContent('#sheet h2')).includes('Howlin'), 'the coffee shop card did not open');
+  await page.click(`${open} #no`); await page.waitForTimeout(100);
+  await page.focus('.mspin[data-biz="bank"]'); await page.keyboard.press('Enter');
+  assert((await page.textContent('#sheet h2')).includes('Standard Bearer Bank'), 'Enter on a pin should open its card');
+  await page.click(`${open} #no`);
+  await page.click('.mpin[aria-label="Main Street"]');
+  await page.click('.mpin[aria-label="Bourbon Gulch Sports Bar"]');
+  assert((await page.textContent('.mapdet')).includes('You work here as line cook'), 'the sports bar should be the line cook\'s workplace');
+  await page.click('.mapdet >> text=Visit or see the card');
+  assert((await page.textContent('#sheet')).includes('701 Preston'), 'the Preston Avenue card did not open');
+  await page.click(`${open} #no`);
+  await page.click('#main .maptog button:nth-child(1)');
+});
+
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });
 
 await browser.close();
