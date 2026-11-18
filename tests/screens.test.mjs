@@ -1,7 +1,7 @@
 // Screens and accessibility: every main screen at seven sizes (small phone to desktop, plus landscape).
-// Fails on: content wider than the screen, bars that overlap or fall off-screen, buttons without a name, tap
-// targets under 24 × 24 px (WCAG 2.2 AA), text under 11 px, and text contrast below WCAG AA (4.5:1, or 3:1 for
-// large text). Reports targets under 44 × 44 px (the comfortable size) without failing.
+// Fails on: content wider than the screen, bars that overlap or fall off-screen, less than 45% of the screen left
+// for content, buttons without a name, tap targets under 44 × 44 px (WCAG 2.5.5), text under 11 px, and text
+// contrast below WCAG AA (4.5:1, or 3:1 for large text). Then checks keyboard and screen-reader use.
 // Screenshots go to test-results/screens/. Run with: npm run test:screens
 import fs from 'node:fs';
 import { serve, launch, runner, seedScript, assert } from './helpers.mjs';
@@ -22,14 +22,13 @@ const audit = () => {
     return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth; };
   const covered = el => { const r = el.getBoundingClientRect(); const x = Math.min(innerWidth - 1, Math.max(0, r.left + r.width / 2)), y = Math.min(innerHeight - 1, Math.max(0, r.top + r.height / 2));
     const top = document.elementFromPoint(x, y); return top && !el.contains(top) && !top.contains(el); };
-  const out = { overflow: document.documentElement.scrollWidth - innerWidth, unnamed: [], tiny: [], small: [], smallText: [], contrast: [], bars: [] };
+  const out = { overflow: document.documentElement.scrollWidth - innerWidth, unnamed: [], tiny: [], smallText: [], contrast: [], bars: [], room: 1 };
   const name = el => (el.getAttribute('aria-label') || el.textContent || '').trim();
   for (const el of document.querySelectorAll('button, [role=button], a[href], input')) {
     if (!vis(el) || covered(el)) continue;
     const r = el.getBoundingClientRect(), n = name(el) || el.placeholder || '';
     if (!n && el.tagName !== 'INPUT') out.unnamed.push(el.outerHTML.slice(0, 60));
-    if (r.width < 24 || r.height < 24) out.tiny.push(`${n.slice(0, 20)} ${Math.round(r.width)}×${Math.round(r.height)}`);
-    else if (r.width < 44 || r.height < 44) out.small.push(n.slice(0, 20));
+    if (r.width < 43.5 || r.height < 43.5) out.tiny.push(`${n.slice(0, 20)} ${Math.round(r.width)}×${Math.round(r.height)}`);
   }
   // text: size and contrast against the first solid background behind it
   const rgba = c => { const m = c.match(/[\d.]+/g); return m ? m.map(Number).concat(m.length === 3 ? [1] : []) : [0,0,0,0]; };
@@ -61,11 +60,13 @@ const audit = () => {
     const a = bars[i][1], b = bars[j][1];
     if (a.left < b.right && b.left < a.right && a.top < b.bottom - 1 && b.top < a.bottom - 1) out.bars.push(`${bars[i][0].className || bars[i][0].tagName} overlaps ${bars[j][0].className || bars[j][0].tagName}`);
   }
+  // room for content: between the header and the first fixed bar below it
+  const head = document.querySelector('.top'), lows = ['.endbar', '#strip', '#app > nav'].map(q => document.querySelector(q)).filter(e => e && vis(e));
+  if (head && lows.length) out.room = (Math.min(...lows.map(e => e.getBoundingClientRect().top)) - head.getBoundingClientRect().bottom) / innerHeight;
   return out;
 };
 
-const problems = { overflow: [], unnamed: [], tiny: [], smallText: [], contrast: [], bars: [] };
-let smallTargets = 0;
+const problems = { overflow: [], unnamed: [], tiny: [], smallText: [], contrast: [], bars: [], room: [] };
 for (const [label, w, h] of SIZES) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, serviceWorkers: 'block', hasTouch: w < 900, isMobile: w < 900 });
   await ctx.addInitScript(seedScript(77));
@@ -93,7 +94,7 @@ for (const [label, w, h] of SIZES) {
     const where = `${label} ${w}×${h} / ${screen}`;
     if (a.overflow > 1) problems.overflow.push(`${where}: ${a.overflow}px too wide`);
     for (const k of ['unnamed', 'tiny', 'smallText', 'contrast', 'bars']) for (const x of a[k]) problems[k].push(`${where}: ${x}`);
-    smallTargets += a.small.length;
+    if (['home', 'jobs', 'life'].includes(screen) && a.room < 0.45) problems.room.push(`${where}: ${Math.round(a.room * 100)}% of the screen`);
   }
   if (errors.length) problems.unnamed.push(`${label}: page error ${errors[0]}`);
   await page.evaluate(() => endTutorial(false)).catch(() => {});
@@ -104,11 +105,95 @@ const uniq = a => [...new Set(a.map(x => x.replace(/^[^/]+\/ /, '')))];
 await t.check('nothing is wider than the screen at any size', async () => { assert(!problems.overflow.length, problems.overflow.slice(0, 5).join('; ')); });
 await t.check('End Week, the week strip and the tab bar stay on-screen and never overlap', async () => { assert(!problems.bars.length, problems.bars.slice(0, 5).join('; ')); });
 await t.check('every button has a name a screen reader can say', async () => { assert(!problems.unnamed.length, problems.unnamed.slice(0, 5).join('; ')); });
-await t.check('every tap target is at least 24 × 24 px (WCAG 2.2 AA)', async () => { assert(!problems.tiny.length, uniq(problems.tiny).slice(0, 8).join('; ')); });
+await t.check('content gets at least 45% of the screen between the header and the bottom bars (portrait and landscape)', async () => { assert(!problems.room.length, problems.room.slice(0, 5).join('; ')); });
+await t.check('every tap target is at least 44 × 44 px (WCAG 2.5.5)', async () => { assert(!problems.tiny.length, uniq(problems.tiny).slice(0, 8).join('; ')); });
 await t.check('no text smaller than 11 px', async () => { assert(!problems.smallText.length, uniq(problems.smallText).slice(0, 8).join('; ')); });
 await t.check('text contrast meets WCAG AA (4.5:1, or 3:1 for large text)', async () => { assert(!problems.contrast.length, uniq(problems.contrast).slice(0, 10).join('; ')); });
 
-const md = `## Screens and accessibility\n\n${SIZES.length} screen sizes × 10 screens. Tap targets under the comfortable 44 × 44 px (counted, not failing): **${smallTargets}** (issue #10).\nScreenshots: \`test-results/screens/\`.\n`;
+// ---------- keyboard and screen readers ----------
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  await ctx.addInitScript(seedScript(78));
+  const page = await ctx.newPage();
+  await page.goto(srv.url, { waitUntil: 'load' });
+  const active = () => page.evaluate(() => document.activeElement && (document.activeElement.id || document.activeElement.getAttribute('aria-label') || document.activeElement.textContent.trim().slice(0, 30)));
+  const tabTo = async (pred, max = 80) => { for (let i = 0; i < max; i++) { await page.keyboard.press('Tab'); if (await page.evaluate(pred)) return true; } return false; };
+  await page.evaluate(() => { localStorage.clear(); setPref('tips', ['focus','strip','tabs']); newGame('Keys', 'two', 0); S.noEvents = true; S.jobId = 'farmhand'; tab = 'home'; render(); });
+
+  await t.check('keyboard: Tab reaches End Week, and Enter plays the week and announces it', async () => {
+    assert(await tabTo(() => document.activeElement && document.activeElement.id === 'end'), 'never reached End Week with Tab');
+    const turn = await page.evaluate(() => S.turn);
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(250);
+    assert((await page.evaluate(() => S.turn)) === turn + 1, 'Enter did not end the week');
+    const said = await page.textContent('#sr');
+    assert(/Week done\. Cash (up|down)/.test(said), `screen-reader message: "${said}"`);
+  });
+
+  await t.check('keyboard: a focused button shows a visible focus ring', async () => {
+    await page.focus('#end');
+    await page.keyboard.press('Shift+Tab'); await page.keyboard.press('Tab');
+    const w = await page.evaluate(() => parseFloat(getComputedStyle(document.activeElement).outlineWidth));
+    assert(w >= 2, `focus outline ${w}px`);
+  });
+
+  await t.check('keyboard: the Menu opens as a dialog, Tab stays inside it, Escape closes it and returns focus', async () => {
+    await page.focus('[data-tab=menu]');
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('#modal:not(.hidden)');
+    await page.waitForTimeout(80);
+    assert(await page.evaluate(() => document.querySelector('#sheet').contains(document.activeElement)), 'focus did not move into the Menu');
+    assert((await page.getAttribute('#sheet', 'role')) === 'dialog' && (await page.getAttribute('#sheet', 'aria-modal')) === 'true', 'sheet is not a modal dialog');
+    for (let i = 0; i < 12; i++) { await page.keyboard.press('Tab'); assert(await page.evaluate(() => document.querySelector('#sheet').contains(document.activeElement)), 'Tab left the Menu'); }
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(100);
+    assert(await page.isHidden('#modal'), 'Escape did not close the Menu');
+  });
+
+  await t.check('keyboard: map pins open with Enter', async () => {
+    await page.click('#main .maptog button:nth-child(2)');
+    await page.focus('.mpin[aria-label="Touchet River"]');
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('.mapdet');
+    await page.click('#main .maptog button:nth-child(1)');
+  });
+
+  await t.check('keyboard: Help opens with focus on Close, and Escape closes it back to the ? button', async () => {
+    await page.focus('#helpbtn');
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('#helpview:not(.hidden)');
+    await page.waitForTimeout(80);
+    assert((await active()) === 'helpclose', `focus on ${await active()}`);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(100);
+    assert(await page.isHidden('#helpview'), 'Escape did not close Help');
+    assert((await active()) === 'helpbtn', `focus went to ${await active()}`);
+  });
+
+  await t.check('keyboard: the whole tutorial can be done with Enter alone', async () => {
+    await page.evaluate(() => startTutorial());
+    let steps = 0;
+    for (let g = 0; g < 80; g++) {
+      await page.waitForTimeout(450);
+      const st = await page.evaluate(() => TUT ? { i: TUT.i, shown: !document.querySelector('#coach').classList.contains('hidden') } : null);
+      if (!st) break;
+      if (!st.shown) continue;
+      steps = Math.max(steps, st.i + 1);
+      await page.keyboard.press('Enter');
+    }
+    const total = await page.evaluate(() => TSTEPS.length);
+    assert(steps === total, `reached step ${steps} of ${total} with the keyboard`);
+  });
+
+  await t.check('screen readers: messages use a live status region, and tabs mark the current page', async () => {
+    assert((await page.getAttribute('#toast', 'role')) === 'status', 'toast is not a status region');
+    assert((await page.$$('#app > nav [aria-current="page"]')).length === 1, 'no current tab marked');
+    assert((await page.$$('.fbtn[aria-pressed="true"]')).length === 1, 'chosen focus not marked as pressed');
+  });
+  await ctx.close();
+}
+
+const md = `## Screens and accessibility\n\n${SIZES.length} screen sizes × 10 screens, plus keyboard and screen-reader checks.\nScreenshots: \`test-results/screens/\`.\n`;
 console.log(md);
 if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md + '\n');
 

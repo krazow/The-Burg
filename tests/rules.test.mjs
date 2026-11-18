@@ -143,6 +143,23 @@ await t.check('at 0 health you go to the hospital (outside Lifetime), with a bil
   assert(r.note.includes('hospital') && r.health === 30 && near(r.paid, 6500, 0.02), JSON.stringify(r));
 });
 
+await t.check('nonstop overtime in a hard job lands you in the hospital within about two years; a balanced life stays healthy', async () => {
+  const r = await ev(() => {
+    const run = plan => { fresh('five', { jobId: 'hanford' }); let first = null, low = 100;
+      for (let w = 0; w < 156; w++) { S.focus = plan(w); const res = weekTick(false); low = Math.min(low, S.health); if (first === null && res.notes.some(n => n.includes('hospital'))) first = w; }
+      return { first, low }; };
+    return { grind: run(() => 'work'), balanced: run(w => ['work', 'community', 'outdoors', 'rest'][w % 4]) };
+  });
+  assert(r.grind.first !== null && r.grind.first < 130, `grinding never reached the hospital (lowest health ${Math.round(r.grind.low)})`);
+  assert(r.balanced.first === null && r.balanced.low > 60, `a balanced life got sick (lowest ${Math.round(r.balanced.low)})`);
+});
+
+await t.check('pushing through low health with overtime makes it drop faster', async () => {
+  const r = await ev(() => { fresh('two', { jobId: 'farmhand', health: 30, focus: 'work' }); week(); const pushed = S.health;
+    fresh('two', { jobId: 'farmhand', health: 30, focus: 'community' }); week(); return { pushed, eased: S.health }; });
+  assert(r.eased - r.pushed > 1, `overtime at low health cost only ${(r.eased - r.pushed).toFixed(2)} more`);
+});
+
 await t.check('debt charges about 1.5% a month, and below -$40,000 the game ends', async () => {
   const r = await ev(() => { fresh('two', { money: -10000 }); const i = week().lines['Interest on debt'];
     fresh('two', { money: -40500 }); const end = week().ending; return { i, end }; });

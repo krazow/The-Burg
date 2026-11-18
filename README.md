@@ -44,8 +44,10 @@ each has its own script (for example `npm run test:rules`).
 - **Flows** (`tests/flows.test.mjs`): the Life tab (moving, buying, vehicles, 401(k)), quitting and retiring, the
   hospital, the debt ending, family and council, **every choice of every event**, and a Lifetime game to its end.
 - **Screens and accessibility** (`tests/screens.test.mjs`): 10 screens at 7 sizes from a 320 px phone to desktop and
-  landscape. Fails on content wider than the screen, overlapping or off-screen bars, unnamed buttons, tap targets
-  under 24 × 24 px, text under 11 px, or contrast below WCAG AA. Screenshots go to `test-results/screens/`.
+  landscape. Fails on content wider than the screen, overlapping or off-screen bars, less than 45% of the screen for
+  content, unnamed buttons, tap targets under 44 × 44 px, text under 11 px, or contrast below WCAG AA. Then checks
+  keyboard and screen-reader use: Tab and Enter, focus rings, dialogs that trap Tab and close with Escape, map pins,
+  Help, the whole tutorial by keyboard, and live announcements. Screenshots go to `test-results/screens/`.
 - **Offline and updates** (`tests/offline.test.mjs`): the app caches itself, a life can be continued and played
   offline, and a new version replaces the old one without losing saves or best scores.
 - **Play-test simulation** (`tests/sim.test.mjs`): seven bot players (planner, homebody, commuter, student,
