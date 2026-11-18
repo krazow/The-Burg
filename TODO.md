@@ -1,6 +1,6 @@
 # The Burg: To-do
 
-_Last updated: November 18, 2026 (Out and about planned: 20 Waitsburg businesses)_
+_Last updated: November 18, 2026 (Out and about: 5 game-name choices per business)_
 
 This is the project's working to-do list: what's been done, what's next, and in what order. Every open item has a
 matching **GitHub issue** with a priority label (**P1 – now**, **P2 – soon**, **P3 – later**). The issues are the
@@ -37,18 +37,162 @@ Fest at Atelier, winter breaks). Business list, how each one appears, decisions 
 [Out and about milestone](https://github.com/krazow/The-Burg/milestone/2). It also covers most of
 [#11](https://github.com/krazow/The-Burg/issues/11).
 
-**The 20 businesses:**
-- **Food and drink:** Bar Bacetto, Wolfling Coffee, Atelier Waitsburg, The Royal Block, Laht Neppur Brewing,
-  Whiskey Canyon Sports Bar & Grill, Mr. C's Smokin' Co., Ten Ton Coffee
-- **Shops:** Waitsburg Grocery, Simply Sawdust, Gaudy Gals on Main, Nancy's Dream Garden Center
-- **Services:** Blush Salon & Spa, Banner Bank, Waitsburg Clinic, The Times, Stone and Sky Yoga, Hubbard Law Office
-  and Karl Law Office
-- **Farm and trades:** McGregor Co., local trades (Affordable Concrete, Chisel Point Construction, Tim's Carpentry,
-  L-C Applicators)
+**Game names: pick one for each business.** Each business gets a playful stand-in name, so the real name isn't used but locals can still tell which place it is from where it sits on the map. Check one option under each, or write your own; the rest get deleted when you've chosen.
+
+**Food and drink**
+
+- [ ] **Bar Bacetto** (119 Main, Italian pasta bar): pick a game name
+  - [ ] Bar Smacketto
+  - [ ] The Little Kiss Pasta Bar
+  - [ ] Bar Buonbacio
+  - [ ] Noodle Smooch at 119
+  - [ ] Bar Pastaccio
+- [ ] **Wolfling Coffee** (206 Main, coffee and pastries): pick a game name
+  - [ ] Wolf Pup Coffee
+  - [ ] Howlin' Bean
+  - [ ] Cub & Cup Coffee
+  - [ ] Little Wolf Roasters
+  - [ ] The Den Coffee
+- [ ] **Atelier Waitsburg** (120 Main, wine tasting and guest chefs): pick a game name
+  - [ ] The Wine Workshop at 120
+  - [ ] Atelier Wheatsburg
+  - [ ] Grenache & Gather
+  - [ ] The Studio Cellar
+  - [ ] Petite Atelier
+- [ ] **The Royal Block** (222 Main, hotel and wine bar): pick a game name
+  - [ ] The Regal Block
+  - [ ] The Crown Block Hotel
+  - [ ] The Royal Brick
+  - [ ] Kings Row Hotel
+  - [ ] The Noble Block
+- [ ] **Laht Neppur Brewing** (444 Preston Ave, brewery (its name is the owner's spelled backwards)): pick a game name
+  - [ ] Drawkcab Brewing Co. ("backward" spelled backwards)
+  - [ ] Hatl Nupper Brewing
+  - [ ] Laughing Lad Ale House
+  - [ ] Backward Brewing Co.
+  - [ ] 444 Preston Pub & Brew
+- [ ] **Whiskey Canyon Sports Bar & Grill** (701 Preston Ave): pick a game name
+  - [ ] Bourbon Gulch Sports Bar
+  - [ ] Whiskey Gulch Grill
+  - [ ] Rye Canyon Sports Bar
+  - [ ] Whisky Ravine Bar & Grill
+  - [ ] Moonshine Canyon Grill
+- [ ] **Mr. C's Smokin' Co.** (405 Preston Ave, BBQ): pick a game name
+  - [ ] Mr. Q's Smokehouse
+  - [ ] Mister See's Smokin' Co.
+  - [ ] Mr. Z's Smoke Shack
+  - [ ] The Smokin' Mister
+  - [ ] Mr. C-Saw Smokin' Co.
+- [ ] **Ten Ton Coffee** (216 Main, open on event days, every-other-week bluegrass jam): pick a game name
+  - [ ] Eleven Ton Coffee
+  - [ ] Half Ton Coffee
+  - [ ] The Heavyweight Coffee Club
+  - [ ] Tonnage Coffee & Strings
+  - [ ] Twenty Ton Tunes
+
+**Shops**
+
+- [ ] **Waitsburg Grocery** (200 Main): pick a game name
+  - [ ] Waitsburger Grocery
+  - [ ] Wait-a-Bit Grocery
+  - [ ] Burg Basket Grocery
+  - [ ] Main Street Market
+  - [ ] Waitsbury Grocery
+- [ ] **Simply Sawdust** (101 Main, woodshop and makerspace): pick a game name
+  - [ ] Simply Shavings
+  - [ ] Plainly Sawdust
+  - [ ] Just Sawdust
+  - [ ] Sawdust & Sundries
+  - [ ] Purely Plywood
+- [ ] **Gaudy Gals on Main** (Town Hall, vintage and gifts): pick a game name
+  - [ ] Gussied Gals on Main
+  - [ ] Glitzy Gals on Main
+  - [ ] The Junque Sisters
+  - [ ] Gaudy Galore on Main
+  - [ ] Flashy Gals on Main
+- [ ] **Nancy's Dream Garden Center** (503 W. 2nd St.): pick a game name
+  - [ ] Nancy's Daydream Garden
+  - [ ] Nan's Dream Greenhouse
+  - [ ] Fancy Nancy's Garden
+  - [ ] Dreamy Garden Center
+  - [ ] Nancy's Bloom & Dream
+
+**Services**
+
+- [ ] **Blush Salon & Spa** (141 Main): pick a game name
+  - [ ] Rouge Salon & Spa
+  - [ ] Flush Salon
+  - [ ] Blusher Salon & Spa
+  - [ ] Pink Cheeks Salon
+  - [ ] Glow Salon & Spa
+- [ ] **Banner Bank** (215 Main): pick a game name
+  - [ ] Pennant Bank
+  - [ ] Flagstaff Bank
+  - [ ] Standard Bearer Bank
+  - [ ] Bunting Bank
+  - [ ] Banner Day Bank
+- [ ] **Waitsburg Clinic** (235 Main): pick a game name
+  - [ ] Waits-a-Minute Clinic
+  - [ ] The Burg Clinic
+  - [ ] Main Street Health Hut
+  - [ ] Touchet Valley Clinic
+  - [ ] Waitsburg Fix-It Clinic
+- [ ] **The Times** (216 Main, the local paper): pick a game name
+  - [ ] The Waitsburg Tymes
+  - [ ] The Burg Times
+  - [ ] The Weekly Waits
+  - [ ] The Main Street Minutes
+  - [ ] The Touchet Tattler
+- [ ] **Stone and Sky Yoga** (evening classes): pick a game name
+  - [ ] Rock and Cloud Yoga
+  - [ ] Pebble & Sky Yoga
+  - [ ] Stone and Star Yoga
+  - [ ] Boulder & Blue Yoga
+  - [ ] Earth and Air Yoga
+- [ ] **Hubbard Law Office and Karl Law Office** (145 Main): pick a game name
+  - [ ] Cupboard & Carl, Attorneys
+  - [ ] Hubbub & Karl Law
+  - [ ] The 145 Main Law Offices
+  - [ ] Mother Hubbard's Legal Cupboard
+  - [ ] Huffard & Carlo Law
+
+**Farm and trades**
+
+- [ ] **McGregor Co.** (115 Garden St., farm supply): pick a game name
+  - [ ] McGrower Co.
+  - [ ] McGreener Co.
+  - [ ] The McFarmer Co.
+  - [ ] McGrainer Co.
+  - [ ] McGrub & Grain Co.
+- [ ] **Local trades**: pick a game name for each
+  - [ ] **Affordable Concrete**
+    - [ ] Reasonable Concrete
+    - [ ] Budget Cement Co.
+    - [ ] Fair Price Pours
+    - [ ] Thrifty Concrete
+    - [ ] Cheap & Cheerful Concrete
+  - [ ] **Chisel Point Construction**
+    - [ ] Chisel Tip Construction
+    - [ ] Sharp Point Builders
+    - [ ] Gouge Point Construction
+    - [ ] Pointy Chisel Builders
+    - [ ] Chisel Peak Construction
+  - [ ] **Tim's Carpentry**
+    - [ ] Tom's Carpentry
+    - [ ] Timber Tim's
+    - [ ] Tim-ber! Carpentry
+    - [ ] Jim's Joinery
+    - [ ] Tim's Trim & Timber
+  - [ ] **L-C Applicators**
+    - [ ] L-C Sprayers
+    - [ ] Elsie Applicators
+    - [ ] El Sea Applicators
+    - [ ] LC Spray & Spread
+    - [ ] K-D Applicators
 
 | # | Item | Size | Issue |
 |---|---|---|---|
-| 1 | **Decisions and business facts** (some your action): owner notes with an opt-out, check the city-list businesses, real days and seasons, `data/places.json` | S | [#48](https://github.com/krazow/The-Burg/issues/48) |
+| 1 | **Decisions and business facts** (your picks): choose the game names above, check the city-list businesses, real days and seasons, `data/places.json` | S | [#48](https://github.com/krazow/The-Burg/issues/48) |
 | 2 | **Main Street close-up map** and business pins, business cards, Help guide section | L | [#49](https://github.com/krazow/The-Burg/issues/49) |
 | 3 | **Visiting businesses:** a quick Out and about action with capped effects, open days, winter breaks, 21+ rules | L | [#50](https://github.com/krazow/The-Burg/issues/50) |
 | 4 | **Business events:** bluegrass jam, Grenache Fest, music night, grill season, winter-break returns; doctor and inheritance at real places | M | [#51](https://github.com/krazow/The-Burg/issues/51) |
@@ -157,3 +301,4 @@ that careless play stays at or below 60 and good play at or above 70.
 | Nov 18, 2026 | **0.2.0-beta.3** with the Help guide fix: all release checks passed, but the APK still used the throwaway key; the signing secrets weren't visible to the workflow (#37). | [pre-release](https://github.com/krazow/The-Burg/releases/tag/v0.2.0-beta.3) |
 | Nov 18, 2026 | **Android signing (#37):** made The Burg's own release key; secrets added. **0.2.0-beta.4** passed every check and its APK is signed with the new key (certificate confirmed in the downloaded APK). | [pre-release](https://github.com/krazow/The-Burg/releases/tag/v0.2.0-beta.4) |
 | Nov 18, 2026 | **Planned Out and about:** researched Waitsburg's open businesses; you picked 20 (plus Ten Ton Coffee as you described it). Plan, milestone and issues #48–#54. | [plan](docs/out-and-about.md) |
+| Nov 18, 2026 | **Out and about game names:** 5 playful stand-in names per business added for you to pick from, so real business names stay out of the game. | `TODO.md` |
