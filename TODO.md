@@ -4070,6 +4070,150 @@ old ones.
 
 </details>
 
+## Ideas round 48 (pick on the build board)
+
+57 ideas. Details: [docs/ideas/round-48.md](docs/ideas/round-48.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 48: Bundles part 6 and v1.0</b> (31 ideas)</summary>
+
+- [ ] 🟡 **i48-a01** Bundle: Walla Walla and Dayton drive-bys (M)
+- [ ] 🟠 **i48-a02** Bundle: Tri-Cities drive-bys (M)
+- [ ] 🟠 **i48-a03** Bundle: Commute and trip mishaps (M)
+- [ ] 🟠 **i48-a04** Bundle: Coffee, kitchen and grocery ladders (L)
+- [ ] 🟠 **i48-a05** Bundle: Bank, law office and salon ladders (L)
+- [ ] 🔴 **i48-a06** Bundle: Hospital and care work (L)
+- [ ] 🟠 **i48-a07** Bundle: Farm, elevator and ag tech careers (L)
+- [ ] 🟠 **i48-a08** Bundle: Tools of the trade: shop, road and rail (L)
+- [ ] 🟡 **i48-a09** Bundle: Campus, slopes and the big employers (L)
+- [ ] 🟡 **i48-a10** Bundle: Main Street menus and side jobs (M)
+- [ ] 🟠 **i48-a11** Bundle: Traits that change over a life (M)
+- [ ] 🔴 **i48-a12** Bundle: Accessibility sweep part 2: headings and spoken names (M)
+- [ ] 🟠 **i48-a13** Bundle: Zoom, Reduce Motion and Help demos (M)
+- [ ] 🟡 **i48-a14** Bundle: Performance sweep part 3: Jobs tab and old data (M)
+- [ ] 🟠 **i48-a15** Bundle: Long town crises (L)
+- [ ] 🟠 **i48-a16** Bundle: Neighbors through a crisis and the year after (M)
+- [ ] 🟠 **i48-a17** Bundle: Help rewrite, section by section (M)
+- [ ] 🟠 **i48-a18** Bundle: Rivers and wild things (M)
+- [ ] 🟠 **i48-a19** Bundle: Farm ground and the long view (L)
+- [ ] 🟠 **i48-a20** Bundle: A yard ready for summer (M)
+- [ ] 🟠 **i48-a21** Bundle: Event threads: work and town (M)
+- [ ] 🟡 **i48-a22** Bundle: Event threads: friends and neighbors (M)
+- [ ] 🟠 **i48-a23** Bundle: Buy, sell and swap (M)
+- [ ] 🟠 **i48-a24** Bundle: Reporter desk and the letters page (M)
+- [ ] 🟡 **i48-a25** Bundle: The paper of record (M)
+- [ ] 🟡 **i48-a26** Bundle: Cardinals on Friday night (M)
+- [ ] 🔴 **i48-a27** Bundle: Parent playtest fixes part 2 (M)
+- [ ] 🟡 **i48-a28** Bundle: Winter and spring traditions (M)
+- [ ] 🟡 **i48-a29** Bundle: Summer and fall traditions (M)
+- [ ] 🟠 **i48-a30** Bundle: December and traditions that carry on (L)
+- [ ] 🔴 **i48-a31** Release plan: v1.0 — A polished town (L)
+
+</details>
+
+<details><summary><b>Ideas 48: Playtest on Relaxed</b> (26 ideas)</summary>
+
+- [ ] 🔴 **i48-b01** A quick second tap on ⏩ can't pick an event choice (S)
+- [ ] 🔴 **i48-b02** Relaxed softens the rut too (S)
+- [ ] 🔴 **i48-b03** The rut reminds you again every 13 weeks (S)
+- [ ] 🔴 **i48-b04** The rut stop has focus buttons (S)
+- [ ] 🔴 **i48-b05** Skips stop when a stat drops into the red (S)
+- [ ] 🔴 **i48-b06** Before a long skip, check the focus (M)
+- [ ] 🟠 **i48-b07** The stop sheet says why it stopped and offers "Keep going" (S)
+- [ ] 🟠 **i48-b08** A report card that lands mid-skip shows on the stop sheet (S)
+- [ ] 🟠 **i48-b09** Eight weeks with no paycheck stop a skip (S)
+- [ ] 🟠 **i48-b10** Relaxed: fewer small events, so a skip goes farther (M)
+- [ ] 🟠 **i48-b11** Small choices from a skip wait in one sheet (M)
+- [ ] 🟠 **i48-b12** The dealer offer doesn't pull you off Home (S)
+- [ ] 🟠 **i48-b13** The end sheet names what cost you most (M)
+- [ ] 🟡 **i48-b14** The Relaxed end note mentions debt only if you were in debt (S)
+- [ ] 🟡 **i48-b15** Help says when skips really stop (S)
+- [ ] 🟡 **i48-b16** Skip buttons know how many weeks are left (S)
+- [ ] 🟠 **i48-b17** Relaxed shows what it saved you (M)
+- [ ] 🟠 **i48-b18** Relaxed: stats don't drift below 20 on their own (S)
+- [ ] 🟠 **i48-b19** A skip remembers what wore you down (M)
+- [ ] 🟡 **i48-b20** Life Score tile shows its change since the last skip (S)
+- [ ] 🟠 **i48-b21** A balance-sim bot that never changes focus (S)
+- [ ] 🟠 **i48-b22** A gameplay test for fast casual taps (S)
+- [ ] 🟡 **i48-b23** Halfway card in 6-month lives (S)
+- [ ] 🟡 **i48-b24** A Quick life badge (S)
+- [ ] 🟡 **i48-b25** "You pick for me" on small events in Relaxed (M)
+- [ ] 🟡 **i48-b26** Events during a skip say where you are in it (S)
+
+</details>
+
+## Ideas round 49 (pick on the build board)
+
+59 ideas. Details: [docs/ideas/round-49.md](docs/ideas/round-49.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 49: The 10-minute session</b> (28 ideas)</summary>
+
+- [ ] 🔴 **i49-a01** Game lengths say how long they take (S)
+- [ ] 🔴 **i49-a02** An event result can go straight to next week (S)
+- [ ] 🔴 **i49-a03** Milestone notes ride along instead of stopping a skip (S)
+- [ ] 🔴 **i49-a04** Change focus from the End Week button (S)
+- [ ] 🔴 **i49-a05** Done for now: a sitting card, then the title (S)
+- [ ] 🟠 **i49-a06** The Continue card shows stats, focus and weeks left (S)
+- [ ] 🟠 **i49-a07** The Continue card says what your last sitting did (S)
+- [ ] 🟠 **i49-a08** The Journal marks where each sitting started (M)
+- [ ] 🟠 **i49-a09** Year in review has a 'Stop here for today' button (S)
+- [ ] 🟠 **i49-a10** Year in review ends with 'Coming up' (S)
+- [ ] 🔴 **i49-a11** 'Always answer this way' for repeat small events (M)
+- [ ] 🟠 **i49-a12** A reading-budget test (S)
+- [ ] 🟡 **i49-a13** Each event leads with its question in bold (S)
+- [ ] 🟠 **i49-a14** Stats card as one slim row (S)
+- [ ] 🟠 **i49-a15** Open straight into the life you played today (S)
+- [ ] 🟡 **i49-a16** Add a play reminder to your own calendar (S)
+- [ ] 🟡 **i49-a17** A Sunday reminder on installed Android, off by default (M)
+- [ ] 🟠 **i49-a18** A 1 Year game that fits one sitting (M)
+- [ ] 🟡 **i49-a19** The end screen says how long the life took (S)
+- [ ] 🟡 **i49-a20** The sim report estimates minutes per game (S)
+- [ ] 🟠 **i49-a21** Apply from Home's 'No job yet' card (S)
+- [ ] 🟡 **i49-a22** The progress bar shows this sitting (S)
+- [ ] 🟡 **i49-a23** The week strip knows you were away (S)
+- [ ] 🟡 **i49-a24** The app icon shows a waiting choice (S)
+- [ ] 🟠 **i49-a25** The first week back stops for nothing small (S)
+- [ ] 🟡 **i49-a26** Skip totals per sitting in the Menu (S)
+- [ ] 🟠 **i49-a27** Lifetime parts on the Continue card (M)
+- [ ] 🟠 **i49-a28** Pick up a skip where you left it (S)
+
+</details>
+
+<details><summary><b>Ideas 49: The small towns nearby</b> (31 ideas)</summary>
+
+- [ ] 🔴 **i49-b01** Light pins for the small towns (L)
+- [ ] 🔴 **i49-b02** Stop on the way: add one small town to a trip (M)
+- [ ] 🔴 **i49-b03** Small-town stops share the cooldown and fade with repeats (S)
+- [ ] 🟠 **i49-b04** Prescott: rides to practice with Prescott parents (S)
+- [ ] 🟠 **i49-b05** Prescott: the tavern burger night (S)
+- [ ] 🟠 **i49-b06** Touchet: Friday at the tavern by the tracks (S)
+- [ ] 🟠 **i49-b07** Touchet: the other small school (S)
+- [ ] 🟡 **i49-b08** Lowden: a tasting room in the old schoolhouse (S)
+- [ ] 🟡 **i49-b09** Lowden: the cottonwood lane in October (S)
+- [ ] 🟡 **i49-b10** Dixie: the honor box egg stand (S)
+- [ ] 🟡 **i49-b11** Dixie: the old schoolhouse open house (S)
+- [ ] 🟠 **i49-b12** Starbuck: coffee and talk at the store (S)
+- [ ] 🟡 **i49-b13** Starbuck: the fall wild game feed (S)
+- [ ] 🟠 **i49-b14** Pomeroy: the Garfield County Fair in August (M)
+- [ ] 🟡 **i49-b15** Pomeroy: the courthouse lawn on a summer evening (S)
+- [ ] 🟠 **i49-b16** Milton-Freewater: a fruit stand box for the freezer (S)
+- [ ] 🟡 **i49-b17** Milton-Freewater: count the frog statues (S)
+- [ ] 🟡 **i49-b18** Milton-Freewater: the Muddy Frogwater festival in August (S)
+- [ ] 🟡 **i49-b19** Athena: the Scottish games in July (S)
+- [ ] 🟡 **i49-b20** Athena: a cousin's family on the wheat ground (S)
+- [ ] 🟠 **i49-b21** Family in a small town: weddings, birthdays and funerals (L)
+- [ ] 🟠 **i49-b22** The rural mail carrier who knows three towns (S)
+- [ ] 🟡 **i49-b23** A Prescott date (S)
+- [ ] 🟡 **i49-b24** Weekend bartending in Touchet (S)
+- [ ] 🟠 **i49-b25** The back-roads loop: Prescott, Starbuck, Pomeroy and home (M)
+- [ ] 🟡 **i49-b26** Small-town Saturday spring cleanups and yard sales (S)
+- [ ] 🟡 **i49-b27** A ride from a farmer at the Prescott grain scale (S)
+- [ ] 🟡 **i49-b28** Small towns get a line in the weekly news (S)
+- [ ] 🟡 **i49-b29** Know the back roads badge (S)
+- [ ] 🟡 **i49-b30** Help page: the small towns (S)
+- [ ] 🟠 **i49-b31** Small-town stops in the playtest bots (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
