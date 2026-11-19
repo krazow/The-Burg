@@ -3316,6 +3316,152 @@ old ones.
 
 </details>
 
+## Ideas round 38 (pick on the build board)
+
+56 ideas. Details: [docs/ideas/round-38.md](docs/ideas/round-38.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 38: Balance — careless play</b> (26 ideas)</summary>
+
+- [ ] 🔴 **i38-a01** Hiring cheer once every 26 weeks (S)
+- [ ] 🟡 **i38-a02** Hiring cheer only for a better-paying job (S)
+- [ ] 🟠 **i38-a03** Quitting inside 13 weeks costs a little standing (S)
+- [ ] 🟡 **i38-a04** Three jobs in a year makes the next interview harder (S)
+- [ ] 🟠 **i38-a05** Summer town goal: drop 'Work extra hours' (S)
+- [ ] 🔴 **i38-a06** Town goals need 3 more weeks each (S)
+- [ ] 🟡 **i38-a07** Off-focus weeks set the town goal back a week (S)
+- [ ] 🔴 **i38-a08** Community pulls back harder above 60 (S)
+- [ ] 🟠 **i38-a09** Happiness pulls back harder above 70 (S)
+- [ ] 🟠 **i38-a10** Health score starts at 55, not 40 (S)
+- [ ] 🔴 **i38-a11** Out and about health only when health is under 70 (S)
+- [ ] 🟠 **i38-a12** Out and about adds at most 1 point per stat a week (S)
+- [ ] 🟡 **i38-a13** Visits lose their sparkle after 3 weeks in a row (M)
+- [ ] 🟠 **i38-a14** Events: a careless answer should average zero (M)
+- [ ] 🟠 **i38-a15** A rented room past 30 wears on you (S)
+- [ ] 🟠 **i38-a16** Lifetime: piles of cash count less than invested money (M)
+- [ ] 🟡 **i38-a17** Overtime weeks leave room for one visit (S)
+- [ ] 🔴 **i38-a18** Balance sim: careless ceilings per game length (S)
+- [ ] 🔴 **i38-a19** Balance sim: a job-hopping careless bot (S)
+- [ ] 🔴 **i38-a20** Balance sim: an Out-and-about careless bot (S)
+- [ ] 🟠 **i38-a21** Balance sim: 10 careless 5-year games, not 2 (S)
+- [ ] 🟠 **i38-a22** Balance sim: 5-year careless for every start (S)
+- [ ] 🟠 **i38-a23** Balance sim: score parts in the report (S)
+- [ ] 🟡 **i38-a24** Balance sim: how much events are worth (M)
+- [ ] 🟡 **i38-a25** Balance sim: try a rule change without editing the game (S)
+- [ ] 🟡 **i38-a26** Balance sim: careless 401(k) and carpool at random (S)
+
+</details>
+
+<details><summary><b>Ideas 38: Farther afield</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i38-b01** Far trips: a fourth kind of trip that takes the whole week (L)
+- [ ] 🔴 **i38-b02** A trip jar on Home: save toward a named trip (S)
+- [ ] 🔴 **i38-b03** Who watches the house and the dog while you're gone (S)
+- [ ] 🔴 **i38-b04** While you were gone: a short catch-up card (S)
+- [ ] 🟠 **i38-b05** The train out of Pasco to Portland or Seattle (M)
+- [ ] 🟠 **i38-b06** Season windows for the big places (S)
+- [ ] 🟡 **i38-b07** Wildflowers at Paradise: Mount Rainier in late July (S)
+- [ ] 🟠 **i38-b08** The long drive to Yellowstone needs a car that can make it (M)
+- [ ] 🟡 **i38-b09** Gorge wind and I-84 closures on the way to Portland (S)
+- [ ] 🟠 **i38-b10** A cousin's wedding in Boise: RSVP weeks ahead (S)
+- [ ] 🟠 **i38-b11** Whose family this Christmas? (M)
+- [ ] 🟠 **i38-b12** A specialist only in Spokane or Seattle (M)
+- [ ] 🟡 **i38-b13** Flown to a Spokane trauma center (M)
+- [ ] 🟠 **i38-b14** Get a passport first (S)
+- [ ] 🟠 **i38-b15** A friend's hometown in Mexico (M)
+- [ ] 🟡 **i38-b16** Jet lag: the week after a big trip abroad (S)
+- [ ] 🟡 **i38-b17** Bring something home for the neighbors (S)
+- [ ] 🟡 **i38-b18** Homesick on long trips (S)
+- [ ] 🟠 **i38-b19** The Northwest map: far places on a zoomed-out view (M)
+- [ ] 🟡 **i38-b20** Seattle rent shock (S)
+- [ ] 🟠 **i38-b21** An offer to leave town (M)
+- [ ] 🟠 **i38-b22** Your grown kid moves to Seattle (M)
+- [ ] 🟠 **i38-b23** Friends who moved away keep a couch for you (M)
+- [ ] 🟡 **i38-b24** A classmate moves back with a plan (M)
+- [ ] 🟡 **i38-b25** The class reunion brings everyone home (S)
+- [ ] 🟠 **i38-b26** Snowbird winters in Arizona (M)
+- [ ] 🟡 **i38-b27** Spokane's big spring run (S)
+- [ ] 🟡 **i38-b28** The 5 a.m. run to the Pasco airport (S)
+- [ ] 🟡 **i38-b29** Delayed in Seattle: the missed connection (S)
+- [ ] 🟡 **i38-b30** Postcards on the fridge from far places (S)
+
+</details>
+
+## Ideas round 39 (pick on the build board)
+
+62 ideas. Details: [docs/ideas/round-39.md](docs/ideas/round-39.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 39: Bundles and release plans 2</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i39-a01** Bundle: Bug-fix sweep: backgrounds, challenges and the heir's ride (M)
+- [ ] 🔴 **i39-a02** Bundle: Balance sweep: careless play fixes (M)
+- [ ] 🔴 **i39-a03** Bundle: Balance sim: careless bots and hard ceilings (M)
+- [ ] 🟠 **i39-a04** Bundle: Hard mode that's really hard (M)
+- [ ] 🟠 **i39-a05** Bundle: Challenges retuned (M)
+- [ ] 🔴 **i39-a06** Bundle: Late life that feels late (L)
+- [ ] 🟠 **i39-a07** Bundle: Family money, the family home and downsizing (M)
+- [ ] 🔴 **i39-a08** Bundle: Backgrounds that score alike (M)
+- [ ] 🟠 **i39-a09** Bundle: Farm kid and Grad stories (M)
+- [ ] 🟠 **i39-a10** Bundle: Transplant and Young parent stories (M)
+- [ ] 🔴 **i39-a11** Bundle: Open as you go: one unlock table (M)
+- [ ] 🟠 **i39-a12** Bundle: Unlock moments in play (M)
+- [ ] 🔴 **i39-a13** Bundle: Shared places wear down and get cared for (L)
+- [ ] 🟠 **i39-a14** Bundle: Library, pool and gym through the year (M)
+- [ ] 🔴 **i39-a15** Bundle: Dayton up close (L)
+- [ ] 🔴 **i39-a16** Bundle: Walla Walla up close (L)
+- [ ] 🔴 **i39-a17** Bundle: The Tri-Cities up close (L)
+- [ ] 🔴 **i39-a18** Bundle: Waitsburg street by street (L)
+- [ ] 🔴 **i39-a19** Bundle: A school record for each kid (M)
+- [ ] 🔴 **i39-a20** Bundle: Teens on the way to graduation (M)
+- [ ] 🔴 **i39-a21** Bundle: A house hunt that takes weeks (L)
+- [ ] 🔴 **i39-a22** Bundle: Moving in a tight market (M)
+- [ ] 🔴 **i39-a23** Bundle: Your papers and the admin hour (L)
+- [ ] 🟠 **i39-a24** Bundle: Insurance you choose (M)
+- [ ] 🔴 **i39-a25** Bundle: Rough patches and making up (M)
+- [ ] 🔴 **i39-a26** Bundle: After a split (L)
+- [ ] 🔴 **i39-a27** Bundle: Veteran rank and deep cuts (M)
+- [ ] 🔴 **i39-a28** Bundle: Harvest food through the year (M)
+- [ ] 🔴 **i39-a29** Bundle: Food when money is tight (M)
+- [ ] 🔴 **i39-a30** Bundle: Far trips (L)
+- [ ] 🔴 **i39-a31** Release plan: v0.6 — Fair starts, open as you go (L)
+- [ ] 🔴 **i39-a32** Release plan: v0.7 — Home, paperwork and the wider valley (L)
+
+</details>
+
+<details><summary><b>Ideas 39: Waitsburg event pack 2</b> (30 ideas)</summary>
+
+- [ ] 🟡 **i39-b01** January: Boil-water notice after a main break (S)
+- [ ] 🟠 **i39-b02** February: Crab feed at the fairgrounds (S)
+- [ ] 🟠 **i39-b03** February: Chili cook-off at the Legion hall (S)
+- [ ] 🟠 **i39-b04** March: A calving night on the neighbor's ranch (S)
+- [ ] 🟡 **i39-b05** March: Spring bulky-item pickup day (S)
+- [ ] 🟡 **i39-b06** April: Free trees on Arbor Day at the park (S)
+- [ ] 🟡 **i39-b07** April: Kids' bike rodeo and helmet giveaway (S)
+- [ ] 🟡 **i39-b08** May: A honeybee swarm in your tree (S)
+- [ ] 🟡 **i39-b09** May: Wasp nest under the eaves (S)
+- [ ] 🟡 **i39-b10** May: A lemonade stand on the corner (S)
+- [ ] 🟠 **i39-b11** June: Skunk under the porch (S)
+- [ ] 🟡 **i39-b12** June: Fiftieth anniversary party at the Legion hall (S)
+- [ ] 🟠 **i39-b13** July: Bats in the attic (S)
+- [ ] 🟠 **i39-b14** July: Odd-even watering days (M)
+- [ ] 🟡 **i39-b15** July: A loose horse on Coppei Avenue (S)
+- [ ] 🟠 **i39-b16** August: Feed the neighbors' animals for a week (S)
+- [ ] 🟡 **i39-b17** August: A loud party next door (S)
+- [ ] 🟡 **i39-b18** September: Your dog digs up the neighbor's bulbs (S)
+- [ ] 🟠 **i39-b19** September: Kittens under the shed (M)
+- [ ] 🟡 **i39-b20** September: The school wants a career-day speaker (S)
+- [ ] 🟠 **i39-b21** October: Sweep the chimney before the first fire (M)
+- [ ] 🟡 **i39-b22** October: Leaves clog the storm drain (S)
+- [ ] 🟠 **i39-b23** October: A quarter beef from down the road (M)
+- [ ] 🔴 **i39-b24** October: Check on the quiet neighbor (S)
+- [ ] 🟡 **i39-b25** November: Turkey raffle at the hardware counter (S)
+- [ ] 🟠 **i39-b26** November: Write a column for the Tattler (S)
+- [ ] 🟡 **i39-b27** December: Live nativity needs a donkey wrangler (S)
+- [ ] 🟠 **i39-b28** Any: Tree roots heave your sidewalk (S)
+- [ ] 🟡 **i39-b29** Any: Coyotes in the wheat at night (S)
+- [ ] 🟠 **i39-b30** Any: A free piano if you can move it (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
