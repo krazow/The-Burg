@@ -2854,6 +2854,83 @@ old ones.
 
 </details>
 
+## Ideas round 32 (pick on the build board)
+
+63 ideas. Details: [docs/ideas/round-32.md](docs/ideas/round-32.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 32: Dayton up close</b> (31 ideas)</summary>
+
+- [ ] 🔴 **i32-a01** Dayton close-up map, like Waitsburg's Main Street map (L)
+- [ ] 🔴 **i32-a02** Split the depot and the courthouse into two stops (S)
+- [ ] 🔴 **i32-a03** A Dayton trip is a short trip (S)
+- [ ] 🟠 **i32-a04** Dayton's Main Street block (M)
+- [ ] 🟡 **i32-a05** A milkshake at the old drugstore counter (S)
+- [ ] 🟡 **i32-a06** Dinner at the old brick hotel (S)
+- [ ] 🟡 **i32-a07** Historic homes walking tour (S)
+- [ ] 🟠 **i32-a08** Courthouse clerk work scenes (M)
+- [ ] 🟡 **i32-a09** The courthouse clock needs fixing (S)
+- [ ] 🟠 **i32-a10** A courthouse wedding (S)
+- [ ] 🔴 **i32-a11** The Columbia County Fair on Labor Day weekend (M)
+- [ ] 🟠 **i32-a12** Show a 4-H animal at the county fair (M)
+- [ ] 🔴 **i32-a13** Hospital-paid nursing assistant course (M)
+- [ ] 🟠 **i32-a14** Visit residents in the hospital care wing (S)
+- [ ] 🟡 **i32-a15** The hospital foundation auction (S)
+- [ ] 🟠 **i32-a16** One team for two towns: co-op sports (M)
+- [ ] 🟡 **i32-a17** The town pool in summer (S)
+- [ ] 🟠 **i32-a18** Ski rentals in Bluewood's home town (S)
+- [ ] 🟠 **i32-a19** Bluewood ski patrol: a seasonal Dayton job (M)
+- [ ] 🟠 **i32-a20** County road crew, with winter plowing (M)
+- [ ] 🟡 **i32-a21** A courthouse career ladder (M)
+- [ ] 🟠 **i32-a22** Three Dayton regulars (M)
+- [ ] 🟡 **i32-a23** The old cannery building finds a new use (M)
+- [ ] 🟡 **i32-a24** Lewis and Clark campsite on Patit Creek (S)
+- [ ] 🟡 **i32-a25** Wind turbine blades on the Dayton road (S)
+- [ ] 🟡 **i32-a26** A lighted holiday parade on Dayton's Main Street (S)
+- [ ] 🟠 **i32-a27** A historic house in Dayton with old-look rules (M)
+- [ ] 🟠 **i32-a28** What changes if you move to Dayton (S)
+- [ ] 🟡 **i32-a29** See all of Dayton: a stamp card (S)
+- [ ] 🟡 **i32-a30** Hardware clerk discount for home repairs (S)
+- [ ] 🟠 **i32-a31** Dayton events show on its close-up map (S)
+
+</details>
+
+<details><summary><b>Ideas 32: Walla Walla up close</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i32-b01** Walla Walla close-up map (L)
+- [ ] 🔴 **i32-b02** Every Walla Walla trip stop gets a pin (S)
+- [ ] 🟠 **i32-b03** Your workplace shows on the close-up map (S)
+- [ ] 🟠 **i32-b04** Stroll Main Street downtown (S)
+- [ ] 🟠 **i32-b05** Pioneer Park: the duck pond, the aviary and the bandstand (S)
+- [ ] 🟡 **i32-b06** Walk or bike the Mill Creek path (S)
+- [ ] 🟡 **i32-b07** First Friday art walk downtown (S)
+- [ ] 🟠 **i32-b08** Campus jobs at the private college (M)
+- [ ] 🟡 **i32-b09** The college calendar sets the town's mood (S)
+- [ ] 🔴 **i32-b10** Community college programs that lead to named jobs (M)
+- [ ] 🟠 **i32-b11** The night drive home after evening class (S)
+- [ ] 🟠 **i32-b12** Nursing assistant at the hospital (S)
+- [ ] 🟠 **i32-b13** Jobs at the VA medical center (S)
+- [ ] 🟡 **i32-b14** Veterans get their checkups at the VA (S)
+- [ ] 🔴 **i32-b15** Corrections officer, as the job really runs (M)
+- [ ] 🟡 **i32-b16** More jobs at the pen: cook, maintenance, nurse (S)
+- [ ] 🟠 **i32-b17** Crush season for cellar hands (S)
+- [ ] 🟠 **i32-b18** Tasting room host: a weekend job (S)
+- [ ] 🟡 **i32-b19** Tasting rooms out by the airport (S)
+- [ ] 🔴 **i32-b20** Who's driving home from wine country? (S)
+- [ ] 🟠 **i32-b21** Sweet onion season: busy summer, slow winter (S)
+- [ ] 🟡 **i32-b22** The sweet onion festival in July (S)
+- [ ] 🟠 **i32-b23** Fair week as a trip with its own stops (M)
+- [ ] 🟡 **i32-b24** Work the fair: a week of temp shifts (S)
+- [ ] 🟡 **i32-b25** The college rodeo in spring (S)
+- [ ] 🟠 **i32-b26** The baby comes at 2 a.m. (S)
+- [ ] 🟡 **i32-b27** A parking ticket downtown (S)
+- [ ] 🟡 **i32-b28** Holiday lights and the downtown parade (S)
+- [ ] 🟡 **i32-b29** Fly out of the small airport (S)
+- [ ] 🟠 **i32-b30** Moving to Walla Walla: pick a part of town (M)
+- [ ] 🟠 **i32-b31** Lunch break downtown when you work there (S)
+- [ ] 🟡 **i32-b32** Memorial Day at the old fort cemetery (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
