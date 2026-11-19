@@ -35,7 +35,8 @@ const audit = () => {
     if (!vis(el) || covered(el)) continue;
     const r = el.getBoundingClientRect(), n = name(el) || el.placeholder || '';
     if (!n && el.tagName !== 'INPUT') out.unnamed.push(el.outerHTML.slice(0, 60));
-    if (r.width < 43.5 || r.height < 43.5) out.tiny.push(`${n.slice(0, 20)} ${Math.round(r.width)}×${Math.round(r.height)}`);
+    // words you tap for their meaning sit inside sentences: WCAG 2.5.5 exempts inline targets
+    if ((r.width < 43.5 || r.height < 43.5) && !el.classList.contains('term')) out.tiny.push(`${n.slice(0, 20)} ${Math.round(r.width)}×${Math.round(r.height)}`);
   }
   // text: size and contrast against the first solid background behind it
   const rgba = c => { const m = c.match(/[\d.]+/g); return m ? m.map(Number).concat(m.length === 3 ? [1] : []) : [0,0,0,0]; };
@@ -85,7 +86,8 @@ for (const [label, w, h, nightXL] of SIZES) {
   const screens = [
     ['title', async () => {}],
     ['help', async () => { await page.click('#how'); }],
-    ['home', async () => { await page.evaluate(() => { closeHelp(); localStorage.clear(); setPref('tips', ['focus','strip','tabs']); if (window.__NIGHTXL) { setPref('theme', 'night'); setPref('textSize', 'xl'); } applyPrefs(); newGame('Screens', 'two', 0); S.noEvents = true; S.jobId = 'farmhand'; tab = 'home'; render(); }); await page.click('#end'); await page.waitForTimeout(300); }],
+    ['home', async () => { await page.evaluate(() => { closeHelp(); localStorage.clear(); setPref('tips', ['focus','strip','tabs']); if (window.__NIGHTXL) { setPref('theme', 'night'); setPref('textSize', 'xl'); } applyPrefs(); newGame('Screens', 'two', 0); S.noEvents = true; S.jobId = 'farmhand'; tab = 'home'; render(); }); await page.click('#end'); await page.waitForTimeout(300);
+      if (await page.$('#modal:not(.hidden) #ok')) await page.click('#modal:not(.hidden) #ok'); }],   // i2-a10: the First paycheck badge card
     ['jobs', async () => { await page.click('[data-tab=jobs]'); }],
     ['life', async () => { await page.click('[data-tab=life]'); }],
     ['life-skills-biz', async () => { await page.evaluate(() => { S.money = 9000; S.skills = { handy: 30, cook: 10, people: 50 }; S.goals = ['dog']; S.goalAt = { dog: 0 }; S.biz = { type: 'shop', weeks: 5, earned: 140, paidYear: null }; render(); }); }],
@@ -109,6 +111,12 @@ for (const [label, w, h, nightXL] of SIZES) {
     ['life-undo', async () => { await page.evaluate(() => { closeSheet(); S.plan = []; tab = 'life'; render(); }); await page.click('[data-k401="1"]'); await page.waitForSelector('#undo'); await page.evaluate(() => { tab = 'home'; render(); }); await page.evaluate(() => { tab = 'life'; render(); }); }],
     ['menu', async () => { await page.evaluate(() => { tab = 'home'; render(); }); await page.click('[data-tab=home]'); await page.evaluate(() => closeSheet()); await page.click('#main .maptog button:nth-child(1)'); await page.click('[data-tab=menu]'); await page.waitForTimeout(300); }],
     ['settings', async () => { await page.click('#sheet #settings'); await page.waitForTimeout(200); }],
+    // i2 clarity: the badge card, why lines, the recap, a big choice and an open word meaning
+    ['celebrate', async () => { await page.evaluate(() => { closeSheet(); celebrate(['🐕 Badge earned: Good dog', '🍳 Cook skill: level 1']); }); }],
+    ['why', async () => { await page.evaluate(() => { closeSheet(); showRunDetails(); }); await page.click('#modal .whyrow'); }],
+    ['recap', async () => { await page.evaluate(() => { closeSheet(); recapSheet(Date.now() - 3 * 864e5); }); }],
+    ['confirm-move', async () => { await page.evaluate(() => { closeSheet(); S.money = 50000; moveHome('fixer'); }); }],
+    ['glossary', async () => { await page.evaluate(() => { closeSheet(); tab = 'jobs'; render(); }); await page.click('#main .term').catch(() => {}); }],
     ['tutorial', async () => { await page.evaluate(() => { closeSheet(); startTutorial(); }); await page.waitForTimeout(500); await page.click('#cnext'); await page.waitForTimeout(600); }],
     // the newer pop-ups (G3): life goals, the end screen, the title screen's options, challenges, weekly challenge, records and What's new
     ['life-goals', async () => { await page.evaluate(() => { endTutorial(false); $('#toast').classList.add('hidden'); tab = 'life'; render(); }); await page.click('#goals'); }],

@@ -16,7 +16,7 @@ const AUTO_UNTIL = {
 };
 const autoUntil = () => AUTO_UNTIL[prefs().autoUntil] ? prefs().autoUntil : 'event';
 // i2-a28: "watch" shows each week go by; Instant is the default, and reduced motion always plays instantly
-const reducedMotion = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+const reducedMotion = () => calmMotion();          // the device setting or Settings → Animations off
 const watchWeeks = () => prefs().speed === 'watch' && !reducedMotion();
 // the End Week and skip buttons come through here: a second tap of a double tap (or a held-down Enter) is ignored
 function tapPlay(n, e){
@@ -59,11 +59,15 @@ function finishRun(res, why, n){
   const notes = why ? [...res.notes, `⏸ Auto stopped: ${why}`] : res.notes;
   const after = () => {
     if (res.ending) return res.debt && canBankrupt() ? bankruptcySheet(res.ending) : finish(res.ending);   // i3-a27
+    COUNT_FROM = { money: S.run.money, happy: S.run.happy, health: S.run.health, community: S.run.community };   // i2-a08: stats count up from last week
     render();
-    if (S.newBadges && S.newBadges.length) { toast(S.newBadges.join(' · ')); S.newBadges = []; sfx('badge'); }
-    else if (!res.ev) { if (n === 1) sfx('week'); buzz('week'); }   // i2-a04/a05: one small tick per press; ⏩ and Auto don't tick every week
-    if (res.ev) showEvent(res.ev, res.review);     // a year in review that week comes after the event
-    else if (res.review) showReview(res.review);
+    const next = () => {
+      if (res.ev) showEvent(res.ev, res.review);     // a year in review that week comes after the event
+      else if (res.review) showReview(res.review);
+    };
+    // i2-a10: badges and skill levels get one celebration card after the week, then the week goes on
+    if (S.newBadges && S.newBadges.length) { const won = S.newBadges; S.newBadges = []; save(); sfx('badge'); buzz('badge'); celebrate(won, next); }
+    else { if (!res.ev) { if (n === 1) sfx('week'); buzz('week'); } next(); }   // i2-a04/a05: one small tick per press
     const r = S.run, dm = S.money - r.money, ch = (n, v) => Math.abs(v) < 0.5 ? `${n} unchanged` : `${n} ${v > 0 ? 'up' : 'down'} ${Math.abs(Math.round(v))}`;
     const own = r.happened.filter(h => h.auto).length;
     announce(`${r.weeks > 1 ? r.weeks + ' weeks' : 'Week'} done. Cash ${dm >= 0 ? 'up' : 'down'} ${fmt(Math.abs(dm))}, now ${fmt(S.money)}. ${ch('Happiness', S.happy - r.happy)}, ${ch('health', S.health - r.health)}, ${ch('community', S.community - r.community)}. ${own ? `${own} event${own > 1 ? 's' : ''} with no choice to make played out: see the week strip. ` : ''}${dateLabel()}.`);
@@ -89,14 +93,80 @@ function showRunDetails(){
   const dm = S.money - r.money;
   sheet(`<h2>${r.weeks > 1 ? `The last ${r.weeks} weeks` : 'This week'}</h2>
     <p>${runChips()}</p>
-    ${S.last ? `<h3 style="margin-top:12px">${r.weeks > 1 ? 'The last week' : 'Money'}</h3>${S.last.lines.map(([l,v]) => `<div class="kv"><span>${l}</span><span style="color:${v<0?'var(--down)':'var(--up)'}">${v>0?'+':''}${fmt(v)}</span></div>`).join('')}
+    ${S.last ? `<h3 style="margin-top:12px">${r.weeks > 1 ? 'The last week' : 'Money'}</h3>${S.last.lines.some(x => x[2]) ? '<p class="muted" style="margin:0 0 4px;font-size:0.8125rem">Tap a line to see why.</p>' : ''}${S.last.lines.map(([l,v,why], i) => why
+      ? `<button class="kv whyrow" aria-expanded="false" aria-controls="why${i}" data-why="${i}"><span>${l} <span class="info" aria-hidden="true">ⓘ</span></span><span style="color:${v<0?'var(--down)':'var(--up)'}">${v>0?'+':''}${fmt(v)}</span></button><div class="whytext hidden" id="why${i}">${why}</div>`
+      : `<div class="kv"><span>${l}</span><span style="color:${v<0?'var(--down)':'var(--up)'}">${v>0?'+':''}${fmt(v)}</span></div>`).join('')}
       <div class="kv"><span><b>Paychecks and bills</b></span><span><b>${S.last.net>=0?'+':''}${fmt(S.last.net)}</b></span></div>` : ''}
     ${r.happened.length ? `<h3 style="margin-top:12px">What happened</h3>${r.happened.map(h => `<div class="kv"><span>${h.ic} ${esc(h.title)}</span><span style="color:${h.money<0?'var(--down)':'var(--up)'}">${h.money ? (h.money>0?'+':'') + fmt(h.money) : ''}</span></div>`).join('')}` : ''}
     <div class="kv"><span><b>Total change in cash</b></span><span><b>${dm>=0?'+':''}${fmt(dm)}</b></span></div>${tattlerLine()}
+    ${S.last && S.last.why && S.last.why.length ? `<h3 style="margin-top:12px">Why your stats moved${r.weeks > 1 ? ' last week' : ''}</h3>${S.last.why.map(w => `<div class="logitem">${w}</div>`).join('')}` : ''}
     ${S.practice ? '' : '<button class="btn ghost" id="outlook">📅 Money outlook: next 13 weeks</button>'}
     <button class="btn primary" id="ok">Close</button>`);
+  setPref('cl', { ...(prefs().cl || {}), strip: 1 });   // i2-a16: the checklist's "look at your week" step
+  document.querySelectorAll('[data-why]').forEach(b => b.onclick = () => {
+    const open = b.getAttribute('aria-expanded') !== 'true', d = $('#why' + b.dataset.why);
+    b.setAttribute('aria-expanded', open); d.classList.toggle('hidden', !open);
+  });
   $('#ok').onclick = closeSheet;
   if ($('#outlook')) $('#outlook').onclick = () => outlookSheet(showRunDetails);
+}
+// i2-a10: one card for everything earned this week (badges and skill levels); no confetti with reduced motion
+function celebrate(list, then){
+  const items = list.map(x => String(x).replace(/^(\S+) Badge earned: /, '$1 '));
+  sheet(`<div class="celebrate${calmMotion() ? ' calm' : ''}" aria-hidden="true">${'<i></i>'.repeat(calmMotion() ? 0 : 14)}</div>
+    <div class="big">🏅</div><h2 style="text-align:center">${list.length > 1 ? `${list.length} new milestones!` : 'A new milestone!'}</h2>
+    ${items.map(t => `<div class="logitem" style="text-align:center;font-size:1rem"><b>${t}</b></div>`).join('')}
+    <p class="muted" style="text-align:center">Badges stay in your collection across all your lives.</p>
+    <button class="btn primary" id="ok">Continue</button>`);
+  announce(`New: ${items.join('. ')}`);
+  $('#ok').onclick = () => { closeSheet(); if (then) then(); };
+}
+let COUNT_FROM = null;
+// i2-a08: after a week, bars slide and cash counts from last week's numbers (400 ms); skipped with reduced motion
+function animateStats(from){
+  if (!from || calmMotion() || typeof requestAnimationFrame !== 'function') return;
+  const bars = [...document.querySelectorAll('.statbtn[data-stat] .bar i')].filter(i => from[i.closest('[data-stat]').dataset.stat] != null);
+  for (const i of bars) { const k = i.closest('[data-stat]').dataset.stat; i.dataset.to = i.style.width; i.style.transition = 'none'; i.style.width = `${from[k]}%`; }
+  if (bars.length) { void bars[0].offsetWidth; requestAnimationFrame(() => bars.forEach(i => { i.style.transition = ''; i.style.width = i.dataset.to; })); }
+  const el = $('.top .money'); if (!el || Math.abs(S.money - from.money) < 1) return;
+  const a = from.money, b = S.money, t0 = performance.now();
+  const step = t => { const p = Math.min(1, (t - t0) / 400); if (!el.isConnected) return; el.textContent = fmt(a + (b - a) * (1 - Math.pow(1 - p, 3))); if (p < 1) requestAnimationFrame(step); };
+  el.textContent = fmt(a); requestAnimationFrame(step);
+}
+// i2-a02: what a focus does to your stats this week; weekTick and the focus preview share it
+const FOCUS_K = 0.28;
+function focusFx(fk, eff, away){
+  const f = FOCUS[fk] || FOCUS.rest;
+  return Object.fromEntries(Object.entries(f.fx).map(([st,v]) => {
+    let d = v * FOCUS_K * (v > 0 ? eff * (away ? TRIP_TIME : 1) : 1);
+    if (fk === 'rest' && v > 0) d *= clamp((86 - S[st]) / 20, 0, 1);   // rest tops out in the low 80s
+    return [st, d];
+  }));
+}
+// a side-hustle week's pay; roll is the week's dice (0.5 = an average week, for the preview)
+const hustleXp = () => 1 + Math.min(0.6, (S.hustleWeeks || 0) / 40);
+const hustlePay = (gig, roll) => cost(gig.pay * (0.85 + roll * 0.3)) * hustleXp() * outAdBoost() * W;
+const truckSeason = () => !!(S.biz && S.biz.type === 'truck' && [3,4,5,6,7,8,9].includes(curMonth()));
+// i2-a02: a no-dice estimate of what picking this focus does next week: stats, extra cash, and how strong it still is
+function focusPreview(fk){
+  const f = FOCUS[fk], j = S.retired ? null : job();
+  const n = S.streakF === fk ? S.streakN + 1 : 1, eff = focusEffect(fk, n);
+  const away = !!(S.trip && CITIES[S.trip.city] && !tripIsCommute(S.trip.city));
+  const fx = focusFx(fk, eff, away), cash = [];
+  const rut = fk !== 'study' && n > RUT_WEEKS;
+  if (rut) fx.happy = (fx.happy || 0) - 1.2;
+  if (f.payMult && j) cash.push(['overtime after taxes', payNow(j) * W * (f.payMult - 1) * (1 - K401[S.k401rate || 0]) * 0.85]);
+  if (f.hustle) { if (truckSeason()) cash.push(['a food-truck weekend', cost(1400) * (1 + skillLv('cook') * 0.15) * W]); else { const g = currentGig(); cash.push([g.name, hustlePay(g, 0.5)]); } }
+  if (f.cost) cash.push([f.name.toLowerCase(), -cost(f.cost) * W]);
+  if (f.study && !S.certStudy && S.edu < 3) cash.push(['tuition', -cost(TUITION[S.edu]) * W]);
+  return { fx, cash, money: cash.reduce((a, [, v]) => a + v, 0), eff, n, rut, away };
+}
+function previewLine(fk){
+  const p = focusPreview(fk), ic = { happy:'😊', health:'❤️', community:'🤝' };
+  const st = Object.entries(p.fx).filter(([, v]) => Math.abs(v) >= 0.05).map(([k, v]) => `${ic[k]} ${v > 0 ? '+' : '−'}${Math.abs(v).toFixed(1)}`);
+  const cash = p.cash.map(([l, v]) => `💵 ${v >= 0 ? '+' : '−'}${fmt(Math.abs(v)).replace('-', '')} ${l}`);
+  return `<div class="preview" id="fprev"><b>Next week:</b> ${[...st, ...cash].join(' · ') || 'no change'}${p.eff < 1 ? ` · <b>works at ${Math.round(p.eff * 100)}%</b> (${p.n} weeks in a row)` : ''}${p.rut ? ' · in a rut (−1.2 😊)' : ''}${p.away ? ` · your trip takes part of the week (${TRIP_TIME * 100}%)` : ''}
+    <span class="s">On top of your job, home and bills. An estimate, before events.</span></div>`;
 }
 function showReview(rv){
   const row = (l, a, b, money) => { const d = b - a; return `<div class="kv"><span>${l}</span><span>${money ? fmt(b) : Math.round(b)} <span class="delta ${Math.abs(d) < (money?1:0.5) ? 'flat' : d>0?'up':'down'}">${Math.abs(d) < (money?1:0.5) ? '±0' : (d>0?'▲':'▼') + (money ? fmt(Math.abs(d)) : Math.round(Math.abs(d)))}</span></span></div>`; };
@@ -145,6 +215,29 @@ function workYear(j, m){
   }
 }
 
+// i2-a21: why a money line cost what it did (lines that don't carry their own reason get one here)
+function lineWhy(l, f, j){
+  const home = HOMES[S.home], car = CARS[S.car];
+  if (l === 'Social Security') return 'Your Social Security check, paid weekly. It grows with the years you worked and rises with prices.';
+  if (l === 'Pension') return 'Your public pension: you vested by working enough years in a public job.';
+  if (l === '401(k) withdrawal') return 'In retirement about 4% of your 401(k) comes out each year.';
+  if (/^Paycheck/.test(l) && j) return `${j.title}: ${wk(payNow(j))}${f.payMult ? ', plus 20% for working extra hours' : ''}${S.raise > 1.005 ? `, with ${Math.round((S.raise - 1) * 100)}% in raises` : ''}. Pay grows about 2.5% a year.`;
+  if (l === 'Mortgage') return `Your ${home.name.toLowerCase()}: the payment was locked in when you bought (or refinanced).`;
+  if (l === 'Rent') return `Rent on the ${home.name.replace(/^Rented /, '').toLowerCase()}. Rents rise with prices, about 3% a year.`;
+  if (/^Food & utilities/.test(l)) return `Groceries, power and water${/stocked/.test(l) ? `, with groceries ${STOCK_OFF*100}% off from a stock-up run` : ''}${skillLv('cook') ? `, ${skillLv('cook') * 4}% less because you cook` : ''}.`;
+  if (l === 'Insurance & phone') return 'Your insurance (set on the insurance sheet) and your phone plan.';
+  if (/^Higher living costs/.test(l)) return 'Hard mode: rent, food and insurance cost 10% more.';
+  if (/^Vehicle tabs/.test(l)) return 'Every January: about 1% of what your vehicle is worth, at least $60.';
+  if (/^Gas \(/.test(l)) return `${commuteOneWay() ? `${commuteOneWay()} miles each way${driveDays() < 1 ? `, ${Math.round(driveDays() * 5)} days a week` : ''}${carpooling() ? ', half of it with the carpool' : ''}, plus errands` : 'Errands around town'}, at ${car.mpg} mpg.`;
+  if (l === 'Dog food & vet') return 'Food and the vet for your dog.';
+  if (l === 'Date nights') return 'Time out with your partner.';
+  if (/^Partner's paycheck/.test(l)) return 'Your partner works part-time until 65.';
+  if (/^Kids? ?/.test(l) && /^Kid/.test(l)) return `About ${fmtc(KID_COST)} a month for each kid at home${commuteOneWay() >= 20 ? `, plus ${fmtc(KID_CARE_COMMUTE)} of childcare because you commute 20+ miles` : ''}.`;
+  if (l === 'Health care') return age() >= 65 ? 'Health care costs more from 65.' : 'Health care costs start at 50.';
+  if (l === 'Long-term care insurance') return 'A monthly premium so care late in life is covered.';
+  if (l === (FOCUS[S.focus] || {}).name) return `Your focus this week, ${l}, costs a little.`;
+  return '';
+}
 function weekTick(auto){
   const L = LENGTHS[S.len], m = W, k = 0.28;
   const lines = [], notes = [];
@@ -165,14 +258,14 @@ function weekTick(auto){
   if (j) workYear(j, m);                           // i3-a24/a25: years worked count toward Social Security and a public pension
   let k401 = 0;
   if (j && !S.retired && S.k401rate) {           // pre-tax contribution, with a 3% employer match at 5% or more
-    k401 = gross * K401[S.k401rate]; lines.push(['401(k) contribution', -k401]);
+    k401 = gross * K401[S.k401rate]; lines.push(['401(k) contribution', -k401, `You save ${K401[S.k401rate]*100}% of your pay before taxes, and your employer adds 3% more. It's still yours: it counts in your net worth.`]);
     S.k401 += k401 + gross * 0.03;
   }
-  if (gross) lines.push(['Taxes', -(gross - k401) * (S.retired ? 0.05 : 0.15)]);
-  if (!S.retired && !j && S.ui > 0) { const n = Math.min(m, S.ui); lines.push(['Unemployment benefits', 1100*S.wage*n]); S.ui -= n; }
+  if (gross) lines.push(['Taxes', -(gross - k401) * (S.retired ? 0.05 : 0.15), S.retired ? 'About 5% of retirement income.' : `About 15% of your pay${k401 ? ' after your 401(k) savings' : ''}.`]);
+  if (!S.retired && !j && S.ui > 0) { const n = Math.min(m, S.ui); lines.push(['Unemployment benefits', 1100*S.wage*n, 'Benefits for up to 6 months after a layoff.']); S.ui -= n; }
   let gig = null;
   const truckTime = S.biz && S.biz.type === 'truck' && [3,4,5,6,7,8,9].includes(curMonth());
-  if (f.hustle && !truckTime) { gig = currentGig(); const xp = 1 + Math.min(0.6, (S.hustleWeeks || 0) / 40); lines.push([`Side hustle: ${gig.name}`, cost(gig.pay * (0.85 + Math.random() * 0.3)) * xp * outAdBoost() * m]); S.hustleWeeks = (S.hustleWeeks || 0) + 1; S.hustleLast = S.turn; }
+  if (f.hustle && !truckTime) { gig = currentGig(); lines.push([`Side hustle: ${gig.name}`, hustlePay(gig, Math.random()), `Gigs follow the seasons. ${S.hustleWeeks ? `${S.hustleWeeks} weeks of experience add ${Math.round((hustleXp() - 1) * 100)}% to your pay.` : 'Pay grows as you get good at it.'}`]); S.hustleWeeks = (S.hustleWeeks || 0) + 1; S.hustleLast = S.turn; }
   else if (S.hustleWeeks > 0 && S.turn - (S.hustleLast ?? S.turn) > HUSTLE_FADE_AFTER) S.hustleWeeks = Math.max(0, S.hustleWeeks - HUSTLE_FADE);   // B9: rusty after 6 months off
   const home = HOMES[S.home];
   bizWeek(lines, notes);
@@ -181,11 +274,11 @@ function weekTick(auto){
   lines.push(...billLines());                      // i3-a28: the regular bills, shared with the money outlook
   { const y = new Date(S.date).getFullYear(); if (curMonth() === 0 && S.tabsYear !== y) { lines.push(['Vehicle tabs (DMV)', -vehicleTabs()]); S.tabsYear = y; } }
   if (S.loanLeft > 0) {
-    const n = Math.min(m, S.loanLeft); lines.push(['Truck payment', -(S.loanPay || CARS.truck.pay)*n]); S.loanLeft -= n;
+    const n = Math.min(m, S.loanLeft); lines.push(['Truck payment', -(S.loanPay || CARS.truck.pay)*n, `Five years of payments on the new pickup: about ${Math.max(0, Math.ceil((S.loanLeft - n) / W))} weeks to go.`]); S.loanLeft -= n;
     if (S.loanLeft < 1e-6) { S.loanLeft = 0; notes.push('🛻 The truck is paid off!'); S.paidOff = true; log('Made the last truck payment.'); }
   }
   if (S.sloanLeft > 0) {
-    const n = Math.min(m, S.sloanLeft); lines.push(['Student loan', -S.sloanPay*n]); S.sloanLeft -= n;
+    const n = Math.min(m, S.sloanLeft); lines.push(['Student loan', -S.sloanPay*n, `Paying back college: about ${Math.max(0, Math.ceil((S.sloanLeft - n) / W))} weeks to go.`]); S.sloanLeft -= n;
     if (S.sloanLeft < 1e-6) { S.sloanLeft = 0; notes.push('🎓 Your student loans are paid off!'); S.paidOff = true; log('Paid off the student loans.'); }
   }
   if (S.partner && age() < 65) lines.push(["Partner's paycheck (part-time)", 1400*S.wage*m]);
@@ -194,14 +287,14 @@ function weekTick(auto){
   planWeek(lines, notes);                          // i3-a30/a31/a33/a34: winters south, late-life care, probate and spare-room guests
   // i3-a03: a certificate course takes the week's classes first (its fee was paid up front)
   if (f.study && !certWeek(trip && trip.away ? TRIP_TIME : 1, notes) && S.edu < 3) {
-    lines.push(['Tuition', -cost(TUITION[S.edu])*m]);
+    lines.push(['Tuition', -cost(TUITION[S.edu])*m, `Classes at ${SCHOOL[S.edu]}, charged in weeks you Take classes.`]);
     S.studyProg += trip && trip.away ? TRIP_TIME : 1;     // R11: a trip week is 3/4 of a week of classes
     if (S.studyProg >= STUDY_NEED[S.edu]) { graduate(); notes.push(`🎓 You earned your ${EDU[S.edu]}${S.major && S.major === S.program ? ` in ${PROGRAMS[S.major].name.toLowerCase()}` : ''}! New jobs unlocked.`); }
   }
-  if (S.money < 0) lines.push(['Interest on debt', S.money * (mode() === 'relaxed' ? 0.01 : 0.015) * m]);
+  if (S.money < 0) lines.push(['Interest on debt', S.money * (mode() === 'relaxed' ? 0.01 : 0.015) * m, `You're below $0, so debt charges about ${mode() === 'relaxed' ? 1 : 1.5}% interest a month.`]);
   const net = lines.reduce((a,[,v]) => a + v, 0);
   S.money += net;
-  S.last = { lines: lines.filter(([,v]) => Math.round(v)), net };
+  S.last = { lines: lines.filter(([,v]) => Math.round(v)).map(l => l[2] ? l : [l[0], l[1], lineWhy(l[0], f, j)]), net };
   debtWeek(notes);                                 // i3-a26: long debt goes to collections
   // i3-a21: the valley's home prices move with this year's market (2.5% a year on average); owners gain principal + appreciation
   S.homeIdx = (S.homeIdx || 1) * Math.pow(1 + (S.homeGrow ?? 0.025), 1/52);
@@ -212,6 +305,17 @@ function weekTick(auto){
 
   // ---- stats drift for the week ----
   const a = age();
+  // i2-a21: plain reasons the stats moved, read from the same rules (this changes nothing)
+  const why = [`${f.ic} Your focus, ${f.name}${focusEffect(S.focus, S.streakF === S.focus ? S.streakN + 1 : 1) < 1 ? `, at ${Math.round(focusEffect(S.focus, S.streakF === S.focus ? S.streakN + 1 : 1) * 100)}% after ${S.streakN + 1} weeks in a row` : ''}${trip && trip.away ? ', with a trip taking part of the week' : ''}: ${fxWords(f.fx)}.`];
+  if (S.retired) why.push('🎉 Retirement: ▲ happiness every week.');
+  else if (j) { if (j.stress >= 0.6) why.push(`💼 ${j.title} is stressful: ▼ happiness.`); if (j.wear >= 0.7) why.push(`💼 ${j.title} is hard on your body: ▼ health.`); if (j.city === 'waitsburg') why.push('🤝 Working in Waitsburg keeps you in the loop: ▲ community.'); }
+  else why.push('💼 No job: ▼ happiness.');
+  if (commuteOneWay() >= 20) why.push(`🛣️ ${commuteOneWay()} miles each way${carpooling() ? ' (the carpool helps)' : ''}: ▼ happiness.`);
+  if (S.money < 0) why.push('💳 Being in debt: ▼ happiness.');
+  if (S.partner || S.dog || kidsAtHome()) why.push(`🏡 ${[S.partner ? 'your partner' : '', S.dog ? 'your dog' : '', kidsAtHome() ? 'kids at home' : ''].filter(Boolean).join(', ').replace(/^./, c => c.toUpperCase())}: ▲ happiness.`);
+  if (S.health < 35 && (S.focus === 'work' || S.focus === 'hustle')) why.push('😮‍💨 Pushing through low health with extra work: ▼▼ health.');
+  if (S.focus !== 'study' && S.streakF === S.focus && S.streakN + 1 > RUT_WEEKS) why.push(`🔁 In a rut (${S.streakN + 1} weeks of the same thing): ▼ happiness.`);
+  why.push(`⚖️ Stats drift toward the middle: high ones slip, low ones recover a little${a >= 50 ? ', and health drifts lower with age' : ''}.`);
   let dh = -0.5 + (52 - S.happy) * 0.06;
   let dH = ((a < 30 ? 85 : a < 50 ? 78 : a < 65 ? 68 : a < 80 ? 55 : 42) - S.health) * 0.025;
   let dc = (25 - S.community) * 0.05 * (S.community > 25 ? 1 - skillLv('people') * 0.15 : 1);   // people skill: community fades slower
@@ -235,11 +339,8 @@ function weekTick(auto){
   if (S.streakF === S.focus) S.streakN++; else { S.streakF = S.focus; S.streakN = 1; }
   S.recentF = [S.focus, ...(S.recentF || [])].slice(0, 4);
   const eff = focusEffect();
-  adj(Object.fromEntries(Object.entries(f.fx).map(([st,v]) => {
-    let d = v * k * (v > 0 ? eff * (trip && trip.away ? TRIP_TIME : 1) : 1);
-    if (S.focus === 'rest' && v > 0) d *= clamp((86 - S[st]) / 20, 0, 1);   // rest tops out in the low 80s
-    return [st, d];
-  })));
+  adj(focusFx(S.focus, eff, !!(trip && trip.away)));
+  S.last.why = why;
   if (S.focus !== 'study' && S.streakN > RUT_WEEKS) {
     adj({happy: -1.2});
     if (S.streakN === RUT_WEEKS + 1) notes.push(`🔁 ${S.streakN - 1} weeks of "${f.name}" in a row. You're in a rut: try a different focus.`);
@@ -292,6 +393,7 @@ function weekTick(auto){
     const snap = { nw: netWorth(), happy: S.happy, health: S.health, community: S.community };
     if (S.yearStart && LENGTHS[S.len].turns > 26) review = { year: oldYear, start: S.yearStart, end: snap, events: S.yearEvents || 0,
       milestones: S.log.filter(e => e.d.endsWith(String(oldYear)) && !e.m.includes(': ')).map(e => e.m).reverse().slice(0, 8) };
+    if (S.yearStart) S.years = [...(S.years || []), { year: oldYear, age: age(), start: S.yearStart, end: snap, m: yearMilestones(oldYear) }].slice(-120);   // i2-a29: for the life story
     S.yearStart = snap; S.yearEvents = 0;
     // i3-a10: union jobs get a step raise every January after 6 months on the job
     if (working() && job().union && !S.strike && (S.tenure || 0) >= 6) { bumpPay(1.015); log(`Union step raise: 1.5% at the ${job().title.toLowerCase()} job.`); }

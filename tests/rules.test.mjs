@@ -970,7 +970,7 @@ await t.check('skips never change results: the same dice give the same life whet
 await t.check('skips play one-choice events on their own and list them, but stop for a real choice', async () => {
   const r = await ev(() => {
     const ok = e => e.choices().filter(c => !c.if || c.if());
-    fresh('two', { jobId: 'farmhand' }); S.noEvents = false;
+    fresh('two', { jobId: 'farmhand' }); S.noEvents = false; S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1]));   // no milestone card in the way
     const one = EVENTS.find(e => !e.once && ok(e).length === 1), two = EVENTS.find(e => !e.once && ok(e).length >= 2);
     const real = rollEvent;
     rollEvent = () => one; playWeeks(4); const a = { weeks: S.run.weeks, auto: S.run.happened.filter(h => h.auto).length, sheet: !$('#modal').classList.contains('hidden') }; closeSheet();
@@ -984,7 +984,7 @@ await t.check('skips play one-choice events on their own and list them, but stop
 
 await t.check('a double tap on End Week plays one week, not two', async () => {
   const r = await ev(() => {
-    fresh('two', { jobId: 'farmhand' }); PLAY_AT = -1e9; const t0 = S.turn;
+    fresh('two', { jobId: 'farmhand' }); S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1])); PLAY_AT = -1e9; const t0 = S.turn;
     tapPlay(1, { detail: 1 }); closeSheet(); tapPlay(1, { detail: 2 }); tapPlay(1, { detail: 1 }); closeSheet();
     const quick = S.turn - t0; PLAY_AT = -1e9; tapPlay(1, { detail: 1 }); closeSheet();
     return { quick, later: S.turn - t0 };
@@ -1493,6 +1493,23 @@ await t.check('i3-a24/a25: older saves get an estimated work record', async () =
   const r = await ev(() => { const old = JSON.parse(JSON.stringify(fresh('life', { ageMonths: 40 * 12, jobId: 'para', jobMonths: 36 }))); for (const k of ['earnYears', 'earnSum', 'pensionYears', 'pensionPay', 'will', 'ltc', 'care']) delete old[k];
     const m = migrate(old); return { y: m.earnYears, p: m.pensionYears, pay: m.pensionPay, will: m.will, care: m.care }; });
   assert(near(r.y, 16.5) && near(r.p, 3) && r.pay === 2900 && r.will === false && r.care === null, JSON.stringify(r));
+});
+
+await t.check('i2-a29: an old save gets its past years in the life story, and says when earlier years came before the update', async () => {
+  const r = await ev(() => {
+    fresh('five', { jobId: 'farmhand' }); S.date = new Date(2029, 5, 1).getTime(); S.turn = 125; S.ageMonths = 20 * 12;
+    const g = JSON.parse(JSON.stringify(S)); delete g.years; delete g.storyEarly;
+    g.log = [{ d: 'Week of Mar 1, 2029', m: 'Earned a badge: Good dog.', k: 'mile' }, { d: 'Week of May 3, 2028', m: 'Hired as Wheat farm hand in Waitsburg!', k: 'money' },
+      { d: 'Week of Feb 2, 2028', m: 'Celebration Days: you ran.', k: 'ev' }, { d: 'Week of Jan 4, 2027', m: 'Rules turns 18 and rents a room above Main Street in Waitsburg.', k: 'ev' }];
+    const short = migrate(JSON.parse(JSON.stringify(g)));
+    const long = JSON.parse(JSON.stringify(g)); for (let i = 0; i < 120; i++) long.log.splice(1, 0, { d: 'Week of Apr 1, 2029', m: 'Quiet week.', k: 'ev' });
+    long.log = long.log.slice(0, 120); const big = migrate(long);
+    S = short; const st = lifeStory(); S = big; const st2 = lifeStory();
+    return { years: short.years, early: short.storyEarly, rows: st.rows.map(x => `${x.year}:${x.text.join(' ')}`), early2: big.storyEarly, first2: st2.rows[0].text[0] };
+  });
+  assert(r.years.length === 1 && r.years[0].year === 2028 && /Hired as/.test(r.years[0].m[0]) && r.years[0].age === 19, JSON.stringify(r.years));
+  assert(!r.early && r.rows.some(x => /^2028:.*Hired/.test(x)) && !r.rows.some(x => /Celebration/.test(x)), JSON.stringify(r.rows));
+  assert(r.early2 && /before this update/.test(r.first2), JSON.stringify(r));
 });
 
 await t.check('i3-a28 + jobs: the 13-week outlook counts union dues, the bus pass, furloughs, seasons, call-backs, unemployment, apprenticeship steps and certificates', async () => {

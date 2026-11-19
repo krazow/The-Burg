@@ -823,14 +823,14 @@ await t.check('i2-a30: the install card waits for 8 weeks of play, installs on t
   await life({ jobId: 'farmhand' });
   await page.evaluate(() => { window.__prompted = 0; const e = new Event('beforeinstallprompt', { cancelable: true }); e.prompt = () => { window.__prompted++; }; e.userChoice = Promise.resolve({ outcome: 'accepted' }); window.dispatchEvent(e); });
   assert(!(await page.$('#install')), 'offered to install in the first week');
-  await page.evaluate(() => { S.turn = 8; render(); });
+  await page.evaluate(() => { S.turn = 8; setPref('clHide', true); render(); });   // one card at a time: the first-month checklist goes first
   assert(await page.$('#install'), 'no install card after 8 weeks');
   await page.click('#install');
   await page.waitForTimeout(50);
   assert((await page.evaluate(() => window.__prompted)) === 1 && await page.evaluate(() => prefs().installed === true), 'install did not prompt or was not remembered');
   assert(!(await page.$('#install')), 'card still showing after installing');
   // Not now hides it; the Android app (or a home-screen app) never shows it
-  await page.evaluate(() => { localStorage.removeItem(PREF_KEY); setPref('tips', ['focus', 'strip', 'tabs']); INSTALL_EVT = { prompt(){}, userChoice: Promise.resolve({ outcome: 'dismissed' }) }; render(); });
+  await page.evaluate(() => { localStorage.removeItem(PREF_KEY); setPref('tips', ['focus', 'strip', 'tabs']); setPref('clHide', true); INSTALL_EVT = { prompt(){}, userChoice: Promise.resolve({ outcome: 'dismissed' }) }; render(); });
   await page.click('#installno');
   assert(!(await page.$('#install')) && await page.evaluate(() => !!prefs().installNo), 'Not now did not hide it');
   await page.evaluate(() => { setPref('installNo', null); Object.defineProperty(document, 'referrer', { configurable: true, get: () => 'android-app://com.krazow.theburg' }); render(); });
@@ -838,6 +838,166 @@ await t.check('i2-a30: the install card waits for 8 weeks of play, installs on t
   await page.evaluate(() => { delete document.referrer; INSTALL_EVT = null; render(); });
 });
 
+
+/* ---------- Round 2 clarity (i2-a02 … i2-a32) ---------- */
+await t.check('i2-a02: the focus preview uses the same math as the week, shows a fading focus, and changes nothing', async () => {
+  const r = await setup(() => {
+    localStorage.clear(); newGame('Prev', 'two', 0); S.noEvents = true; S.jobId = 'farmhand'; S.happy = 50; S.health = 50;
+    const before = JSON.stringify(S), p = focusPreview('work'); const same = JSON.stringify(S) === before;
+    S.focus = 'rest'; weekTick(false); const a = Object.fromEntries(S.last.lines)['Paycheck'];
+    S.focus = 'work'; S.streakF = null; weekTick(false); const b = Object.fromEntries(S.last.lines)['Paycheck + overtime'];
+    S.streakF = 'community'; S.streakN = 6; const fade = focusPreview('community');
+    S.focus = 'community'; S.streakF = 'outdoors'; S.streakN = 1; S.happy = 50; const fx = focusPreview('community').fx;
+    const h0 = S.community; adj(focusFx('community', focusEffect('community', 1), false));
+    return { same, cash: p.cash[0][1], extra: (b - a) * 0.85, eff: fade.eff, line: previewLine('community'), fx: fx.community, moved: S.community - h0 };
+  });
+  assert(r.same, 'the preview changed the save');
+  assert(near(r.cash, r.extra, 0.02), `overtime preview ${r.cash} vs the week's ${r.extra}`);
+  assert(near(r.eff, 0.64) && /works at 64%/.test(await setup(() => { S.streakF = 'community'; S.streakN = 6; return previewLine('community'); })), `fading ${r.eff}`);
+  assert(near(r.fx, r.moved), `preview ${r.fx} vs applied ${r.moved}`);
+  await setup(() => { S.streakF = 'community'; S.streakN = 6; S.focus = 'rest'; tab = 'home'; setPref('mapView', false); render(); });
+  assert((await page.textContent('.fbtn[data-f="community"]')).includes('64%'), 'the Town button should say 64%');
+  assert(await page.$('#fprev'), 'no preview under the focus buttons');
+});
+
+await t.check('i2-a21: every money line says why, and the details explain why stats moved', async () => {
+  await life({ jobId: 'foodplant', dog: true, partner: true, money: -500, k401rate: 1 });
+  await page.click('#end'); await clearSheets();
+  const s = await S();
+  const missing = s.last.lines.filter(l => !l[2]).map(l => l[0]);
+  assert(!missing.length, `no why for: ${missing.join(', ')}`);
+  assert(s.last.why.some(w => /Your focus/.test(w)) && s.last.why.some(w => /58 miles/.test(w)) && s.last.why.some(w => /debt/i.test(w)), JSON.stringify(s.last.why));
+  await page.click('#strip');
+  const row = await page.$(`${open} .whyrow`);
+  assert((await row.getAttribute('aria-expanded')) === 'false', 'why starts closed');
+  await row.click();
+  assert((await row.getAttribute('aria-expanded')) === 'true' && await page.isVisible(`${open} .whytext`), 'tapping a line should show why');
+  assert((await page.textContent('#sheet')).includes('Why your stats moved'), 'no stat reasons');
+  await page.click(`${open} #ok`);
+});
+
+await t.check('i2-a10: badges earned in a week get one celebration card, then the week goes on', async () => {
+  await life({ jobId: 'farmhand', dog: true }, 'home');
+  await setup(() => { S.badges = {}; });
+  await page.click('#end');
+  await page.waitForSelector(`${open} .big`);
+  const txt = await page.textContent('#sheet');
+  assert(/new milestones/.test(txt) && txt.includes('First paycheck') && txt.includes('Good dog'), txt.slice(0, 200));
+  assert((await page.$$(`${open} h2`)).length === 1, 'two badges should share one card');
+  await page.click(`${open} #ok`);
+  assert(await page.isHidden('#modal'), 'Continue should close the card');
+  assert(!(await S()).newBadges.length, 'celebrated badges should be cleared');
+  await setup(() => { setPref('motion', 'off'); S.newBadges = ['🐕 Badge earned: Good dog']; celebrate(S.newBadges, null); });
+  assert((await page.$$(`${open} .celebrate i`)).length === 0, 'no confetti when animations are off');
+  await setup(() => { setPref('motion', 'on'); closeSheet(); });
+});
+
+await t.check('i2-a08: cash counts up after a week, and not with reduced motion', async () => {
+  await life({ jobId: 'farmhand', money: 1000, badges: { job: 1 } });
+  await page.click('#end');
+  const mid = await page.textContent('.top .money');
+  await page.waitForTimeout(600);
+  const end = await page.textContent('.top .money'), real = await page.evaluate(() => fmt(S.money));
+  assert(end === real && mid !== real, `mid ${mid}, end ${end}, real ${real}`);
+  await clearSheets();
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.click('#end');
+  assert((await page.textContent('.top .money')) === await page.evaluate(() => fmt(S.money)), 'reduced motion should show the final cash right away');
+  await clearSheets();
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.click('[data-tab=menu]'); await page.click(`${open} #settings`);
+  await page.click(`${open} [data-set="motion"][data-v="off"]`);
+  assert(await page.evaluate(() => setting('motion') === 'off' && calmMotion()), 'Settings → Animations should turn them off');
+  await page.click(`${open} [data-set="motion"][data-v="on"]`); await page.evaluate(() => closeSheet());
+});
+
+await t.check('i2-a14: coming back after a while shows "Previously in the Burg" once', async () => {
+  await setup(() => { localStorage.clear(); newGame('Back', 'two', 0); S.noEvents = true; S.jobId = 'farmhand'; S.goals = ['dog']; save();
+    const a = slots(); a[0].savedAt = Date.now() - 2 * 864e5; store.set(SLOTS_KEY, a); S = null; renderTitle(); });
+  await page.click('[data-cont="0"]');
+  await page.waitForSelector(`${open} >> text=Previously in the Burg`);
+  const txt = await page.textContent('#sheet');
+  assert(txt.includes('2 days ago') && txt.includes('Wheat farm hand') && txt.includes('Good dog'), txt.slice(0, 300));
+  await page.click(`${open} #ok`);
+  await setup(() => { save(); S = null; renderTitle(); });
+  await page.click('[data-cont="0"]');
+  assert(await page.isHidden('#modal'), 'the recap should not show again for the same save');
+});
+
+await t.check('i2-a17: a first-time explainer shows once per system, one per screen, and Got it remembers it', async () => {
+  await life({ jobId: 'farmhand' }, 'life');
+  await setup(() => { setPref('first', {}); render(); });
+  assert((await page.$$('[data-firstcard]')).length === 1, 'one explainer per screen');
+  const k = await page.getAttribute('[data-firstcard]', 'data-firstcard');
+  assert(/Life Score/.test(await page.textContent('[data-firstcard]')) || k !== 'goals', 'the goals explainer should mention the score');
+  await page.click(`[data-first="${k}"]`);
+  assert(!(await page.$(`[data-firstcard="${k}"]`)) && (await page.evaluate(k => prefs().first[k], k)) === 1, 'Got it did not stick');
+  await setup(() => render());
+  assert((await page.getAttribute('[data-firstcard]', 'data-firstcard')) !== k, 'the same explainer came back');
+  const trip = await setup(() => { tripPicker(); return document.querySelector('#sheet [data-firstcard]') && document.querySelector('#sheet').textContent; });
+  assert(trip && trip.includes(`${await page.evaluate(() => TRIP_TIME * 100)}%`), 'the trips explainer should use the trip numbers');
+  await setup(() => { closeSheet(); setPref('first', Object.fromEntries(Object.keys(FIRST).map(x => [x, 1]))); });
+});
+
+await t.check('i2-a20: tapping a word shows what it means, and screen readers get it too', async () => {
+  await life({ jobId: 'farmhand' }, 'jobs');
+  const b = await page.$('#main .term');
+  const id = await b.getAttribute('aria-describedby');
+  assert(/taxes/.test(await page.textContent('#' + id)), 'the description is missing');
+  await b.click();
+  assert((await b.getAttribute('aria-expanded')) === 'true' && await page.isVisible('#main .termdef'), 'no meaning shown');
+  await b.focus(); await page.keyboard.press('Enter');
+  assert(!(await page.$('#main .termdef')), 'Enter should close it again');
+});
+
+await t.check('i2-a19: Home shows one next step from the weakest part of the score, and it only goes somewhere', async () => {
+  await life({ jobId: 'farmhand', k401rate: 0, happy: 80, health: 80, community: 80, money: 100 });
+  await setup(() => { setPref('clHide', true); render(); });
+  const txt = await page.textContent('.card.next');
+  assert(/401\(k\)/.test(txt), txt);
+  const before = await S();
+  await page.click('[data-next]');
+  const after = await S();
+  assert((await page.evaluate(() => tab)) === 'life' && after.k401rate === before.k401rate && after.focus === before.focus, 'the hint should only change tabs');
+  await setup(() => { S.k401rate = 1; S.community = 12; S.focus = 'rest'; tab = 'home'; render(); });
+  assert(/Show up for town/.test(await page.textContent('.card.next')), 'community should be the next step');
+  await setup(() => setPref('clHide', false));
+});
+
+await t.check('i2-a32: moving, buying a vehicle and quitting list what will change first', async () => {
+  await life({ jobId: 'farmhand', money: 30000 }, 'life');
+  await page.click('[data-home="fixer"]');
+  let txt = await page.textContent('#sheet');
+  assert(txt.includes('What will change') && txt.includes('$30,000 →') && /a week\)/.test(txt), txt.slice(0, 300));
+  await page.keyboard.press('Escape');
+  assert((await S()).home === 'room', 'Escape should cancel');
+  await page.click('[data-car="sedan"]');
+  txt = await page.textContent('#sheet');
+  assert(/Gas: about .*\/wk → .*\/wk/.test(txt) && txt.includes('32 mpg'), txt.slice(0, 300));
+  await page.click(`${open} #n`);
+  await page.click('[data-tab=jobs]'); await page.click('#quit');
+  txt = await page.textContent('#sheet');
+  assert(/Take-home: .*\/wk → \$0/.test(txt), txt.slice(0, 300));
+  await page.click(`${open} #n`);
+});
+
+await t.check('i2-a29: the ending tells your life story year by year, skippable in one tap, and the score card has highlights', async () => {
+  const r = await setup(() => {
+    localStorage.clear(); newGame('Story', 'five', 0); S.noEvents = true; S.jobId = 'farmhand'; log('Hired as Wheat farm hand in Waitsburg!');
+    for (let i = 0; i < 60; i++) weekTick(false);
+    return { years: S.years.length, m: S.years[0].m };
+  });
+  assert(r.years >= 1 && r.m.some(m => /Hired as/.test(m)), JSON.stringify(r));
+  await setup(() => finish('Five years in the Burg is in the books.'));
+  await page.waitForSelector(`${open} #story`);
+  assert(/2027 · age \d+/.test(await page.textContent('#story')), 'no year rows in the story');
+  assert(await page.$(`${open} #again`), 'Play again should still be there');
+  await page.click('#skipstory');
+  assert(!(await page.$('#story')) && (await page.evaluate(() => document.activeElement.id)) === 'finalscore', 'Skip should jump to the score');
+  const hl = await setup(() => lifeStory().rows.length);
+  assert(hl >= 1, 'no highlights for the score card');
+  await page.click(`${open} #again`);
+});
 
 /* ---------- round 3: money (insurance, housing, loans, investing, farm markets, debt help) ---------- */
 await t.check('i3-a27: filing for bankruptcy wipes the debt and keeps the life going, once', async () => {

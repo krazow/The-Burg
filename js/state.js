@@ -230,7 +230,7 @@ function blankLife(name, len, slot = 0){
     bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0,
     badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false,
     earnYears:0, earnSum:0, pensionYears:0, pensionPay:0, ltc:null, care:null, snowbird:null, scholar:null, will:false, probate:null, roomHost:false, hostLast:-99,
-    skills:{}, biz:null, weekly:null, rng:null, rngEv:null, gen:1, goalAt:{}, carpoolJob:null, hustleLast:0, highWater:null, recentF:[], out:outDefault(),
+    skills:{}, biz:null, weekly:null, rng:null, rngEv:null, gen:1, goalAt:{}, carpoolJob:null, hustleLast:0, highWater:null, recentF:[], out:outDefault(), years:[],
     plan:[], planI:0,                              // i2-a12: a weekly focus rotation (empty = no plan)
     // jobs and school (round 3): ladder rung, months in this job, program and major, certificates, seasonal recall,
     // a pending interview, your reference, notice, sign-on bonus, union contract, strike, furlough, clearance, fiber, bus
@@ -291,6 +291,16 @@ function migrate(s){
   if (s.rng != null && s.rngEv == null && s.weekly) s.rngEv = weekSeed(`${s.weekly}:events`);
   // businesses from before depreciation and lease renewals (R13): full value, and a wheat lease gets at least a season's notice
   if (s.biz) { if (s.biz.dep == null) s.biz.dep = 1; if (s.biz.type === 'wheat' && s.biz.lease == null) s.biz.lease = Math.max(LEASE_WEEKS, (s.biz.weeks || 0) + 13); }
+  // i2-a29: a save from before the life story gets its past years from the Journal; if the Journal had already
+  // dropped its oldest entries, the story says the earlier years came before this update
+  if (s.years === undefined) {
+    const y0 = new Date(s.date).getFullYear(), lg = Array.isArray(s.log) ? s.log : [], by = {}, yr = e => parseInt(String(e.d || '').slice(-4), 10);
+    const worthy = typeof storyWorthy === 'function' ? storyWorthy : () => true;
+    for (const e of lg.slice().reverse()) { const y = yr(e); if (y && y < y0 && worthy(e)) (by[y] = by[y] || []).push(e.m); }
+    s.years = Object.keys(by).map(Number).sort((a, b) => a - b).map(y => ({ year: y, age: Math.floor((s.ageMonths || 216) / 12) - (y0 - y), m: by[y].slice(0, 3) }));
+    const oldest = lg.length ? yr(lg[lg.length - 1]) : y0;
+    s.storyEarly = lg.length >= 120 || (s.turn > 0 && !lg.length) ? (oldest || y0) : null;
+  }
   for (const [k, v] of Object.entries(blankLife(s.name, s.len, s.slot))) if (s[k] === undefined) s[k] = v;   // H1: half a life gets the rest of a fresh one
   return s;
 }
@@ -372,8 +382,11 @@ const SETTINGS = {
   textSize: { def:'normal', opts:[['normal','Normal'], ['l','Large'], ['xl','Larger']] },
   sound:    { def:'off',    opts:[['off','🔇 Off'], ['soft','🔈 Soft'], ['normal','🔊 Normal']] },
   vibrate:  { def:'on',     opts:[['on','On'], ['off','Off']] },
-  swipe:    { def:'on',     opts:[['on','On'], ['off','Off']] }
+  swipe:    { def:'on',     opts:[['on','On'], ['off','Off']] },
+  motion:   { def:'on',     opts:[['on','On'], ['off','Off']] }     // i2-a08/a10: moving bars, counting cash and confetti
 };
+// fewer moving parts when the device asks for reduced motion, or Settings → Animations is off
+const calmMotion = () => setting('motion') === 'off' || !!(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
 const setting = k => { const v = prefs()[k]; return SETTINGS[k].opts.some(o => o[0] === v) ? v : SETTINGS[k].def; };
 const darkQuery = typeof matchMedia === 'function' ? matchMedia('(prefers-color-scheme: dark)') : null;
 const isNight = () => setting('theme') === 'night' || (setting('theme') === 'auto' && !!(darkQuery && darkQuery.matches));

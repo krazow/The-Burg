@@ -215,15 +215,18 @@ await t.check('the Can apply filter hides locked jobs, and jobs show take-home p
   await page.click('[data-tab=home]');
 });
 
-await t.check('tips show once, and Got it hides them for good', async () => {
-  await page.evaluate(() => { setPref('tips', []); render(); });
-  const tip = await page.$('[data-tip]');
-  assert(tip, 'a tip should show for a fresh player');
-  const id = await tip.getAttribute('data-tip');
-  await tip.click();
-  assert((await page.evaluate(() => prefs().tips)).includes(id), 'dismissed tip not remembered');
-  const next = await page.$(`[data-tip="${id}"]`);
-  assert(!next, 'the same tip came back');
+await t.check('i2-a16: the first-month checklist ticks steps as you do them, remembers them, and hides for good', async () => {
+  await page.evaluate(() => { setPref('cl', {}); setPref('clHide', false); S.k401rate = 0; render(); });
+  assert(await page.$('#checklist'), 'a checklist should show early in a real game');
+  const before = await page.textContent('#checklist .tag');
+  await page.click('[data-tab=life]'); await page.click('[data-k401="1"]'); await page.click('[data-tab=home]');
+  assert((await page.evaluate(() => prefs().cl.k401)) === 1, 'saving in the 401(k) was not ticked');
+  assert((await page.textContent('#checklist .tag')) !== before, 'the count did not move');
+  await page.click('#checklist [data-cl="jobs"]').catch(() => {});
+  await page.click('[data-tab=home]');
+  await page.click('#clhide');
+  assert(!(await page.$('#checklist')) && (await page.evaluate(() => prefs().clHide)), 'Hide should hide it for good');
+  await page.evaluate(() => { S.k401rate = 0; render(); });
 });
 
 await t.check('the Waitsburg map sets this week\'s focus by place', async () => {

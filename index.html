@@ -276,6 +276,32 @@ main.slide-l{animation:slidel .18s ease-out}main.slide-r{animation:slider .18s e
 html.ts-l .sm,html.ts-xl .sm{white-space:normal;max-width:100%}
 html.ts-l .job,html.ts-xl .job{flex-wrap:wrap}.job > div:first-child{min-width:0}
 .score{font-size:4rem;font-weight:800;text-align:center;color:var(--accent);font-family:Georgia,serif}
+.code{width:100%;font:12px/1.35 ui-monospace,Menlo,Consolas,monospace;border:2px solid var(--line);border-radius:10px;padding:8px;background:#fff;color:var(--soil);word-break:break-all;resize:vertical}
+.warnline{color:var(--barn-d);font-weight:600}
+.outbtn{margin-top:10px;padding:10px 12px}.outbtn small{display:block;font-size:13px;font-weight:600;margin-top:2px}
+.score{font-size:64px;font-weight:800;text-align:center;color:var(--barn);font-family:Georgia,serif}
+/* i2 clarity: focus preview, why lines, celebrations, checklist, next step, glossary, confirmations, life story */
+.preview{font-size:0.84375rem;margin-top:8px;padding:8px 10px;background:var(--pale);border:1px solid var(--line);border-radius:10px;color:var(--soil);line-height:1.4}
+.preview .s,.fdesc .preview .s{display:block;color:var(--muted);font-size:0.78125rem;margin-top:2px}
+.fbtn small.fade{color:var(--barn-d);font-weight:700;font-size:0.75rem;display:block}
+.kv.whyrow{width:100%;text-align:left;align-items:center;min-height:44px;font-size:0.9375rem}
+.whytext{font-size:0.84375rem;color:var(--soil);background:var(--pale);border-left:3px solid var(--wheat-d);padding:6px 8px;margin:2px 0 6px}
+.celebrate{display:flex;justify-content:center;gap:10px;height:0;overflow:visible}
+.celebrate i{display:block;width:8px;height:12px;border-radius:2px;background:var(--wheat-d);animation:pop 1.4s ease-out both}
+.celebrate i:nth-child(3n){background:var(--barn)}.celebrate i:nth-child(3n+1){background:var(--sage)}
+.celebrate i:nth-child(2n){animation-delay:.15s}.celebrate i:nth-child(4n){animation-delay:.3s}
+@keyframes pop{0%{transform:translateY(40px) scale(0);opacity:0}30%{opacity:1}100%{transform:translateY(-10px) rotate(260deg);opacity:0}}
+.checklist ul.cl{list-style:none;padding:0;margin:4px 0 8px}
+.checklist ul.cl li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0;min-height:44px;border-bottom:1px dashed var(--line);font-size:0.875rem}
+.checklist ul.cl li.done{color:var(--muted)}
+.card.next{display:flex;gap:10px;align-items:center;justify-content:space-between;background:var(--pale);border-color:var(--line);font-size:0.875rem}
+.term{font:inherit;color:inherit;text-decoration:underline dotted;text-underline-offset:3px;padding:0;cursor:help}
+.termdef{display:block;font-size:0.8125rem;background:var(--pale);border-left:3px solid var(--wheat-d);padding:6px 8px;margin:4px 0;color:var(--soil);font-weight:400;text-transform:none;letter-spacing:0}
+ul.changes{padding-left:20px;margin:6px 0 12px}ul.changes li{margin:5px 0;font-size:0.90625rem}
+.story{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:10px 0;background:var(--pale)}
+.storyhead{display:flex;justify-content:space-between;align-items:center;gap:8px}
+ol.storyl{list-style:none;padding:0;margin:6px 0}ol.storyl li{padding:6px 0;border-bottom:1px dashed var(--line);font-size:0.875rem}
+@media (prefers-reduced-motion: reduce){.celebrate i{animation:none;display:none}.bar i{transition:none}}
 </style>
 </head>
 <body>
