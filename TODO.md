@@ -929,6 +929,85 @@ old ones.
 
 </details>
 
+## Ideas round 7 (pick on the build board)
+
+65 ideas. Details: [docs/ideas/round-7.md](docs/ideas/round-7.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 7: Everyone can play</b> (34 ideas)</summary>
+
+- [ ] 🔴 **i7-a01** Reduced motion that follows the phone setting (S)
+- [ ] 🔴 **i7-a02** A one-sentence week summary for screen readers (S)
+- [ ] 🔴 **i7-a03** Stats in words, not just bars (S)
+- [ ] 🟠 **i7-a04** Read aloud: events, choices and help (M)
+- [ ] 🔴 **i7-a05** Grade 6 reading check for every line of game text (S)
+- [ ] 🔴 **i7-a06** New to games? A three-question start (S)
+- [ ] 🟠 **i7-a07** Simple numbers setting (S)
+- [ ] 🔴 **i7-a08** Plain-words Help: 'How do I...?' cards (M)
+- [ ] 🟠 **i7-a09** Bigger buttons mode (M)
+- [ ] 🟠 **i7-a10** Every gesture and timer has a tap-only way (S)
+- [ ] 🟠 **i7-a11** Word labels on every icon button (S)
+- [ ] 🟠 **i7-a12** Map pins with shapes, letters and a 'list the places' view (S)
+- [ ] 🟡 **i7-a13** Easy-reading font and spacing (S)
+- [ ] 🟠 **i7-a14** Family-friendly events setting (S)
+- [ ] 🟡 **i7-a15** Heads-up before heavy moments (S)
+- [ ] 🟡 **i7-a16** Play-time reminder you set (S)
+- [ ] 🟡 **i7-a17** Short-session quick week (M)
+- [ ] 🟠 **i7-a18** Calm Home: show more only when it matters (M)
+- [ ] 🟡 **i7-a19** Young reader text for events (M)
+- [ ] 🔴 **i7-a20** Pronouns for you and your partner (S)
+- [ ] 🔴 **i7-a21** Living with a disability: a respectful start (L)
+- [ ] 🟠 **i7-a22** Ask for an accommodation at work (M)
+- [ ] 🟠 **i7-a23** Came home from the service: a veteran start (M)
+- [ ] 🟠 **i7-a24** Parenting solo, with real supports (M)
+- [ ] 🟠 **i7-a25** Get paid as a family caregiver (M)
+- [ ] 🟠 **i7-a26** First-generation family in the valley (M)
+- [ ] 🔴 **i7-a27** Help is there: benefits you can apply for (M)
+- [ ] 🟠 **i7-a28** A town that looks like real towns (M)
+- [ ] 🟠 **i7-a29** A writing guide for respectful events (S)
+- [ ] 🟡 **i7-a30** Older-player comfort pack (S)
+- [ ] 🟡 **i7-a31** Messages stay until you're done reading (S)
+- [ ] 🟡 **i7-a32** Life situations that are ordinary, not plot twists (M)
+- [ ] 🟡 **i7-a33** Captions for every sound (S)
+- [ ] 🟡 **i7-a34** Pause and think: no auto-advance ever (S)
+
+</details>
+
+<details><summary><b>Ideas 7: Players and community content</b> (31 ideas)</summary>
+
+- [ ] 🔴 **i7-b01** Events as data: a simple JSON event format (M)
+- [ ] 🔴 **i7-b02** Content checker for every data file (S)
+- [ ] 🔴 **i7-b03** One send helper for every community form (S)
+- [ ] 🟠 **i7-b04** Submissions open or closed this month (S)
+- [ ] 🟠 **i7-b05** A content style guide (S)
+- [ ] 🟠 **i7-b06** Send in a town happening (M)
+- [ ] 🔴 **i7-b07** Seasonal content drops (M)
+- [ ] 🟠 **i7-b08** Vote on what comes next (M)
+- [ ] 🟡 **i7-b09** Thumbs up or down on events (S)
+- [ ] 🔴 **i7-b10** Trivia night at the library (M)
+- [ ] 🟠 **i7-b11** Send in a trivia question (S)
+- [ ] 🟠 **i7-b12** Where in the Burg? map riddles (M)
+- [ ] 🔴 **i7-b13** This week in Waitsburg history (S)
+- [ ] 🟠 **i7-b14** History markers on the town map (M)
+- [ ] 🟠 **i7-b15** Send in a local history fact (S)
+- [ ] 🟠 **i7-b16** Looking back: stories from locals (S)
+- [ ] 🟡 **i7-b17** Recipe of the year at Celebration Days (S)
+- [ ] 🟡 **i7-b18** A book of local sayings (S)
+- [ ] 🔴 **i7-b19** A live town board at the post office (M)
+- [ ] 🟡 **i7-b20** Put a board item on your phone calendar (S)
+- [ ] 🟠 **i7-b21** Send a real community event to the board (S)
+- [ ] 🟠 **i7-b22** Town notes built from word lists (M)
+- [ ] 🟠 **i7-b23** Share your year as a text postcard (S)
+- [ ] 🟠 **i7-b24** Made with the town: a credits page (S)
+- [ ] 🟡 **i7-b25** Town contributor badge (S)
+- [ ] 🔴 **i7-b26** Waitsburg for real: a page in Help (S)
+- [ ] 🟠 **i7-b27** 'Try it for real' notes on events (S)
+- [ ] 🟡 **i7-b28** Support the town link (S)
+- [ ] 🟡 **i7-b29** A classroom pack for local schools (M)
+- [ ] 🟡 **i7-b30** Community goal with a real-world gift (L)
+- [ ] 🟠 **i7-b31** Every drop runs through the balance sim (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
