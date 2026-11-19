@@ -80,7 +80,7 @@ await t.check('the 401(k) takes 5% pre-tax, adds a 3% match, and grows', async (
 });
 
 await t.check('retirement pays Social Security and draws about 4% a year from the 401(k)', async () => {
-  const r = await ev(() => { fresh('life', { retired: true, k401: 100000 }); return week().lines; });
+  const r = await ev(() => { fresh('life', { retired: true, k401: 100000, earnYears: 35, earnSum: 35 * (2000 + 4000 / 6) }); return week().lines; });
   assert(near(r['Social Security'], 1900 * W) && near(r['401(k) withdrawal'], 100000 * 0.04 * W / 12), JSON.stringify(r));
 });
 
@@ -538,7 +538,7 @@ await t.check('the weekly challenge plays the same for everyone, even across sav
 
 await t.check('legacy: a Lifetime game with kids continues as the grandkid, named in a sheet', async () => {
   const r = await ev(() => { localStorage.clear(); newGame('Pat Doe', 'life', 0); S.noEvents = true; S.kids = [300]; S.money = 400000; S.community = 70;
-    S.date = new Date(2080, 3, 1).getTime(); S.col = 2; finish('done'); const btn = document.querySelector('#legacy').textContent; document.querySelector('#legacy').click();
+    S.date = new Date(2080, 3, 1).getTime(); S.col = 2; S.will = true; finish('done'); const btn = document.querySelector('#legacy').textContent; document.querySelector('#legacy').click();
     const sugg = document.querySelector('#heirnm').value; document.querySelector('#heirgo').click();
     return { btn, sugg, name: S.name, gen: S.gen, money: S.money, community: S.community, age: age(), year: new Date(S.date).getFullYear(), col: S.col, log: S.log.map(e => e.m).join(' ') }; });
   assert(/grandkid/.test(r.btn) && r.sugg === 'Pat Doe II' && r.name === 'Pat Doe II' && r.gen === 2 && r.age === 18, JSON.stringify(r));
@@ -576,7 +576,7 @@ await t.check('event costs rise with prices, and the choices show today\'s price
     const ws = EVENTS.find(x => x.title === 'Windstorm'); S.home = 'fixer'; const m2 = S.money; ws.choices()[0].go(); const roof = m2 - S.money;
     return { label: ch.label, doc, roof }; });
   assert(near(r.doc, 700) && /\$700/.test(r.label), `doctor ${r.doc} "${r.label}"`);
-  assert(near(r.roof, 2400), `roof ${r.roof}`);
+  assert(near(r.roof, 2000), `roof ${r.roof} (a $2,400 roof, paid up to the $1,000 deductible at today's prices)`);
 });
 
 // ---- review fixes batch A (#90): R5, R6, R8–R16, B1–B10 ----
@@ -909,6 +909,288 @@ await t.check('business events: at their places, on their days; the doctor and t
   assert(r.fest && !r.festYoung, 'Grenache Fest is 21 and over');
   assert(/Burg Clinic/.test(r.run[0]) && /doctor/.test(r.run[1]) && r.run[2][1] === 'mainst', JSON.stringify(r.run));
   assert(/Mother Hubbard/.test(r.inh[0]) && r.inh[1][1] === 'mainst', JSON.stringify(r.inh));
+});
+
+
+/* ---------- round 3: money ---------- */
+await t.check('i3-a15: wheat has a July price; the harvest waits on sell-or-store; storing costs a fee and sells by July', async () => {
+  const r = await ev(() => {
+    fresh('two', { money: 20000, date: new Date(2027, 6, 5).getTime() }); render(); startBiz('wheat');
+    const prices = []; for (let i = 0; i < 300; i++) { S.monKey = 0; moneyMonth([]); prices.push(S.wheatPrice); }
+    const avgP = prices.reduce((a, v) => a + v, 0) / prices.length;
+    S.wheatPrice = WHEAT_BASE; S.noEvents = false; S.due = []; S.date = new Date(2027, 7, 2).getTime(); const lines = [];
+    bizWeek(lines, []); const due = S.due.slice(), crop = S.biz.crop, noCheck = !lines.some(l => /Harvest check/.test(l[0]));
+    const e = takeDue(); const sellLabel = e.choices()[0].label; e.choices()[1].go();
+    const stored = S.biz.stored, l2 = []; bizWeek(l2, []); const fee = (l2.find(l => /Elevator storage/.test(l[0])) || [])[1];
+    S.wheatPrice = WHEAT_BASE * 1.2; const worth = storedWheatValue();
+    S.date = new Date(2028, 6, 3).getTime(); const m = S.money, notes = []; moneyMonth(notes); const july = S.money - m;
+    // the yearly average is unchanged: a yield of 0.15×0.3 + 0.85×1.3 times a price that averages 1
+    return { avgP, min: Math.min(...prices), max: Math.max(...prices), due, crop, noCheck, sellLabel, stored, fee, worth, july, notes, left: S.biz.stored }; });
+  assert(near(r.avgP, 7.5, 0.03) && r.min >= 6 && r.max <= 9, `prices ${r.avgP} ${r.min}–${r.max}`);
+  assert(r.due[0] === 'Harvest: sell or store?' && r.crop > 0 && r.noCheck && /Sell now/.test(r.sellLabel), JSON.stringify(r).slice(0, 300));
+  assert(near(r.stored, r.crop) && near(r.fee, -r.crop * 0.01 * W) && near(r.worth, r.crop * 1.2), JSON.stringify(r));
+  assert(near(r.july, r.worth) && r.left === 0 && /new crop/.test(r.notes.join()), `July sale ${r.july} vs ${r.worth}`);
+});
+
+await t.check('i3-a16: crop insurance costs about what a drought year loses on average, charged in April', async () => {
+  const r = await ev(() => {
+    fresh('two', { money: 20000, date: new Date(2027, 3, 5).getTime() }); render(); startBiz('wheat');
+    const sample = ins => { S.biz.ins = ins; const a = []; for (let i = 0; i < 4000; i++) a.push(wheatYield()); return a; };
+    const off = sample(false), on = sample(true);
+    const lines = []; bizWeek(lines, []); const prem = (lines.find(l => /premium/.test(l[0])) || [])[1]; const again = []; bizWeek(again, []);
+    return { minOff: Math.min(...off), minOn: Math.min(...on), gain: (on.reduce((a, v) => a + v, 0) - off.reduce((a, v) => a + v, 0)) / 4000 * 6000, prem, twice: again.some(l => /premium/.test(l[0])) }; });
+  assert(near(r.minOff, 0.3) && near(r.minOn, 0.9), `${r.minOff} / ${r.minOn}`);
+  assert(near(r.prem, -540) && !r.twice, `premium ${r.prem}`);
+  assert(Math.abs(r.gain - 540) < 150, `expected payout gain ${r.gain} should be near the $540 premium`);
+});
+
+await t.check('i3-a17: wine futures sell in the fall, count at cost, and pay out 3 years later', async () => {
+  const r = await ev(() => {
+    fresh('five', { money: 10000, date: new Date(2027, 4, 3).getTime() }); const spring = buyWine();
+    S.date = new Date(2027, 9, 4).getTime(); const nw0 = netWorth(); const ok = buyWine(), twice = buyWine(); const nw1 = netWorth();
+    const lot = S.wine[0], lines = [], notes = []; S.turn = lot.at - 1; moneyWeek(lines, notes); const early = lines.length;
+    S.turn = lot.at; moneyWeek(lines, notes);
+    const pay = lines.find(l => /vintage released/.test(l[0]));
+    // the average payout, normal and smoky years
+    const avg = smoke => { let t = 0; for (let i = 0; i < 3000; i++) { S.wine = [{ y: 2027, paid: 1, at: S.turn, smoke }]; const l = []; moneyWeek(l, []); t += l.find(x => /vintage/.test(x[0]))[1]; } return t / 3000; };
+    return { spring, ok, twice, nw: nw1 - nw0, early, pay: pay && pay[1], notes, left: S.wine.length, normal: avg(false), smoky: avg(true) }; });
+  assert(!r.spring && r.ok && !r.twice && Math.abs(r.nw) < 1, JSON.stringify(r).slice(0, 200));
+  assert(r.early === 0 && [3750, 3125, 1875].some(v => near(r.pay, v)) && /Old Kiln/.test(r.notes.join()), `payout ${r.pay}`);
+  assert(near(r.normal, 1.21, 0.04) && r.smoky < r.normal - 0.1, `average ${r.normal}, smoky ${r.smoky}`);
+});
+
+await t.check('i3-a18: cattle earn for an owner who checks the herd and lose money for one who never does', async () => {
+  const r = await ev(() => {
+    const year = active => { fresh('two', { money: 30000, jobId: 'farmhand' }); render(); startBiz('cattle'); let cash = 0;
+      for (let i = 0; i < 52; i++) { S.focus = active && i % 3 === 0 ? 'outdoors' : 'rest'; const l = week().lines; for (const [k, v] of Object.entries(l)) if (k.startsWith('🐄')) cash += v; }
+      return { cash, cows: S.biz ? S.biz.cows : 0, hay: true }; };
+    const a = [], b = []; for (let i = 0; i < 6; i++) { a.push(year(true)); b.push(year(false)); }
+    fresh('two', { money: 30000, date: new Date(2027, 11, 6).getTime() }); render(); startBiz('cattle'); const w = week().lines;
+    return { active: a.reduce((x, v) => x + v.cash, 0) / 6, idle: b.reduce((x, v) => x + v.cash, 0) / 6, cowsA: a.reduce((x, v) => x + v.cows, 0) / 6, cowsI: b.reduce((x, v) => x + v.cows, 0) / 6, hay: w['🐄 Hay'] || w['🐄 Hay (hard winter)'], rent: w['🐄 Pasture rent'] }; });
+  assert(r.active > 1000 && r.idle < 0, `active ${r.active}, idle ${r.idle}`);
+  assert(r.cowsA > r.cowsI && r.cowsA >= 5.5, `cows ${r.cowsA} vs ${r.cowsI}`);
+  assert(near(r.hay, -60 * 6 * W) && near(r.rent, -120 * W), JSON.stringify(r));
+});
+
+await t.check('i3-a19: insurance defaults to the old $160; cheaper coverage costs more when something happens', async () => {
+  const r = await ev(() => {
+    fresh('two'); const def = insMonthly(), line = week().lines['Insurance & phone'];
+    S.home = 'fixer'; const own = insMonthly(); S.ins.ded = 2500; const high = insMonthly(); S.ins.ded = 500; const low = insMonthly();
+    S.ins.ded = 1000; S.col = 1; const ownFire = youPay('home', 9000); S.ins.ded = 2500; const ownFire2 = youPay('home', 9000);
+    S.home = 'room'; S.ins = { auto: 'full', renters: true, ded: 1000 };
+    const full = youPay('auto', 3200), stuff = youPay('stuff', 1800);
+    S.ins.auto = 'liab'; S.ins.renters = false; const cheap = insMonthly(), liab = youPay('auto', 3200), bare = youPay('stuff', 1800), landlord = youPay('home', 9000);
+    S.col = 1; const fb = EVENTS.find(e => e.title === 'A fender bender'), m = S.money; fb.choices()[0].go(); const hit = m - S.money;
+    S.ins.auto = 'full'; const m2 = S.money; const res = fb.choices()[0].go(); const hit2 = m2 - S.money;
+    return { def, line, own, high, low, ownFire, ownFire2, full, stuff, cheap, liab, bare, landlord, hit, hit2, res }; });
+  assert(r.def === 160 && near(r.line, -160 * W) && r.own === 160 && r.high === 150 && r.low === 175, JSON.stringify(r));
+  assert(r.ownFire === 1000 && r.ownFire2 === 2500 && r.full === 500 && r.stuff === 250, JSON.stringify(r));
+  assert(r.cheap === 110 && r.liab === 3200 && r.bare === 1800 && r.landlord === 0, JSON.stringify(r));
+  assert(near(r.hit, 3200) && near(r.hit2, 500) && /deductible/.test(r.res), JSON.stringify(r));
+});
+
+await t.check('i3-a20: owners pay property tax in April and October, about 1% of the home a year', async () => {
+  const r = await ev(() => {
+    fresh('two', { money: 50000, jobId: 'farmhand' }); render(); moveHome('fixer'); document.querySelector('#y').click();
+    let tax = 0, n = 0; for (let i = 0; i < 52; i++) { const v = week().lines['Property tax (county)']; if (v) { tax += v; n++; } }
+    fresh('two', { money: 50000 }); let rent = 0; for (let i = 0; i < 52; i++) if (week().lines['Property tax (county)']) rent++;
+    return { tax, n, rent, idx: S.homeIdx }; });
+  assert(r.n === 2 && r.rent === 0 && Math.abs(-r.tax - 1600) < 120, JSON.stringify(r));
+});
+
+await t.check('i3-a21: home prices move each year (2.5% on average); a hot year costs more to buy into', async () => {
+  const r = await ev(() => {
+    fresh('two'); const g = [], moods = {};
+    for (let i = 0; i < 2000; i++) { S.mkt = null; S.monKey = 0; moneyMonth([]); g.push(S.homeGrow); moods[homeMood()] = 1; }
+    const avg = g.reduce((a, v) => a + v, 0) / g.length;
+    S.homeIdx = 1; S.homeGrow = 0.07; const hot = homeDown('fixer'); S.homeGrow = -0.02; const slow = homeDown('fixer');
+    fresh('two', { money: 50000, homeGrow: -0.03 }); render(); moveHome('fixer'); document.querySelector('#y').click(); const eq0 = S.equity; weeks(52);
+    return { avg, min: Math.min(...g), max: Math.max(...g), moods, hot, slow, eqGain: S.equity - eq0, idx: S.homeIdx }; });
+  assert(Math.abs(r.avg - 0.025) < 0.005 && r.min < 0 && r.max > 0.06 && r.moods.hot && r.moods.slow && r.moods.steady, JSON.stringify(r));
+  assert(r.hot === 9450 && r.slow === Math.round(9000 * 0.97), `${r.hot} ${r.slow}`);
+  assert(r.eqGain < 260 * 12 && r.idx < 0.98, `a slipping market should hold equity back: ${r.eqGain}, index ${r.idx}`);
+});
+
+await t.check('i3-a22: the mortgage follows the year\'s rate; refinancing needs a 1-point drop and has closing costs', async () => {
+  const r = await ev(() => {
+    const rates = []; fresh('two'); for (let i = 0; i < 500; i++) { S.mkt = null; S.monKey = 0; moneyMonth([]); rates.push(S.rate); }
+    fresh('two', { money: 50000, rate: 8 }); render(); moveHome('fixer'); document.querySelector('#y').click();
+    const pay8 = S.mortgage; S.rate = 7.25; const half = canRefi(); S.rate = 7; const can = canRefi(), fee = refiFee(), m = S.money, newPay = refiPay(); refinance();
+    return { expect8: 950 * payF(8) / payF(6.5), min: Math.min(...rates), max: Math.max(...rates), pay8, half, can, fee, paid: m - S.money, newPay, mort: S.mortgage, rate: S.mortRate }; });
+  assert(r.min >= 4 && r.max <= 9.5, `rates ${r.min}–${r.max}`);
+  assert(near(r.pay8, r.expect8, 0.001) && r.pay8 > 1050, `mortgage at 8%: ${r.pay8}`);
+  assert(!r.half && r.can && near(r.fee, 3200) && near(r.paid, 3200) && r.mort < r.pay8 && near(r.mort, r.newPay) && r.rate === 7, JSON.stringify(r));
+  assert(r.fee / (r.pay8 - r.mort) > 24, 'refinancing should take years to pay off');
+});
+
+await t.check('i3-a23: a home equity loan: up to half the equity, a fixed payment, and it can\'t pad net worth', async () => {
+  const r = await ev(() => {
+    fresh('two', { money: 50000 }); render(); moveHome('fixer'); document.querySelector('#y').click(); S.equity = 30000;
+    const max = heMax(), tooMuch = takeHE(20000), nw0 = netWorth(), ok = takeHE(15000), nw1 = netWorth(), again = takeHE(500);
+    const pay = week().lines['Home equity loan'];
+    const bal = heBalance(); const m = S.money; moveHome('room'); document.querySelector('#y').click();
+    return { max, tooMuch, ok, again, nwDiff: nw1 - nw0, pay, hePay: S.hePay, left: S.heLeft, bal, sale: S.money - m }; });
+  assert(r.max === 15000 && !r.tooMuch && r.ok && !r.again && Math.abs(r.nwDiff) < 1, JSON.stringify(r));
+  assert(r.pay < 0 && r.pay > -200 * W * 1.2 && r.left === 0, `payment ${r.pay}`);
+});
+
+await t.check('i3-a26: 12 weeks in debt goes to collections: a fee, weekly unhappiness, worse odds; clears above $0', async () => {
+  const r = await ev(() => {
+    fresh('two', { money: -2000, jobId: null }); const notes = []; let fee = 0;
+    for (let i = 0; i < 13; i++) { const m = S.money; const res = weekTick(false); notes.push(...res.notes); }
+    const inC = inCollections(), block = loanBlock(), h0 = S.happy;
+    const hireRate = () => { let n = 0; for (let i = 0; i < 400; i++) { S.applied = false; S.jobId = null; apply('diner'); if (S.jobId) n++; } closeSheet(); return n / 400; };
+    const S0 = S.community; const inRate = hireRate(); const saved = S.debtWeeks; S.debtWeeks = 0; const outRate = hireRate(); S.debtWeeks = saved;
+    S.money = 5000; S.jobId = null; weekTick(false);
+    return { notes, inC, block, inRate, outRate, after: S.debtWeeks, cleared: !inCollections(), log: S.log.slice(0, 3).map(e => e.m) }; });
+  assert(r.inC && /collections/.test(r.notes.join()) && /collections/.test(r.block), JSON.stringify(r).slice(0, 300));
+  assert(r.outRate - r.inRate > 0.04, `hire odds in collections ${r.inRate} vs ${r.outRate}`);
+  assert(r.after === 0 && r.cleared, JSON.stringify(r));
+  const h = await ev(() => { const run = d => { fresh('two', { money: -3000, debtWeeks: d, happy: 60 }); weeks(4); return S.happy; }; return run(0) - run(20); });
+  assert(h > 2.5, `collections should cost happiness every week: ${h}`);
+});
+
+await t.check('i3-a27: bankruptcy wipes debt, takes savings, vehicles and the business, blocks loans for 7 years, and costs Life Score', async () => {
+  const r = await ev(() => {
+    fresh('two', { money: -40500, car: 'truck', carValue: 30000, loanLeft: 20, loanPay: 640, k401: 4000, stocks: 3000, wine: [{ y: 2027, paid: 2500, at: 999, smoke: false }] });
+    S.biz = { type: 'shop', weeks: 1, earned: 0, paidYear: null, dep: 1 };
+    const res = week(), can = canBankrupt(), sc0 = lifeScore().score;
+    const lost = fileBankruptcy(); const sc1 = lifeScore().score;
+    return { debt: res.debt, ending: res.ending, can, again: canBankrupt(), lost, money: S.money, car: S.car, loan: S.loanLeft, biz: S.biz, stocks: S.stocks, wine: S.wine.length, k401: S.k401,
+      block: loanBlock(), rate: buyRate() - S.rate, diff: sc0 - sc1, bk: lifeScore().bk,
+      later: (() => { S.turn += 365; return loanBlock(); })(), relaxed: (() => { S.bk = null; S.mode = 'relaxed'; return canBankrupt(); })() }; });
+  assert(r.debt && /debt/.test(r.ending) && r.can && !r.again, JSON.stringify(r).slice(0, 200));
+  assert(r.money === 0 && r.car === 'beater' && r.loan === 0 && r.biz === null && r.stocks === 0 && r.wine === 0 && r.k401 > 4000 && r.lost.length === 4, JSON.stringify(r));
+  assert(/2034|2035/.test(r.block) && r.rate === 3 && r.bk === 8 && r.later === '' && !r.relaxed, JSON.stringify(r));
+});
+
+await t.check('i3-a29: index funds average about 6% with drop years; a drop asks Hold or Sell; they count in net worth', async () => {
+  const r = await ev(() => {
+    fresh('five', { money: 20000 }); const nw0 = netWorth(); invest(10000); const nw1 = netWorth();
+    let tot = 0, drops = 0; const N = 600;
+    for (let i = 0; i < N; i++) { S.stocks = 1000; S.mkt = null; S.monKey = 0; S.due = []; S.noEvents = false; moneyMonth([]); const t0 = S.turn;
+      for (let w = 0; w < 52; w++) { moneyWeek([], []); S.turn++; } S.turn = t0; tot += S.stocks / 1000; if (S.mkt.dropped) drops++; }
+    S.stocks = 5000; S.mkt = { y: 2027, bad: true, dropAt: S.turn }; S.due = []; moneyWeek([], []); const due = S.due.slice(), e = takeDue(), after = S.stocks;
+    const hold = e.choices()[0].label, m = S.money; e.choices()[1].go();
+    return { nw: nw1 - nw0, avg: tot / N, drops: drops / N, due, after, hold, sold: S.money - m, left: S.stocks }; });
+  assert(Math.abs(r.nw) < 1, 'investing moves cash, not net worth');
+  assert(Math.abs(r.avg - 1.058) < 0.02 && Math.abs(r.drops - 0.2) < 0.06, `average year ${r.avg}, drop years ${r.drops}`);
+  assert(r.due[0] === 'Market drop' && near(r.after, 3750) && /Hold/.test(r.hold) && near(r.sold, 3750) && r.left === 0, JSON.stringify(r));
+});
+
+await t.check('round 3 money: older saves get the new money fields', async () => {
+  const r = await ev(() => { const old = clone(blankLife('Old', 'two')); for (const k of Object.keys(MONEY_STATE())) delete old[k]; old.home = 'fixer'; old.mortgage = 950; const s = migrate(old);
+    return { ins: s.ins, idx: s.homeIdx, rate: s.rate, wine: s.wine, due: s.due, st: s.stocks }; });
+  assert(r.ins.auto === 'full' && r.idx === 1 && r.rate === 6.5 && Array.isArray(r.wine) && Array.isArray(r.due) && r.st === 0, JSON.stringify(r));
+});
+// ---- Retirement and planning (ideas round 3: i3-a24, a25, a28, a30, a31, a32, a33, a34) ----
+await t.check('i3-a25: Social Security runs from 60% with no work record to 140% after 35 years of good pay', async () => {
+  const r = await ev(() => { const ss = extra => { fresh('life', { retired: true, ...extra }); return week().lines['Social Security']; };
+    return { none: ss({ earnYears: 0, earnSum: 0 }), full: ss({ earnYears: 35, earnSum: 35 * 7000 }), half: ss({ earnYears: 17.5, earnSum: 17.5 * 2000 }), long: ss({ earnYears: 50, earnSum: 50 * 9000 }) }; });
+  assert(near(r.none, 1900 * 0.6 * W) && near(r.full, 1900 * 1.4 * W) && near(r.long, 1900 * 1.4 * W), JSON.stringify(r));
+  assert(near(r.half, 1900 * (0.6 + 0.8 * 0.5 * 0.4) * W), JSON.stringify(r));
+});
+await t.check('i3-a25: every week with a paycheck adds to your work record, in 2027 dollars', async () => {
+  const r = await ev(() => { fresh('life', { jobId: 'elevator', focus: 'rest' }); weeks(52); const a = { y: S.earnYears, avg: avgEarn() };
+    fresh('life', { jobId: null, focus: 'rest' }); weeks(52); return { a, idle: S.earnYears }; });
+  assert(near(r.a.y, 1) && r.a.avg > 3700 && r.a.avg < 3900 && r.idle === 0, JSON.stringify(r));
+});
+await t.check('i3-a24: public jobs vest a pension after 5 years that pays 1.5% of best pay per year in retirement', async () => {
+  const r = await ev(() => { fresh('life', { jobId: 'clerk', focus: 'rest' }); weeks(52 * 4); const at4 = { vested: pensionVested(), pay: pensionPay() };
+    weeks(52 * 2); const yrs = S.pensionYears, best = S.pensionPay; S.retired = true; S.jobId = null; const l = week().lines;
+    fresh('life', { jobId: 'hanford', focus: 'rest' }); weeks(52 * 6); const priv = S.pensionYears;
+    return { at4, yrs, best, pension: l['Pension'], expect: cost(yrs * 0.015 * best) * W, priv, log: JSON.stringify(S.log), pub: JOBS.filter(j => j.pension).map(j => j.id) }; });
+  assert(!r.at4.vested && r.at4.pay === 0, 'not vested at 4 years');
+  assert(near(r.yrs, 6, 0.02) && near(r.pension, r.expect, 0.02) && r.pension > 0, JSON.stringify(r));
+  assert(r.priv === 0 && r.pub.join() === 'para,clerk,co,rn', JSON.stringify(r.pub));
+});
+await t.check('i3-a28: the money outlook projects 13 weeks from the same bills and flags the first week below zero', async () => {
+  const r = await ev(() => { fresh('two', { jobId: null, money: 1200, focus: 'rest', ui: 0 }); const o = moneyOutlook();
+    const net0 = o.weeks[0].net; const real = week(); const ok = Math.abs(real.lines && S.last.net - net0) < 1;
+    fresh('two', { jobId: 'rn', money: 5000, focus: 'rest', date: new Date(2027, 11, 6).getTime(), tabsYear: 2027 }); const p = moneyOutlook();
+    const tabs = p.weeks.findIndex(w => w.big.some(b => b[0] === 'Vehicle tabs (DMV)'));
+    return { n: o.weeks.length, low: o.lowWeek, ok, net0, last: S.last && S.last.net, good: p.lowWeek, tabs }; });
+  assert(r.n === 13 && r.low != null && r.low < 13, JSON.stringify(r));
+  assert(r.good === null && r.tabs >= 3 && r.tabs <= 5, JSON.stringify(r));
+});
+await t.check('i3-a30: a December choice sends a retiree to Arizona for January to March: a bill, no events, community fades', async () => {
+  const r = await ev(() => { fresh('life', { retired: true, ageMonths: 70 * 12, money: 50000, community: 60, date: new Date(2070, 11, 3).getTime() });
+    S.noEvents = false; const e = planDue(11); const title = e && e.title; e.choices()[0].go();
+    S.date = new Date(2071, 0, 7).getTime(); const away = awaySouth(); const l = week().lines; const trip = planTrip('wallawalla', ['movies']);
+    let evs = 0; for (let i = 0; i < 10; i++) if (weekTick(false).ev) evs++;
+    const comm = S.community; S.date = new Date(2071, 3, 7).getTime(); return { title, away, bill: l['Winter in Arizona'], trip, evs, comm, after: awaySouth() }; });
+  assert(r.title === 'Winter in Arizona?' && r.away && r.bill < 0 && /Arizona/.test(r.trip) && r.evs === 0, JSON.stringify(r));
+  assert(r.comm < 60 && !r.after, JSON.stringify(r));
+});
+await t.check('i3-a31: insurance at 55, then a care choice at 75 with health under 50; insurance pays 60% of the bill', async () => {
+  const r = await ev(() => { fresh('life', { ageMonths: 55 * 12 }); const ins = planDue(3); ins.choices()[0].go(); const prem = week().lines['Long-term care insurance'];
+    S.ageMonths = 76 * 12; S.health = 60; const early = planDue(3); S.health = 40; S.kids = []; S.partner = false; S.money = 100000; const care = planDue(3);
+    const labels = care.choices().filter(c => !c.if || c.if()).map(c => c.label); care.choices()[0].go(); const l = week().lines;
+    fresh('life', { ageMonths: 76 * 12, health: 40, ltc: { ins: false }, kids: [100], money: 100000 }); const fam = planDue(3).choices().filter(c => !c.if || c.if());
+    fam[2].go(); const lf = week().lines;
+    return { ins: ins.title, prem, early: early && early.title, labels, aide: l['Home care aide'], expect: -cost(4200) * 0.4 * W, premAfter: l['Long-term care insurance'], famN: fam.length, famBill: Object.keys(lf).filter(k => /aide|living/i.test(k)) }; });
+  assert(r.ins === 'Long-term care insurance' && r.prem < 0 && r.early == null, JSON.stringify(r));
+  assert(r.labels.length === 2 && near(r.aide, r.expect) && r.premAfter === undefined, JSON.stringify(r));
+  assert(r.famN === 3 && r.famBill.length === 0, JSON.stringify(r));
+});
+await t.check('i3-a31: without the money for paid care, Medicaid takes over, and paid care that runs dry moves there too', async () => {
+  const r = await ev(() => { fresh('life', { ageMonths: 80 * 12, health: 40, money: 2000, retired: true }); const ch = planDue(3).choices().filter(c => !c.if || c.if()).map(c => c.label);
+    fresh('life', { ageMonths: 80 * 12, health: 40, money: -10, retired: true, care: 'aide' }); const res = week();
+    return { ch, care: S.care, note: res.notes.join(' ') }; });
+  assert(r.ch.length === 1 && /Medicaid/.test(r.ch[0]) && r.care === 'medicaid' && /Medicaid/.test(r.note), JSON.stringify(r));
+});
+await t.check('i3-a32: a scholarship needs $150,000 of net worth, costs $40,000 and pays out every June', async () => {
+  const r = await ev(() => { fresh('life', { money: 100000 }); const poor = endowScholarship();
+    fresh('life', { money: 200000, community: 40, date: new Date(2030, 4, 6).getTime() }); const ok = endowScholarship(); const money = S.money, comm = S.community;
+    S.date = new Date(2031, 5, 2).getTime(); const e = planDue(5); const res = e.choices()[0].go(); const again = planDue(5);
+    return { poor, ok, money, comm, title: e.title, res, n: S.scholar.n, again }; });
+  assert(/150,000/.test(r.poor) && r.ok === '' && r.money === 160000 && r.comm === 45, JSON.stringify(r));
+  assert(r.n === 1 && r.again === null && /1 graduate/.test(r.res), JSON.stringify(r));
+});
+await t.check('i3-a33: the will is read at the handoff: in full with the home, or probate takes 10% and 26 weeks', async () => {
+  const r = await ev(() => { const p = { name:'Gran', nw:600000, community:60, col:1, wage:1, date:new Date(2080, 0, 5).getTime(), gen:1, mode:'normal', home:'farm', equity:200000, mortgage:1650 };
+    startLegacy({ ...p, will:true }, 'Kid'); const w = { money:S.money, home:S.home, equity:S.equity, probate:S.probate };
+    startLegacy({ ...p, will:false }, 'Kid'); S.noEvents = true; const n = { money:S.money, home:S.home, probate:{ ...S.probate } };
+    for (let i = 0; i < 26; i++) weekTick(false); const before = S.money; const res = weekTick(false); const got = S.money - before;
+    S.out.will = false; S.will = false; S.money = 1000; S.ageMonths = 30 * 12; const fee = writeWill(); 
+    return { w, n, got, note: res.notes.join(' '), fee, has: hasWill(), outWill: S.out.will }; });
+  assert(r.w.money === 200000 && r.w.home === 'farm' && r.w.equity === 200000 && !r.w.probate, JSON.stringify(r.w));
+  assert(r.n.money === 1500 && r.n.home === 'room' && r.n.probate.amt === 225000, JSON.stringify(r.n));
+  assert(r.got > 215000 && /Probate/.test(r.note), JSON.stringify(r));
+  assert(r.fee === '' && r.has && r.outWill, 'the Life-tab will also counts at the law office');
+});
+await t.check('i3-a33: the law office will and the Life-tab will are the same will', async () => {
+  const r = await ev(() => { fresh('life', { ageMonths: 30 * 12, money: 5000, date: new Date(2030, 4, 8).getTime() }); const v = visit('legal', 'will'); return { v: !v.err, will: S.will, again: writeWill() }; });
+  assert(r.v && r.will && /already/.test(r.again), JSON.stringify(r));
+});
+await t.check('i3-a34: a spare room pays on the first weekend of May, July, September and November, a few hundred a year', async () => {
+  const r = await ev(() => { fresh('life', { home: 'fixer', mortgage: 950, roomHost: true, date: new Date(2030, 0, 7).getTime() }); let paid = 0, weeksPaid = 0, happyHits = 0;
+    for (let i = 0; i < 52; i++) { const l = week().lines; const k = Object.keys(l).find(x => /^Spare room/.test(x)); if (k) { paid += l[k]; weeksPaid++; } }
+    fresh('life', { home: 'room', roomHost: true, date: new Date(2030, 4, 6).getTime() }); const renter = Object.keys(week().lines).some(x => /^Spare room/.test(x));
+    return { paid, weeksPaid, renter }; });
+  assert(r.weeksPaid === 4 && r.paid > 500 && r.paid < 900 && !r.renter, JSON.stringify(r));
+});
+await t.check('i3-a24/a25: older saves get an estimated work record', async () => {
+  const r = await ev(() => { const old = JSON.parse(JSON.stringify(fresh('life', { ageMonths: 40 * 12, jobId: 'para', jobMonths: 36 }))); for (const k of ['earnYears', 'earnSum', 'pensionYears', 'pensionPay', 'will', 'ltc', 'care']) delete old[k];
+    const m = migrate(old); return { y: m.earnYears, p: m.pensionYears, pay: m.pensionPay, will: m.will, care: m.care }; });
+  assert(near(r.y, 16.5) && near(r.p, 3) && r.pay === 2900 && r.will === false && r.care === null, JSON.stringify(r));
+});
+
+await t.check('i2-a29: an old save gets its past years in the life story, and says when earlier years came before the update', async () => {
+  const r = await ev(() => {
+    fresh('five', { jobId: 'farmhand' }); S.date = new Date(2029, 5, 1).getTime(); S.turn = 125; S.ageMonths = 20 * 12;
+    const g = JSON.parse(JSON.stringify(S)); delete g.years; delete g.storyEarly;
+    g.log = [{ d: 'Week of Mar 1, 2029', m: 'Earned a badge: Good dog.', k: 'mile' }, { d: 'Week of May 3, 2028', m: 'Hired as Wheat farm hand in Waitsburg!', k: 'money' },
+      { d: 'Week of Feb 2, 2028', m: 'Celebration Days: you ran.', k: 'ev' }, { d: 'Week of Jan 4, 2027', m: 'Rules turns 18 and rents a room above Main Street in Waitsburg.', k: 'ev' }];
+    const short = migrate(JSON.parse(JSON.stringify(g)));
+    const long = JSON.parse(JSON.stringify(g)); for (let i = 0; i < 120; i++) long.log.splice(1, 0, { d: 'Week of Apr 1, 2029', m: 'Quiet week.', k: 'ev' });
+    long.log = long.log.slice(0, 120); const big = migrate(long);
+    S = short; const st = lifeStory(); S = big; const st2 = lifeStory();
+    return { years: short.years, early: short.storyEarly, rows: st.rows.map(x => `${x.year}:${x.text.join(' ')}`), early2: big.storyEarly, first2: st2.rows[0].text[0] };
+  });
+  assert(r.years.length === 1 && r.years[0].year === 2028 && /Hired as/.test(r.years[0].m[0]) && r.years[0].age === 19, JSON.stringify(r.years));
+  assert(!r.early && r.rows.some(x => /^2028:.*Hired/.test(x)) && !r.rows.some(x => /Celebration/.test(x)), JSON.stringify(r.rows));
+  assert(r.early2 && /before this update/.test(r.first2), JSON.stringify(r));
 });
 
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });

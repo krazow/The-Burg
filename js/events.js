@@ -12,6 +12,7 @@ function eventOdds(trip){
 function rollEvent(month, trip){
   eventUpkeep();
   S.roadTo = trip && trip.city ? trip.city : commuteOneWay() >= 20 ? job().city : null;   // where this week's drive goes
+  const due = planDue(month); if (due) return due;   // i3-a30/a31/a32: life decisions that come when they're due
   const odds = eventOdds(trip);
   let r = Math.random();
   for (const cat of ['town', 'road', 'work']) { if (r < odds[cat]) return pickEvent(month, cat); r -= odds[cat]; }
@@ -59,6 +60,8 @@ const EVENT_PLACE = {
   'The trip of a lifetime':['R','pasco'], 'A kid heads off to college':['T','school'], 'Friday night game':['T','school'], 'Toothache':['R','wallawalla'],
   'The porch is sagging':['T','home'], 'The kitchen is next':['T','home'], 'The house is coming together':['T','home'],
   "A friend's food truck":['T','mainst'], 'Opening day for the food truck':['T','fair'], 'A year of the food truck':['T','fair'],
+  'Harvest: sell or store?':['T','elevator'], 'Market drop':['R','wallawalla'], 'Calving season':['R','bluewood'], 'A hard winter on the herd':['R','bluewood'],
+  'Wildfire smoke over the valley':['R','wallawalla'], 'A break-in':['T','home'], 'A kitchen fire':['T','home'], 'Catalytic converter stolen':['T','home'],
   'Water in the basements':['T','river'], 'A levee for the town':['T','river'], 'The levee is dedicated':['T','river']
 };
 const WORK_SPOT = { farmhand:'fields', diner:'mainst', para:'school', elevator:'elevator', insure:'mainst' };
@@ -87,6 +90,7 @@ function recentList(m, k){
   return `<div class="recent"><b>📍 Recently here</b>${r.map(p => `<div class="s">${p.ic} ${esc(p.t)} · ${S.turn - p.turn <= 1 ? 'this week' : (S.turn - p.turn) + ' weeks ago'}${p.r ? `: ${esc(p.r)}` : ''}</div>`).join('')}</div>`;
 }
 const inM = (m, ...ms) => ms.includes(m);
+const herd = () => S.biz && S.biz.type === 'cattle' ? S.biz : {};
 const commuting = () => commuteOneWay() > 0;
 
 const EVENTS = [
@@ -108,7 +112,7 @@ const EVENTS = [
   { ic:'❄️', title:'Snow on Highway 12', w:4, when:m => inM(m,11,0,1) && commuting(),
     text:'Overnight snow and ice on the highway. Your commute looks ugly.',
     choices:() => [
-      {label:'Drive in slow and careful', go:() => { if (chance((CARS[S.car].mpg>25 ? .3 : .2) * ditchMult())) { adj({money:-cost(850), health:-3, happy:-4}); return `You slid into a ditch. A tow and repairs ran ${fmtc(850)}.`; } adj({happy:-1}); return 'White knuckles the whole way, but you made it.'; }},
+      {label:'Drive in slow and careful', go:() => { if (chance((CARS[S.car].mpg>25 ? .3 : .2) * ditchMult())) { const c = cost(850), p = youPay('auto', c); adj({money:-p, health:-3, happy:-4}); return `You slid into a ditch. A tow and repairs ran ${fmt(c)}.${covered(c, p)}`; } adj({happy:-1}); return 'White knuckles the whole way, but you made it.'; }},
       {label:'Take an unpaid day', go:() => { const p = Math.round((job()?payNow(job(), true):0)/WORKDAYS); adj({money:-p, happy:2}); return `You stayed home with coffee and lost a day's pay.`; }}
     ]},
   { ic:'🔧', title:'Truck trouble', w:4, when:() => chance(CARS[S.car].breakdown * 4 * careMult()),
@@ -203,7 +207,7 @@ const EVENTS = [
   { ic:'🌬️', title:'Windstorm', w:2,
     text:'A big wind tears through the valley overnight.',
     choices:() => [{label:'Check the damage', go:() => {
-      if (HOMES[S.home].own) { const c = Math.round(cost(1200) * (1 - skillLv('handy') * 0.15)); adj({money:-c, happy:-3}); practice('handy', 1); return `You lost shingles. Sharp Point Builders fixed the roof: ${fmt(c)}${skillLv('handy') ? ' (you did part of it yourself)' : ''}.`; }
+      if (HOMES[S.home].own) { const c = Math.round(cost(1200) * (1 - skillLv('handy') * 0.15)), p = youPay('home', c); adj({money:-p, happy:-3}); practice('handy', 1); return `You lost shingles. Sharp Point Builders fixed the roof: ${fmt(c)}${skillLv('handy') ? ' (you did part of it yourself)' : ''}.${covered(c, p)}`; }
       adj({money:-cost(60), happy:-1}); return 'Power was out a day and the fridge food spoiled.'; }}]},
   { ic:'🧅', title:'Walla Walla Sweets are in', yr:1, w:3, when:m => inM(m,5,6),
     text:'The sweet onion harvest is here.',
@@ -264,6 +268,43 @@ const EVENTS = [
       {label:`Help with tuition`, go:() => { adj({money:-Math.round(cost(15000)), happy:8, community:2}); return 'They\'re off to college with your help. Proud doesn\'t cover it.'; }},
       {label:'They\'ll take out loans', go:() => { adj({happy:2}); return 'They\'re off to college on their own dime.'; }}
     ]},
+  // i3-a19: losses that your insurance choices decide
+  { ic:'🚪', title:'A break-in', w:1,
+    text:() => `Someone got into your ${HOMES[S.home].own ? 'house' : 'place'} while you were out. The TV, a laptop and some tools are gone.`,
+    choices:() => [{label:S.ins && S.ins.renters === false && !HOMES[S.home].own ? 'Count what you lost' : 'Call the insurance company', go:() => {
+      const c = cr(1800), p = youPay('stuff', c); adj({money:-p, happy:-4});
+      return p >= c ? `Without renters insurance, replacing it all cost ${fmt(c)}.` : `You paid the ${fmt(p)} deductible.${covered(c, p)}`; }}]},
+  { ic:'🔥', title:'A kitchen fire', yr:1, w:0.6,
+    text:'A pan of grease went up on the stove. The Waitsburg volunteer firefighters were there in minutes, but the kitchen is a mess.',
+    choices:() => [{label:'Call the insurance company', go:() => {
+      if (HOMES[S.home].own) { const c = cr(9000), p = youPay('home', c); adj({money:-p, happy:-6}); return `Smoke, water and a new kitchen: ${fmt(c)} of work. You paid the ${fmt(p)} deductible.${covered(c, p)}`; }
+      const c = cr(2500), p = youPay('stuff', c); adj({money:-p, happy:-5});
+      return p >= c ? `The landlord's insurance fixed the building, but your things and a week at a motel cost you ${fmt(c)}. Renters insurance would have covered it.` : `Your renters insurance paid for your things and a week at a motel, after the ${fmt(p)} deductible.`; }}]},
+  { ic:'🔩', title:'Catalytic converter stolen', w:1,
+    text:() => `You start your ${CARS[S.car].name.toLowerCase()} and it roars like a tractor. Somebody sawed the catalytic converter off overnight.`,
+    choices:() => [{label:'Get it replaced', go:() => { const c = cr(1600), p = youPay('auto', c); adj({money:-p, happy:-3});
+      return S.ins && S.ins.auto === 'liab' ? `Liability insurance doesn't cover theft: the new one cost ${fmt(c)}.` : `Your full coverage paid for it after the ${fmt(p)} deductible.${covered(c, p)}`; }}]},
+  // i3-a18: the herd (herd() is a throwaway object if the herd is gone by the time you choose)
+  { ic:'🐄', title:'Calving season', yr:1, w:5, when:m => inM(m,1,2,3) && S.biz && S.biz.type === 'cattle',
+    text:'A heifer is having a hard time calving up in the foothills, and it\'s 2 a.m.',
+    choices:() => [
+      {label:'Pull on your boots and help', go:() => { const h = herd(); h.saved = (h.saved || 0) + 1; adj({health:-3, happy:2}); h.check = S.turn; return 'A long, cold night, and a wobbly new calf by sunrise.'; }},
+      {label:`Call the large-animal vet (-${fmtc(250)})`, go:() => { adj({money:-cr(250)}); const h = herd(); h.saved = (h.saved || 0) + 1; return 'The vet got the calf turned. Mother and calf are fine.'; }},
+      {label:'Let nature take its course', go:() => { if (chance(0.5)) { const h = herd(); h.saved = (h.saved || 0) - 1; adj({happy:-3}); return 'You lost the calf.'; } return 'She managed on her own this time.'; }}
+    ]},
+  { ic:'🌨️', title:'A hard winter on the herd', yr:1, w:5, when:m => inM(m,11,0,1) && S.biz && S.biz.type === 'cattle' && S.biz.hard === (m >= 10 ? new Date(S.date).getFullYear() : new Date(S.date).getFullYear() - 1),
+    text:'Snow on top of snow in the foothills, and the hay pile is shrinking fast.',
+    choices:() => [
+      {label:`Haul in extra hay (-${fmtc(600)})`, go:() => { adj({money:-cr(600)}); herd().check = S.turn; return 'The herd came through thin but fine.'; }},
+      {label:'Stretch what you have', go:() => { const h = herd(); if (chance(0.4) && h.cows > 1) { h.cows--; adj({happy:-4}); return `You lost a cow to the cold. ${h.cows} left.`; } return 'It was close, but the herd made it to spring.'; }}
+    ]},
+  // i3-a17: smoke-year news for the wine futures
+  { ic:'🌫️', title:'Wildfire smoke over the valley', yr:1, w:4, when:m => inM(m,7,8) && S.smoke === new Date(S.date).getFullYear(),
+    text:() => `Fires in the Cascades sent smoke over the whole valley. The sky is orange, and the winemakers are worried about this year's grapes${(S.wine || []).length ? '' : ' (and this fall\'s wine futures)'}.`,
+    choices:() => [
+      {label:'Stay inside with the windows shut', go:() => { adj({happy:-2}); return 'A week of board games and a box fan.'; }},
+      {label:`Drive up to Bluewood for clean air (-${fmtc(40)})`, go:() => { adj({money:-cr(40), happy:2, health:1}); return 'Blue sky above the smoke line.'; }}
+    ]},
   { ic:'🏀', title:'Friday night game', w:2, when:m => inM(m,0,1,2,8,9,10,11),
     text:'The home team is playing in the school gym tonight.',
     choices:() => [
@@ -323,7 +364,7 @@ function eventUpkeep(){
 const ROAD_EVENTS = [
   { ic:'🦌', title:'Deer on Highway 12 at dusk', cat:'road', w:3, when:m => longCommute() && inM(m,9,10,11,0),
     text:'Eyes in the headlights at the edge of the wheat.',
-    choices:() => [{label:'Brake hard', go:() => { if (chance(S.tires === S.car ? .05 : .15)) { adj({money:-cr(900), health:-1, happy:-1}); return `You clipped it. The repair ran ${fmtc(900)}.`; }
+    choices:() => [{label:'Brake hard', go:() => { if (chance(S.tires === S.car ? .05 : .15)) { const c = cr(900), p = youPay('auto', c); adj({money:-p, health:-1, happy:-1}); return `You clipped it. The repair ran ${fmt(c)}.${covered(c, p)}`; }
       adj({happy:-1}); return `It bounded off into the dark. Your heart took a while to slow down${S.tires === S.car ? ' (good thing for those winter tires)' : ''}.`; }}]},
   { ic:'🚜', title:'Stuck behind a wheat truck', cat:'road', w:3, when:m => inM(m,6,7),
     text:'A loaded grain truck doing 35 on the two-lane, and a line of cars behind it.',
@@ -343,6 +384,10 @@ const ROAD_EVENTS = [
       {label:'Change it yourself', if:() => skillLv('mechanic') >= 1, go:() => { adj({health:-1}); practice('mechanic', 1); return 'Jack, lug wrench, spare. Twenty minutes on the shoulder.'; }},
       {label:`Call a tow (-${fmtc(120)})`, go:() => { adj({money:-cr(120)}); return `The tow and a patch ran ${fmtc(120)}.`; }}
     ]},
+  { ic:'💥', title:'A fender bender', cat:'road', w:1,
+    text:() => `Traffic stopped short in ${roadName()} and you didn't. Nobody's hurt, but your front end is crumpled.`,
+    choices:() => [{label:'Exchange insurance info', go:() => { const c = cr(3200), p = youPay('auto', c); adj({money:-p, happy:-3});
+      return S.ins && S.ins.auto === 'liab' ? `Your liability insurance paid for their car, not yours: your repairs cost ${fmt(c)}.` : `Full coverage paid for the repairs after your ${fmt(p)} deductible.${covered(c, p)}`; }}]},
   { ic:'🚓', title:'Speeding ticket', cat:'road', yr:1, w:2, when:() => longCommute(),
     text:'Lights in the mirror. You were doing 72 in a 60.',
     choices:() => [
@@ -374,7 +419,7 @@ const ROAD_EVENTS = [
     text:'A brown wall of dust rolls across the highway.',
     choices:() => [
       {label:'Pull over and wait', go:() => { adj({happy:-1}); return 'You sat on the shoulder until you could see again.'; }},
-      {label:'Push through', go:() => { if (chance(.1)) { adj({money:-cr(600)}); return `You tapped a car you couldn't see. The fender cost ${fmtc(600)}.`; } return 'You made it through, gritting your teeth (and your teeth were gritty).'; }}
+      {label:'Push through', go:() => { if (chance(.1)) { const c = cr(600), p = youPay('auto', c); adj({money:-p}); return `You tapped a car you couldn't see. The fender cost ${fmt(c)}.${covered(c, p)}`; } return 'You made it through, gritting your teeth (and your teeth were gritty).'; }}
     ]},
   { ic:'🎈', title:'Hot-air balloon festival in Walla Walla', cat:'road', yr:1, w:3, when:m => inM(m,4),
     text:'Dozens of balloons lift off at dawn over Walla Walla.',
@@ -665,6 +710,25 @@ const WORK_EVENTS = [
     ]}
 ];
 EVENTS.push(...ROAD_EVENTS, ...WORK_EVENTS);
+
+/* ---------- events that must come up when they happen (round 3): they never roll at random ---------- */
+const DUE_EVENTS = [
+  // i3-a15: sell at harvest, or store it at the elevator and hope for a better price by spring
+  { ic:'🌾', title:'Harvest: sell or store?', when:() => S.biz && S.biz.type === 'wheat' && S.biz.crop > 0,
+    text:() => { const v = S.biz.crop * wheatPriceF(), ins = S.biz.bad && S.biz.ins;
+      return `${S.biz.bad ? (ins ? 'A drought year, but your crop insurance paid most of a normal crop.' : 'A rough harvest: dry weather cut the crop to a third of normal.') : 'The combines are done and your wheat is in.'} The elevator pays ${wheatPriceLabel()} this summer, ${fmt(v)} for your crop. Or store it there for about ${fmt(S.biz.crop * WHEAT_STORE_FEE)} a month and sell when the price looks better. Prices usually rise a little by spring, but not always.`; },
+    choices:() => [
+      {label:`Sell now (+${fmt(S.biz.crop * wheatPriceF())})`, go:() => { const v = S.biz.crop * wheatPriceF(); S.money += v; S.biz.earned += v; S.biz.crop = 0; return `Sold at ${wheatPriceLabel()}: ${fmt(v)}.`; }},
+      {label:'Store it at the elevator', go:() => { S.biz.stored = (S.biz.stored || 0) + S.biz.crop; S.biz.crop = 0; return 'Your wheat is in the elevator. Sell it from the Life tab when the price is right (by next July).'; }}
+    ]},
+  // i3-a29: a down year. Selling now locks in the loss.
+  { ic:'📉', title:'Market drop', when:() => S.stocks > 0,
+    text:() => `The stock market fell hard this week. Your index funds at ${BROKER} lost ${fmt(S.mkt && S.mkt.lost || 0)} and are worth ${fmt(S.stocks)} now. The news is all doom.`,
+    choices:() => [
+      {label:'Hold on and wait it out', go:() => { adj({happy:-2}); return 'You turned off the news. Markets have always come back, eventually.'; }},
+      {label:`Sell everything (+${fmt(S.stocks)})`, go:() => { const v = S.stocks; S.stocks = 0; S.money += v; adj({happy:1}); return `You sold for ${fmt(v)} and locked in the loss. At least you can sleep.`; }}
+    ]}
+];
 // where road and work events happen: 'road' is the town you drive to that week, 'work' your workplace
 Object.assign(EVENT_PLACE, Object.fromEntries(WORK_EVENTS.map(e => [e.title, 'work'])), Object.fromEntries(ROAD_EVENTS.map(e => [e.title, 'road'])), {
   'Hot-air balloon festival in Walla Walla':['R','wallawalla'], 'A free college lecture in Walla Walla':['R','wallawalla'],

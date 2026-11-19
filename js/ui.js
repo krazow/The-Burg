@@ -479,7 +479,7 @@ function renderHome(){
   ${S.happy < 30 ? sugg('happy', 'outdoors', `😟 Happiness is low (${Math.round(S.happy)}).`) : ''}
   ${S.health < 30 ? sugg('health', 'rest', `🤒 Health is low (${Math.round(S.health)}).`) : ''}
   ${overtimeTip() ? `<div class="card warn">${overtimeTip()}</div>` : ''}
-  ${S.money < -15000 ? `<div class="card warn">⚠️ Your debt is getting dangerous. Below -$40,000 you'll have to leave town.</div>` : ''}
+  ${S.money < -15000 ? `<div class="card warn">⚠️ Your debt is getting dangerous. Below ${fmt(mode() === 'hard' ? -25000 : -40000)} you'll have to leave town${canBankrupt() ? ' or file for bankruptcy' : ''}.</div>` : inCollections() ? `<div class="card warn">📞 Your debt is in collections: daily calls (−happiness) and worse odds on job applications and loans until you're back above $0.</div>` : ''}
   <div class="card"><div class="focushead"><h3>This week's focus</h3></div>${scenarioLine()}${seasonLine()}${mapToggle()}
     ${prefs().mapView ? mapBlock('T') : `<div class="fgrid">${Object.entries(FOCUS).map(([k,x]) => {
       const dis = (x.needsJob && (!j || S.retired)) || (x.study && S.edu >= 3);
@@ -524,7 +524,12 @@ function showStatInfo(k){
       <div class="kv"><span>${term('equity')}</span><span>${fmt(S.equity)}</span></div>
       <div class="kv"><span>${CARS[S.car].name}</span><span>${fmt(S.carValue)}</span></div>
       <div class="kv"><span>401(k)</span><span>${fmt(S.k401 || 0)}</span></div>
+      ${S.biz ? `<div class="kv"><span>${BIZ[S.biz.type].name}</span><span>${fmt(bizValue())}</span></div>` : ''}
+      ${S.stocks > 0 ? `<div class="kv"><span>Index funds</span><span>${fmt(S.stocks)}</span></div>` : ''}
+      ${wineAtCost() ? `<div class="kv"><span>Wine futures (at cost)</span><span>${fmt(wineAtCost())}</span></div>` : ''}
       ${loan ? `<div class="kv"><span>Truck loan</span><span>-${fmt(loan)}</span></div>` : ''}
+      ${S.sloanLeft > 0 ? `<div class="kv"><span>Student loans</span><span>-${fmt(S.sloanLeft * S.sloanPay * 0.85)}</span></div>` : ''}
+      ${heBalance() ? `<div class="kv"><span>Home equity loan</span><span>-${fmt(heBalance())}</span></div>` : ''}
       <div class="kv"><span><b>Net worth</b></span><span><b>${fmt(netWorth())}</b></span></div>
       <p class="muted">Counts for 30% of your ${term('lifescore')}: ${fmt(t)} (in ${term('dollars')}) or more by the end gets full points.</p>
       <button class="btn primary" id="ok">Got it</button>`);
@@ -589,7 +594,7 @@ function renderJobs(){
       : canCarpool() ? `<p class="muted" style="margin:0 0 6px">Split the drive to ${CITIES[j.city].name} with neighbors: half the gas, less wear from the commute, and a little community.</p><button class="sm" id="carpool">Join a carpool</button>`
       : `<p class="muted" style="margin:0">Know more people in town (community 30+) and you can join a carpool: half the gas and an easier commute.</p>`}</div>` : ''}
   ${j && !S.retired ? `<button class="btn ghost" id="quit">Quit my job</button>` : ''}
-  ${LENGTHS[S.len].turns===Infinity && age()>=62 && !S.retired ? `<button class="btn primary" id="retire">Retire (Social Security ${wk(ssPay())}${S.k401>0?` + 401(k) ${wk(S.k401*0.04/12)}`:''})</button>` : ''}`;
+  ${LENGTHS[S.len].turns===Infinity && age()>=62 && !S.retired ? `<button class="btn primary" id="retire">Retire (Social Security ${wk(ssPay())}${pensionVested()?` + pension ${wk(pensionPay())}`:''}${S.k401>0?` + 401(k) ${wk(S.k401*0.04/12)}`:''})</button>` : ''}`;
   document.querySelectorAll('.chip[data-c]').forEach(b => b.onclick = () => { jobCity = b.dataset.c; render(); });
   if ($('#jobok')) $('#jobok').onclick = () => { jobOK = !jobOK; render(); };
   if ($('#carpool')) $('#carpool').onclick = () => { S.carpool = !S.carpool; S.carpoolJob = S.carpool ? S.jobId : null; save(); render(); toast(S.carpool ? '🚙 You joined a carpool' : 'Driving alone again'); };
@@ -617,6 +622,8 @@ function apply(id){
   let p = 0.5 + S.community * 0.004 + (S.edu > x.edu ? 0.12 : 0) + (x.city === 'waitsburg' ? 0.1 : 0) + skillLv('people') * 0.04 + outLookBonus();
   if (!S.jobId) p += 0.08;
   p += S.applyBoost || 0;                          // new work clothes from a clearance sale (event)
+  if (inCollections()) p -= 0.1;                   // i3-a26: a collections account shows up on background checks
+  if (bkActive() && x.pay >= 4800) p -= 0.15;      // i3-a27: the better-paying jobs look hard at a bankruptcy
   const sure = (S.hireBy ?? -1) >= S.turn;         // a recruiter set up the interview (event)
   S.applyBoost = 0; S.hireBy = -1;                 // both count for the next application only
   if (S.practice || sure || chance(Math.min(0.92, p))) {
@@ -646,11 +653,18 @@ function renderLife(){
   <div class="card"><h3>🏡 Home in Waitsburg</h3>
     ${Object.entries(HOMES).map(([k,x]) => {
       const cur = S.home === k;
-      let btn = cur ? '<span class="tag cur">Home</span>' : `<button class="sm ${x.own?'':'alt'}" data-home="${k}">${x.own ? `Buy (${fmt(cost(x.down))} down)` : 'Move'}</button>`;
-      return `<div class="kv job"><div><div class="t">${x.name}</div><div class="s">${x.own?'Mortgage':'Rent'} ${wk(cur && x.own && S.mortgage ? S.mortgage : cost(x.cost))}${x.own?' · builds equity':''}</div></div>${btn}</div>`;
+      let btn = cur ? '<span class="tag cur">Home</span>' : `<button class="sm ${x.own?'':'alt'}" data-home="${k}">${x.own ? `Buy (${fmt(homeDown(k))} down)` : 'Move'}</button>`;
+      return `<div class="kv job"><div><div class="t">${x.name}</div><div class="s">${x.own?'Mortgage':'Rent'} ${wk(cur && x.own && S.mortgage ? S.mortgage : x.own ? newMortgage(k) : cost(x.cost))}${x.own?` · builds equity · worth ${fmt(homeValue(k))}`:''}</div></div>${btn}</div>`;
     }).join('')}
-    ${h.own ? `<p class="muted">${term('equity')}: <b>${fmt(S.equity)}</b>. Moving sells your house (6% fees).</p>` : ''}
+    ${h.own ? `<p class="muted">${term('equity')}: <b>${fmt(S.equity)}</b>. Moving sells your house (6% agent fees).</p>` : ''}
+    ${homeMoneyHTML()}
   </div>
+  <div class="card"><h3>🛡️ Insurance & phone</h3>
+    ${insParts().map(([l, v]) => `<div class="kv"><span>${l}</span><span>${fmtc(v)}/mo</span></div>`).join('')}
+    <div class="kv"><span><b>Total</b></span><span><b>${wk(cost(insMonthly()))}</b></span></div>
+    <button class="sm alt" id="inssheet">Change coverage</button>
+  </div>
+  ${S.practice ? '' : investCard()}
   <div class="card"><h3>🛻 Ride</h3>
     ${Object.entries(CARS).map(([k,c]) => {
       const cur = S.car === k;
@@ -667,6 +681,7 @@ function renderLife(){
     <p class="muted" style="margin:6px 0">Put part of each paycheck away before taxes. At 5% or more your employer adds 3%. It grows about 6% a year and pays out when you retire.</p>
     <div class="maptog">${K401.map((r,i) => `<button class="${S.k401rate===i?'on':''}" data-k401="${i}">${r*100}%</button>`).join('')}</div>`}
   </div>
+  ${S.practice ? '' : planningCard()}
   <div class="card"><h3>❤️ Household</h3>
     <div class="kv"><span>Partner</span><span>${S.partner ? 'Together 💕' : 'Single'}</span></div>
     <div class="kv"><span>Dog</span><span>${S.dog ? 'One good dog 🐕' : 'None'}</span></div>
@@ -680,32 +695,48 @@ function renderLife(){
   if ($('#bizsell')) $('#bizsell').onclick = () => { sheet(`<h2>Sell your business?</h2><p>You'd get about ${fmt(bizValue())}.</p><button class="btn primary" id="y">Sell</button><button class="btn ghost" id="n">Keep it</button>`); $('#y').onclick = () => { closeSheet(); sellBiz(); }; $('#n').onclick = closeSheet; };
   document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => moveHome(b.dataset.home));
   document.querySelectorAll('[data-car]').forEach(b => b.onclick = () => buyCar(b.dataset.car));
+  if (!S.practice) planningWire();
   document.querySelectorAll('[data-k401]').forEach(b => b.onclick = () => { S.k401rate = +b.dataset.k401; save(); renderLife(); toast(`Saving ${K401[S.k401rate]*100}% of each paycheck`); });
+  // round 3: insurance, the house, crop and herd, investing
+  if ($('#inssheet')) $('#inssheet').onclick = () => insSheet();
+  if ($('#refi')) $('#refi').onclick = () => { sheet(`<h2>📉 Refinance?</h2><p>Standard Bearer Bank would redo your mortgage at ${S.rate.toFixed(2)}%: ${wk(S.mortgage)} becomes ${wk(refiPay())}. Closing costs are ${fmt(refiFee())}, paid now.</p>
+      <p class="muted">It pays for itself in about ${Math.ceil(refiFee() / Math.max(1, S.mortgage - refiPay()))} months, so it's worth it if you'll stay a while.</p><button class="btn primary" id="y">Refinance</button><button class="btn ghost" id="no">Not now</button>`);
+    $('#y').onclick = () => { if (refinance()) { closeSheet(); save(); render(); toast('📉 Refinanced'); } }; $('#no').onclick = closeSheet; };
+  if ($('#heloan')) $('#heloan').onclick = heSheet;
+  if ($('#sellwheat')) $('#sellwheat').onclick = () => { const v = sellStoredWheat(); save(); render(); toast(`🌾 Sold the stored wheat for ${fmt(v)}`); };
+  if ($('#cropins')) $('#cropins').onclick = () => { S.biz.ins = !S.biz.ins; save(); render(); const b = $('#cropins'); if (b) b.focus({ preventScroll: true }); announce(S.biz.ins ? `Crop insurance on: ${fmt(cost(CROP_INS))} each April.` : 'Crop insurance off.'); };
+  document.querySelectorAll('[data-inv]').forEach(b => b.onclick = () => {
+    const v = b.dataset.inv === 'all' ? -(S.stocks || 0) : +b.dataset.inv;
+    if (invest(v)) { save(); render(); toast(v > 0 ? `📈 Put ${fmt(v)} in index funds` : `📈 Took ${fmt(-v)} out`); announce(`Index funds now ${fmt(S.stocks)}. Cash ${fmt(S.money)}.`); }
+  });
+  if ($('#wine')) $('#wine').onclick = () => { if (buyWine()) { save(); render(); toast(`🍷 You're in on the ${wineYear()} vintage`); } };
 }
 
 function moveHome(k){
   const x = HOMES[k], old = HOMES[S.home];
-  const sale = old.own ? Math.round(S.equity * 0.94) : 0;
-  const need = (x.own ? cost(x.down) : 0) + cost(300);
+  const he = old.own ? heBalance() : 0, sale = old.own ? Math.round(S.equity * (1 - SELL_FEE) - he) : 0;   // i3-a21: 6% agent fees; i3-a23: the equity loan is paid off
+  const down = x.own ? homeDown(k) : 0, need = down + cost(300), md = MOODS[homeMood()];
   if (S.money + sale < need) return toast(`You need ${fmt(need - sale)} on hand (down payment + moving).`);
-  const nowPay = old.own && S.mortgage ? S.mortgage : cost(old.cost), newPay = cost(x.cost), dPay = (newPay - nowPay) * W;
-  const dNw = -cost(300) - (old.own ? S.equity * 0.06 : 0);
+  const nowPay = old.own && S.mortgage ? S.mortgage : cost(old.cost), newPay = x.own ? newMortgage(k) : cost(x.cost), dPay = (newPay - nowPay) * W;
+  const dNw = -cost(300) - (old.own ? S.equity * SELL_FEE : 0);
   confirmSheet({ title: `${x.own ? 'Buy' : 'Move to'} ${x.name}?`, yes: 'Do it',
-    intro: `${x.own ? `Down payment ${fmt(cost(x.down))}, then ${wk(cost(x.cost))} mortgage (locked in) from Standard Bearer Bank, with the closing papers at Mother Hubbard's Legal Cupboard.` : `Rent is ${wk(cost(x.cost))}.`} Moving costs ${fmt(cost(300))}.${old.own ? ` You'll sell your current place and pocket ${fmt(sale)}.` : ''}`,
+    intro: `${x.own ? `Down payment ${fmt(down)}, then ${wk(newMortgage(k))} mortgage at ${buyRate().toFixed(2)}% (locked in) from Standard Bearer Bank, with the closing papers at Mother Hubbard's Legal Cupboard.` : `Rent is ${wk(cost(x.cost))}.`} Moving costs ${fmt(cost(300))}.${old.own ? ` You'll sell your current place and pocket ${fmt(sale)} after the 6% agent fees${he ? ` and paying off the ${fmt(he)} home equity loan` : ''}.` : ''}`,
+    after: `<p class="muted">${md.ic} The housing market is <b>${md.name.toLowerCase()}</b>: ${md.desc}.</p>`,
     lines: [`💵 Cash: ${fmt(S.money)} → ${fmt(S.money + sale - need)}`,
       `🏠 ${old.own ? 'Mortgage' : 'Rent'} ${wk(nowPay)} → ${x.own ? 'mortgage' : 'rent'} ${wk(newPay)} (${dPay >= 0 ? '+' : '−'}${fmt(Math.abs(dPay))} a week)`,
       `😊 Happiness +4 now, and ${x.happy > old.happy ? 'a little happier every week' : x.happy < old.happy ? 'a little less happy every week' : 'the same week to week'}`,
-      ...(x.own ? [`📈 You start with ${fmt(cost(x.down))} of ${term('equity')}, and it grows with each payment`] : []),
-      `💰 ${term('networth', 'Net worth')}: −${fmt(-dNw)} (moving costs${old.own ? ' and 6% selling fees' : ''})`],
+      ...(x.own ? [`📈 You start with ${fmt(down)} of ${term('equity')}, and it grows with each payment`] : []),
+      `💰 ${term('networth', 'Net worth')}: −${fmt(-dNw)} (moving costs${old.own ? ' and 6% agent fees' : ''})`],
     onYes: () => {
-      S.money += sale - need; S.equity = x.own ? cost(x.down) : 0; S.mortgage = x.own ? cost(x.cost) : null; S.home = k;
+      if (old.own) { S.heLeft = 0; S.hePay = 0; }
+      S.money += sale - need; S.equity = down; S.mortgage = x.own ? newMortgage(k) : null; S.mortRate = x.own ? buyRate() : null; S.home = k;
       adj({happy:4}); outMoved(); log(`Moved into the ${x.name.toLowerCase()}.`);
       save(); render();
     } });
 }
 // i2-a32: big choices list what will change before you say yes; Never mind (or Escape) is always the safe way out
-function confirmSheet({ title, intro = '', lines = [], yes = 'Do it', no = 'Cancel', onYes }){
-  sheet(`<h2>${title}</h2>${intro ? `<p>${intro}</p>` : ''}
+function confirmSheet({ title, intro = '', after = '', lines = [], yes = 'Do it', no = 'Cancel', onYes }){
+  sheet(`<h2>${title}</h2>${intro ? `<p>${intro}</p>` : ''}${after}
     ${lines.length ? `<h3>What will change</h3><ul class="changes">${lines.map(l => `<li>${l}</li>`).join('')}</ul>` : ''}
     <button class="btn primary" id="y">${yes}</button><button class="btn ghost" id="n">${no}</button>`);
   $('#y').onclick = () => { closeSheet(); onYes(); };
@@ -715,6 +746,7 @@ function confirmSheet({ title, intro = '', lines = [], yes = 'Do it', no = 'Canc
 const weekGas = car => (commuteOneWay() * 2 * WORKDAYS * commuteGasFactor() + ERRAND_MILES) * W * cost(GAS) / car.mpg;
 function buyCar(k){
   const c = CARS[k], bonus = tradeBonus(), price = cost(k==='sedan' ? c.price : c.down) - Math.round(S.carValue) - bonus;
+  if (c.pay && loanBlock()) return toast(loanBlock());          // financing needs a bank that will lend to you
   if (S.money < price) return toast(`You need ${fmt(price)} after your trade-in.`);
   const g0 = weekGas(CARS[S.car]), g1 = weekGas(c), loan = c.months ? c.months * cost(c.pay) * 0.85 : 0;
   const dNw = -price + cost(c.value) - S.carValue - loan;

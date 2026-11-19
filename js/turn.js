@@ -13,7 +13,7 @@ function playWeeks(n){
   }
   save();
   const after = () => {
-    if (res.ending) return finish(res.ending);
+    if (res.ending) return res.debt && canBankrupt() ? bankruptcySheet(res.ending) : finish(res.ending);   // i3-a27
     COUNT_FROM = { money: S.run.money, happy: S.run.happy, health: S.run.health, community: S.run.community };   // i2-a08: stats count up from last week
     render();
     const next = () => {
@@ -54,6 +54,7 @@ function showRunDetails(){
     ${r.happened.length ? `<h3 style="margin-top:12px">What happened</h3>${r.happened.map(h => `<div class="kv"><span>${h.ic} ${esc(h.title)}</span><span style="color:${h.money<0?'var(--barn)':'var(--sage)'}">${h.money ? (h.money>0?'+':'') + fmt(h.money) : ''}</span></div>`).join('')}` : ''}
     <div class="kv"><span><b>Total change in cash</b></span><span><b>${dm>=0?'+':''}${fmt(dm)}</b></span></div>${tattlerLine()}
     ${S.last && S.last.why && S.last.why.length ? `<h3 style="margin-top:12px">Why your stats moved${r.weeks > 1 ? ' last week' : ''}</h3>${S.last.why.map(w => `<div class="logitem">${w}</div>`).join('')}` : ''}
+    ${S.practice ? '' : '<button class="btn ghost" id="outlook">📅 Money outlook: next 13 weeks</button>'}
     <button class="btn primary" id="ok">Close</button>`);
   setPref('cl', { ...(prefs().cl || {}), strip: 1 });   // i2-a16: the checklist's "look at your week" step
   document.querySelectorAll('[data-why]').forEach(b => b.onclick = () => {
@@ -61,6 +62,7 @@ function showRunDetails(){
     b.setAttribute('aria-expanded', open); d.classList.toggle('hidden', !open);
   });
   $('#ok').onclick = closeSheet;
+  if ($('#outlook')) $('#outlook').onclick = () => outlookSheet(showRunDetails);
 }
 // i2-a10: one card for everything earned this week (badges and skill levels); no confetti with reduced motion
 function celebrate(list, then){
@@ -131,6 +133,62 @@ function showReview(rv){
   $('#ok').onclick = () => { closeSheet(); render(); };
 }
 
+// i3-a28: the bills that come every week, the same in weekTick and the 13-week money outlook (off = weeks from now)
+function billLines(off = 0){
+  const m = W, home = HOMES[S.home], car = CARS[S.car], out = [], c = v => cost(v) * Math.pow(1 + COL_RATE, off / 52);
+  const rentV = -(home.own && S.mortgage ? S.mortgage : c(home.cost))*m;
+  out.push([home.own ? 'Mortgage' : 'Rent', rentV]);
+  const stocked = S.turn + off < S.stockUntil;
+  const foodV = -c(520 - (stocked ? GROCERY_SHARE * STOCK_OFF : 0))*(1 - skillLv('cook') * 0.04)*m, insV = -c(insMonthly())*m;   // i3-a19: what you picked on the insurance sheet ($160 by default)
+  out.push([stocked ? 'Food & utilities (stocked up)' : 'Food & utilities', foodV]);
+  out.push(['Insurance & phone', insV]);
+  if (mode() === 'hard') out.push(['Higher living costs (Hard, +10%)', (rentV + foodV + insV) * HARD_LIVING]);   // R15: 10% of rent, food and insurance
+  const miles = (commuteOneWay()*2*WORKDAYS*commuteGasFactor() + ERRAND_MILES) * m;
+  out.push([commuteOneWay() ? 'Gas (commute + errands)' : 'Gas (errands)', -miles*c(GAS)/car.mpg]);
+  if (S.dog) out.push(['Dog food & vet', -c(45)*m]);
+  if (S.partner) out.push(['Date nights', -c(120)*m]);
+  const kidsHome = kidsAtHome();
+  if (kidsHome) out.push([kidsHome > 1 ? `Kids (${kidsHome})` : 'Kid', -kidCost()*kidsHome*m]);
+  const a0 = Math.floor((S.ageMonths + off * m) / 12);
+  if (a0 >= 50) out.push(['Health care', -c(a0 >= 65 ? 420 : 180)*m]);
+  if (S.ltc && S.ltc.ins && !S.care) out.push(['Long-term care insurance', -c(LTC_PREMIUM)*m]);
+  if (S.care && careMonthly() > 0) out.push([CARE[S.care].bill, -c(careMonthly())*m]);
+  return out;
+}
+// i3-a24/a25: a week of work adds to your Social Security record and, in a public job, your pension
+function workYear(j, m){
+  const real = payNow(j) / S.col;                  // this job's pay in 2027 dollars
+  S.earnYears = (S.earnYears || 0) + m / 12; S.earnSum = (S.earnSum || 0) + real * m / 12;
+  if (j.pension) {
+    const was = pensionVested();
+    S.pensionYears = (S.pensionYears || 0) + m / 12; S.pensionPay = Math.max(S.pensionPay || 0, real);
+    if (!was && pensionVested()) log(`Vested in the public pension after ${PENSION_VEST} years: it pays when you retire.`, 'mile');
+  }
+}
+
+// i2-a21: why a money line cost what it did (lines that don't carry their own reason get one here)
+function lineWhy(l, f, j){
+  const home = HOMES[S.home], car = CARS[S.car];
+  if (l === 'Social Security') return 'Your Social Security check, paid weekly. It grows with the years you worked and rises with prices.';
+  if (l === 'Pension') return 'Your public pension: you vested by working enough years in a public job.';
+  if (l === '401(k) withdrawal') return 'In retirement about 4% of your 401(k) comes out each year.';
+  if (/^Paycheck/.test(l) && j) return `${j.title}: ${wk(payNow(j))}${f.payMult ? ', plus 20% for working extra hours' : ''}${S.raise > 1.005 ? `, with ${Math.round((S.raise - 1) * 100)}% in raises` : ''}. Pay grows about 2.5% a year.`;
+  if (l === 'Mortgage') return `Your ${home.name.toLowerCase()}: the payment was locked in when you bought (or refinanced).`;
+  if (l === 'Rent') return `Rent on the ${home.name.replace(/^Rented /, '').toLowerCase()}. Rents rise with prices, about 3% a year.`;
+  if (/^Food & utilities/.test(l)) return `Groceries, power and water${/stocked/.test(l) ? `, with groceries ${STOCK_OFF*100}% off from a stock-up run` : ''}${skillLv('cook') ? `, ${skillLv('cook') * 4}% less because you cook` : ''}.`;
+  if (l === 'Insurance & phone') return 'Your insurance (set on the insurance sheet) and your phone plan.';
+  if (/^Higher living costs/.test(l)) return 'Hard mode: rent, food and insurance cost 10% more.';
+  if (/^Vehicle tabs/.test(l)) return 'Every January: about 1% of what your vehicle is worth, at least $60.';
+  if (/^Gas \(/.test(l)) return `${commuteOneWay() ? `${commuteOneWay()} miles each way${driveDays() < 1 ? `, ${Math.round(driveDays() * 5)} days a week` : ''}${carpooling() ? ', half of it with the carpool' : ''}, plus errands` : 'Errands around town'}, at ${car.mpg} mpg.`;
+  if (l === 'Dog food & vet') return 'Food and the vet for your dog.';
+  if (l === 'Date nights') return 'Time out with your partner.';
+  if (/^Partner's paycheck/.test(l)) return 'Your partner works part-time until 65.';
+  if (/^Kids? ?/.test(l) && /^Kid/.test(l)) return `About ${fmtc(KID_COST)} a month for each kid at home${commuteOneWay() >= 20 ? `, plus ${fmtc(KID_CARE_COMMUTE)} of childcare because you commute 20+ miles` : ''}.`;
+  if (l === 'Health care') return age() >= 65 ? 'Health care costs more from 65.' : 'Health care costs start at 50.';
+  if (l === 'Long-term care insurance') return 'A monthly premium so care late in life is covered.';
+  if (l === (FOCUS[S.focus] || {}).name) return `Your focus this week, ${l}, costs a little.`;
+  return '';
+}
 function weekTick(auto){
   const L = LENGTHS[S.len], m = W, k = 0.28;
   const f = FOCUS[S.focus] || FOCUS.rest, j = S.retired ? null : job();
@@ -140,10 +198,12 @@ function weekTick(auto){
   // ---- money (constants are monthly; m converts to one week) ----
   let gross = 0;
   if (S.retired) {
-    gross = ssPay()*m; lines.push(['Social Security', gross, 'Your Social Security check, paid weekly. It rises with prices.']);
-    if (S.k401 > 0) { const w = Math.min(S.k401, S.k401 * 0.04 * m / 12); S.k401 -= w; gross += w; lines.push(['401(k) withdrawal', w, 'In retirement about 4% of your 401(k) comes out each year.']); }
+    gross = ssPay()*m; lines.push(['Social Security', gross]);
+    if (pensionVested()) { const p = pensionPay()*m; gross += p; lines.push(['Pension', p]); }
+    if (S.k401 > 0) { const w = Math.min(S.k401, S.k401 * 0.04 * m / 12); S.k401 -= w; gross += w; lines.push(['401(k) withdrawal', w]); }
   }
-  else if (j) { gross = payNow(j) * m * (f.payMult||1); lines.push([`Paycheck${f.payMult?' + overtime':''}`, gross, `${j.title}: ${wk(payNow(j))}${f.payMult ? ', plus 20% for working extra hours' : ''}${S.raise > 1.005 ? `, with ${Math.round((S.raise - 1) * 100)}% in raises` : ''}. Pay grows about 2.5% a year.`]); }
+  else if (j) { gross = payNow(j) * m * (f.payMult||1); lines.push([`Paycheck${f.payMult?' + overtime':''}`, gross]); }
+  if (j) workYear(j, m);                           // i3-a24/a25: years worked count toward Social Security and a public pension
   let k401 = 0;
   if (j && !S.retired && S.k401rate) {           // pre-tax contribution, with a 3% employer match at 5% or more
     k401 = gross * K401[S.k401rate]; lines.push(['401(k) contribution', -k401, `You save ${K401[S.k401rate]*100}% of your pay before taxes, and your employer adds 3% more. It's still yours: it counts in your net worth.`]);
@@ -155,19 +215,12 @@ function weekTick(auto){
   const truckTime = S.biz && S.biz.type === 'truck' && [3,4,5,6,7,8,9].includes(curMonth());
   if (f.hustle && !truckTime) { gig = currentGig(); lines.push([`Side hustle: ${gig.name}`, hustlePay(gig, Math.random()), `Gigs follow the seasons. ${S.hustleWeeks ? `${S.hustleWeeks} weeks of experience add ${Math.round((hustleXp() - 1) * 100)}% to your pay.` : 'Pay grows as you get good at it.'}`]); S.hustleWeeks = (S.hustleWeeks || 0) + 1; S.hustleLast = S.turn; }
   else if (S.hustleWeeks > 0 && S.turn - (S.hustleLast ?? S.turn) > HUSTLE_FADE_AFTER) S.hustleWeeks = Math.max(0, S.hustleWeeks - HUSTLE_FADE);   // B9: rusty after 6 months off
-  const home = HOMES[S.home], car = CARS[S.car];
-  const rentV = -(home.own && S.mortgage ? S.mortgage : cost(home.cost))*m;
-  lines.push([home.own ? 'Mortgage' : 'Rent', rentV, home.own ? `Your ${home.name.toLowerCase()}: the payment was locked in when you bought.` : `Rent on the ${home.name.replace(/^Rented /, '').toLowerCase()}. Rents rise with prices, about 3% a year.`]);
+  const home = HOMES[S.home];
   bizWeek(lines, notes);
+  moneyWeek(lines, notes);                         // round 3: property tax, home equity loan, index funds, wine futures
   const trip = tripWeek(lines);                    // this week's trip around the region, if one is planned
-  const stocked = S.turn < S.stockUntil;
-  const foodV = -cost(520 - (stocked ? GROCERY_SHARE * STOCK_OFF : 0))*(1 - skillLv('cook') * 0.04)*m, insV = -cost(160)*m;
-  lines.push([stocked ? 'Food & utilities (stocked up)' : 'Food & utilities', foodV, `Groceries, power and water${stocked ? `, with groceries ${STOCK_OFF*100}% off from a stock-up run` : ''}${skillLv('cook') ? `, ${skillLv('cook') * 4}% less because you cook` : ''}.`]);
-  lines.push(['Insurance & phone', insV, 'Car insurance and your phone plan.']);
-  if (mode() === 'hard') lines.push(['Higher living costs (Hard, +10%)', (rentV + foodV + insV) * HARD_LIVING, 'Hard mode: rent, food and insurance cost 10% more.']);   // R15: 10% of rent, food and insurance
-  { const y = new Date(S.date).getFullYear(); if (curMonth() === 0 && S.tabsYear !== y) { lines.push(['Vehicle tabs (DMV)', -vehicleTabs(), 'Every January: about 1% of what your vehicle is worth, at least $60.']); S.tabsYear = y; } }
-  const miles = (commuteOneWay()*2*WORKDAYS*commuteGasFactor() + ERRAND_MILES) * m;
-  lines.push([commuteOneWay() ? 'Gas (commute + errands)' : 'Gas (errands)', -miles*cost(GAS)/car.mpg, `${commuteOneWay() ? `${commuteOneWay()} miles each way${driveDays() < 1 ? `, ${Math.round(driveDays() * 5)} days a week` : ''}${carpooling() ? ', half of it with the carpool' : ''}, plus errands` : 'Errands around town'}, at ${car.mpg} mpg.`]);
+  lines.push(...billLines());                      // i3-a28: the regular bills, shared with the money outlook
+  { const y = new Date(S.date).getFullYear(); if (curMonth() === 0 && S.tabsYear !== y) { lines.push(['Vehicle tabs (DMV)', -vehicleTabs()]); S.tabsYear = y; } }
   if (S.loanLeft > 0) {
     const n = Math.min(m, S.loanLeft); lines.push(['Truck payment', -(S.loanPay || CARS.truck.pay)*n, `Five years of payments on the new pickup: about ${Math.max(0, Math.ceil((S.loanLeft - n) / W))} weeks to go.`]); S.loanLeft -= n;
     if (S.loanLeft < 1e-6) { S.loanLeft = 0; notes.push('🛻 The truck is paid off!'); S.paidOff = true; log('Made the last truck payment.'); }
@@ -176,13 +229,10 @@ function weekTick(auto){
     const n = Math.min(m, S.sloanLeft); lines.push(['Student loan', -S.sloanPay*n, `Paying back college: about ${Math.max(0, Math.ceil((S.sloanLeft - n) / W))} weeks to go.`]); S.sloanLeft -= n;
     if (S.sloanLeft < 1e-6) { S.sloanLeft = 0; notes.push('🎓 Your student loans are paid off!'); S.paidOff = true; log('Paid off the student loans.'); }
   }
-  if (S.dog) lines.push(['Dog food & vet', -cost(45)*m, 'Food and the vet for your dog.']);
-  if (S.partner) { lines.push(['Date nights', -cost(120)*m, 'Time out with your partner.']); if (age() < 65) lines.push(["Partner's paycheck (part-time)", 1400*S.wage*m, 'Your partner works part-time until 65.']); }
+  if (S.partner && age() < 65) lines.push(["Partner's paycheck (part-time)", 1400*S.wage*m]);
   const kidsHome = kidsAtHome();
-  if (kidsHome) lines.push([kidsHome > 1 ? `Kids (${kidsHome})` : 'Kid', -kidCost()*kidsHome*m, `About ${fmtc(KID_COST)} a month for each kid at home${commuteOneWay() >= 20 ? `, plus ${fmtc(KID_CARE_COMMUTE)} of childcare because you commute 20+ miles` : ''}.`]);
-  const a0 = age();
-  if (a0 >= 50) lines.push(['Health care', -cost(a0 >= 65 ? 420 : 180)*m, a0 >= 65 ? 'Health care costs more from 65.' : 'Health care costs start at 50.']);
-  if (f.cost) lines.push([f.name, -cost(f.cost)*m, `Your focus this week, ${f.name}, costs a little.`]);
+  if (f.cost) lines.push([f.name, -cost(f.cost)*m]);
+  planWeek(lines, notes);                          // i3-a30/a31/a33/a34: winters south, late-life care, probate and spare-room guests
   if (f.study && S.edu < 3) {
     lines.push(['Tuition', -cost(TUITION[S.edu])*m, `Classes at ${SCHOOL[S.edu]}, charged in weeks you Take classes.`]);
     S.studyProg += trip && trip.away ? TRIP_TIME : 1;     // R11: a trip week is 3/4 of a week of classes
@@ -191,8 +241,11 @@ function weekTick(auto){
   if (S.money < 0) lines.push(['Interest on debt', S.money * (mode() === 'relaxed' ? 0.01 : 0.015) * m, `You're below $0, so debt charges about ${mode() === 'relaxed' ? 1 : 1.5}% interest a month.`]);
   const net = lines.reduce((a,[,v]) => a + v, 0);
   S.money += net;
-  S.last = { lines: lines.filter(([,v]) => Math.round(v)), net };
-  if (home.own) S.equity = S.equity * Math.pow(1.025, 1/52) + home.equityPer * m;   // principal paid + 2.5%/yr appreciation
+  S.last = { lines: lines.filter(([,v]) => Math.round(v)).map(l => l[2] ? l : [l[0], l[1], lineWhy(l[0], f, j)]), net };
+  debtWeek(notes);                                 // i3-a26: long debt goes to collections
+  // i3-a21: the valley's home prices move with this year's market (2.5% a year on average); owners gain principal + appreciation
+  S.homeIdx = (S.homeIdx || 1) * Math.pow(1 + (S.homeGrow ?? 0.025), 1/52);
+  if (home.own) S.equity = S.equity * Math.pow(1 + (S.homeGrow ?? 0.025), 1/52) + home.equityPer * m;
   S.carValue = Math.max(500, S.carValue * Math.pow(0.99, m));
   S.k401 *= Math.pow(1.06, 1/52);
   S.col *= Math.pow(1 + COL_RATE, 1/52); S.wage *= Math.pow(1 + WAGE_RATE, 1/52);
@@ -221,6 +274,8 @@ function weekTick(auto){
   dh += home.happy * 0.4 + (S.partner ? 0.6 : 0) + (S.dog ? 0.4 : 0) + kidsHome * kidJoy() - (S.money < 0 ? 2 : 0);
   dc += kidsHome * 0.2;
   if (S.council) dc += 0.8;
+  if (awaySouth()) { dh = Math.max(dh, 0.5); dH = Math.max(dH, 0.3); dc -= 1.2; }   // i3-a30: sun holds you up, but town forgets you a little
+  if (S.care && CARE[S.care]) { const cr = CARE[S.care]; dh += cr.happy; dH += cr.health; dc += cr.comm; }   // i3-a31
   // worn down: pushing through low health with overtime or side hustles makes it worse, fast
   if (S.health < 35 && (S.focus === 'work' || S.focus === 'hustle')) dH -= 3.2;
   if (mode() === 'relaxed') { if (dh < 0) dh *= 0.6; if (dH < 0) dH *= 0.6; if (dc < 0) dc *= 0.6; }
@@ -243,8 +298,9 @@ function weekTick(auto){
 
   // ---- maybe an event this week ----
   const dice = eventDice();         // R8: events roll their own dice, so a weekly challenge brings everyone the same events
-  let ev = S.noEvents ? null : rollEvent(curMonth(), trip);   // town, road and work events, paced by category
+  let ev = S.noEvents || awaySouth() ? null : rollEvent(curMonth(), trip);   // i3-a30: nothing happens in town while you're in Arizona   // town, road and work events, paced by category
   dice.done();
+  { const due = S.noEvents ? null : takeDue(); if (due) ev = due; }   // a harvest choice or a market drop comes first
   if (ev) {
     S.evCd[ev.title] = S.turn + (ev.yr ? 40 : 8);
     { const pl = eventPlace(ev); S.evPins = [{ t: ev.title, ic: ev.ic, m: pl[0], k: pl[1], turn: S.turn + 1, r: '' }, ...(S.evPins || [])].slice(0, 12); }
@@ -297,9 +353,10 @@ function weekTick(auto){
   }
   if (!ending && S.turn >= L.turns) ending = `${L.label} in the Burg is in the books.`;
   const debtEnd = mode() === 'hard' ? -25000 : -40000;
-  if (!ending && mode() !== 'relaxed' && S.money < debtEnd) ending = `Buried in debt, ${S.name} packed up and left Waitsburg.`;
+  let debt = false;
+  if (!ending && mode() !== 'relaxed' && S.money < debtEnd) { ending = `Buried in debt, ${S.name} packed up and left Waitsburg.`; debt = true; }
   if (mode() === 'relaxed' && S.money < -40000) S.money = -40000;   // Relaxed: a debt counselor stops the slide
-  return { ev, notes, ending, review };
+  return { ev, notes, ending, review, debt };
 }
 
 function deltaChips(before){
