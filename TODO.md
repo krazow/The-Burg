@@ -5503,6 +5503,84 @@ old ones.
 
 </details>
 
+## Ideas round 67 (pick on the build board)
+
+64 ideas. Details: [docs/ideas/round-67.md](docs/ideas/round-67.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 67: Tying the new systems together</b> (35 ideas)</summary>
+
+- [ ] 🔴 **i67-a01** Outlook counts the 401(k) draw in retirement (S)
+- [ ] 🔴 **i67-a02** Outlook catches up with the jobs build (M)
+- [ ] 🔴 **i67-a03** Public jobs show their pension on the board and the offer (S)
+- [ ] 🔴 **i67-a04** Teachers and federal jobs earn a pension too (S)
+- [ ] 🔴 **i67-a05** Before you buy: the outlook checks big purchases (M)
+- [ ] 🔴 **i67-a06** Sim bots use the new money systems (M)
+- [ ] 🟠 **i67-a07** Sim checks for the new money numbers (S)
+- [ ] 🟠 **i67-a08** Warn before leaving a pension job months short of vesting (S)
+- [ ] 🟠 **i67-a09** The banker's sit-down shows the new money (S)
+- [ ] 🟠 **i67-a10** 'Why' lines that match the new bills (S)
+- [ ] 🟠 **i67-a11** Next-step hints for the new systems (S)
+- [ ] 🟠 **i67-a12** A collections countdown (S)
+- [ ] 🟠 **i67-a13** Auto stops before a big bill (S)
+- [ ] 🟠 **i67-a14** Focus preview shows next week's big bills (S)
+- [ ] 🟠 **i67-a15** The lender wants full coverage on a financed truck (S)
+- [ ] 🟠 **i67-a16** The Buy sheet shows the full cost of owning (S)
+- [ ] 🟠 **i67-a17** The bank calls when rates drop (M)
+- [ ] 🟠 **i67-a18** Fold debt into a home equity loan before collections (M)
+- [ ] 🟠 **i67-a19** One insurance sheet for everything you carry (M)
+- [ ] 🟠 **i67-a20** Farmhouse owners graze their own ground (S)
+- [ ] 🟡 **i67-a21** A farm tax break for working ground (S)
+- [ ] 🟠 **i67-a22** The 401(k) rides the market too (M)
+- [ ] 🟠 **i67-a23** Move money from funds to cover a dip (S)
+- [ ] 🟠 **i67-a24** Debt follows you into the clearance check (S)
+- [ ] 🟠 **i67-a25** A will passes the family business (M)
+- [ ] 🟠 **i67-a26** Claims show on the insurance sheet (S)
+- [ ] 🟠 **i67-a27** Badges for the new money systems (S)
+- [ ] 🟠 **i67-a28** Money milestones in the life story (S)
+- [ ] 🔴 **i67-a29** Help: one money and planning page with plain words (M)
+- [ ] 🟠 **i67-a30** An optional money tour in the tutorial (S)
+- [ ] 🟠 **i67-a31** What's new lists the money and retirement update (S)
+- [ ] 🟡 **i67-a32** The Legal Cupboard's paperwork checkup (S)
+- [ ] 🟡 **i67-a33** Insurance office staff get a discount (S)
+- [ ] 🟡 **i67-a34** Wine-making students read the vintage (S)
+- [ ] 🟡 **i67-a35** A cash offer on your house in a hot year (M)
+
+</details>
+
+<details><summary><b>Ideas 67: Spring and summer</b> (29 ideas)</summary>
+
+- [ ] 🔴 **i67-b01** Last day of school: the half-day Friday (S)
+- [ ] 🟠 **i67-b02** Swallows build a nest over the porch light (S)
+- [ ] 🟡 **i67-b03** The mosquito truck on summer nights (S)
+- [ ] 🟠 **i67-b04** A rattlesnake on the trail (S)
+- [ ] 🟡 **i67-b05** Foxtails and hot pavement: summer with a dog (S)
+- [ ] 🔴 **i67-b06** Swamp cooler or a window unit before July (M)
+- [ ] 🟡 **i67-b07** The longest evening of the year (S)
+- [ ] 🔴 **i67-b08** Fireworks ban in a dry year (M)
+- [ ] 🟠 **i67-b09** Fire camp sets up at the fairgrounds (M)
+- [ ] 🔴 **i67-b10** Rock picking, moving pipe, babysitting: more teen summer jobs (S)
+- [ ] 🟠 **i67-b11** A snow-cone stand at the ballfield (S)
+- [ ] 🟠 **i67-b12** Little League all-stars: three July weekends on the road (M)
+- [ ] 🔴 **i67-b13** Camping weekends: three campgrounds, three seasons (L)
+- [ ] 🟡 **i67-b14** Kite day on the windy hill (S)
+- [ ] 🟠 **i67-b15** A grasshopper summer (M)
+- [ ] 🟠 **i67-b16** Ice cream on the bench after supper (S)
+- [ ] 🔴 **i67-b17** Fourth of July as a planned day (M)
+- [ ] 🟠 **i67-b18** A power outage on the hottest night (S)
+- [ ] 🟡 **i67-b19** A fawn in the tall grass: leave it be (S)
+- [ ] 🟠 **i67-b20** May frost warning: cover the starts (S)
+- [ ] 🟡 **i67-b21** The neighborhood kids find your sprinkler (S)
+- [ ] 🟠 **i67-b22** One apricot tree, one week of everything (S)
+- [ ] 🟡 **i67-b23** A permitted field burn drifts into town (S)
+- [ ] 🟡 **i67-b24** Your teen at the district track meet (S)
+- [ ] 🟠 **i67-b25** Sidewalk tables come out in May (S)
+- [ ] 🟠 **i67-b26** Spring seeding on the wheat lease: plant early or wait (M)
+- [ ] 🟡 **i67-b27** The trampoline ends up in the neighbor's yard (S)
+- [ ] 🟠 **i67-b28** No lifeguards this summer: the pool may not open (S)
+- [ ] 🟡 **i67-b29** Thunder at the ballgame: everybody to the cars (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
