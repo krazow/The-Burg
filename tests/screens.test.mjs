@@ -109,9 +109,10 @@ for (const [label, w, h, nightXL] of SIZES) {
     ['skip-options', async () => { await page.evaluate(() => { closeSheet(); skipSheet(); }); }],
     ['focus-plan', async () => { await page.evaluate(() => { closeSheet(); S.plan = ['work', 'community']; planSheet(); }); }],
     ['life-undo', async () => { await page.evaluate(() => { closeSheet(); S.plan = []; tab = 'life'; render(); });
-      // the Life tab is long (round 75 added the weather card): let the tab's slide-in finish and center the button before tapping it
-      await page.waitForFunction(() => !document.querySelector('#main').getAnimations().some(x => x.playState === 'running'), null, { timeout: 5000 }).catch(() => {});
-      await page.evaluate(() => document.querySelector('[data-k401="1"]').scrollIntoView({ block: 'center' })); await page.click('[data-k401="1"]'); await page.waitForSelector('#undo'); await page.evaluate(() => { tab = 'home'; render(); }); await page.evaluate(() => { tab = 'life'; render(); }); }],
+      // the Life tab is long (round 75 added the weather card), and in CI's headless shell Playwright's tap on this button far down
+      // the page kept landing on the header, the nav or the text above it (no cards overlap). Center it and send the tap to the
+      // button itself: this step is about the undo card it brings up, not about where the button sits.
+      await page.evaluate(() => document.querySelector('[data-k401="1"]').scrollIntoView({ block: 'center' })); await page.locator('[data-k401="1"]').dispatchEvent('click'); await page.waitForSelector('#undo'); await page.evaluate(() => { tab = 'home'; render(); }); await page.evaluate(() => { tab = 'life'; render(); }); }],
     ['menu', async () => { await page.evaluate(() => { tab = 'home'; render(); }); await page.click('[data-tab=home]'); await page.evaluate(() => closeSheet()); await page.click('#main .maptog button:nth-child(1)'); await page.click('[data-tab=menu]'); await page.waitForTimeout(300); }],
     ['settings', async () => { await page.click('#sheet #settings'); await page.waitForTimeout(200); }],
     // i2 clarity: the badge card, why lines, the recap, a big choice and an open word meaning
