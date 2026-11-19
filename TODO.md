@@ -17,12 +17,13 @@ added, finished or re-prioritized, both change in the same session.
 
 ---
 
-## Status (Nov 19, 2026)
+## Status (Nov 19, 2026, evening)
 
 - **Live:** 0.2.0 at [krazow.github.io/The-Burg](https://krazow.github.io/The-Burg/) ([release](https://github.com/krazow/The-Burg/releases/tag/v0.2.0)).
-- **Merged, not released yet:** 0.2.1 hotfixes H1–H3 ([#153](https://github.com/krazow/The-Burg/pull/153)): safe saves, confirm before deleting a life, separate beta saves.
-- **Building now:** your 61 picks from Ideas 2 and Ideas 3, in six pull requests (settings and feel, clarity, flow, jobs and school, money, retirement). Each is marked "Building" below.
-- **Ideas:** 66 rounds on this list. New rounds are paused while the picks are built.
+- **Merged, not released yet:** hotfixes H1–H3, all 61 picks for 0.2.1, and 109 more picks from this evening: economy balance (31), weather and hard years (33), health and aging (14), the 30-event Waitsburg pack and a tutorial refresh.
+- **Next:** release. Before that, round 69's release-readiness items: changelog (i69-a02), What's new (i69-a01), the property-tax warning for old saves (i69-a06). Nine jobs are now beaten on every count by another job after the minimum-wage change and need a pay or perk tweak.
+- **Ideas:** 75 rounds; new rounds are paused.
+- **Finished work** is summarized in [Work Done](https://claude.ai/artifact/2EqC2tqhaJ56sKB4PtTV52).
 
 ## Next up: P1, in order
 
