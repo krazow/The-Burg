@@ -4753,6 +4753,83 @@ old ones.
 
 </details>
 
+## Ideas round 57 (pick on the build board)
+
+63 ideas. Details: [docs/ideas/round-57.md](docs/ideas/round-57.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 57: Data safety and privacy</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i57-a01** Beta lives live under their own keys, apart from the real game (S)
+- [ ] 🔴 **i57-a02** A backup life is checked field by field before it is kept (M)
+- [ ] 🟠 **i57-a03** Restored lives keep only fields the game knows (S)
+- [ ] 🟠 **i57-a04** A huge backup file is turned away before it is read (S)
+- [ ] 🟠 **i57-a05** A compressed backup code can only unpack to a set size (S)
+- [ ] 🔴 **i57-a06** Every Journal line shows as plain text, whatever its source (S)
+- [ ] 🟠 **i57-a07** The "Last report card" line can't carry markup (S)
+- [ ] 🟡 **i57-a08** esc() also covers the single quote (S)
+- [ ] 🟠 **i57-a09** Map pins lose their inline onclick handlers (M)
+- [ ] 🔴 **i57-a10** A content security policy for the page (S)
+- [ ] 🟠 **i57-a11** A test that a fresh game only talks to itself (S)
+- [ ] 🟡 **i57-a12** No referrer leaves the game (S)
+- [ ] 🔴 **i57-a13** A hotel Wi-Fi login page is never saved as the game (S)
+- [ ] 🟡 **i57-a14** Offline files are checked against the release's fingerprints (M)
+- [ ] 🔴 **i57-a15** A broken save is kept aside, not overwritten (S)
+- [ ] 🟠 **i57-a16** Each life saves under its own key (M)
+- [ ] 🟠 **i57-a17** The last good save is kept one step back (S)
+- [ ] 🔴 **i57-a18** Restore says "restored" only when the lives really landed (S)
+- [ ] 🟠 **i57-a19** Undo for "Replace all my lives" (S)
+- [ ] 🟡 **i57-a20** Best scores from a backup must be real scores (S)
+- [ ] 🟡 **i57-a21** A test that a backup can't touch shared object shapes (S)
+- [ ] 🟠 **i57-a22** Ask the browser to keep the lives (persistent storage) (S)
+- [ ] 🔴 **i57-a23** Help: "What this game keeps on your device" (S)
+- [ ] 🟡 **i57-a24** Names lose invisible and direction-flipping characters (S)
+- [ ] 🟡 **i57-a25** The backup code box is filled as text (S)
+- [ ] 🟠 **i57-a26** Event text escapes the values put into it (M)
+- [ ] 🟡 **i57-a27** A test that flags raw text in page templates (M)
+- [ ] 🔴 **i57-a28** NPC text from players is shown only as plain text (S)
+- [ ] 🟠 **i57-a29** The NPC draft stays on the device and goes away when sent (S)
+- [ ] 🟠 **i57-a30** NPC sends carry only the answers (S)
+- [ ] 🟠 **i57-a31** "Report this character" on every NPC card (S)
+- [ ] 🟡 **i57-a32** The 18+ gate for NPC submissions is remembered (S)
+
+</details>
+
+<details><summary><b>Ideas 57: Growing up in Waitsburg</b> (31 ideas)</summary>
+
+- [ ] 🔴 **i57-b01** Five quick scenes before 18: the Growing up prologue (L)
+- [ ] 🔴 **i57-b02** A tight budget for the past, checked by the sim (S)
+- [ ] 🔴 **i57-b03** Age 5: first day at the K–12, who you sit with (M)
+- [ ] 🟠 **i57-b04** Age 9: swim team, snack bar or the high dive (M)
+- [ ] 🔴 **i57-b05** Age 11: a summer on Grandpa's wheat place (M)
+- [ ] 🔴 **i57-b06** Age 12: your best friend's family moves to Spokane (M)
+- [ ] 🟠 **i57-b07** Age 15: your first job, picked from four (M)
+- [ ] 🟠 **i57-b08** The first paycheck: save it or spend it (S)
+- [ ] 🟡 **i57-b09** Fourth-grade field trip to the state park by the river (S)
+- [ ] 🟠 **i57-b10** Age 8: Celebration Days from a float or the curb (S)
+- [ ] 🟠 **i57-b11** Age 16: the night on the grain elevator (M)
+- [ ] 🟡 **i57-b12** The dog you grew up with (S)
+- [ ] 🟠 **i57-b13** Freshman fall: football, FFA or band (M)
+- [ ] 🔴 **i57-b14** Skipped scenes come back as Rest-week flashbacks (M)
+- [ ] 🟠 **i57-b15** Start at 18, or 'Surprise me' with a balanced childhood (S)
+- [ ] 🔴 **i57-b16** 'Who you were at 18': a summary card on day one (S)
+- [ ] 🟠 **i57-b17** Childhood lines in the Journal, dated from 2014 (S)
+- [ ] 🟠 **i57-b18** Each starting background gets its own scenes (M)
+- [ ] 🟠 **i57-b19** Age 13: you laughed along when they teased Sam (M)
+- [ ] 🟡 **i57-b20** Your first crush is still in town (S)
+- [ ] 🟠 **i57-b21** Summer reading at the library: a head start on classes (S)
+- [ ] 🟠 **i57-b22** Age 16: the year your dad got laid off (M)
+- [ ] 🟠 **i57-b23** Learning to drive in Grandpa's 1998 pickup (S)
+- [ ] 🟡 **i57-b24** Your class of 2027: a roster other features can use (S)
+- [ ] 🟠 **i57-b25** Full circle: one late-life echo per scene (M)
+- [ ] 🟡 **i57-b26** The owner who gave you your first job (S)
+- [ ] 🟡 **i57-b27** Replay a childhood from the title screen (L)
+- [ ] 🟡 **i57-b28** Who raised you: a flavor choice with no score effect (S)
+- [ ] 🟡 **i57-b29** The broken arm from the monkey bars (S)
+- [ ] 🟡 **i57-b30** Eighth-grade trip over the mountains (S)
+- [ ] 🟠 **i57-b31** Your heir's childhood is the one you gave them (M)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
