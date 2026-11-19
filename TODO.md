@@ -3462,6 +3462,160 @@ old ones.
 
 </details>
 
+## Ideas round 40 (pick on the build board)
+
+60 ideas. Details: [docs/ideas/round-40.md](docs/ideas/round-40.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 40: Road event pack 2</b> (30 ideas)</summary>
+
+- [ ] 🟡 **i40-a01** Highway 12: Road spray and an empty washer tank (S)
+- [ ] 🟡 **i40-a02** Highway 12: A hitchhiker at the Lowden turnoff (S)
+- [ ] 🔴 **i40-a03** Highway 12: Black ice puts you in the ditch (M)
+- [ ] 🟠 **i40-a04** Highway 12: The check-engine light on the beater (S)
+- [ ] 🟡 **i40-a05** Highway 12: The low-fuel light past Touchet (S)
+- [ ] 🟡 **i40-a06** Highway 12: A radio call-in contest (S)
+- [ ] 🟡 **i40-a07** Highway 12: A garage-sale sign in Touchet (S)
+- [ ] 🟠 **i40-a08** Highway 12: Hay bales spill off a pickup ahead (S)
+- [ ] 🔴 **i40-a09** Commute: The drive starts to feel endless (M)
+- [ ] 🟡 **i40-a10** Commute: The boss asks you to grab parts on the way in (S)
+- [ ] 🟠 **i40-a11** Commute: A rest-area nap after a night shift (S)
+- [ ] 🟠 **i40-a12** Trip: You forgot your wallet at home (S)
+- [ ] 🟡 **i40-a13** Trip: The kids get carsick (S)
+- [ ] 🟠 **i40-a14** Trip: Your trip buddy cancels last minute (M)
+- [ ] 🟡 **i40-a15** Walla Walla: A youth team car wash (S)
+- [ ] 🟡 **i40-a16** Walla Walla: A sidewalk chalk festival downtown (S)
+- [ ] 🟡 **i40-a17** Walla Walla: Free day at the fort museum (S)
+- [ ] 🟡 **i40-a18** Walla Walla: Open mic night at a coffee house (S)
+- [ ] 🟡 **i40-a19** Dayton: A summer concert on the courthouse lawn (S)
+- [ ] 🟡 **i40-a20** Dayton: An elk herd on the Bluewood road (S)
+- [ ] 🟠 **i40-a21** Dayton: The 4-H auction at the county fair (M)
+- [ ] 🟡 **i40-a22** Kennewick: Photos with the mall Santa (S)
+- [ ] 🟠 **i40-a23** Kennewick: A big-name concert at the arena (S)
+- [ ] 🔴 **i40-a24** Kennewick: Job fair at the convention center (S)
+- [ ] 🟠 **i40-a25** Kennewick: A fender-bender in the big-box lot (M)
+- [ ] 🟡 **i40-a26** Kennewick: A water park day in August (S)
+- [ ] 🟡 **i40-a27** Pasco: Help a lost driver, in Spanish (S)
+- [ ] 🟠 **i40-a28** Pasco: Tamales from a church sale (S)
+- [ ] 🟡 **i40-a29** Richland: Family science night at the lab (S)
+- [ ] 🟡 **i40-a30** Wallula: Peaches and melons from a pickup bed (S)
+
+</details>
+
+<details><summary><b>Ideas 40: Work event pack 2</b> (30 ideas)</summary>
+
+- [ ] 🟠 **i40-b01** [Field] The ski lift stops with riders in the wind (S)
+- [ ] 🟡 **i40-b02** [Field] You lose your dosimeter badge at Hanford (S)
+- [ ] 🟡 **i40-b03** [Field] A lost bag on the carousel (S)
+- [ ] 🟠 **i40-b04** [Field] The line speeds up for a big order (S)
+- [ ] 🟡 **i40-b05** [Field] Frost watch in the vineyard (S)
+- [ ] 🔴 **i40-b06** [Office] A storm-claim rush after hail (S)
+- [ ] 🟡 **i40-b07** [Office] A student asks you for a letter (S)
+- [ ] 🔴 **i40-b08** [Office] A grant deadline at the lab (M)
+- [ ] 🟡 **i40-b09** [Office] A loan you have to turn down (S)
+- [ ] 🟠 **i40-b10** [Office] The year-end audit (S)
+- [ ] 🔴 **i40-b11** [Care] Working the holiday shift (S)
+- [ ] 🟠 **i40-b12** [Care] Run the school flu-shot clinic (M)
+- [ ] 🟠 **i40-b13** [Care] A student melts down in the hall (S)
+- [ ] 🟠 **i40-b14** [Care] Night shifts wreck your sleep (M)
+- [ ] 🟡 **i40-b15** [Care] Your CPR card is due (M)
+- [ ] 🟠 **i40-b16** [Service] A grease fire on the flat-top (S)
+- [ ] 🟡 **i40-b17** [Service] Inventory count night (S)
+- [ ] 🔴 **i40-b18** [Service] A shoplifter at your register (S)
+- [ ] 🟡 **i40-b19** [Service] A tour bus stops for lunch (S)
+- [ ] 🟠 **i40-b20** [Service] A regular stops coming in (S)
+- [ ] 🟠 **i40-b21** [Trades] Your drive-time clock runs out an hour from home (S)
+- [ ] 🟡 **i40-b22** [Trades] Called in on your day off (S)
+- [ ] 🟠 **i40-b23** [Trades] A customer's car comes back (S)
+- [ ] 🟡 **i40-b24** [Trades] An inmate asks you to mail a letter (S)
+- [ ] 🟠 **i40-b25** [Trades] The dust alarm at the grain elevator (S)
+- [ ] 🟠 **i40-b26** [Waitsburg business] The espresso machine dies on a Saturday (S)
+- [ ] 🔴 **i40-b27** [Waitsburg business] A council member wants your story pulled (M)
+- [ ] 🟡 **i40-b28** [Waitsburg business] Your cash drawer is $40 short (S)
+- [ ] 🔴 **i40-b29** [Waitsburg business] The builder lets you lead a small job (S)
+- [ ] 🟡 **i40-b30** [Waitsburg business] Soil-sample season for the ag tech (S)
+
+</details>
+
+## Ideas round 41 (pick on the build board)
+
+66 ideas. Details: [docs/ideas/round-41.md](docs/ideas/round-41.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 41: Waitsburg businesses, deeper</b> (34 ideas)</summary>
+
+- [ ] 🔴 **i41-a01** [Howlin' Bean] Dee, the morning barista who learns your order (S)
+- [ ] 🟠 **i41-a02** [Howlin' Bean] Barista to shift lead to opening manager (M)
+- [ ] 🟡 **i41-a03** [Howlin' Bean] The seasonal drink board (S)
+- [ ] 🟠 **i41-a04** [Simply Shavings] The winter-break build: a key to the shop (M)
+- [ ] 🟡 **i41-a05** [Simply Shavings] December gift market: sell what you made (S)
+- [ ] 🟠 **i41-a06** [Simply Shavings] The shop changes hands in a long game (M)
+- [ ] 🔴 **i41-a07** [Little Kiss] The same table every anniversary (S)
+- [ ] 🟡 **i41-a08** [Little Kiss] Tomato season and winter braise menus (S)
+- [ ] 🟠 **i41-a09** [Little Kiss] Dishwasher to prep cook to pasta maker (M)
+- [ ] 🔴 **i41-a10** [Rouge] Jo at the chair: the town's news, early (S)
+- [ ] 🟡 **i41-a11** [Rouge] Prom and wedding season: book ahead (S)
+- [ ] 🟠 **i41-a12** [Rouge] Shampoo assistant to licensed stylist (M)
+- [ ] 🟠 **i41-a13** [Legal Cupboard] Your will goes out of date (S)
+- [ ] 🟡 **i41-a14** [Legal Cupboard] Front desk to paralegal (M)
+- [ ] 🟡 **i41-a15** [Junque Sisters] Bev and Lou's running argument (S)
+- [ ] 🟠 **i41-a16** [Junque Sisters] Consign your things when you move (S)
+- [ ] 🟡 **i41-a17** [Junque Sisters] The March reopening estate sale (S)
+- [ ] 🟠 **i41-a18** [Standard Bearer Bank] Teller to head teller to loan officer (M)
+- [ ] 🟡 **i41-a19** [Standard Bearer Bank] The lollipop jar and a kid's first account (S)
+- [ ] 🟠 **i41-a20** [Standard Bearer Bank] Branch hours shrink in a long game (M)
+- [ ] 🟡 **i41-a21** [Grenache & Gather] A guest chef a month (S)
+- [ ] 🟠 **i41-a22** [Grenache & Gather] Pour at Grenache Fest: the volunteer crew (S)
+- [ ] 🔴 **i41-a23** [Burg Basket] Earl at register two, thirty years in (S)
+- [ ] 🟠 **i41-a24** [Burg Basket] Clerk to produce lead to store manager (M)
+- [ ] 🟡 **i41-a25** [Burg Basket] Holiday ham and turkey orders (S)
+- [ ] 🟠 **i41-a26** [Royal Brick] The guests upstairs (S)
+- [ ] 🟡 **i41-a27** [Mr. Q's] Brisket's gone by one (S)
+- [ ] 🟠 **i41-a28** [Mr. Q's] Weekend smoker hand to pitmaster (M)
+- [ ] 🟡 **i41-a29** [Laughing Lad] Name the fall seasonal (S)
+- [ ] 🟡 **i41-a30** [Laughing Lad] Grill cook to brewer's helper (M)
+- [ ] 🟠 **i41-a31** [Bourbon Gulch] Line cook to kitchen manager (M)
+- [ ] 🟡 **i41-a32** [Bourbon Gulch] Friday nights: the team eats here (S)
+- [ ] 🟠 **i41-a33** [McGrub & Grain] Ag tech to field agronomist (M)
+- [ ] 🔴 **i41-a34** [Sharp Point Builders] Apprentice to journeyman to your own crew (L)
+
+</details>
+
+<details><summary><b>Ideas 41: Each job, deeper</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i41-b01** [Registered nurse] Shift report at 7: the handoff that matters (S)
+- [ ] 🟠 **i41-b02** [Registered nurse] Floated to the ER: extra pay, extra strain (S)
+- [ ] 🟡 **i41-b03** [Registered nurse] Paper charts give way to tablets over the decades (M)
+- [ ] 🔴 **i41-b04** [Barista] The Saturday rush line at the coffee shop (M)
+- [ ] 🟡 **i41-b05** [Barista] Know the regulars' orders (S)
+- [ ] 🟠 **i41-b06** [Barista] Shift lead, then the keys to open (S)
+- [ ] 🔴 **i41-b07** [Reporter] Tuesday night: the paper goes to the printer (S)
+- [ ] 🟠 **i41-b08** [Reporter] Your editor, the old hand, and the day they retire (M)
+- [ ] 🟡 **i41-b09** [Reporter] From darkroom to phone camera across the decades (S)
+- [ ] 🟠 **i41-b10** [Bank teller] Teller, head teller, personal banker (S)
+- [ ] 🟡 **i41-b11** [Bank teller] Harvest checks at the drive-up window (S)
+- [ ] 🔴 **i41-b12** [Trades apprentice] The foreman's Friday punch list (S)
+- [ ] 🟠 **i41-b13** [Trades apprentice] Journeyman card, then your own contractor license (M)
+- [ ] 🟠 **i41-b14** [Trades apprentice] A fall off the ladder (S)
+- [ ] 🟠 **i41-b15** [Grain elevator operator] Moisture meter calls at the scale (S)
+- [ ] 🟡 **i41-b16** [Grain elevator operator] Small elevators close, a big loader opens (M)
+- [ ] 🟠 **i41-b17** [Wheat farm hand] Truck, then the combine seat, then farm manager (S)
+- [ ] 🟡 **i41-b18** [Wheat farm hand] GPS autosteer arrives in the cab (S)
+- [ ] 🟠 **i41-b19** [Hospital nursing assistant] The resident you look after (M)
+- [ ] 🔴 **i41-b20** [Hospital nursing assistant] The hospital pays for nursing school (M)
+- [ ] 🟠 **i41-b21** [Auto mechanic] ASE patches on your shirt (M)
+- [ ] 🟠 **i41-b22** [Auto mechanic] The tool truck comes on Tuesdays (S)
+- [ ] 🟡 **i41-b23** [Auto mechanic] Carburetors, then computers, then electric cars (M)
+- [ ] 🔴 **i41-b24** [College professor] The tenure clock (L)
+- [ ] 🟡 **i41-b25** [College professor] Wednesday office hours (S)
+- [ ] 🟠 **i41-b26** [Truck driver] Buy your own rig: owner-operator (L)
+- [ ] 🟡 **i41-b27** [Truck driver] Paper logbook to electronic logs (S)
+- [ ] 🟡 **i41-b28** [Ski lift operator] First chair on a powder Saturday (S)
+- [ ] 🟡 **i41-b29** [Ski lift operator] Thin-snow winters over the decades (S)
+- [ ] 🟡 **i41-b30** [Ag technician] Drones and soil maps over the wheat (M)
+- [ ] 🟡 **i41-b31** [Grocery clerk] Truck day on Wednesdays, and the day-old shelf (S)
+- [ ] 🟠 **i41-b32** [Rail yard conductor] The extra board, then the engineer's seat (M)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
