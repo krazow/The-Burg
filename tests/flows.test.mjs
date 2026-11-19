@@ -123,10 +123,11 @@ await t.check('reaching 0 health sends you to the hospital, with a bill', async 
   assert((await S()).health === 30, 'health should reset to 30');
 });
 
-await t.check('falling below -$40,000 ends the game: you leave town', async () => {
+await t.check('falling below -$40,000 offers bankruptcy; leaving town ends the game', async () => {
   await life({ money: -40500 });
   await page.click('#end');
-  await clearSheets();
+  await page.waitForSelector(`${open} #bkfile`);
+  await page.click(`${open} #bkleave`);
   await page.waitForSelector(`${open} >> text=Buried in debt`);
   await page.click(`${open} #again`);
   await page.waitForSelector('#start');
@@ -183,7 +184,7 @@ await t.check('every event\'s every choice works and shows a result', async () =
   }
   assert(tried >= titles.length, `only ${tried} choices across ${titles.length} events`);
   const cats = await page.evaluate(() => ['road', 'work'].map(c => EVENTS.filter(e => e.cat === c).length));
-  assert(cats[0] === 30 && cats[1] === 30, `expected 30 road and 30 work events, got ${cats}`);
+  assert(cats[0] === 31 && cats[1] === 30, `expected 31 road and 30 work events, got ${cats}`);
   console.log(`     (${tried} choices across ${titles.length} events)`);
 });
 
@@ -533,6 +534,93 @@ await t.check('H2: Replace on a full board asks first, and Back changes nothing'
   await page.evaluate(() => { closeSheet(); localStorage.clear(); S = null; renderTitle(); });
 });
 
+
+/* ---------- round 3: money (insurance, housing, loans, investing, farm markets, debt help) ---------- */
+await t.check('i3-a27: filing for bankruptcy wipes the debt and keeps the life going, once', async () => {
+  await life({ money: -40500, car: 'truck', carValue: 30000, loanLeft: 30, loanPay: 640, k401: 5000, stocks: 2000 });
+  await page.click('#end');
+  await page.waitForSelector(`${open} #bkfile`);
+  const txt = await page.textContent('#sheet');
+  assert(/lose/.test(txt) && /401\(k\)/.test(txt) && /only do it once/.test(txt), txt.slice(0, 300));
+  await page.click(`${open} #bkfile`);
+  let s = await S();
+  assert(s.money === 0 && s.bk != null && s.car === 'beater' && s.loanLeft === 0 && s.stocks === 0 && s.k401 >= 5000 && !s.over, JSON.stringify({ m: s.money, bk: s.bk, car: s.car, k: s.k401 }));
+  assert(await page.$('#end'), 'the game should go on');
+  await page.evaluate(() => { S.money = -40500; });
+  await page.click('#end');
+  await clearSheets();
+  await page.waitForSelector(`${open} >> text=Buried in debt`);
+  assert(!(await page.$(`${open} #bkfile`)), 'bankruptcy is once a life');
+  await page.click(`${open} #again`);
+  await page.waitForSelector('#start');
+});
+
+await t.check('i3-a19: the insurance sheet changes coverage and the weekly bill', async () => {
+  await life({ jobId: 'farmhand', money: 5000 }, 'life');
+  assert((await page.textContent('#main')).includes('Insurance & phone'), 'no insurance card on Life');
+  await page.click('#inssheet');
+  await page.click(`${open} [data-ins="auto"][data-v="liab"]`);
+  await page.click(`${open} [data-ins="renters"][data-v="false"]`);
+  assert(await page.getAttribute(`${open} [data-ins="auto"][data-v="liab"]`, 'aria-pressed') === 'true', 'the choice should show as pressed');
+  await page.click(`${open} #ok`);
+  const s = await S();
+  assert(s.ins.auto === 'liab' && s.ins.renters === false, JSON.stringify(s.ins));
+  await page.click('[data-tab=home]'); await page.click('#end'); await clearSheets();
+  assert(near((await S()).last.lines.find(l => l[0] === 'Insurance & phone')[1], -(160 - 35 - 15) * 12 / 52), 'the bill should drop by $50 a month');
+});
+
+await t.check('i3-a21/a22/a23: the home card shows the market and rates; refinancing and borrowing against the house work', async () => {
+  await life({ jobId: 'farmhand', money: 20000, homeGrow: 0.07 }, 'life');
+  assert(/Hot/.test(await page.textContent('#main')), 'a hot market should show');
+  await page.click('[data-home="fixer"]');
+  assert(/hot/.test(await page.textContent('#sheet')), 'the buy sheet shows the market');
+  await page.click(`${open} #y`);
+  let s = await S();
+  assert(s.money === 20000 - Math.round(9000 * 1.05) - 300 && near(s.mortgage, 950 * 1.05) && s.mortRate === 6.5, JSON.stringify({ m: s.money, mort: s.mortgage }));
+  await page.evaluate(() => { S.rate = 5.25; S.equity = 40000; render(); });
+  await page.click('#refi'); await page.click(`${open} #y`);
+  s = await S();
+  assert(s.mortRate === 5.25 && s.mortgage < 950 * 1.05 * 0.9, `refi ${s.mortgage}`);
+  await page.click('#heloan');
+  await page.click(`${open} [data-he="20000"]`);
+  s = await S();
+  assert(s.heLeft === 120 && s.hePay > 200 && /Home equity loan/.test(await page.textContent('#main')), JSON.stringify({ he: s.heLeft, pay: s.hePay }));
+});
+
+await t.check('i3-a29/a17: index funds and wine futures from the Life tab', async () => {
+  await life({ jobId: 'farmhand', money: 9000, date: new Date(2027, 9, 4).getTime() }, 'life');
+  await page.click('[data-inv="5000"]');
+  await page.click('[data-inv="-1000"]');
+  await page.click('#wine');
+  const s = await S();
+  assert(s.stocks === 4000 && s.wine.length === 1 && s.money === 9000 - 4000 - 2500, JSON.stringify({ st: s.stocks, w: s.wine, m: s.money }));
+  assert(!(await page.$('#wine')) && /in on the 2027 vintage/.test(await page.textContent('#main')), 'one vintage a year');
+  await page.click('[data-inv="all"]');
+  assert((await S()).stocks === 0, 'sell all');
+});
+
+await t.check('i3-a15/a16: the harvest asks sell or store; stored wheat sells from the Life tab; crop insurance toggles', async () => {
+  await life({ jobId: 'farmhand', money: 10000, date: new Date(2027, 7, 2).getTime() }, 'life');
+  await page.evaluate(() => { startBiz('wheat'); S.noEvents = false; S.due = []; });
+  await page.click('#cropins');
+  assert((await S()).biz.ins === true, 'crop insurance should turn on');
+  await page.evaluate(() => { bizWeek([], []); showEvent(takeDue()); });
+  assert(/elevator/.test(await page.textContent('#sheet')), 'the harvest choice explains storing');
+  await page.click(`${open} [data-i="1"]`); await page.click(`${open} #ok`);
+  let s = await S();
+  assert(s.biz.stored > 0 && s.biz.crop === 0, JSON.stringify(s.biz));
+  await page.click('[data-tab=life]');
+  const m = s.money; await page.click('#sellwheat');
+  s = await S();
+  assert(s.biz.stored === 0 && s.money > m, 'selling stored wheat pays');
+});
+
+await t.check('i3-a18: a cattle herd shows on the Life tab and warns when nobody has checked it', async () => {
+  await life({ jobId: 'farmhand', money: 10000 }, 'life');
+  await page.evaluate(() => { startBiz('cattle'); S.biz.check = S.turn - 10; render(); });
+  const txt = await page.textContent('#main');
+  assert(/6 cows/.test(txt) && /Get outside/.test(txt), txt.slice(0, 200));
+});
 // ---- Retirement and planning (ideas round 3) ----
 await t.check('i3-a33/a28: the Life tab writes a will, opens the 13-week money outlook, and the legacy sheet reads the will', async () => {
   await life({ jobId: 'farmhand', money: 3000, ageMonths: 30 * 12 }, 'life', 'life');

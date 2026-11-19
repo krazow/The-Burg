@@ -380,14 +380,31 @@ function skillsCard(){
    🏪 YOUR OWN BUSINESS (#72): small, risky, can grow
    ============================================================ */
 const BIZ = {
-  wheat: { ic:'🌾', name:'Lease wheat ground', cost:6000, desc:'Lease 80 acres and hire it farmed. Pays once a year at harvest (August), more or less depending on the weather and prices. The lease runs 5 years, then renewing costs a quarter of the price.',
-    yearly:() => cost(6000) * (chance(0.15) ? 0.3 : 0.9 + Math.random() * 0.8), month:7 },
+  wheat: { ic:'🌾', name:'Lease wheat ground', cost:6000, desc:'Lease 80 acres and hire it farmed. The crop comes in each August, more or less depending on the weather: sell it at that summer\'s price or store it at the elevator and sell later. The lease runs 5 years, then renewing costs a quarter of the price.',
+    yearly:() => cost(6000) * wheatYield() * wheatPriceF(), month:7 },
   truck: { ic:'🚚', name:'Food truck', cost:9000, desc:'Weekends at the fairgrounds and events, April through October. Takes your Side hustle weeks; pays more with the Cook skill.',
     weekly:() => [3,4,5,6,7,8,9].includes(curMonth()) && S.focus === 'hustle' ? cost(1400) * (1 + skillLv('cook') * 0.15) * (0.7 + Math.random() * 0.6) * W : 0 },
   shop:  { ic:'🪚', name:'Woodworking shop', cost:2500, desc:'Make and sell furniture from your garage. Pays a little every week; more with the Handy skill.',
-    weekly:() => cost(180) * (1 + skillLv('handy') * 0.4) * (0.6 + Math.random() * 0.8) * W }
+    weekly:() => cost(180) * (1 + skillLv('handy') * 0.4) * (0.6 + Math.random() * 0.8) * W },
+  // i3-a18: a small herd that needs you outside: Get outside weeks count as checking on it
+  cattle:{ ic:'🐄', name:'Cattle in the foothills', cost:8000, desc:'Six cow-calf pairs on rented pasture in the Blue Mountain foothills. Hay costs money November through March, calves come in spring, and they sell at the October livestock auction. Get outside weeks count as checking the herd: go too long without one and cows get lost.' }
 };
-const bizValue = () => S.biz ? cost(BIZ[S.biz.type].cost) * 0.6 * (S.biz.dep ?? 1) : 0;
+// i3-a15: wheat prices. The yield is the weather; the price (per bushel, in 2027 dollars) is set each July for the new crop.
+const WHEAT_BASE = 7.5, WHEAT_STORE_FEE = 0.01, CROP_INS = 540, CROP_INS_YIELD = 0.9;
+const wheatPriceF = () => (S.wheatPrice || WHEAT_BASE) / WHEAT_BASE;
+// a bad year (15%) brings in 30% of a normal crop, or 90% with crop insurance (i3-a16); otherwise 90–170%
+function wheatYield(){ if (chance(0.15)) return S.biz && S.biz.ins ? CROP_INS_YIELD : 0.3; return 0.9 + Math.random() * 0.8; }
+const wheatPriceLabel = () => `$${(S.wheatPrice * S.col).toFixed(2)}/bushel`;
+const storedWheatValue = () => S.biz && S.biz.stored ? S.biz.stored * wheatPriceF() : 0;
+function sellStoredWheat(why = ''){
+  if (!S.biz || !S.biz.stored) return 0;
+  const v = storedWheatValue(); S.money += v; S.biz.earned += v; S.biz.stored = 0;
+  log(`Sold the stored wheat for ${fmt(v)} at ${wheatPriceLabel()}${why}.`, 'money');
+  return v;
+}
+const CATTLE_COWS = 6, CALF_PRICE = 1350, PASTURE = 120, HAY = 60;
+const herdChecked = (weeks = 6) => S.biz && S.turn - (S.biz.check ?? S.turn) < weeks;
+const bizValue = () => S.biz ? cost(BIZ[S.biz.type].cost) * 0.6 * (S.biz.dep ?? 1) * (S.biz.type === 'cattle' ? (S.biz.cows ?? CATTLE_COWS) / CATTLE_COWS : 1) : 0;
 const leaseCost = () => cost(BIZ.wheat.cost) * LEASE_RENEW;
 const leaseDue = () => !!(S.biz && S.biz.type === 'wheat' && S.biz.weeks >= (S.biz.lease ?? LEASE_WEEKS));
 function renewLease(){
@@ -402,21 +419,65 @@ function bizWeek(lines, notes){
   if (S.biz.type === 'wheat') {                    // R13: the lease runs 5 years, then it's renew or lose it
     const end = S.biz.lease ?? (S.biz.lease = LEASE_WEEKS);
     if (S.biz.weeks === end) { notes.push(`${b.ic} Your wheat lease is up. Renew it on the Life tab for ${fmt(leaseCost())} within ${LEASE_GRACE} weeks, or the landowner leases the ground to someone else.`); log('The wheat lease came up for renewal.'); }
-    if (S.biz.weeks >= end + LEASE_GRACE) { notes.push(`${b.ic} You didn't renew, so the wheat lease ended.`); log('The wheat lease ended.'); S.biz = null; return; }
+    if (S.biz.weeks >= end + LEASE_GRACE) { sellStoredWheat(' when the lease ended'); notes.push(`${b.ic} You didn't renew, so the wheat lease ended.`); log('The wheat lease ended.'); S.biz = null; return; }
+    const y = new Date(S.date).getFullYear();
+    if (S.biz.ins && curMonth() === 3 && S.biz.insYear !== y) { S.biz.insYear = y; lines.push(['🌾 Crop insurance premium', -cost(CROP_INS)]); }   // i3-a16
+    if (S.biz.stored) lines.push(['🌾 Elevator storage', -S.biz.stored * WHEAT_STORE_FEE * W]);
   }
+  if (S.biz.type === 'cattle') return cattleWeek(lines, notes);
   if (b.weekly) { const v = b.weekly(); if (v) { lines.push([`${b.ic} ${b.name}`, v]); S.biz.earned += v; } }
   if (b.yearly && curMonth() === b.month && S.biz.paidYear !== new Date(S.date).getFullYear()) {
-    S.biz.paidYear = new Date(S.date).getFullYear(); const v = b.yearly(); lines.push([`${b.ic} Harvest check`, v]); S.biz.earned += v;
-    notes.push(v < cost(3000) ? `${b.ic} A rough harvest: your wheat lease paid only ${fmt(v)}.` : `${b.ic} Harvest is in: your wheat lease paid ${fmt(v)}.`);
+    S.biz.paidYear = new Date(S.date).getFullYear();
+    const crop = cost(6000) * wheatYield(), bad = crop < cost(3000);
+    if (S.noEvents || S.practice) {                // no events (practice, rule checks): sold straight off the combine
+      const v = crop * wheatPriceF(); lines.push([`${b.ic} Harvest check`, v]); S.biz.earned += v;
+      notes.push(bad ? `${b.ic} A rough harvest: your wheat lease paid only ${fmt(v)}.` : `${b.ic} Harvest is in: your wheat lease paid ${fmt(v)}.`);
+    } else { S.biz.crop = crop; S.biz.bad = bad; dueEvent('Harvest: sell or store?'); }   // i3-a15: you choose this week
   }
 }
+// i3-a18: the herd's week: pasture rent all year, hay in winter, calving in spring, the auction in October
+function cattleWeek(lines, notes){
+  const B = S.biz, mo = curMonth(), y = new Date(S.date).getFullYear();
+  if (B.cows == null) B.cows = CATTLE_COWS;
+  if (S.focus === 'outdoors') B.check = S.turn;
+  const hard = B.hard === (mo >= 10 ? y : y - 1);
+  lines.push(['🐄 Pasture rent', -cost(PASTURE) * W]);
+  if ([10, 11, 0, 1, 2].includes(mo)) lines.push([hard ? '🐄 Hay (hard winter)' : '🐄 Hay', -cost(HAY) * B.cows * (hard ? 1.5 : 1) * W]);
+  if (mo === 10 && B.hardRoll !== y) { B.hardRoll = y; if (chance(0.25)) { B.hard = y; notes.push('🐄 The almanac and the old-timers agree: a hard winter is coming. Hay will cost more.'); } }
+  if ([1, 2, 3].includes(mo) && !herdChecked(3)) B.miss = (B.miss || 0) + 1;     // calving season without checks
+  if (mo === 4 && B.calvedYear !== y) {
+    B.calvedYear = y;
+    const rate = clamp(0.95 - 0.07 * Math.max(0, (B.miss || 0) - 3) - (hard ? 0.1 : 0), 0.25, 0.95);
+    B.calves = clamp(Math.round(B.cows * rate + (B.saved || 0) + (Math.random() - 0.5)), 0, B.cows);
+    B.miss = 0; B.saved = 0;
+    notes.push(`🐄 Calving is done: ${B.calves} calves on the ground from ${B.cows} cows.`);
+  }
+  // a month or more without anyone checking: a cow gets through a fence, sick or lost (about a 1 in 4 chance each month)
+  if (!herdChecked(6) && S.turn % 4 === 0 && B.cows > 0 && chance(0.25)) {
+    B.cows--; notes.push(`🐄 Nobody had checked the herd in weeks, and a cow went missing in the foothills. ${B.cows} left.`); log('Lost a cow in the foothills.');
+  }
+  if (mo === 9 && B.soldYear !== y && B.calves) {
+    B.soldYear = y; const price = 0.75 + Math.random() * 0.5, v = cost(CALF_PRICE) * B.calves * price;
+    lines.push([`🐄 ${B.calves} calves sold at auction`, v]); B.earned += v; B.calves = 0;
+    notes.push(`🐄 Sale day at the livestock auction: calves went ${price >= 1.1 ? 'high' : price <= 0.9 ? 'cheap' : 'about average'} and you brought home ${fmt(v)}.`);
+  }
+  if (B.cows <= 0) { notes.push('🐄 Your last cow is gone, and so is the cattle business.'); log('The cattle business ended.'); S.biz = null; }
+}
 function bizCard(){
-  if (S.biz) { const b = BIZ[S.biz.type];
-    const lease = S.biz.type === 'wheat' ? (leaseDue() ? `<div class="card warn" style="margin:6px 0">🌾 The lease is up: renew within ${Math.max(1, S.biz.lease + LEASE_GRACE - S.biz.weeks)} week${S.biz.lease + LEASE_GRACE - S.biz.weeks === 1 ? '' : 's'} or it ends. <button class="sm" id="renew">Renew for 5 years (${fmt(leaseCost())})</button></div>`
-      : `<div class="kv"><span>Lease</span><span>${Math.ceil(((S.biz.lease ?? LEASE_WEEKS) - S.biz.weeks) / 52 * 10) / 10} years left</span></div>`) : '';
+  if (S.biz) { const b = BIZ[S.biz.type], B = S.biz;
+    const lease = B.type === 'wheat' ? (leaseDue() ? `<div class="card warn" style="margin:6px 0">🌾 The lease is up: renew within ${Math.max(1, B.lease + LEASE_GRACE - B.weeks)} week${B.lease + LEASE_GRACE - B.weeks === 1 ? '' : 's'} or it ends. <button class="sm" id="renew">Renew for 5 years (${fmt(leaseCost())})</button></div>`
+      : `<div class="kv"><span>Lease</span><span>${Math.ceil(((B.lease ?? LEASE_WEEKS) - B.weeks) / 52 * 10) / 10} years left</span></div>`) : '';
+    const wheat = B.type === 'wheat' ? `<div class="kv"><span>Wheat price</span><span>${wheatPriceLabel()}</span></div>
+      ${B.stored ? `<div class="kv"><span>🏚️ Stored at the elevator<br><small class="muted">Storage costs about ${fmt(B.stored * WHEAT_STORE_FEE)} a month. It sells by July, when the new crop comes in.</small></span><span>${fmt(storedWheatValue())}</span></div>
+        <button class="sm" id="sellwheat">Sell stored wheat (${fmt(storedWheatValue())})</button>` : ''}
+      <div class="kv"><span>🛡️ Crop insurance<br><small class="muted">${fmt(cost(CROP_INS))} each April. A drought year then pays ${Math.round(CROP_INS_YIELD * 100)}% of a normal crop instead of 30%.</small></span>
+        <button class="sm ${B.ins ? '' : 'alt'}" id="cropins" aria-pressed="${!!B.ins}">${B.ins ? 'On' : 'Off'}</button></div>` : '';
+    const herd = B.type === 'cattle' ? `<div class="kv"><span>Herd</span><span>${B.cows ?? CATTLE_COWS} cows${B.calves ? `, ${B.calves} calves` : ''}</span></div>
+      <div class="kv"><span>Last check on the herd</span><span>${B.check == null ? 'never' : S.turn - B.check === 0 ? 'this week' : `${S.turn - B.check} week${S.turn - B.check === 1 ? '' : 's'} ago`}</span></div>
+      <p class="muted" style="margin:4px 0">${herdChecked(6) ? 'The herd is doing fine.' : '⚠️ Nobody has checked the herd lately: pick 🎣 Get outside to ride out and look them over.'}</p>` : '';
     return `<div class="card"><h3>🏪 Your business</h3><div class="kv"><span>${b.ic} ${b.name}<br><small class="muted">${b.desc}</small></span><span></span></div>
-      <div class="kv"><span>Earned so far</span><span><b>${fmt(S.biz.earned)}</b></span></div>
-      <div class="kv"><span>Worth if you sell</span><span>${fmt(bizValue())}</span></div>${lease}
+      <div class="kv"><span>Earned so far</span><span><b>${fmt(B.earned)}</b></span></div>
+      <div class="kv"><span>Worth if you sell</span><span>${fmt(bizValue())}</span></div>${lease}${wheat}${herd}
       <button class="sm alt" id="bizsell">Sell the business</button></div>`; }
   return `<div class="card"><h3>🏪 Start a business</h3><p class="muted" style="margin:0 0 6px">Small, risky, and it can grow. One at a time.</p>
     ${Object.entries(BIZ).map(([k,b]) => `<div class="kv job"><div><div class="t">${b.ic} ${b.name}</div><div class="s">${b.desc}</div></div><button class="sm" data-biz="${k}">${fmt(cost(b.cost))}</button></div>`).join('')}</div>`;
@@ -424,11 +485,236 @@ function bizCard(){
 function startBiz(k){
   const b = BIZ[k], c = cost(b.cost);
   if (S.money < c) return toast(`You need ${fmt(c)} on hand.`);
-  S.money -= c; S.biz = { type:k, weeks:0, earned:0, paidYear:null, dep:1, lease: k === 'wheat' ? LEASE_WEEKS : null }; adj({happy:3}); log(`Started a business: ${b.name.toLowerCase()}.`, 'money');
+  S.money -= c; S.biz = { type:k, weeks:0, earned:0, paidYear:null, dep:1, lease: k === 'wheat' ? LEASE_WEEKS : null, ...(k === 'cattle' ? { cows:CATTLE_COWS, check:S.turn } : {}) }; adj({happy:3}); log(`Started a business: ${b.name.toLowerCase()}.`, 'money');
   save(); render(); toast(`${b.ic} You started a ${b.name.toLowerCase()}!`);
 }
 function sellBiz(){
+  sellStoredWheat(' with the lease');
   const v = bizValue(), b = BIZ[S.biz.type]; S.money += v; log(`Sold the ${b.name.toLowerCase()} for ${fmt(v)}.`, 'money'); S.biz = null; save(); render(); toast(`Sold for ${fmt(v)}`);
+}
+
+/* ============================================================
+   💰 MONEY (ideas round 3): insurance, property tax, the valley's housing market, mortgage rates,
+   borrowing against your home, index funds, wine futures, collections and bankruptcy
+   ============================================================ */
+const HOME_GROW = 0.025, BASE_RATE = 6.5, SELL_FEE = 0.06, REFI_FEE = 0.02, HE_SHARE = 0.5, HE_MONTHS = 120, PROP_TAX = 0.01;
+const MKT = { good:0.12, bad:0.08, drop:0.25, badOdds:0.2 };     // index funds: about 6% a year on average
+const WINE_COST = 2500, WINE_WEEKS = 156, WINERY = 'Old Kiln Cellars', BROKER = 'Clocktower Investments';
+const WINE_Q = { great:{ x:1.5, t:'a great vintage, and the wine sold out' }, good:{ x:1.25, t:'a good, solid vintage' }, smoke:{ x:0.75, t:'wildfire smoke got into the grapes, and the wine sold cheap' } };
+const COLLECT_WEEKS = 12, COLLECT_FEE = 150, COLLECT_HAPPY = 0.8, BK_WEEKS = 364, BK_PENALTY = 8, BK_RATE = 3;
+const INS_PHONE = 75, INS_AUTO = { full:70, liab:35 }, INS_RENTERS = 15, INS_HOME = 15, INS_DED = { 500:15, 1000:0, 2500:-10 }, AUTO_DED = 500, RENTERS_DED = 250;
+const MONEY_STATE = () => ({ ins:{ auto:'full', renters:true, ded:1000 }, homeIdx:1, homeGrow:HOME_GROW, rate:BASE_RATE, mortRate:null,
+  heLeft:0, hePay:0, heRate:0, stocks:0, mkt:{ y:2027, bad:false, dropAt:null }, wine:[], smoke:null, wheatPrice:WHEAT_BASE,
+  debtWeeks:0, bk:null, ptaxDone:null, due:[], monKey:2027 * 12 });
+
+/* ---- i3-a19: the insurance sheet. The defaults add up to the old flat $160 a month. ---- */
+function insParts(){
+  const i = S.ins || {}, own = !!HOMES[S.home].own, ded = INS_DED[i.ded] != null ? i.ded : 1000;
+  return [['📱 Phone', INS_PHONE], [i.auto === 'liab' ? '🛻 Vehicle: liability only' : '🛻 Vehicle: full coverage', INS_AUTO[i.auto === 'liab' ? 'liab' : 'full']],
+    own ? [`🏡 Homeowners ($${ded.toLocaleString()} deductible)`, INS_HOME + INS_DED[ded]] : [i.renters === false ? '🏠 No renters insurance' : '🏠 Renters insurance', i.renters === false ? 0 : INS_RENTERS]];
+}
+const insMonthly = () => insParts().reduce((a, [, v]) => a + v, 0);
+// what a loss costs you after insurance: 'auto' (your vehicle), 'home' (an owned house; a landlord covers a rented one), 'stuff' (your belongings)
+function youPay(kind, c){
+  const i = S.ins || {}, own = !!HOMES[S.home].own, ded = cost(INS_DED[i.ded] != null ? i.ded : 1000);
+  if (kind === 'auto') return i.auto === 'liab' ? c : Math.min(c, cost(AUTO_DED));
+  if (kind === 'home') return own ? Math.min(c, ded) : 0;
+  return own ? Math.min(c, ded) : i.renters === false ? c : Math.min(c, cost(RENTERS_DED));
+}
+const covered = (c, paid) => paid < c - 0.5 ? ` Insurance covered ${fmt(c - paid)}.` : '';
+function insSheet(focusSel){
+  const i = S.ins, own = !!HOMES[S.home].own;
+  const opt = (grp, val, label) => `<button class="${String(i[grp]) === String(val) ? 'on' : ''}" data-ins="${grp}" data-v="${val}" aria-pressed="${String(i[grp]) === String(val)}">${label}</button>`;
+  sheet(`<h2>🛡️ Insurance</h2><p class="muted">Through Wheatland Mutual on Main Street. Cheaper coverage saves a little every month, until something goes wrong.</p>
+    <h3>🛻 Your vehicle</h3><div class="maptog" role="group" aria-label="Vehicle coverage">${opt('auto', 'full', `Full ${fmtc(INS_AUTO.full)}/mo`)}${opt('auto', 'liab', `Liability ${fmtc(INS_AUTO.liab)}/mo`)}</div>
+    <p class="muted">Full coverage pays for crashes, deer, ditches and theft after a ${fmtc(AUTO_DED)} deductible. Liability only covers the other driver: your own repairs are on you.</p>
+    ${own ? `<h3>🏡 Homeowners deductible</h3><div class="maptog" role="group" aria-label="Homeowners deductible">${[500, 1000, 2500].map(d => opt('ded', d, `$${d.toLocaleString()}`)).join('')}</div>
+      <p class="muted">Storms, fires and break-ins: you pay up to the deductible, insurance pays the rest. A $500 deductible costs ${fmtc(INS_DED[500])} more a month; $2,500 saves ${fmtc(-INS_DED[2500])}.</p>`
+      : `<h3>🏠 Renters insurance</h3><div class="maptog" role="group" aria-label="Renters insurance">${opt('renters', true, `Yes ${fmtc(INS_RENTERS)}/mo`)}${opt('renters', false, 'No')}</div>
+      <p class="muted">Your landlord insures the building, not your things. Renters insurance pays for a break-in or a fire after a ${fmtc(RENTERS_DED)} deductible.</p>`}
+    ${insParts().map(([l, v]) => `<div class="kv"><span>${l}</span><span>${fmtc(v)}/mo</span></div>`).join('')}
+    <div class="kv"><span><b>Insurance & phone</b></span><span><b>${wk(cost(insMonthly()))}</b></span></div>
+    <button class="btn primary" id="ok">Done</button>`);
+  document.querySelectorAll('#sheet [data-ins]').forEach(b => b.onclick = () => {
+    const g = b.dataset.ins, v = b.dataset.v; S.ins[g] = g === 'renters' ? v === 'true' : g === 'ded' ? +v : v; save();
+    insSheet(`[data-ins="${g}"][data-v="${v}"]`); announce(`Insurance and phone now ${wk(cost(insMonthly()))}.`);
+  });
+  $('#ok').onclick = () => { closeSheet(); render(); };
+  if (focusSel) setTimeout(() => { const el = $('#sheet ' + focusSel); if (el) el.focus({ preventScroll: true }); }, 40);
+}
+
+/* ---- i3-a21 / a22 / a20 / a23: the housing market, mortgage rates, property tax and home equity loans ---- */
+const MOODS = { hot:{ ic:'🔥', name:'Hot', desc:'buyers are lining up and prices are climbing', buy:1.05 },
+  steady:{ ic:'🏡', name:'Steady', desc:'prices are creeping up like usual', buy:1 },
+  slow:{ ic:'🧊', name:'Slow', desc:'houses are sitting and prices are slipping', buy:0.97 } };
+const homeMood = () => S.homeGrow >= 0.05 ? 'hot' : S.homeGrow <= 0 ? 'slow' : 'steady';
+const homePriceF = () => (S.homeIdx || 1) * MOODS[homeMood()].buy;          // a hot year costs more to buy into
+const homeValue = (k = S.home) => HOMES[k].value ? HOMES[k].value * (S.homeIdx || 1) : 0;
+const payF = (rate, months = 360) => { const i = rate / 1200; return i / (1 - Math.pow(1 + i, -months)); };
+const buyRate = () => S.rate + (bkActive() ? BK_RATE : 0);
+const homeDown = k => Math.round(HOMES[k].down * homePriceF());
+const newMortgage = k => HOMES[k].cost * homePriceF() * payF(buyRate()) / payF(BASE_RATE);
+const propTax = () => homeValue() * PROP_TAX / 2;                              // twice a year, April and October
+const canRefi = () => !!(HOMES[S.home].own && S.mortgage && !loanBlock() && S.rate <= (S.mortRate ?? BASE_RATE) - 1);
+const refiFee = () => homeValue() * REFI_FEE;
+const refiPay = () => S.mortgage * payF(S.rate) / payF(S.mortRate ?? BASE_RATE);
+function refinance(){
+  if (!canRefi()) return false;
+  const fee = refiFee(); if (S.money < fee) { toast(`You need ${fmt(fee)} for closing costs.`); return false; }
+  const old = S.mortgage; S.money -= fee; S.mortgage = refiPay(); S.mortRate = S.rate;
+  log(`Refinanced the mortgage at ${S.rate.toFixed(2)}%: ${wk(old)} down to ${wk(S.mortgage)} (closing costs ${fmt(fee)}).`, 'money');
+  return true;
+}
+const heI = () => S.heRate / 1200;
+const heBalance = () => S.heLeft > 0 && S.hePay ? S.hePay * (1 - Math.pow(1 + heI(), -S.heLeft)) / heI() : 0;
+const heMax = () => HOMES[S.home].own ? Math.floor(Math.max(0, S.equity * HE_SHARE) / 500) * 500 : 0;
+function takeHE(amount){
+  if (!HOMES[S.home].own || S.heLeft > 0 || loanBlock() || !(amount > 0) || amount > heMax()) return false;
+  S.heRate = S.rate + 1; S.hePay = amount * payF(S.heRate, HE_MONTHS); S.heLeft = HE_MONTHS; S.money += amount;
+  log(`Borrowed ${fmt(amount)} against the house from Standard Bearer Bank at ${S.heRate.toFixed(2)}% (${wk(S.hePay)} for 10 years).`, 'money');
+  return true;
+}
+function heSheet(){
+  const max = heMax(), half = Math.floor(max / 2 / 500) * 500, r = S.rate + 1;
+  sheet(`<h2>🏦 Borrow against your home</h2><p>Standard Bearer Bank lends up to half your equity at ${r.toFixed(2)}%, paid back over 10 years. It's cheaper than carrying debt at 1.5% a month, and it can start a business or pay for school.</p>
+    <p class="muted">What you borrow counts against your net worth until it's paid back. Selling the house pays off what's left.</p>
+    ${[half, max].filter((v, i, a) => v > 0 && a.indexOf(v) === i).map(v => `<button class="btn primary" data-he="${v}">Borrow ${fmt(v)} (${wk(v * payF(r, HE_MONTHS))} for 10 years)</button>`).join('')}
+    <button class="btn ghost" id="no">Not now</button>`);
+  document.querySelectorAll('#sheet [data-he]').forEach(b => b.onclick = () => { if (takeHE(+b.dataset.he)) { closeSheet(); save(); render(); toast(`🏦 Borrowed ${fmt(+b.dataset.he)}`); } });
+  $('#no').onclick = closeSheet;
+}
+// the home card's money lines on the Life tab
+function homeMoneyHTML(){
+  const own = !!HOMES[S.home].own, md = MOODS[homeMood()], blk = loanBlock();
+  return `<div class="kv"><span>${md.ic} Housing market: <b>${md.name}</b><br><small class="muted">This year ${md.desc}${md.buy !== 1 ? ` (buying costs ${md.buy > 1 ? 'more' : 'less'})` : ''}.</small></span><span>${S.homeGrow >= 0 ? '+' : ''}${(S.homeGrow * 100).toFixed(1)}%/yr</span></div>
+    <div class="kv"><span>🏦 Mortgage rate this year${bkActive() ? ' (+3 points after bankruptcy)' : ''}</span><span>${buyRate().toFixed(2)}%</span></div>
+    ${own ? `<div class="kv"><span>Your house is worth</span><span>${fmt(homeValue())}</span></div>
+      <div class="kv"><span>Your mortgage rate</span><span>${(S.mortRate ?? BASE_RATE).toFixed(2)}%</span></div>
+      <div class="kv"><span>🧾 Property tax (April and October)</span><span>${fmt(propTax())} each</span></div>
+      ${S.heLeft > 0 ? `<div class="kv"><span>🏦 Home equity loan<br><small class="muted">${Math.ceil(S.heLeft / W)} weekly payments left</small></span><span>${wk(S.hePay)} · owe ${fmt(heBalance())}</span></div>` : ''}
+      ${canRefi() ? `<div class="card tip" style="margin:6px 0">📉 Rates dropped to ${S.rate.toFixed(2)}%. Refinancing would cut your payment to ${wk(refiPay())} for ${fmt(refiFee())} in closing costs (it pays off in about ${Math.ceil(refiFee() / Math.max(1, S.mortgage - refiPay()))} months). <button class="sm" id="refi">Refinance</button></div>` : ''}
+      ${!S.heLeft && heMax() >= cost(2000) ? (blk ? `<p class="muted">🏦 ${blk}</p>` : `<button class="btn ghost" id="heloan">🏦 Borrow against your home (up to ${fmt(heMax())})</button>`) : ''}` : ''}`;
+}
+
+/* ---- i3-a29: index funds, and i3-a17: wine futures ---- */
+const wineAtCost = () => (S.wine || []).reduce((a, l) => a + (l.paid || 0), 0);
+const wineYear = () => new Date(S.date).getFullYear();
+const wineOpen = () => [8, 9, 10].includes(curMonth()) && !(S.wine || []).some(l => l.y === wineYear());
+function buyWine(){
+  if (!wineOpen()) return false;
+  const c = cost(WINE_COST); if (S.money < c) { toast(`You need ${fmt(c)} on hand.`); return false; }
+  S.money -= c; S.wine.push({ y: wineYear(), paid: c, at: S.turn + WINE_WEEKS, smoke: S.smoke === wineYear() });
+  log(`Bought into the ${wineYear()} vintage at ${WINERY} for ${fmt(c)}. It pays out when the wine is released in ${wineYear() + 3}.`, 'money');
+  return true;
+}
+function invest(amount){
+  amount = Math.round(amount);
+  if (amount > 0) { if (S.money < amount) { toast(`You need ${fmt(amount)} on hand.`); return false; } S.money -= amount; S.stocks = (S.stocks || 0) + amount; }
+  else { const v = Math.min(S.stocks || 0, -amount); if (!(v > 0)) return false; S.stocks -= v; S.money += v; if (S.stocks < 1) S.stocks = 0; }
+  return true;
+}
+function investCard(){
+  const y = wineYear(), m = S.mkt && S.mkt.y === y ? S.mkt : null, dropped = m && m.dropped;
+  return `<div class="card"><h3>📈 Investing</h3>
+    <div class="kv"><span>Index funds at ${BROKER}, Walla Walla<br><small class="muted">About 6% a year on average, but some years drop 20% or more. Counts in net worth at today's value.</small></span><span><b>${fmt(S.stocks || 0)}</b></span></div>
+    ${dropped ? `<p class="muted" style="margin:2px 0">📉 The market dropped this year. It usually comes back for people who wait.</p>` : ''}
+    <div class="maptog wrap" role="group" aria-label="Index funds">
+      <button data-inv="1000" aria-label="Put $1,000 into index funds">+$1,000</button><button data-inv="5000" aria-label="Put $5,000 into index funds">+$5,000</button>${S.stocks > 0 ? `<button data-inv="-1000" aria-label="Take $1,000 out of index funds">−$1,000</button><button data-inv="all" aria-label="Sell all your index funds">Sell all</button>` : ''}</div>
+    <div class="kv"><span>🍷 Wine futures at ${WINERY}<br><small class="muted">Buy into a vintage in the fall for ${fmtc(WINE_COST)}; it pays out when the wine is released 3 years later: more for a great year, less if smoke got the grapes. Counted at what you paid until then.</small></span><span></span></div>
+    ${(S.wine || []).map(l => `<div class="kv"><span>${l.y} vintage${l.smoke ? ' (a smoky summer)' : ''}</span><span>${fmt(l.paid)} · released in ${Math.max(1, Math.ceil((l.at - S.turn) / 4.33))} mo</span></div>`).join('')}
+    ${wineOpen() ? `${S.smoke === y ? '<p class="muted" style="margin:2px 0">🔥 Wildfire smoke hung over the vineyards this summer: this vintage is a gamble.</p>' : ''}<button class="sm" id="wine">Buy into the ${y} vintage (${fmtc(WINE_COST)})</button>`
+      : `<p class="muted" style="margin:2px 0">${(S.wine || []).some(l => l.y === y) ? `You're in on the ${y} vintage.` : 'Futures go on sale each fall (September to November).'}</p>`}
+  </div>`;
+}
+
+/* ---- the money side of each week ---- */
+// the first week of each month: a new year's market, wheat prices, and the summer's smoke
+function moneyMonth(notes){
+  const d = new Date(S.date), y = d.getFullYear(), mo = d.getMonth(), key = y * 12 + mo;
+  if (S.monKey === key) return; S.monKey = key;
+  if (!S.mkt || S.mkt.y !== y) {                                   // New Year: home prices, mortgage rates and the stock market
+    S.homeGrow = HOME_GROW + (Math.random() - 0.5) * 0.12;
+    S.rate = Math.round(clamp(S.rate + (BASE_RATE - S.rate) * 0.3 + (Math.random() - 0.5) * 2, 4, 9.5) * 4) / 4;
+    const bad = chance(MKT.badOdds); S.mkt = { y, bad, dropAt: bad ? S.turn + ri(8, 40) : null };
+  }
+  const wheat = S.biz && S.biz.type === 'wheat';
+  if (mo === 6) {                                                   // July: the new crop's price, and the old crop has to go
+    if (wheat && S.biz.stored) { const v = sellStoredWheat(' when the new crop came in'); notes.push(`🌾 The new crop is coming, so the elevator sold your stored wheat: ${fmt(v)}.`); }
+    S.wheatPrice = WHEAT_BASE * (0.8 + Math.random() * 0.4);
+    if (chance(0.25)) S.smoke = y;
+  } else if (wheat && S.biz.stored) S.wheatPrice *= 1 + 0.012 + (Math.random() - 0.5) * 0.1;
+}
+function moneyWeek(lines, notes){
+  moneyMonth(notes);
+  const home = HOMES[S.home], d = new Date(S.date), key = `${d.getFullYear()}-${d.getMonth()}`;
+  if (home.own && [3, 9].includes(d.getMonth()) && S.ptaxDone !== key) { S.ptaxDone = key; lines.push(['Property tax (county)', -propTax()]); }
+  if (S.heLeft > 0) {
+    const n = Math.min(W, S.heLeft); lines.push(['Home equity loan', -S.hePay * n]); S.heLeft -= n;
+    if (S.heLeft < 1e-6) { S.heLeft = 0; S.hePay = 0; notes.push('🏦 Your home equity loan is paid off!'); S.paidOff = true; log('Paid off the home equity loan.'); }
+  }
+  if (S.mkt && S.stocks > 0) S.stocks *= Math.pow(1 + (S.mkt.bad ? MKT.bad : MKT.good), 1/52);
+  if (S.mkt && S.mkt.dropAt != null && !S.mkt.dropped && S.turn >= S.mkt.dropAt) {
+    S.mkt.dropped = true;
+    if (S.stocks > 0) { S.mkt.lost = S.stocks * MKT.drop; S.stocks -= S.mkt.lost; if (S.noEvents) notes.push(`📉 The market dropped: your index funds lost ${fmt(S.mkt.lost)}.`); else dueEvent('Market drop'); }
+  }
+  for (const l of (S.wine || []).filter(l => S.turn >= l.at)) {
+    const r = Math.random(), q = l.smoke ? (r < 0.1 ? 'great' : r < 0.5 ? 'good' : 'smoke') : (r < 0.25 ? 'great' : r < 0.8 ? 'good' : 'smoke');
+    const v = l.paid * WINE_Q[q].x; lines.push([`🍷 ${l.y} vintage released`, v]);
+    notes.push(`🍷 ${WINERY} released the ${l.y} vintage: ${WINE_Q[q].t}. Your share paid ${fmt(v)} on the ${fmt(l.paid)} you put in.`);
+    log(`The ${l.y} vintage at ${WINERY} paid ${fmt(v)}.`, 'money');
+  }
+  S.wine = (S.wine || []).filter(l => S.turn < l.at);
+}
+
+/* ---- i3-a26: collections, and i3-a27: bankruptcy instead of leaving town ---- */
+const inCollections = () => (S.debtWeeks || 0) > COLLECT_WEEKS;
+const bkActive = () => S.bk != null && S.turn - S.bk < BK_WEEKS;
+const canBankrupt = () => S.bk == null && !S.practice && mode() !== 'relaxed';
+function loanBlock(){
+  if (bkActive()) return `After the bankruptcy, no bank will lend to you until ${new Date(S.date + (BK_WEEKS - (S.turn - S.bk)) * 7 * 864e5).getFullYear()}.`;
+  if (inCollections()) return 'With debt in collections, the bank turns you down until you\'re back above $0.';
+  return '';
+}
+function debtWeek(notes){
+  if (S.money < 0) {
+    S.debtWeeks = (S.debtWeeks || 0) + 1;
+    if (S.debtWeeks === COLLECT_WEEKS + 1) {
+      S.money -= cost(COLLECT_FEE);
+      notes.push(`📞 After ${COLLECT_WEEKS} weeks in debt, it went to collections: a ${fmtc(COLLECT_FEE)} fee and calls every day. Banks and bosses will see it until you're back above $0.`);
+      log('The debt went to collections.', 'money');
+    }
+    if (inCollections()) adj({ happy: -COLLECT_HAPPY });
+  } else if (S.debtWeeks) { if (inCollections()) log('Paid off the collections account: back above $0.', 'money'); S.debtWeeks = 0; }
+}
+function fileBankruptcy(){
+  const lost = [];
+  if (S.stocks > 0) lost.push(`${fmt(S.stocks)} in index funds`);
+  if ((S.wine || []).length) lost.push('your wine futures');
+  if (S.biz) lost.push(`the ${BIZ[S.biz.type].name.toLowerCase()}`);
+  if (S.car !== 'beater') lost.push(`the ${CARS[S.car].name.toLowerCase().replace(' (financed)', '')}`);
+  S.stocks = 0; S.wine = []; S.biz = null;
+  if (S.car !== 'beater') { S.car = 'beater'; S.carValue = cost(2500); S.loanLeft = 0; S.loanPay = 0; S.tires = null; S.svc = S.turn; }
+  S.money = 0; S.debtWeeks = 0; S.bk = S.turn; S.due = (S.due || []).filter(t => t !== 'Harvest: sell or store?' && t !== 'Market drop');
+  adj({ happy: -8, community: -4 });
+  log(`Filed for bankruptcy at the courthouse in Walla Walla. The debt is gone${lost.length ? `, and so is ${lost.join(', ')}` : ''}.`, 'money');
+  return lost;
+}
+function bankruptcySheet(reason){
+  const keep = [S.stocks > 0 && `${fmt(S.stocks)} in index funds`, (S.wine || []).length && 'your wine futures', S.biz && `your ${BIZ[S.biz.type].name.toLowerCase()}`,
+    S.car !== 'beater' && `your ${CARS[S.car].name.toLowerCase().replace(' (financed)', '')} (you'd get a 1998 pickup)`].filter(Boolean);
+  sheet(`<div class="big">⚖️</div><h2 style="text-align:center">Buried in debt</h2>
+    <p>You owe ${fmt(-S.money)}, more than you can ever dig out of. You can pack up and leave Waitsburg, which ends this life, or file for bankruptcy and stay.</p>
+    <div class="card warn"><b>Bankruptcy:</b> the debt is wiped${keep.length ? `, but you lose ${keep.join(', ')}` : ''}. Your 401(k) and your home are protected. For 7 years no bank will lend to you, and the better-paying jobs are harder to land. It takes ${BK_PENALTY} points off your Life Score, and you can only do it once.</div>
+    <button class="btn primary" id="bkfile">File for bankruptcy and stay</button>
+    <button class="btn ghost" id="bkleave">Pack up and leave town</button>`);
+  $('#bkfile').onclick = () => { fileBankruptcy(); closeSheet(); save(); render(); announce('You filed for bankruptcy. The debt is gone, and you start over at $0.'); toast('⚖️ A fresh start, with a long memory'); };
+  $('#bkleave').onclick = () => { closeSheet(); finish(reason); };
+}
+// events that have to come up this week (the harvest choice, a market drop), ahead of the random roll
+function dueEvent(title){ S.due = [...(S.due || []).filter(t => t !== title), title]; }
+function takeDue(){
+  while (S.due && S.due.length) { const e = DUE_EVENTS.find(x => x.title === S.due[0]); S.due.shift(); if (e && (!e.when || e.when())) return e; }
+  return null;
 }
 
 /* ============================================================
@@ -597,12 +883,13 @@ function lifeScore(){
   const nw = netWorth(), real = nw / (S.col || 1), wealth = clamp(real / L.target * 100);
   const hp = clamp((avgH - 30) / 60 * 100), he = clamp((avgHe - 40) / 55 * 100), cm = clamp((S.community - 10) / 80 * 100);
   const bonus = goalBonus();                      // pinned life goals reached (#66)
-  const score = Math.min(100, Math.round(hp*0.3 + he*0.2 + cm*0.2 + wealth*0.3) + bonus);
+  const bk = S.bk != null ? BK_PENALTY : 0;       // i3-a27: a bankruptcy costs a fixed number of points
+  const score = clamp(Math.min(100, Math.round(hp*0.3 + he*0.2 + cm*0.2 + wealth*0.3) + bonus) - bk, 0, 100);
   const title = score >= 85 ? 'Legend of the Burg' : score >= 70 ? 'Pillar of the Community' : score >= 55 ? 'Solid Waitsburger' : score >= 40 ? 'Getting By on Main Street' : 'Tumbleweed';
-  return { score, title, avgH, avgHe, nw, real, wealth, bonus, parts: { happy: Math.round(hp), health: Math.round(he), community: Math.round(cm), wealth: Math.round(wealth) } };
+  return { score, title, avgH, avgHe, nw, real, wealth, bonus, bk, parts: { happy: Math.round(hp), health: Math.round(he), community: Math.round(cm), wealth: Math.round(wealth) } };
 }
 function finish(reason){
-  const { score, title, avgH, avgHe, nw, real, wealth, parts, bonus } = lifeScore();
+  const { score, title, avgH, avgHe, nw, real, wealth, parts, bonus, bk: bkPts } = lifeScore();
   const part = (l, sub, v, w) => `<div class="kv"><span>${l}<br><small class="muted">${sub}</small></span><span><b>${v}</b>/100 × ${w}% = <b>${Math.round(v * w / 100)}</b></span></div>`;
   const sc = SCENARIOS[S.scenario], scWin = sc ? (S.scWon || sc.win()) : false;
   if (sc && scWin) markChallenge(S.scenario);
@@ -624,6 +911,7 @@ function finish(reason){
     ${part('Community', `ended at ${Math.round(S.community)} (10 → 0, 90 → 100)`, parts.community, 20)}
     ${part('Net worth', `${fmt(nw)}${S.col > 1.05 ? ` (${fmt(real)} in 2027 dollars)` : ''} of ${fmt(LENGTHS[S.len].target)}`, parts.wealth, 30)}
     ${bonus ? `<div class="kv"><span>🎯 Life goals reached</span><span><b>+${bonus}</b></span></div>` : ''}
+    ${bkPts ? `<div class="kv"><span>⚖️ Bankruptcy</span><span><b>−${bkPts}</b></span></div>` : ''}
     ${sc ? `<div class="card ${scWin ? 'tip' : 'warn'}" style="margin-top:10px">${sc.ic} <b>${scWin ? 'Challenge complete!' : 'Challenge not met this time.'}</b> ${sc.name}: ${sc.desc}</div>` : ''}
     ${Object.keys(S.badges || {}).length ? `<h3 style="margin-top:10px">Badges</h3><p>${BADGES.filter(b => S.badges[b.id]).map(b => `${b.ic} ${b.name}`).join(' · ')}</p>` : ''}
     <h3 style="margin-top:10px">Your life</h3>
@@ -785,6 +1073,11 @@ function moneyOutlook(n = 13){
     if (f.study && S.edu < 3) big.push(['Tuition', -cost(TUITION[S.edu]) * grow * W]);
     if (S.loanLeft > i * W) lines.push(['Truck payment', -(S.loanPay || CARS.truck.pay) * Math.min(W, S.loanLeft - i * W)]);
     if (S.sloanLeft > i * W) lines.push(['Student loan', -S.sloanPay * Math.min(W, S.sloanLeft - i * W)]);
+    if (S.heLeft > i * W) lines.push(['Home equity loan', -S.hePay * Math.min(W, S.heLeft - i * W)]);   // round 3 money
+    if (HOMES[S.home].own && [3, 9].includes(d.getMonth()) && `${d.getFullYear()}-${d.getMonth()}` !== S.ptaxDone && !out.some(w => w.ptax === `${d.getFullYear()}-${d.getMonth()}`)) big.push(['Property tax (county)', -propTax()]);
+    if (S.biz && S.biz.type === 'wheat' && S.biz.ins && d.getMonth() === 3 && S.biz.insYear !== d.getFullYear() && !out.some(w => w.crop)) big.push(['Crop insurance premium', -cost(CROP_INS)]);
+    if (S.biz && S.biz.stored) lines.push(['Elevator storage', -S.biz.stored * WHEAT_STORE_FEE * W]);
+    if (S.biz && S.biz.type === 'cattle') { lines.push(['Pasture rent', -cost(PASTURE) * grow * W]); if ([10, 11, 0, 1, 2].includes(d.getMonth())) lines.push(['Hay', -cost(HAY) * (S.biz.cows ?? CATTLE_COWS) * grow * W]); }
     if (d.getMonth() === 0 && tabsYear !== d.getFullYear()) { big.push(['Vehicle tabs (DMV)', -vehicleTabs() * grow]); tabsYear = d.getFullYear(); }
     if (lease != null && lease === i) big.push(['Wheat lease renewal', -leaseCost()]);
     if (S.retired && S.snowbird === d.getFullYear() && SOUTH_MONTHS.includes(d.getMonth())) big.push(['Winter in Arizona', -cost(SOUTH_COST) * grow * W]);
@@ -793,7 +1086,7 @@ function moneyOutlook(n = 13){
     const net = [...lines, ...big].reduce((a, [, v]) => a + v, 0);
     cash += net;
     if (cash < 0 && lowWeek == null) lowWeek = i;
-    out.push({ d, net, cash, big });
+    out.push({ d, net, cash, big, ptax: big.some(b => b[0] === 'Property tax (county)') ? `${d.getFullYear()}-${d.getMonth()}` : null, crop: big.some(b => b[0] === 'Crop insurance premium') });
   }
   return { weeks: out, lowWeek };
 }
