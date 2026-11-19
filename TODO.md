@@ -1165,6 +1165,84 @@ old ones.
 
 </details>
 
+## Ideas round 10 (pick on the build board)
+
+64 ideas. Details: [docs/ideas/round-10.md](docs/ideas/round-10.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 10: Lessons from other games</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i10-a01** Three small wants that refresh (M)
+- [ ] 🟠 **i10-a02** Pick two traits when you start (M)
+- [ ] 🟡 **i10-a03** One worry at a time (S)
+- [ ] 🔴 **i10-a04** Fix up the old Grange hall, one set at a time (L)
+- [ ] 🟠 **i10-a05** Neighbors with likes, dislikes and friendship scenes (M)
+- [ ] 🟠 **i10-a06** Finds for the historical society (M)
+- [ ] 🟠 **i10-a07** A different out-of-town visitor on Main Street each week (M)
+- [ ] 🟡 **i10-a08** Talk a neighbor out of moving away (M)
+- [ ] 🟠 **i10-a09** The town gives you a nickname (S)
+- [ ] 🔴 **i10-a10** Front-porch asks: quick two-button cards (M)
+- [ ] 🟠 **i10-a11** Council term as a balancing act (M)
+- [ ] 🟡 **i10-a12** Small talk while you're out (S)
+- [ ] 🟠 **i10-a13** Hidden knacks you find by trying (S)
+- [ ] 🟡 **i10-a14** A bill lands before payday (S)
+- [ ] 🟡 **i10-a15** Check the forms at a county desk job (M)
+- [ ] 🟡 **i10-a16** Cut a corner at work, and the check comes later (M)
+- [ ] 🟠 **i10-a17** How everyone at home is doing (M)
+- [ ] 🟠 **i10-a18** Kindness tokens turned over at the end (M)
+- [ ] 🟡 **i10-a19** Show the odds as a spinner on risky choices (S)
+- [ ] 🟠 **i10-a20** A freezer full of fish, game and garden (M)
+- [ ] 🟠 **i10-a21** Pick your pace on winter roads (S)
+- [ ] 🟡 **i10-a22** The washed-out road (S)
+- [ ] 🟠 **i10-a23** Trade work with neighbors instead of cash (M)
+- [ ] 🟠 **i10-a24** Notes in the little free library (S)
+- [ ] 🔴 **i10-a25** Ask the town for help (M)
+- [ ] 🟡 **i10-a26** A corkboard of thank-you cards (S)
+- [ ] 🟡 **i10-a27** Walk a trail to the top (M)
+- [ ] 🟠 **i10-a28** Spots you only find by wandering (S)
+- [ ] 🟠 **i10-a29** Set your prices at your business (M)
+- [ ] 🟡 **i10-a30** When two things want the same evening (M)
+- [ ] 🟡 **i10-a31** A town history rolled at the start (L)
+- [ ] 🟠 **i10-a32** Each place to live has a feel (S)
+
+</details>
+
+<details><summary><b>Ideas 10: Wild cards</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i10-b01** A rare-events pool and a 'Once in a lifetime' page (S)
+- [ ] 🔴 **i10-b02** The ghost at the old brick hotel (M)
+- [ ] 🔴 **i10-b03** The mill bell mystery: a town puzzle over years (L)
+- [ ] 🔴 **i10-b04** Strange gigs on the bulletin board (M)
+- [ ] 🟠 **i10-b05** Northern lights over the wheat (S)
+- [ ] 🟡 **i10-b06** Chase the eclipse (M)
+- [ ] 🟡 **i10-b07** A meteorite in the stubble (S)
+- [ ] 🟠 **i10-b08** A hot-air balloon lands in your field (S)
+- [ ] 🟠 **i10-b09** Dust storm on Highway 12 (S)
+- [ ] 🟠 **i10-b10** Cattle loose on Highway 12 (S)
+- [ ] 🟠 **i10-b11** A film crew takes over Main Street (M)
+- [ ] 🟡 **i10-b12** Something in the Blue Mountains (S)
+- [ ] 🟠 **i10-b13** An arrowhead in the creek bank: do it right (S)
+- [ ] 🟡 **i10-b14** Dig day at the mammoth site (S)
+- [ ] 🟠 **i10-b15** The old cornerstone box is opened (S)
+- [ ] 🟠 **i10-b16** The territorial charter vote (M)
+- [ ] 🟡 **i10-b17** The stoplight debate (S)
+- [ ] 🟠 **i10-b18** A key to a box nobody knew about (M)
+- [ ] 🟠 **i10-b19** A letter about money the state is holding (S)
+- [ ] 🟠 **i10-b20** A world record on Main Street (M)
+- [ ] 🟡 **i10-b21** The demolition derby at the fair (M)
+- [ ] 🟠 **i10-b22** Count the town: census taker every ten years (S)
+- [ ] 🟡 **i10-b23** Santa suit season (S)
+- [ ] 🟡 **i10-b24** A famous someone buys the house on the hill (M)
+- [ ] 🟡 **i10-b25** Groundhog week (M)
+- [ ] 🟡 **i10-b26** A dog's-eye week (S)
+- [ ] 🟠 **i10-b27** Sliding doors: the job you didn't take (M)
+- [ ] 🟠 **i10-b28** Groundwork for era starts (M)
+- [ ] 🟠 **i10-b29** Start in 1975 (big) (L)
+- [ ] 🟡 **i10-b30** Ash falls on the valley: May 1980 (S)
+- [ ] 🟡 **i10-b31** Start in 2050 (big, speculative) (L)
+- [ ] 🟡 **i10-b32** Honorary mayor for a day (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
