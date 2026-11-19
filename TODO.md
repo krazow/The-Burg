@@ -1084,6 +1084,87 @@ old ones.
 
 </details>
 
+## Ideas round 9 (pick on the build board)
+
+67 ideas. Details: [docs/ideas/round-9.md](docs/ideas/round-9.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 9: Later life and endings</b> (34 ideas)</summary>
+
+- [ ] 🔴 **i9-a01** Medicare at 65: pick your plan (M)
+- [ ] 🟠 **i9-a02** Checkups at 50 lower late-life risk (S)
+- [ ] 🟠 **i9-a03** Midlife: the 'what now?' years (M)
+- [ ] 🟠 **i9-a04** Show where health is headed for your age (S)
+- [ ] 🟡 **i9-a05** Hearing aids and cataract surgery (S)
+- [ ] 🟠 **i9-a06** Handing over the truck keys (M)
+- [ ] 🟠 **i9-a07** Grab bars before the fall (S)
+- [ ] 🟡 **i9-a08** Hire the neighbor kid for the walk and yard (S)
+- [ ] 🔴 **i9-a09** Lend a hand: a retiree focus in place of overtime (S)
+- [ ] 🟠 **i9-a10** A standing weekly commitment for retirees (M)
+- [ ] 🟡 **i9-a11** Social Security raises each January (S)
+- [ ] 🟠 **i9-a12** Choose your 401(k) draw rate (M)
+- [ ] 🟡 **i9-a13** Reverse mortgage or sell and rent back (M)
+- [ ] 🔴 **i9-a14** Mentor a young townsperson (M)
+- [ ] 🟠 **i9-a15** Teach what you know at the library (S)
+- [ ] 🟠 **i9-a16** Grandkid week in July (S)
+- [ ] 🟡 **i9-a17** Watch the grandkids so your kid can work (S)
+- [ ] 🟠 **i9-a18** Phone scams aimed at retirees (S)
+- [ ] 🟠 **i9-a19** Caring for your partner (M)
+- [ ] 🔴 **i9-a20** Losing your partner, gently (M)
+- [ ] 🟠 **i9-a21** Sort the house: keep, give, sell (M)
+- [ ] 🟠 **i9-a22** Give while you're living (M)
+- [ ] 🟡 **i9-a23** Medicaid steps in when care runs long (S)
+- [ ] 🟠 **i9-a24** Talk it over: your wishes on paper (S)
+- [ ] 🔴 **i9-a25** A final season instead of a sudden end (L)
+- [ ] 🟠 **i9-a26** Goodbyes: three visits in your last season (M)
+- [ ] 🟡 **i9-a27** Record stories for the grandkids (S)
+- [ ] 🔴 **i9-a28** Endings that fit the life (S)
+- [ ] 🟠 **i9-a29** A life chart on the ending screen (M)
+- [ ] 🟡 **i9-a30** What it added up to: a life's tallies (S)
+- [ ] 🟡 **i9-a31** Pick a line for your stone (S)
+- [ ] 🟠 **i9-a32** Lifelong habits shape the late years (S)
+- [ ] 🟠 **i9-a33** Faster late years: monthly turns after 70 (L)
+- [ ] 🟠 **i9-a34** Age bands on every event, checked by tests (M)
+
+</details>
+
+<details><summary><b>Ideas 9: Learning real-life skills</b> (33 ideas)</summary>
+
+- [ ] 🔴 **i9-b01** A pay stub you can open (S)
+- [ ] 🔴 **i9-b02** A 'Real-life notes' switch (S)
+- [ ] 🔴 **i9-b03** 'What would this cost in real life?' moments (M)
+- [ ] 🔴 **i9-b04** A monthly budget with three buckets (M)
+- [ ] 🟠 **i9-b05** Emergency fund meter (S)
+- [ ] 🔴 **i9-b06** A store credit card and the minimum payment (M)
+- [ ] 🟠 **i9-b07** A payday loan offer when you're broke (S)
+- [ ] 🟡 **i9-b08** Pay off debts in the order you choose (S)
+- [ ] 🟠 **i9-b09** An overdraft fee the first time you go below zero (S)
+- [ ] 🟠 **i9-b10** Compound interest birthdays (S)
+- [ ] 🔴 **i9-b11** Money left on the table: the 401(k) match (S)
+- [ ] 🟠 **i9-b12** 'Will I have enough?' retirement check (M)
+- [ ] 🔴 **i9-b13** Read the lease before you sign (M)
+- [ ] 🟠 **i9-b14** Move-in costs and getting your deposit back (S)
+- [ ] 🔴 **i9-b15** Rent vs. buy, side by side (M)
+- [ ] 🟠 **i9-b16** Open enrollment: pick a health plan (M)
+- [ ] 🟡 **i9-b17** W-4 at hire: more now or a refund later (S)
+- [ ] 🟠 **i9-b18** Free tax help night at the library (S)
+- [ ] 🟡 **i9-b19** Hourly jobs and time-and-a-half (S)
+- [ ] 🟡 **i9-b20** The first paycheck comes two weeks late (S)
+- [ ] 🟠 **i9-b21** The real price of the new pickup (S)
+- [ ] 🟠 **i9-b22** A scam text from 'your bank' (S)
+- [ ] 🟡 **i9-b23** Read the bill: catch the mistake (S)
+- [ ] 🟠 **i9-b24** Prices then and now in the year review (S)
+- [ ] 🟡 **i9-b25** Student loan plans for the grad start (S)
+- [ ] 🔴 **i9-b26** Money lessons from this life (M)
+- [ ] 🔴 **i9-b27** Class codes that work offline (L)
+- [ ] 🔴 **i9-b28** Guided lesson units (L)
+- [ ] 🟠 **i9-b29** Discussion prompts at checkpoints (M)
+- [ ] 🔴 **i9-b30** A printable one-page summary (M)
+- [ ] 🟠 **i9-b31** Result codes for the teacher's table (M)
+- [ ] 🟡 **i9-b32** A teacher guide in Help (S)
+- [ ] 🟡 **i9-b33** Small splurge, long shadow (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
