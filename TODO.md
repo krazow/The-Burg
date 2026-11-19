@@ -2240,6 +2240,82 @@ old ones.
 
 </details>
 
+## Ideas round 24 (pick on the build board)
+
+62 ideas. Details: [docs/ideas/round-24.md](docs/ideas/round-24.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 24: Values and hard choices</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i24-a01** A quiet values profile that grows from your choices (M)
+- [ ] 🔴 **i24-a02** Echoes: some choices come back weeks later (M)
+- [ ] 🔴 **i24-a03** Values never touch the score: a guard test (S)
+- [ ] 🔴 **i24-a04** Make up after a falling-out (M)
+- [ ] 🔴 **i24-a05** Cover for a coworker who clocks out early (S)
+- [ ] 🟠 **i24-a06** The wallet, take two: keep the cash, mail the license (S)
+- [ ] 🟠 **i24-a07** Too much change at Burg Basket (S)
+- [ ] 🟠 **i24-a08** Dinged a car in the lot and nobody saw (S)
+- [ ] 🟠 **i24-a09** Your friend asks, is my pie any good? (S)
+- [ ] 🟠 **i24-a10** A neighbor's dog keeps digging up another neighbor's garden (S)
+- [ ] 🟡 **i24-a11** The neighbor kid broke your window and begged you not to tell (S)
+- [ ] 🟡 **i24-a12** Judge the pie table when your friend entered (S)
+- [ ] 🟠 **i24-a13** A friend wants you as a job reference (S)
+- [ ] 🟠 **i24-a14** Speak up at the council meeting (M)
+- [ ] 🟡 **i24-a15** You saw the fender-bender, and the driver is a friend's teen (S)
+- [ ] 🟡 **i24-a16** The booster club books are $40 short (S)
+- [ ] 🟠 **i24-a17** A promise you made comes due (M)
+- [ ] 🟡 **i24-a18** Sleep on it: put off one hard choice a week (S)
+- [ ] 🟠 **i24-a19** Results in your own voice (S)
+- [ ] 🟡 **i24-a20** Folks know you: greetings shaped by your leanings (S)
+- [ ] 🟠 **i24-a21** What you stood for, on the end screen (M)
+- [ ] 🟠 **i24-a22** Your kid pocketed a candy bar (S)
+- [ ] 🟡 **i24-a23** Kids pick up a bit of how you live (M)
+- [ ] 🟠 **i24-a24** Hire your cousin or the better applicant (M)
+- [ ] 🟠 **i24-a25** The lost dog you grew to love (S)
+- [ ] 🟡 **i24-a26** The person who wronged you needs a favor (S)
+- [ ] 🟡 **i24-a27** The Tattler prints what you did in public (S)
+- [ ] 🟡 **i24-a28** Dilemmas wear a ⚖️ and show both sides' cost (S)
+- [ ] 🟠 **i24-a29** Pace dilemmas: at most one every six weeks (S)
+- [ ] 🟡 **i24-a30** People change: a leaning can flip (S)
+- [ ] 🟠 **i24-a31** Writing rules for hard choices (S)
+- [ ] 🟠 **i24-a32** Forgive yourself: make it right at the place (M)
+
+</details>
+
+<details><summary><b>Ideas 24: Memories and looking back</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i24-b01** A memory list that lasts the whole life (M)
+- [ ] 🔴 **i24-b02** The life timeline: one screen from 18 to now (L)
+- [ ] 🔴 **i24-b03** This week, years ago: memories come back on their date (M)
+- [ ] 🟠 **i24-b04** Look through the box: remembering as a Rest choice (S)
+- [ ] 🟠 **i24-b05** Memories fade unless you go back to them (M)
+- [ ] 🟠 **i24-b06** Hard anniversaries come back too (M)
+- [ ] 🔴 **i24-b07** Pick three childhood summers in Waitsburg at the start (M)
+- [ ] 🟠 **i24-b08** Flashbacks where it happened (S)
+- [ ] 🟠 **i24-b09** Your sixth-grade letter comes back (S)
+- [ ] 🟠 **i24-b10** A note to future you in a hard week (S)
+- [ ] 🟡 **i24-b11** Leave a December note for next December (S)
+- [ ] 🟠 **i24-b12** The memory box: pack it yourself when you move (M)
+- [ ] 🟡 **i24-b13** Ticket stubs from trips and nights out (S)
+- [ ] 🟠 **i24-b14** The fridge door on Home (S)
+- [ ] 🟠 **i24-b15** Tell a story at the café table (M)
+- [ ] 🟠 **i24-b16** The town remembers what you did (S)
+- [ ] 🟡 **i24-b17** Drive past your old place (S)
+- [ ] 🟠 **i24-b18** Clear out your old room at your parents' house (M)
+- [ ] 🟡 **i24-b19** Big weather gets a name and a year (S)
+- [ ] 🟠 **i24-b20** Doing things lingers; buying things fades (M)
+- [ ] 🟠 **i24-b21** Remembered happiness on the end screen (M)
+- [ ] 🟠 **i24-b22** The people in your memories (S)
+- [ ] 🟠 **i24-b23** A comfort memory in a rough stretch (S)
+- [ ] 🟡 **i24-b24** A bench in the park for someone you lost (S)
+- [ ] 🟡 **i24-b25** Grandma's recipe card on the holidays (S)
+- [ ] 🟡 **i24-b26** The grandkid's 'interview a grandparent' project (S)
+- [ ] 🟡 **i24-b27** A place from your childhood closes (S)
+- [ ] 🟡 **i24-b28** Dreams that mix up your memories (S)
+- [ ] 🟠 **i24-b29** The heir remembers growing up with you (M)
+- [ ] 🔴 **i24-b30** A balance check: skipping never makes memories (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
