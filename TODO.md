@@ -1858,6 +1858,83 @@ old ones.
 
 </details>
 
+## Ideas round 19 (pick on the build board)
+
+63 ideas. Details: [docs/ideas/round-19.md](docs/ideas/round-19.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 19: Build bundles</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i19-a01** Bundle: Neighbors on your street (L)
+- [ ] 🔴 **i19-a02** Bundle: Partner with a name and a meter (L)
+- [ ] 🔴 **i19-a03** Bundle: Aging parents and caregiving (L)
+- [ ] 🔴 **i19-a04** Bundle: Kids grow up in stages (L)
+- [ ] 🟠 **i19-a05** Bundle: Garden, canning and the freezer (M)
+- [ ] 🟠 **i19-a06** Bundle: Volunteer fire and search crews (M)
+- [ ] 🟠 **i19-a07** Bundle: Council seat and town votes (L)
+- [ ] 🔴 **i19-a08** Bundle: Job standing, boss and coworkers (L)
+- [ ] 🟠 **i19-a09** Bundle: Job ladders with visible rungs (M)
+- [ ] 🟠 **i19-a10** Bundle: A job market that moves (M)
+- [ ] 🟠 **i19-a11** Bundle: Shifts and the work week (M)
+- [ ] 🟠 **i19-a12** Bundle: Town standing you can spend (M)
+- [ ] 🔴 **i19-a13** Bundle: Savings jar and cushion (M)
+- [ ] 🟠 **i19-a14** Bundle: Debt help: refinance, plans and bankruptcy (M)
+- [ ] 🟠 **i19-a15** Bundle: Homeowner upkeep and upgrades (M)
+- [ ] 🟡 **i19-a16** Bundle: Roommate and the spare room (S)
+- [ ] 🟡 **i19-a17** Bundle: Pets with names that grow old (M)
+- [ ] 🟠 **i19-a18** Bundle: Friends and your crew (M)
+- [ ] 🟠 **i19-a19** Bundle: Retirement chapter (M)
+- [ ] 🔴 **i19-a20** Bundle: A final season and a fitting ending (L)
+- [ ] 🟡 **i19-a21** Bundle: The shelf of lives and the family tree (M)
+- [ ] 🟠 **i19-a22** Bundle: What gets passed down (M)
+- [ ] 🟠 **i19-a23** Bundle: Weather and the seasons (M)
+- [ ] 🟠 **i19-a24** Bundle: Wants and worries (M)
+- [ ] 🔴 **i19-a25** Bundle: Choices that show what they do (M)
+- [ ] 🟠 **i19-a26** Bundle: Plan the week ahead (M)
+- [ ] 🟠 **i19-a27** Bundle: The wheat lease as a real farm (L)
+- [ ] 🟠 **i19-a28** Bundle: Body, habits and health over time (M)
+- [ ] 🟡 **i19-a29** Bundle: Holidays on the calendar (M)
+- [ ] 🟡 **i19-a30** Bundle: Charts of your life (M)
+
+</details>
+
+<details><summary><b>Ideas 19: Custom games and settings</b> (33 ideas)</summary>
+
+- [ ] 🔴 **i19-b01** One rules object every system reads (M)
+- [ ] 🔴 **i19-b02** Change the rules: one folded button on the start sheet (S)
+- [ ] 🔴 **i19-b03** This life counts toward: a live badge on the rules sheet (S)
+- [ ] 🔴 **i19-b04** Like Normal, but...: every knob shows the Normal value (S)
+- [ ] 🔴 **i19-b05** What this means for a week: dollar examples on each knob (S)
+- [ ] 🟠 **i19-b06** Easier or harder: a simple meter for your rule set (S)
+- [ ] 🟠 **i19-b07** Pick any game length, in weeks (M)
+- [ ] 🟡 **i19-b08** End at an age you pick (S)
+- [ ] 🟠 **i19-b09** Starting money: Broke, Standard or Comfortable (S)
+- [ ] 🟠 **i19-b10** Inflation dial: frozen, usual or 1970s (S)
+- [ ] 🟠 **i19-b11** Pick which kinds of events show up (M)
+- [ ] 🟠 **i19-b12** Turn whole systems on or off (L)
+- [ ] 🟡 **i19-b13** Start in any month (S)
+- [ ] 🟠 **i19-b14** Longer turns for long lives (L)
+- [ ] 🔴 **i19-b15** Assist: handle the routine stuff for me (S)
+- [ ] 🟠 **i19-b16** Assist: let the game answer small events (S)
+- [ ] 🟠 **i19-b17** Assist: no game over (S)
+- [ ] 🟡 **i19-b18** Assist: warn me before cash goes under a line (S)
+- [ ] 🔴 **i19-b19** You can turn assists off mid-life, not on (S)
+- [ ] 🟠 **i19-b20** Built-in preset cards (M)
+- [ ] 🟡 **i19-b21** Preset cards show a typical score range (S)
+- [ ] 🟠 **i19-b22** Save your own presets (S)
+- [ ] 🟠 **i19-b23** Share a preset as a short code (S)
+- [ ] 🟠 **i19-b24** Type a word as your seed (S)
+- [ ] 🟡 **i19-b25** Same seed, new rules: compare two runs (M)
+- [ ] 🟠 **i19-b26** A Custom shelf grouped by rule set (M)
+- [ ] 🟡 **i19-b27** Rules show on the score card and share image (S)
+- [ ] 🔴 **i19-b28** Rules lock for weekly challenges and scenarios (S)
+- [ ] 🟠 **i19-b29** Rules travel safely in backups (S)
+- [ ] 🟠 **i19-b30** Tinker sheet for sandbox lives (M)
+- [ ] 🟡 **i19-b31** Event browser: try any event in a sandbox (S)
+- [ ] 🟠 **i19-b32** Custom games, explained: a plain Help page (S)
+- [ ] 🔴 **i19-b33** The sim plays every preset and the extreme knobs (M)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
