@@ -152,9 +152,9 @@ const EVENTS = [
   { ic:'🧾', title:'Tax refund', yr:1, w:4, when:m => inM(m,2,3) && S.jobId,
     text:'Your return is in.',
     choices:() => [{label:'Nice!', go:() => { const r = Math.round(cost(ri(300,1300))); adj({money:r, happy:3}); return `The IRS sent back ${fmt(r)}.`; }}]},
-  { ic:'📈', title:'A raise', w:3, when:() => job() && !S.retired && S.jobMonths >= 12 && S.raise < 1.5,
+  { ic:'📈', title:'A raise', w:3, when:() => job() && !S.retired && S.jobMonths >= 12 && S.raise < RAISE_CAP - 0.02,
     text:() => `Your boss at the ${job().title.toLowerCase()} job calls you in.`,
-    choices:() => [{label:'Hear them out', go:() => { S.raise = Math.min(1.5, S.raise * 1.06); S.jobMonths = 0; adj({happy:5}); return `A 6% raise! You now make ${wk(payNow(job()))}.`; }}]},
+    choices:() => [{label:'Hear them out', go:() => { S.raise = Math.min(RAISE_CAP, S.raise * 1.06); S.jobMonths = 0; adj({happy:5}); return `A 6% raise! You now make ${wk(payNow(job()))}.`; }}]},
   { ic:'📉', title:'Layoffs', yr:1, w:() => 0.8 * (LAYOFF_RISK[S.jobId] ?? .5) * (mode() === 'hard' ? 1.6 : 1) * (job() && job().union ? 0.5 : 1) * wxLayoffF(), when:() => job() && !S.retired && S.jobMonths >= 9,
     text:() => `Business is slow and cuts are coming at your ${job().title.toLowerCase()} job.`,
     choices:() => [
@@ -259,7 +259,7 @@ const EVENTS = [
   { ic:'👶', title:'Starting a family?', yr:1, w:3, when:() => S.partner && age() >= 23 && age() <= 42 && S.kids.length < 3,
     text:() => S.kids.length ? 'You and your partner are talking about another one.' : 'You and your partner have been talking about kids.',
     choices:() => [
-      {label:`Have a baby (about ${fmtc(650)}/mo until they're 18)`, go:() => { S.kids.push(S.ageMonths); adj({happy:12, community:3, health:-2}); log(S.kids.length > 1 ? `Baby number ${S.kids.length} arrived!` : 'Became a parent!'); return S.kids.length > 1 ? 'Another little Waitsburger! The house is louder and happier.' : 'A baby! Sleepless, broke and over the moon.'; }},
+      {label:`Have a baby (about ${fmtc(kidMonthly())}/mo until they're 18${childcareHelp() ? ', with state childcare help' : ''})`, go:() => { S.kids.push(S.ageMonths); adj({happy:12, community:3, health:-2}); log(S.kids.length > 1 ? `Baby number ${S.kids.length} arrived!` : 'Became a parent!'); return S.kids.length > 1 ? 'Another little Waitsburger! The house is louder and happier.' : 'A baby! Sleepless, broke and over the moon.'; }},
       {label:'Not now', go:() => 'You decided to wait.'}
     ]},
   { ic:'✈️', title:'The trip of a lifetime', yr:1, w:2, when:() => age() >= 28 && S.money > cost(12000),
@@ -341,7 +341,7 @@ const longCommute = () => commuteOneWay() >= 20;
 const dayPay = () => working() ? payNow(job()) / WORKDAYS : 0;
 const weekPay = () => working() ? payNow(job()) * W : 0;
 const cr = v => Math.round(cost(v));
-const RAISE_CAP = 1.6;
+const RAISE_CAP = 1.3;   // i75-b25: raises top out 30% above inflation; the ladder rungs are the main way up
 const bumpPay = f => { S.raise = Math.min(RAISE_CAP, S.raise * f); };
 // the town this week's drive goes to: a trip's town, else your commute, else Walla Walla
 function roadTown(){

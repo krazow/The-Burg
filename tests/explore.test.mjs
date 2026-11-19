@@ -16,7 +16,7 @@ await t.check('every start × mode × length plays to the end with sane numbers'
       while (!end && w < 400) { const opts = Object.keys(FOCUS).filter(k => !(FOCUS[k].needsJob && !job()) && !(FOCUS[k].study && S.edu >= 3)); S.focus = opts[w % opts.length];
         if (!S.jobId && w % 3 === 0) apply(JOBS.filter(j => j.edu <= S.edu)[w % 5].id);
         if (w % 9 === 0) { const town = ['dayton','wallawalla','pasco','kennewick','richland'][w % 5]; planTrip(town, townStops(town).filter(s => !stopBlocked(s)).slice(0, 2).map(s => s.id)); }
-        if (w === 30 && S.money > 3000) startBiz('shop');
+        if (w === 30 && S.money > 6500) startBiz('shop');
         const res = weekTick(false); w++; if (res.ev) { const ch = res.ev.choices().filter(c => !c.if || c.if()); ch[w % ch.length].go(); } end = res.ending;
         for (const k of ['happy','health','community']) if (!(S[k] >= 0 && S[k] <= 100)) bad.push(`${bg}/${md}/${len} ${k}=${S[k]}`);
         for (const k of ['money','equity','carValue','k401']) if (!Number.isFinite(S[k])) bad.push(`${bg}/${md}/${len} ${k}=${S[k]}`);
