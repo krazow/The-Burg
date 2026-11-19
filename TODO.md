@@ -1783,6 +1783,81 @@ old ones.
 
 </details>
 
+## Ideas round 18 (pick on the build board)
+
+61 ideas. Details: [docs/ideas/round-18.md](docs/ideas/round-18.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 18: Farm, land and animals</b> (31 ideas)</summary>
+
+- [ ] 🔴 **i18-a01** Cash rent or crop share on the wheat lease (S)
+- [ ] 🟠 **i18-a02** The landowner is a person you keep happy (M)
+- [ ] 🟠 **i18-a03** Peas or summer fallow: the rotation choice (M)
+- [ ] 🟡 **i18-a04** A harvest scale ticket instead of one number (S)
+- [ ] 🟠 **i18-a05** Join the grain co-op and get a patronage check (S)
+- [ ] 🟠 **i18-a06** The farm credit operating line (M)
+- [ ] 🟡 **i18-a07** Enroll ground in the conservation program (S)
+- [ ] 🟠 **i18-a08** Drought year: the county declares a disaster (M)
+- [ ] 🟠 **i18-a09** Hay: three cuttings and a rain risk (M)
+- [ ] 🟠 **i18-a10** Water rights come with the land, or they don't (M)
+- [ ] 🔴 **i18-a11** A few acres outside town (the hobby farm home) (M)
+- [ ] 🟡 **i18-a12** The hobby farm ledger: what it really costs (S)
+- [ ] 🔴 **i18-a13** 4-H: your kid raises a market lamb (M)
+- [ ] 🟡 **i18-a14** Be a 4-H club leader (S)
+- [ ] 🟡 **i18-a15** Lambing season keeps you up in February (M)
+- [ ] 🟡 **i18-a16** Bees for the orchards (S)
+- [ ] 🟠 **i18-a17** Plant an orchard or vines: a slow business (L)
+- [ ] 🟡 **i18-a18** Frost night: help run the wind machines (S)
+- [ ] 🟠 **i18-a19** Buy an old combine and cut for neighbors (M)
+- [ ] 🟡 **i18-a20** The combine breaks down mid-harvest (S)
+- [ ] 🟠 **i18-a21** Farm auctions: an estate sale out on the county road (M)
+- [ ] 🟠 **i18-a22** Rent more ground when an old farmer retires (M)
+- [ ] 🟡 **i18-a23** A fence line dispute with the neighbor (S)
+- [ ] 🟡 **i18-a24** A hunting lease on your ground (S)
+- [ ] 🟡 **i18-a25** A wind company wants to lease your ridge (M)
+- [ ] 🟠 **i18-a26** A farm stand at the end of the driveway (S)
+- [ ] 🟡 **i18-a27** Sale-barn café on Tuesday (S)
+- [ ] 🟠 **i18-a28** A Farming skill you earn in the field (M)
+- [ ] 🟡 **i18-a29** Who feeds the animals when you're gone? (S)
+- [ ] 🟡 **i18-a30** Barn raising after a neighbor's fire (S)
+- [ ] 🟡 **i18-a31** Ten years on the same ground (S)
+
+</details>
+
+<details><summary><b>Ideas 18: Luck and the unexpected</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i18-b01** A luck tally for the year: good breaks and bad breaks (M)
+- [ ] 🔴 **i18-b02** A rough stretch, said out loud (S)
+- [ ] 🟠 **i18-b03** How luck works, written in Help (S)
+- [ ] 🟠 **i18-b04** 'Why me?' on a bad-luck event (S)
+- [ ] 🟠 **i18-b05** Windfalls wait a week (M)
+- [ ] 🔴 **i18-b06** Insurance claims take weeks, not a tap (M)
+- [ ] 🟠 **i18-b07** Walk the house with your phone: a home inventory (S)
+- [ ] 🔴 **i18-b08** Storm-chaser roofer at the door (S)
+- [ ] 🟠 **i18-b09** A rental that's too cheap to be real (S)
+- [ ] 🟡 **i18-b10** The buyer who overpays for your truck (S)
+- [ ] 🟡 **i18-b11** A card of scam signs you collect (S)
+- [ ] 🔴 **i18-b12** Flood insurance waits 30 days (M)
+- [ ] 🟠 **i18-b13** Flood zone and fire edge on the home cards and map (M)
+- [ ] 🔴 **i18-b14** Wildfire evacuation: Ready, Set, Go (M)
+- [ ] 🟠 **i18-b15** A go bag by the door (S)
+- [ ] 🟡 **i18-b16** The smoke alarm chirps at 3 a.m. (S)
+- [ ] 🟠 **i18-b17** A kitchen fire: small and recoverable (M)
+- [ ] 🟡 **i18-b18** Hail on the hood (S)
+- [ ] 🟠 **i18-b19** Pipes freeze in a cold snap (S)
+- [ ] 🟡 **i18-b20** Trim the big tree before storm season (S)
+- [ ] 🔴 **i18-b21** Mud-out day: the town comes to your house (L)
+- [ ] 🟡 **i18-b22** A relief shelter at the school gym (S)
+- [ ] 🟡 **i18-b23** Disaster aid after a declared flood (M)
+- [ ] 🟠 **i18-b24** A relief jar on the café counter (S)
+- [ ] 🟡 **i18-b25** Scratch tickets with the real odds (S)
+- [ ] 🟡 **i18-b26** A lucky penny that admits it does nothing (S)
+- [ ] 🟠 **i18-b27** January: what could go wrong this year (M)
+- [ ] 🟠 **i18-b28** Luck versus choices on the end screen (M)
+- [ ] 🟡 **i18-b29** Good deeds come back, and Help says so (S)
+- [ ] 🟠 **i18-b30** A sure thing from a friend at church (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
