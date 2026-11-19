@@ -283,11 +283,11 @@ window.BIZTAP = id => bizSheet(id);
 /* ---- jobs at local businesses (#52): pay in line with the rest of the table ---- */
 Object.assign(jobById('diner'), { title:'Line cook', where:'Bourbon Gulch Sports Bar', place:'gulch' });
 JOBS.push(
-  {id:'barista',   city:'waitsburg', title:'Barista',           where:'Howlin\' Bean',       place:'bean',    pay:2100, edu:0, stress:.3, wear:.3},
-  {id:'grocer',    city:'waitsburg', title:'Grocery clerk',     where:'Burg Basket Grocery', place:'basket',  pay:2200, edu:0, stress:.3, wear:.4},
-  {id:'reporter',  city:'waitsburg', title:'Reporter',          where:'The Touchet Tattler', place:'tattler', pay:2400, edu:0, stress:.6, wear:.1},
-  {id:'teller',    city:'waitsburg', title:'Bank teller',       where:'Standard Bearer Bank',place:'bank',    pay:2600, edu:0, stress:.5, wear:0},
-  {id:'apprentice',city:'waitsburg', title:'Trades apprentice', where:'Sharp Point Builders',place:'trades',  pay:2800, edu:0, stress:.4, wear:1.0},
+  {id:'barista',   city:'waitsburg', title:'Barista',           where:'Howlin\' Bean',       place:'bean',    pay:3050, edu:0, stress:.3, wear:.3},
+  {id:'grocer',    city:'waitsburg', title:'Grocery clerk',     where:'Burg Basket Grocery', place:'basket',  pay:3100, edu:0, stress:.3, wear:.4},
+  {id:'reporter',  city:'waitsburg', title:'Reporter',          where:'The Touchet Tattler', place:'tattler', pay:3150, edu:0, stress:.6, wear:.1},
+  {id:'teller',    city:'waitsburg', title:'Bank teller',       where:'Standard Bearer Bank',place:'bank',    pay:3250, edu:0, stress:.5, wear:0},
+  {id:'apprentice',city:'waitsburg', title:'Trades apprentice', where:'Sharp Point Builders',place:'trades',  pay:3400, edu:0, stress:.4, wear:1.0},
   {id:'medasst',   city:'waitsburg', title:'Medical assistant', where:'The Burg Clinic',     place:'clinic',  pay:3300, edu:1, stress:.5, wear:.3},
   {id:'agtech',    city:'waitsburg', title:'Ag technician',     where:'McGrub & Grain Co.',  place:'mcgrub',  pay:3600, edu:1, stress:.4, wear:.5}
 );
@@ -367,11 +367,11 @@ for (const [t, b] of Object.entries(OUT_EVENT_BIZ)) EVENT_PLACE[t] = ['T', place
 
 /* ---- life systems at real places (#53): the Life tab's Around town card ---- */
 function townLifeCard(){
-  const a0 = age(), food = cost(520 - (S.turn < S.stockUntil ? GROCERY_SHARE * STOCK_OFF : 0)) * (1 - skillLv('cook') * 0.04);
+  const a0 = age(), food = cost(FOOD_UTIL - (S.turn < S.stockUntil ? GROCERY_SHARE * STOCK_OFF : 0)) * (1 - skillLv('cook') * 0.04);
   const btn = id => `<button class="sm alt" onclick="BIZTAP('${id}')">${placeById(id).ic} ${esc(placeById(id).name)}</button>`;
   return `<div class="card"><h3>🏘️ Around town</h3>
     <div class="kv"><span>🏦 Savings and loans</span><span>Standard Bearer Bank</span></div>
-    <div class="kv"><span>🩺 Health care${a0 >= 50 ? ` (${wk(cost(a0 >= 65 ? 420 : 180))})` : ''}</span><span>The Burg Clinic</span></div>
+    <div class="kv"><span>🩺 Health care${healthMonthly() ? ` (${wk(cost(healthMonthly()))})` : a0 < 50 ? ' (Apple Health, $0)' : ''}</span><span>The Burg Clinic</span></div>
     <div class="kv"><span>🛒 Food and utilities (${wk(food)})</span><span>Burg Basket Grocery</span></div>
     <div class="kv"><span>🔨 Home repairs</span><span>Local trades</span></div>
     <p class="muted" style="margin:6px 0">Shop local at Burg Basket for a little community, or stock up on a trip to Walla Walla for ${STOCK_OFF * 100}% off groceries.${HOMES[S.home].own ? ' Storm damage and fixer-upper work go to the local trades.' : ''}</p>

@@ -280,7 +280,7 @@ function healthCard(){
     ${inj ? row('🩹 Work injury', inj.pt != null ? `therapy, ${Math.max(0, inj.pt - S.turn)} weeks left` : inj.linger ? `your ${BODY[inj.part].name} still aches` : 'healing') : ''}
     ${j && !j.wear && a0 >= DESK_AGE ? row('💺 Desk days', S.deskHabit ? 'you walk at lunch ✓' : 'stiff by afternoon') : ''}
     ${shots ? row('💉 Grown-up shots', shots) : ''}
-    ${row('🦷 Dental', dentalOn() ? 'covered' : 'not covered')}${row('🚑 Ambulance district', ambOn() ? 'member' : 'not a member')}
+    ${row('🩺 Medical plan', healthMonthly() ? `${wk(cost(healthMonthly()))} (Health care bill)` : 'Apple Health, $0')}${row('🦷 Dental', dentalOn() ? 'covered' : 'not covered')}${row('🚑 Ambulance district', ambOn() ? 'member' : 'not a member')}
     ${w ? row('🧓 Dad\'s appointments', `${w.ic} ${w.name}${onLeave() ? ` · leave, ${S.parent.leaveEnd - S.turn} weeks left` : ''}`) : ''}
     <p class="muted" style="margin:6px 0">${j ? 'Jobs earn an hour of sick time for every 40 worked (up to 40). They cover sick days, so the week isn\'t unpaid. ' : ''}${inj && inj.linger ? 'Physical therapy is a stop on a Walla Walla trip. ' : ''}${w && S.parent.who !== 'pay' ? 'A respite weekend in Walla Walla gives back what caregiving takes. ' : ''}${a0 >= VAN_AGE ? 'The county medical van can take you to Walla Walla appointments for ' + fmtc(VAN_FARE) + '. ' : ''}Dental and the ambulance district are on the insurance sheet.</p>
   </div>`;
