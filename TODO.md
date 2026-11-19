@@ -5426,6 +5426,83 @@ old ones.
 
 </details>
 
+## Ideas round 66 (pick on the build board)
+
+63 ideas. Details: [docs/ideas/round-66.md](docs/ideas/round-66.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 66: Celebration Days up close</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i66-a01** A weather roll for the festival weekend (S)
+- [ ] 🔴 **i66-a02** Cap what one festival weekend can give (S)
+- [ ] 🔴 **i66-a03** Pick a festival volunteer job and keep it for years (M)
+- [ ] 🟡 **i66-a04** Park cars in the hayfield (S)
+- [ ] 🟠 **i66-a05** Sunday dawn trash crew (S)
+- [ ] 🟠 **i66-a06** The first aid tent for nurses and EMTs (S)
+- [ ] 🟠 **i66-a07** Call the horse races from the announcer's booth (M)
+- [ ] 🟡 **i66-a08** Hot-walk horses at the barn row (S)
+- [ ] 🔴 **i66-a09** Rent a booth on the street fair (M)
+- [ ] 🟡 **i66-a10** The booth next to yours (S)
+- [ ] 🟡 **i66-a11** A lost kid at the street fair (S)
+- [ ] 🟠 **i66-a12** Enter your own car in the car show (M)
+- [ ] 🟡 **i66-a13** Judge the car show (S)
+- [ ] 🟠 **i66-a14** Designated driver from the beer garden (S)
+- [ ] 🟠 **i66-a15** Under 21 and outside the beer garden fence (S)
+- [ ] 🟡 **i66-a16** Two-step lessons before the Days dance (S)
+- [ ] 🟡 **i66-a17** The last slow song (S)
+- [ ] 🟡 **i66-a18** Sponsor a royalty scholarship (S)
+- [ ] 🟡 **i66-a19** The old court rides again (S)
+- [ ] 🔴 **i66-a20** Your lawn chairs on Main Street (S)
+- [ ] 🟠 **i66-a21** A family festival tradition (M)
+- [ ] 🟡 **i66-a22** Kids' stick-horse race (S)
+- [ ] 🔴 **i66-a23** The festival shows up on the Main Street map (S)
+- [ ] 🟡 **i66-a24** Main Street closes for the parade (S)
+- [ ] 🟠 **i66-a25** Put your business in the parade (M)
+- [ ] 🟠 **i66-a26** A share in a race horse (L)
+- [ ] 🟡 **i66-a27** The photo finish argument (S)
+- [ ] 🟠 **i66-a28** Will the town keep the horse races? (M)
+- [ ] 🟠 **i66-a29** A round-number anniversary year (M)
+- [ ] 🟡 **i66-a30** Rain on the parade: pack up or march on (S)
+- [ ] 🟡 **i66-a31** Wind takes the booth tents (S)
+- [ ] 🟡 **i66-a32** Sunburn at the races (S)
+
+</details>
+
+<details><summary><b>Ideas 66: Event pool health</b> (31 ideas)</summary>
+
+- [ ] 🔴 **i66-b01** A tip from a friend only comes when a better job is open (S)
+- [ ] 🔴 **i66-b02** Wine country weekend: weight 3 to 2, April to October only (S)
+- [ ] 🟠 **i66-b03** Neighbor's moving day happens in moving season (May to September) (S)
+- [ ] 🟡 **i66-b04** Found money turns up in winter-coat season (November to February) (S)
+- [ ] 🟡 **i66-b05** Pothole season covers February too (S)
+- [ ] 🟡 **i66-b06** Fog in the Touchet Valley runs into February (S)
+- [ ] 🔴 **i66-b07** Truck trouble: the buddy fix works 60% of the time (S)
+- [ ] 🟠 **i66-b08** Gas prices spike: a carpool covers half the spike, not all of it (S)
+- [ ] 🟠 **i66-b09** A coworker conflict: going to the boss buys a quiet year (S)
+- [ ] 🟡 **i66-b10** Train the new hire: mentoring costs a late night (S)
+- [ ] 🟡 **i66-b11** A lost wallet: finding the owner costs an afternoon (S)
+- [ ] 🟡 **i66-b12** A friend in the hospital: flowers become the easy kind choice (S)
+- [ ] 🟡 **i66-b13** Skipping the holiday party or the conference gets you something (S)
+- [ ] 🟡 **i66-b14** Bluegrass jam: sitting in costs a late night (S)
+- [ ] 🔴 **i66-b15** Health plan: better coverage pays back (M)
+- [ ] 🔴 **i66-b16** Bluewood season pass: winter "Get outside" weeks count as ski days (S)
+- [ ] 🔴 **i66-b17** Feeling run down comes under 45 health, not 40 (S)
+- [ ] 🟠 **i66-b18** Job events get double weight for your own job group (M)
+- [ ] 🟠 **i66-b19** Harvest crunch: more harvest jobs, weight 4 to 8 (S)
+- [ ] 🟡 **i66-b20** Chains required also comes on Bluewood ski days (S)
+- [ ] 🟠 **i66-b21** Fixer-upper: hiring a contractor pays close to doing it yourself (S)
+- [ ] 🟠 **i66-b22** The flood: Water in the basements gets 16 weeks to arrive, not 8 (S)
+- [ ] 🟠 **i66-b23** Hurt on the job: light duty costs half as much (S)
+- [ ] 🟠 **i66-b24** Cooldowns grow each time an event repeats (M)
+- [ ] 🟠 **i66-b25** A raise, Layoffs and Tax refund move to the work pool (S)
+- [ ] 🟠 **i66-b26** The idle bot answers events with the do-nothing choice (S)
+- [ ] 🔴 **i66-b27** A strictly-better choice check in the sim (L)
+- [ ] 🟡 **i66-b28** Music night at The Royal Brick: weight 2 to 1 (S)
+- [ ] 🟠 **i66-b29** Celebration Days: the long-shot horse loses money on average (S)
+- [ ] 🟡 **i66-b30** Mandatory overtime: refusing has a real cost (S)
+- [ ] 🟡 **i66-b31** A season-mix check: every month at least 20% seasonal events (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
