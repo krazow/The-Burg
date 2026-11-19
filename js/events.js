@@ -61,7 +61,7 @@ const EVENT_PLACE = {
   "A friend's food truck":['T','mainst'], 'Opening day for the food truck':['T','fair'], 'A year of the food truck':['T','fair'],
   'Water in the basements':['T','river'], 'A levee for the town':['T','river'], 'The levee is dedicated':['T','river']
 };
-const WORK_SPOT = { farmhand:'fields', diner:'mainst', para:'school', elevator:'elevator', insure:'mainst' };
+const WORK_SPOT = { farmhand:'fields', diner:'mainst', para:'school', elevator:'elevator', insure:'mainst', teacher:'school', harvtruck:'fields', remote:'library' };
 function eventPlace(ev){
   let pl = EVENT_PLACE[ev.title] || ['T','mainst'];
   const j = S.retired ? null : job();
@@ -111,7 +111,7 @@ const EVENTS = [
       {label:'Drive in slow and careful', go:() => { if (chance((CARS[S.car].mpg>25 ? .3 : .2) * ditchMult())) { adj({money:-cost(850), health:-3, happy:-4}); return `You slid into a ditch. A tow and repairs ran ${fmtc(850)}.`; } adj({happy:-1}); return 'White knuckles the whole way, but you made it.'; }},
       {label:'Take an unpaid day', go:() => { const p = Math.round((job()?payNow(job(), true):0)/WORKDAYS); adj({money:-p, happy:2}); return `You stayed home with coffee and lost a day's pay.`; }}
     ]},
-  { ic:'🔧', title:'Truck trouble', w:4, when:() => chance(CARS[S.car].breakdown * 4 * careMult()),
+  { ic:'🔧', title:'Truck trouble', w:4, when:() => chance(CARS[S.car].breakdown * 4 * careMult() * (onBus() ? 0.5 : 1)),   // i3-a14: the bus saves wear
     text:() => `Your ${CARS[S.car].name.toLowerCase()} won't start.`,
     choices:() => [
       {label:'Take it to the shop', go:() => { const c = Math.round(cost(ri(300, S.car==='beater'?1400:900)) * (1 - skillLv('mechanic') * 0.15)); adj({money:-c, happy:-2}); return `The shop fixed it for ${fmt(c)}.`; }},
@@ -145,11 +145,11 @@ const EVENTS = [
   { ic:'📈', title:'A raise', w:3, when:() => job() && !S.retired && S.jobMonths >= 12 && S.raise < 1.5,
     text:() => `Your boss at the ${job().title.toLowerCase()} job calls you in.`,
     choices:() => [{label:'Hear them out', go:() => { S.raise = Math.min(1.5, S.raise * 1.06); S.jobMonths = 0; adj({happy:5}); return `A 6% raise! You now make ${wk(payNow(job()))}.`; }}]},
-  { ic:'📉', title:'Layoffs', yr:1, w:() => 0.8 * (LAYOFF_RISK[S.jobId] ?? .5) * (mode() === 'hard' ? 1.6 : 1), when:() => job() && !S.retired && S.jobMonths >= 9,
+  { ic:'📉', title:'Layoffs', yr:1, w:() => 0.8 * (LAYOFF_RISK[S.jobId] ?? .5) * (mode() === 'hard' ? 1.6 : 1) * (job() && job().union ? 0.5 : 1), when:() => job() && !S.retired && S.jobMonths >= 9,
     text:() => `Business is slow and cuts are coming at your ${job().title.toLowerCase()} job.`,
     choices:() => [
-      {label:'Ask to stay on', go:() => { if (chance(.5 + S.community*0.003)) { adj({happy:-2}); return 'They kept you on. Phew.'; } const t = job().title; S.jobId = null; S.ui = 6; adj({happy:-10}); return `You were let go from your ${t.toLowerCase()} job. Check the job board.`; }},
-      {label:'Take the severance', go:() => { const p = payNow(job(), true); S.jobId = null; adj({money:p*2, happy:-5}); return `You took two months' pay (${fmt(p*2)}) and walked.`; }}
+      {label:'Ask to stay on', go:() => { if (chance(.5 + S.community*0.003)) { adj({happy:-2}); return 'They kept you on. Phew.'; } const t = job().title; leaveJob('laid'); S.ui = 6; adj({happy:-10}); return `You were let go from your ${t.toLowerCase()} job. Check the job board.`; }},
+      {label:'Take the severance', go:() => { const p = payNow(job(), true); leaveJob('laid'); adj({money:p*2, happy:-5}); return `You took two months' pay (${fmt(p*2)}) and walked.`; }}
     ]},
   { ic:'🐕', title:'A friendly stray', w:3, when:() => !S.dog,
     text:'A scruffy dog follows you all the way home from the park.',
@@ -220,11 +220,11 @@ const EVENTS = [
   { ic:'💡', title:'A tip from a friend', w:2, when:() => S.community >= 50 && !S.retired,
     text:'A friend says there\'s an opening nobody\'s posted yet. They could put in a word.',
     choices:() => {
-      const opts = JOBS.filter(x => x.edu <= S.edu && x.id !== S.jobId && x.pay > (job() ? job().pay*S.raise : 0));
+      const opts = JOBS.filter(x => x.edu <= S.edu && !extraLock(x) && jobInSeason(x) && x.id !== S.jobId && x.pay > (job() ? job().pay*S.raise : 0));
       if (!opts.length) return [{label:'Thanks anyway', go:() => { adj({community:1}); return 'Nothing beats what you have now.'; }}];
       const x = pick(opts);
       return [
-        {label:`Take it: ${x.title} in ${CITIES[x.city].name} (${fmt(x.pay)})`, go:() => { S.jobId = x.id; S.jobMonths = 0; S.raise = 1; adj({happy:4}); return `You start as ${x.title} in ${CITIES[x.city].name}.`; }},
+        {label:`Take it: ${x.title} in ${CITIES[x.city].name} (${fmt(x.pay)})`, go:() => { startJob(x.id); adj({happy:4}); return `You start as ${x.title} in ${CITIES[x.city].name}.`; }},
         {label:'Stay where I am', go:() => 'You thanked them and passed.'}
       ];
     }},
@@ -285,7 +285,9 @@ const JOB_GROUP = { farmhand:'field', cellar:'field', onion:'field', foodplant:'
   insure:'office', clerk:'office', loan:'office', labadmin:'office', prof:'office', scientist:'office', teller:'office', reporter:'office',
   cna:'care', rn:'care', imaging:'care', para:'care', medasst:'care',
   diner:'service', retail:'service', hardware:'service', barista:'service', grocer:'service',
-  trucker:'trades', rail:'trades', mech:'trades', elevator:'trades', co:'trades', apprentice:'trades' };
+  trucker:'trades', rail:'trades', mech:'trades', elevator:'trades', co:'trades', apprentice:'trades',
+  forest:'field', harvtruck:'field', vaclerk:'office', remote:'office', teacher:'care', phleb:'care',
+  windtech:'trades', damop:'trades', nukeop:'trades', electrician:'trades', plumber:'trades', lineman:'trades', welder:'trades' };
 const working = () => !!job() && !S.retired;
 const jobIn = (...groups) => working() && groups.includes(JOB_GROUP[S.jobId]);
 const longCommute = () => commuteOneWay() >= 20;
@@ -310,7 +312,7 @@ const medBill = v => cost(v) * (S.healthPlan && S.healthPlan.k === 'better' && S
 function classWeeks(n){
   if (S.edu >= 3) return false;
   S.studyProg += n;
-  if (S.studyProg >= STUDY_NEED[S.edu]) { S.studyProg = 0; S.edu++; log(`Graduated with a ${EDU[S.edu]}.`); adj({happy:8}); (S.newBadges = S.newBadges || []).push(`🎓 ${EDU[S.edu]}!`); }
+  if (S.studyProg >= STUDY_NEED[S.edu]) { graduate(); (S.newBadges = S.newBadges || []).push(`🎓 ${EDU[S.edu]}!`); }
   return true;
 }
 const studying = () => S.focus === 'study' && S.edu < 3;
@@ -494,13 +496,14 @@ const WORK_EVENTS = [
         if (chance(p)) { bumpPay(1.04); adj({happy:3}); return `A 4% raise! You now make ${wk(payNow(job()))}.`; } adj({happy:-3}); return '"Not this year." Ouch.'; }},
       {label:'Keep your head down', go:() => 'A fine review, and no surprises.'}
     ]},
-  { ic:'🪜', title:'A promotion offer', cat:'work', yr:1, w:2, when:() => working() && S.jobMonths >= 12 && S.raise < RAISE_CAP,
-    text:'Your boss wants you to take on a team. More pay, more headaches.',
-    choices:() => [
-      {label:`Take it (+${Math.round((0.12 + (S.promoBoost || 0)) * 100)}% pay, more stress)`, go:() => { bumpPay(1.12 + (S.promoBoost || 0)); S.promoBoost = 0;
-        S.promo = { job: S.jobId, n: Math.min(3, (S.promo && S.promo.job === S.jobId ? S.promo.n : 0) + 1) }; return `Promoted! You now make ${wk(payNow(job()))}, and the job is a little more stressful.`; }},
+  // i3-a01: a promotion moves you up a named rung of the job's ladder (features.js), once you've earned it
+  { ic:'🪜', title:'A promotion offer', cat:'work', yr:1, w:2, when:() => canPromote(),
+    text:() => `Your boss wants to move you up from ${jobTitle().toLowerCase()} to ${nextRung().title.toLowerCase()}. More pay, more headaches.`,
+    choices:() => { const r = nextRung(), up = Math.round((r.payMult / rungOf().payMult * (1 + (S.promoBoost || 0)) - 1) * 100); return [
+      {label:`Take it (+${up}% pay, more stress)`, go:() => { S.rung = (S.rung || 0) + 1; if (S.promoBoost) bumpPay(1 + S.promoBoost); S.promoBoost = 0;
+        return `Promoted to ${r.title.toLowerCase()}! You now make ${wk(payNow(job()))}, and the job is a little more stressful.`; }},
       {label:'Turn it down', go:() => { adj({happy:1}); return 'You like your job the way it is.'; }}
-    ]},
+    ]; }},
   { ic:'⏱️', title:'Mandatory overtime week', cat:'work', w:2, when:() => jobIn('field','service'),
     text:'Everyone is on 60 hours this week. No exceptions, says the boss.',
     choices:() => [
@@ -552,7 +555,10 @@ const WORK_EVENTS = [
     text:'You messed up an order, and it\'s going to cost the company.',
     choices:() => [
       {label:'Fix it after hours', go:() => { adj({health:-2}); return 'Two late nights, and nobody ever knew.'; }},
-      {label:'Own up to the boss', go:() => { adj({happy:-2}); S.raiseBoost = .1; return 'An uncomfortable talk, but the boss respects honesty. It will help at your next review.'; }}
+      {label:'Own up to the boss', go:() => { adj({happy:-2}); S.raiseBoost = .1; return 'An uncomfortable talk, but the boss respects honesty. It will help at your next review.'; }},
+      // i3-a09: a firing follows you as a bad reference for a year
+      {label:'Blame the new hire', go:() => { if (chance(.5)) { const t = job().title; leaveJob('fired'); adj({happy:-8}); return `The boss found out. You were fired from the ${t.toLowerCase()} job, and that reference will follow you for a year.`; }
+        adj({community:-1}); return 'It worked, this time. The new hire looked miserable.'; }}
     ]},
   { ic:'⚙️', title:'Equipment breaks down', cat:'work', w:2, when:() => jobIn('field','trades'),
     text:'The main machine at work quits mid-shift.',

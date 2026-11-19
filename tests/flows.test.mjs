@@ -183,7 +183,7 @@ await t.check('every event\'s every choice works and shows a result', async () =
   }
   assert(tried >= titles.length, `only ${tried} choices across ${titles.length} events`);
   const cats = await page.evaluate(() => ['road', 'work'].map(c => EVENTS.filter(e => e.cat === c).length));
-  assert(cats[0] === 30 && cats[1] === 30, `expected 30 road and 30 work events, got ${cats}`);
+  assert(cats[0] === 30 && cats[1] === 32, `expected 30 road and 32 work events (with the contract vote and the federal shutdown), got ${cats}`);
   console.log(`     (${tried} choices across ${titles.length} events)`);
 });
 
@@ -531,6 +531,69 @@ await t.check('H2: Replace on a full board asks first, and Back changes nothing'
   const after = await page.evaluate(() => JSON.stringify(slots()));
   assert(after === before, 'slots changed after Back');
   await page.evaluate(() => { closeSheet(); localStorage.clear(); S = null; renderTitle(); });
+});
+
+// ---- jobs and school (ideas round 3), by tapping ----
+await t.check('i3-a07/a08: Apply opens an interview; an answer leads to the offer, and a hard-to-fill job lets you ask for more', async () => {
+  await life({ edu: 2, community: 60 }, 'jobs');
+  await page.click('[data-apply="rn"]');
+  await page.waitForSelector(`${open} >> text=Interview: Registered nurse`);
+  assert((await page.$$(`${open} [data-i]`)).length === 3, 'three interview answers');
+  await page.evaluate(() => { window._r = Math.random; Math.random = () => 0.3; });
+  await page.click(`${open} [data-i="0"]`);
+  await page.waitForSelector(`${open} >> text=You're hired`);
+  assert((await page.$$(`${open} [data-i]`)).length === 3, 'the offer should have three choices');
+  await page.click(`${open} [data-i="1"]`);
+  await page.evaluate(() => { Math.random = window._r; });
+  await page.waitForSelector(`${open} >> text=5% more`);
+  await page.click(`${open} #ok`);
+  const s = await S();
+  assert(s.jobId === 'rn' && Math.abs(s.raise - 1.05) < 1e-9, JSON.stringify({ job: s.jobId, raise: s.raise }));
+});
+
+await t.check('i3-a07: Decide later leaves the interview pending until End Week', async () => {
+  await life({}, 'jobs');
+  await page.click('[data-apply="diner"]');
+  await page.click(`${open} #no`);
+  assert((await S()).interview.id === 'diner', 'pending interview');
+  assert((await page.textContent('#main')).includes('Waiting to hear back'), 'the Jobs tab should say you are waiting');
+});
+
+await t.check('i3-a01/a09: the Jobs tab shows your ladder; giving notice ends the job after two weeks with a good reference', async () => {
+  await life({ jobId: 'cellar', tenure: 14, rung: 1 }, 'jobs');
+  const main = await page.textContent('#main');
+  assert(main.includes('Cellar master') && main.includes('Assistant winemaker') && main.includes('Next step up'), 'ladder not shown');
+  await page.click('#quit');
+  await page.click(`${open} #notice`);
+  assert(!(await page.$('#quit')) && (await page.textContent('#main')).includes('last day'), 'notice not shown');
+  await page.click('[data-tab=home]');
+  for (let i = 0; i < 3; i++) { await page.click('#end'); await clearSheets(); }
+  const s = await S();
+  assert(s.jobId === null && s.ref && s.ref.k === 'good', JSON.stringify({ job: s.jobId, ref: s.ref }));
+});
+
+await t.check('i3-a02/a03: the Life tab picks a program and signs up for a certificate', async () => {
+  await life({ money: 3000 }, 'life');
+  await page.click('[data-prog="nursing"]');
+  assert((await S()).program === 'nursing', 'program not set');
+  assert((await page.textContent('#main')).includes('registered nurse'), 'matching jobs not listed');
+  await page.click('[data-cert="phlebotomy"]');
+  await page.click(`${open} #yes`);
+  const s = await S();
+  assert(s.certStudy && s.certStudy.id === 'phlebotomy' && s.money === 2300, JSON.stringify({ c: s.certStudy, m: s.money }));
+  assert(await page.$eval('[data-cert="welding"]', b => b.disabled), 'one course at a time');
+  await page.click('[data-tab=jobs]');
+  await page.click('[data-locked="welder"]');
+  await page.waitForSelector(`${open} >> text=Welding`);
+  await page.click(`${open} #no`);
+});
+
+await t.check('i3-a14: the bus toggle shows for a Walla Walla job and swaps out the carpool', async () => {
+  await life({ jobId: 'cellar', community: 40 }, 'jobs');
+  assert(await page.$('#carpool'), 'carpool first');
+  await page.click('#bus');
+  const s = await S();
+  assert(s.bus === true && !(await page.$('#carpool')) && (await page.getAttribute('#bus', 'aria-pressed')) === 'true', 'bus not on');
 });
 
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });

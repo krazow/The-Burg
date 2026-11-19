@@ -776,14 +776,15 @@ await t.check('events keep the skill, carpool and promotion state they change, a
   const r = await ev(() => {
     const E = t => EVENTS.find(e => e.title === t);
     fresh('two', { jobId: 'rn', community: 40, carpool: true }); E('Your carpool buddy is always late').choices()[1].go(); const carpool = S.carpool;
-    fresh('two', { jobId: 'cellar', jobMonths: 20 }); const r0 = S.raise; E('A promotion offer').choices()[0].go(); const r1 = S.raise;
-    const h0 = S.happy; S.focus = 'rest'; S.noEvents = true; eventUpkeep(); const stress = h0 - S.happy;
+    // i3-a01: a promotion moves you up a named rung (+12% pay, +0.3 stress) instead of a flat raise
+    fresh('two', { jobId: 'cellar', jobMonths: 20, tenure: 20 }); const r0 = payNow(job()); const can = E('A promotion offer').when(); E('A promotion offer').choices()[0].go(); const r1 = payNow(job());
+    const stress = rungOf().stress, title = jobTitle(), raise = S.raise, rung = S.rung;
     fresh('two', { jobId: 'cellar', skills: {} }); E('Train the new hire').choices()[0].go(); const people = S.skills.people;
     const old = { turn: 5, date: new Date(2028, 3, 1).getTime() }; migrate(old);
-    return { carpool, r0, r1, stress, people, old: { hp: old.healthPlan, pass: old.skiPass, hire: old.hireBy, promo: old.promo } };
+    return { carpool, r0, r1, stress, title, raise, rung, can, people, old: { hp: old.healthPlan, pass: old.skiPass, hire: old.hireBy, promo: old.promo } };
   });
   assert(r.carpool === false, 'leaving the carpool should end it');
-  assert(near(r.r1, r.r0 * 1.12) && near(r.stress, 0.3 * 12 / 52), `promotion ${JSON.stringify(r)}`);
+  assert(r.can && near(r.r1, r.r0 * 1.12) && r.raise === 1 && r.rung === 1 && near(r.stress, 0.3) && r.title === 'Cellar master', `promotion ${JSON.stringify(r)}`);
   assert(r.people === 2, `mentoring should practice People twice: ${r.people}`);
   assert(r.old.hp === null && r.old.pass === null && r.old.hire === -1 && r.old.promo === null, JSON.stringify(r.old));
 });
@@ -909,6 +910,211 @@ await t.check('business events: at their places, on their days; the doctor and t
   assert(r.fest && !r.festYoung, 'Grenache Fest is 21 and over');
   assert(/Burg Clinic/.test(r.run[0]) && /doctor/.test(r.run[1]) && r.run[2][1] === 'mainst', JSON.stringify(r.run));
   assert(/Mother Hubbard/.test(r.inh[0]) && r.inh[1][1] === 'mainst', JSON.stringify(r.inh));
+});
+
+// ---- jobs and school (ideas round 3) ----
+await t.check('i3-a05: no new or gated job is a new best job for the simulation\'s job picker (at every school level and vehicle)', async () => {
+  const r = await ev(() => {
+    const bad = [];
+    for (const car of Object.keys(CARS)) for (let edu = 0; edu <= 3; edu++) {
+      fresh('two', { edu, car });
+      const best = JOBS.filter(x => x.edu <= S.edu).sort((a, b) => (b.pay - commuteCost(CITIES[b.city].miles)) - (a.pay - commuteCost(CITIES[a.city].miles)))[0];
+      const home = JOBS.filter(x => x.city === 'waitsburg' && x.edu <= S.edu).sort((a, b) => b.pay - a.pay)[0];
+      for (const x of [best, home]) if (x.needCert || x.needMajor || x.season || x.apprentice) bad.push(`${car}/edu ${edu}: ${x.id}`);
+    }
+    return bad;
+  });
+  assert(!r.length, `the bots would pick a gated job: ${r.join(', ')}`);
+});
+
+await t.check('i3-a01: the promotion needs months on the job, and the top rung needs more school or People skill', async () => {
+  const r = await ev(() => {
+    const E = t => EVENTS.find(e => e.title === t);
+    fresh('two', { jobId: 'farmhand', tenure: 6 }); const early = E('A promotion offer').when();
+    S.tenure = 13; const ok1 = E('A promotion offer').when(); E('A promotion offer').choices()[0].go();
+    const t1 = jobTitle(), p1 = payNow(job()) / (2500 * S.wage);
+    S.tenure = 40; const noEdu = E('A promotion offer').when(), need = rungNeeds(nextRung());
+    S.edu = 1; const ok2 = E('A promotion offer').when(); E('A promotion offer').choices()[0].go();
+    const t2 = jobTitle(), p2 = payNow(job()) / (2500 * S.wage), top = E('A promotion offer').when();
+    S.focus = 'rest'; const h = S.happy; S.happy = 60; const lines = week(); const dh = S.happy - 60;
+    fresh('two', { jobId: 'farmhand' }); S.happy = 60; week(); const dh0 = S.happy - 60;
+    // a new job starts at the bottom again
+    fresh('two', { jobId: 'farmhand', rung: 2, tenure: 40 }); startJob('diner'); const reset = [S.rung, S.tenure];
+    return { early, ok1, t1, p1, noEdu, need, ok2, t2, p2, top, dh, dh0, reset };
+  });
+  assert(!r.early && r.ok1 && r.t1 === 'Lead hand' && Math.abs(r.p1 - 1.12) < 1e-9, `rung 1 ${JSON.stringify(r)}`);
+  assert(!r.noEdu && /trade certificate or People skill level 2/.test(r.need) && r.ok2 && r.t2 === 'Farm manager' && Math.abs(r.p2 - 1.25) < 1e-9 && !r.top, `rung 2 ${JSON.stringify(r)}`);
+  assert(r.dh < r.dh0, `the top rung should be more stressful: ${r.dh} vs ${r.dh0}`);
+  assert(r.reset[0] === 0 && r.reset[1] === 0, `a new job resets the ladder: ${r.reset}`);
+});
+
+await t.check('i3-a02: a program becomes your major at graduation, for +10% pay and better odds at matching jobs', async () => {
+  const r = await ev(() => {
+    fresh('two', { program: 'nursing', focus: 'study', studyProg: 15.5 }); week();
+    const major = S.major, edu = S.edu, cna = payNow(jobById('cna')) / (3400 * S.wage), mech = payNow(jobById('mech')) / (4400 * S.wage);
+    const o1 = hireOdds(jobById('cna')), o2 = hireOdds(jobById('mech'));
+    const tuition = (() => { fresh('two', { program: 'wine', focus: 'study' }); return week().lines['Tuition']; })();
+    fresh('two', { edu: 2, major: 'business' }); const windLock = extraLock(jobById('windtech')); S.major = 'wind'; const windOk = extraLock(jobById('windtech'));
+    return { major, edu, cna, mech, d: o1 - o2, tuition, windLock, windOk, log: S.log[0].m };
+  });
+  assert(r.major === 'nursing' && r.edu === 1, `major ${JSON.stringify(r)}`);
+  assert(Math.abs(r.cna - 1.1) < 1e-9 && Math.abs(r.mech - 1) < 1e-9, `major pay ${r.cna} ${r.mech}`);
+  assert(Math.abs(r.d - 0.08) < 1e-9, `major odds ${r.d}`);
+  assert(near(r.tuition, -300 * 12 / 52), `same tuition: ${r.tuition}`);
+  assert(r.windLock && !r.windOk, 'the wind tech job needs the wind energy program');
+});
+
+await t.check('i3-a03: a certificate costs a fee and Take classes weeks, then opens its door', async () => {
+  const r = await ev(() => {
+    fresh('two', { money: 5000, edu: 1, focus: 'study' }); const locked = extraLock(jobById('trucker'));
+    startCert('cdl'); const fee = 5000 - S.money; const again = startCert('welding');
+    const w1 = week(); const noTuition = !('Tuition' in w1.lines), prog = S.certStudy.prog, diploma = S.studyProg;
+    for (let i = 0; i < 5; i++) week();
+    return { locked, fee, again, noTuition, prog, diploma, cdl: S.certs.cdl, open: extraLock(jobById('trucker')), after: S.certStudy };
+  });
+  assert(r.locked && r.fee === 1800 && r.again === false, `sign-up ${JSON.stringify(r)}`);
+  assert(r.noTuition && r.prog === 1 && r.diploma === 0, `a cert week ${JSON.stringify(r)}`);
+  assert(r.cdl === 1 && r.open === '' && r.after === null, `done after 6 weeks ${JSON.stringify(r)}`);
+});
+
+await t.check('i3-a04: an apprentice starts at 60% and steps up each year to full journeyman pay; leaving resets it', async () => {
+  const r = await ev(() => {
+    fresh('two', { edu: 1 }); startJob('plumber'); const full = 5400 * S.wage;
+    const p0 = payNow(job()) / full; S.appWeeks = 52; const p1 = payNow(job()) / full;
+    S.appWeeks = 103; S.tenure = 24; const noPromo = canPromote(); week(); const p2 = payNow(job()) / (5400 * S.wage), done = !apprenticing();
+    startJob('diner'); startJob('plumber'); const reset = S.appWeeks;
+    return { p0, p1, p2, done, noPromo, reset };
+  });
+  assert(Math.abs(r.p0 - 0.6) < 1e-9 && Math.abs(r.p1 - 0.8) < 1e-9 && Math.abs(r.p2 - 1) < 1e-9 && r.done, `apprentice pay ${JSON.stringify(r)}`);
+  assert(!r.noPromo && r.reset === 0, `apprentice rules ${JSON.stringify(r)}`);
+});
+
+await t.check('i3-a06: a seasonal job lays you off when the season ends, and calls you back when it returns', async () => {
+  const r = await ev(() => {
+    fresh('two', { date: new Date(2027, 2, 29).getTime(), tenure: 5 }); startJob('lift'); S.tenure = 5; S.rung = 1;
+    let res; for (let i = 0; i < 2; i++) res = weekTick(false);
+    const off = { job: S.jobId, recall: S.recall && S.recall.job, ui: S.ui, note: res.notes.join(' ') };
+    const canApply = (() => { const a = S.applied; apply('lift'); const got = S.interview; S.applied = a; return got; })();
+    S.date = new Date(2027, 10, 29).getTime(); for (let i = 0; i < 2; i++) res = weekTick(false);
+    return { off, canApply, back: S.jobId, rung: S.rung, recall: S.recall, note: res.notes.join(' ') };
+  });
+  assert(r.off.job === null && r.off.recall === 'lift' && r.off.ui > 0 && /season is over/.test(r.off.note), `laid off ${JSON.stringify(r.off)}`);
+  assert(!r.canApply, 'no applying out of season');
+  assert(r.back === 'lift' && r.rung === 1 && r.recall === null, `called back ${JSON.stringify(r)}`);
+});
+
+await t.check('i3-a07: applying opens an interview; answers move the odds, and an unanswered one keeps today\'s odds at week\'s end', async () => {
+  const r = await ev(() => {
+    fresh('two', { community: 30 }); render(); apply('diner');
+    const iv = S.interview && S.interview.id, sheetUp = /Interview/.test(document.querySelector('#sheet').textContent), base = S.interview.p;
+    const d = INTERVIEW.map(q => q.d(jobById('rn')));
+    closeSheet(); const old = Math.random; Math.random = () => 0.01; weekTick(false); Math.random = old;
+    return { iv, sheetUp, base, d, hired: S.jobId, pending: S.interview };
+  });
+  assert(r.iv === 'diner' && r.sheetUp, 'an interview sheet should open');
+  assert(near(r.base, 0.5 + 30 * 0.004 + 0.1 + 0.08), `base odds ${r.base}`);
+  assert(r.d[0] === 0.05 && r.d[1] === -0.05 && r.d[2] === 0.06, `answer effects ${r.d}`);
+  assert(r.hired === 'diner' && r.pending === null, 'the pending interview resolves at the end of the week');
+});
+
+await t.check('i3-a08: asking for more can raise the offer, pay a bonus you owe back if you leave early, or lose the offer', async () => {
+  const r = await ev(() => {
+    const old = Math.random;
+    fresh('two', { edu: 2, jobId: 'cna', tenure: 12 }); const before = { jobId: 'cna', jobMonths: 0, raise: 1, rung: 0, tenure: 12, money: S.money };
+    startJob('rn'); Math.random = () => 0.3; const more = negotiate(1, before), raise = S.raise;
+    fresh('two', { edu: 2, money: 0 }); startJob('rn'); negotiate(2, { jobId: null, money: 0 }); const bonus = S.money, owed = S.bonus && S.bonus.amt;
+    startJob('cna'); const after = S.money;
+    fresh('two', { edu: 2, jobId: 'cna', tenure: 12 }); const b2 = { jobId: 'cna', jobMonths: 0, raise: 1, rung: 0, tenure: 12, money: S.money };
+    startJob('rn'); Math.random = () => 0.01; const lost = negotiate(1, b2); Math.random = old;
+    return { more, raise, bonus, owed, after, lost, kept: S.jobId };
+  });
+  assert(Math.abs(r.raise - 1.05) < 1e-9 && /5% more/.test(r.more), `ask for more ${JSON.stringify(r)}`);
+  assert(r.bonus === 3000 && r.owed === 3000 && r.after === 0, `sign-on bonus ${JSON.stringify(r)}`);
+  assert(/pulled the offer/.test(r.lost) && r.kept === 'cna', `a lost offer keeps your old job ${JSON.stringify(r)}`);
+});
+
+await t.check('i3-a09: notice after 6 months gives a good reference; walking out or a firing gives a bad one for a year', async () => {
+  const r = await ev(() => {
+    fresh('two', { jobId: 'diner', tenure: 8 }); S.notice = S.turn + 2; weeks(3); const good = [S.jobId, refNow()];
+    const og = hireOdds(jobById('hardware'));
+    fresh('two', { jobId: 'diner', tenure: 8 }); leaveJob('walk'); const bad = refNow(), ob = hireOdds(jobById('hardware'));
+    S.turn += 53; const gone = refNow();
+    fresh('two', { jobId: 'diner', tenure: 2 }); leaveJob('notice'); const short = refNow();
+    return { good, bad, gone, short, d: og - ob };
+  });
+  assert(r.good[0] === null && r.good[1] === 'good', `notice ${r.good}`);
+  assert(r.bad === 'bad' && r.gone === null && r.short === null, JSON.stringify(r));
+  assert(near(r.d, 0.18), `reference odds ${r.d}`);
+});
+
+await t.check('i3-a10: union jobs pay dues, halve layoff odds, step up each January, and a contract vote can strike', async () => {
+  const r = await ev(() => {
+    const E = t => EVENTS.find(e => e.title === t);
+    fresh('two', { edu: 1 }); startJob('rail'); const dues = week().lines['Union dues'], pay = payNow(job());
+    S.jobMonths = 12; const wU = E('Layoffs').w(); fresh('two', { jobId: 'trucker', jobMonths: 12 }); const wN = E('Layoffs').w();
+    fresh('two', { edu: 1, date: new Date(2027, 11, 27).getTime() }); startJob('rail'); S.tenure = 8; const r0 = S.raise; weekTick(false); const step = S.raise / r0;
+    S.contractAt = S.turn; const vote = E('Contract vote').when(); const m = S.money; E('Contract vote').choices()[1].go(); const n = S.strike.until - S.turn;
+    const w = week(); const strike = w.lines['Strike pay from the union'];
+    const old = Math.random; Math.random = () => 0.1; S.strike.until = S.turn; const r1 = S.raise; weekTick(false); Math.random = old;
+    return { dues, pay, wU, wN, step, vote, n, strike, won: S.raise / r1, done: S.strike };
+  });
+  assert(near(r.dues, -r.pay * 0.015 * 12 / 52), `dues ${r.dues}`);
+  assert(near(r.wU, r.wN * 0.5), `layoff weight ${r.wU} vs ${r.wN}`);
+  assert(near(r.step, 1.015), `January step ${r.step}`);
+  assert(r.vote && r.n >= 2 && r.n <= 5 && r.strike > 0 && near(r.won, 1.06) && r.done === null, JSON.stringify(r));
+});
+
+await t.check('i3-a11: a federal shutdown stops pay for a few weeks, then back pay arrives in one lump', async () => {
+  const r = await ev(() => {
+    const E = t => EVENTS.find(e => e.title === t);
+    fresh('two', { edu: 1 }); startJob('hanford'); S.clearAt = -1; const can = E('Federal shutdown').when();
+    fresh('two', { jobId: 'trucker' }); const not = E('Federal shutdown').when();
+    fresh('two', { edu: 1 }); startJob('hanford'); S.clearAt = -1; E('Federal shutdown').choices()[0].go(); const n = S.furlough.until - S.turn;
+    const w1 = week(); const owed = S.furlough.owed; for (let i = 1; i < n; i++) week(); const last = week();
+    return { can, not, n, paid: w1.lines['Paycheck'] || 0, owed, back: last.lines['Back pay from the furlough'], weekly: payNow(job()) * 12 / 52, f: S.furlough };
+  });
+  assert(r.can && !r.not, 'only federal jobs get furloughed');
+  assert(!r.paid && near(r.owed, r.weekly) && near(r.back, r.weekly * r.n) && r.f === null, JSON.stringify(r));
+});
+
+await t.check('i3-a12: Hanford and the lab pay 80% until the clearance clears in 12 weeks; heavy debt can sink it', async () => {
+  const r = await ev(() => {
+    fresh('two', { edu: 1 }); startJob('hanford'); const p0 = payNow(job()) / (6500 * S.wage); weeks(12); const p1 = payNow(job()) / (6500 * S.wage), kept = S.jobId;
+    fresh('two', { edu: 3, money: -40000, mode: 'relaxed' }); startJob('scientist'); const old = Math.random; Math.random = () => 0.1; weeks(13); Math.random = old;
+    return { p0, p1, kept, lost: S.jobId, ref: S.ref };
+  });
+  assert(near(r.p0, 0.8) && near(r.p1, 1) && r.kept === 'hanford', JSON.stringify(r));
+  assert(r.lost === null, `deep debt should sink the check: ${r.lost}`);
+});
+
+await t.check('i3-a13: the remote job charges for fiber once, has no commute and makes community fade faster', async () => {
+  const r = await ev(() => {
+    fresh('two', { edu: 3, money: 2000 }); startJob('remote'); const fiber = 2000 - S.money; startJob('scientist'); startJob('remote'); const twice = 2000 - S.money;
+    S.community = 40; const gas = week().lines['Gas (errands)']; const c1 = S.community;
+    fresh('two', { jobId: 'insure', community: 40 }); week(); const c2 = S.community;
+    return { fiber, twice, gas, c1, c2, risk: LAYOFF_RISK.remote };
+  });
+  assert(r.fiber === 900 && r.twice === 900, `fiber ${r.fiber} ${r.twice}`);
+  assert(r.gas !== undefined && r.c1 < r.c2 && r.risk === 0.8, JSON.stringify(r));
+});
+
+await t.check('i3-a14: the county bus cuts commute gas by 90% for a monthly pass and a little happiness', async () => {
+  const r = await ev(() => {
+    fresh('two', { jobId: 'cellar' }); S.happy = 60; const drive = week(); const h0 = S.happy;
+    fresh('two', { jobId: 'cellar', bus: true }); S.happy = 60; const bus = week(); const h1 = S.happy;
+    fresh('two', { jobId: 'rn', bus: true }); const r2 = onBus();
+    fresh('two', { jobId: 'hanford', bus: true }); const far = onBus();
+    return { gD: drive.lines['Gas (commute + errands)'], gB: bus.lines['Gas (commute + errands)'], pass: bus.lines['County bus pass'], h0, h1, r2, far };
+  });
+  const errands = -300 * 12 / 52 * 3.89 / 15, commute = r.gD - errands;
+  assert(near(r.gB, errands + commute * 0.1), `bus gas ${JSON.stringify(r)}`);
+  assert(near(r.pass, -50 * 12 / 52) && r.h1 < r.h0 && r.r2 && !r.far, JSON.stringify(r));
+});
+
+await t.check('older saves get the round-3 job fields', async () => {
+  const r = await ev(() => { const old = { name: 'Old', len: 'two', turn: 40, jobId: 'farmhand', jobMonths: 9, date: new Date(2027, 9, 1).getTime() }; migrate(old);
+    return { tenure: old.tenure, rung: old.rung, certs: old.certs, program: old.program, bus: old.bus, clearAt: old.clearAt }; });
+  assert(r.tenure === 9 && r.rung === 0 && JSON.stringify(r.certs) === '{}' && r.program === null && r.bus === false && r.clearAt === -1, JSON.stringify(r));
 });
 
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });

@@ -62,8 +62,9 @@ function showReview(rv){
 
 function weekTick(auto){
   const L = LENGTHS[S.len], m = W, k = 0.28;
-  const f = FOCUS[S.focus] || FOCUS.rest, j = S.retired ? null : job();
   const lines = [], notes = [];
+  jobWeekStart(notes);                             // i3: an interview's answer, notice, seasons and recalls
+  const f = FOCUS[S.focus] || FOCUS.rest, j = S.retired ? null : job();
   if (syncCarpool()) log('Your carpool ended with the job change: you drive alone now.');
 
   // ---- money (constants are monthly; m converts to one week) ----
@@ -72,7 +73,8 @@ function weekTick(auto){
     gross = ssPay()*m; lines.push(['Social Security', gross]);
     if (S.k401 > 0) { const w = Math.min(S.k401, S.k401 * 0.04 * m / 12); S.k401 -= w; gross += w; lines.push(['401(k) withdrawal', w]); }
   }
-  else if (j) { gross = payNow(j) * m * (f.payMult||1); lines.push([`Paycheck${f.payMult?' + overtime':''}`, gross]); }
+  else if (j) gross = jobPay(j, payNow(j) * m * (f.payMult||1), lines, f);   // i3: strikes, furloughs, clearances, union dues
+  gross += furloughBackPay(lines);
   let k401 = 0;
   if (j && !S.retired && S.k401rate) {           // pre-tax contribution, with a 3% employer match at 5% or more
     k401 = gross * K401[S.k401rate]; lines.push(['401(k) contribution', -k401]);
@@ -105,6 +107,7 @@ function weekTick(auto){
     const n = Math.min(m, S.sloanLeft); lines.push(['Student loan', -S.sloanPay*n]); S.sloanLeft -= n;
     if (S.sloanLeft < 1e-6) { S.sloanLeft = 0; notes.push('🎓 Your student loans are paid off!'); S.paidOff = true; log('Paid off the student loans.'); }
   }
+  if (onBus()) lines.push(['County bus pass', -cost(BUS_PASS)*m]);       // i3-a14
   if (S.dog) lines.push(['Dog food & vet', -cost(45)*m]);
   if (S.partner) { lines.push(['Date nights', -cost(120)*m]); if (age() < 65) lines.push(["Partner's paycheck (part-time)", 1400*S.wage*m]); }
   const kidsHome = kidsAtHome();
@@ -112,10 +115,11 @@ function weekTick(auto){
   const a0 = age();
   if (a0 >= 50) lines.push(['Health care', -cost(a0 >= 65 ? 420 : 180)*m]);
   if (f.cost) lines.push([f.name, -cost(f.cost)*m]);
-  if (f.study && S.edu < 3) {
+  // i3-a03: a certificate course takes the week's classes first (its fee was paid up front)
+  if (f.study && !certWeek(trip && trip.away ? TRIP_TIME : 1, notes) && S.edu < 3) {
     lines.push(['Tuition', -cost(TUITION[S.edu])*m]);
     S.studyProg += trip && trip.away ? TRIP_TIME : 1;     // R11: a trip week is 3/4 of a week of classes
-    if (S.studyProg >= STUDY_NEED[S.edu]) { S.studyProg = 0; S.edu++; notes.push(`🎓 You earned your ${EDU[S.edu]}! New jobs unlocked.`); log(`Graduated with a ${EDU[S.edu]}.`); adj({happy:8}); }
+    if (S.studyProg >= STUDY_NEED[S.edu]) { graduate(); notes.push(`🎓 You earned your ${EDU[S.edu]}${S.major && S.major === S.program ? ` in ${PROGRAMS[S.major].name.toLowerCase()}` : ''}! New jobs unlocked.`); }
   }
   if (S.money < 0) lines.push(['Interest on debt', S.money * (mode() === 'relaxed' ? 0.01 : 0.015) * m]);
   const net = lines.reduce((a,[,v]) => a + v, 0);
@@ -132,10 +136,11 @@ function weekTick(auto){
   let dH = ((a < 30 ? 85 : a < 50 ? 78 : a < 65 ? 68 : a < 80 ? 55 : 42) - S.health) * 0.025;
   let dc = (25 - S.community) * 0.05 * (S.community > 25 ? 1 - skillLv('people') * 0.15 : 1);   // people skill: community fades slower
   if (S.retired) dh += 1;
-  else if (j) { dh -= j.stress; dH -= j.wear; dc += j.city==='waitsburg' ? 0.6 : j.city==='dayton' ? 0.2 : 0; }
+  else if (j) { dh -= j.stress + rungOf(j).stress; dH -= j.wear; dc += j.remote === 5 ? -0.4 : j.city==='waitsburg' ? 0.6 : j.city==='dayton' ? 0.2 : 0; }   // i3-a01 rung stress; i3-a13 no coworkers
   else dh -= 2;
   dh -= commuteOneWay() / 40 * driveDays() * (carpooling() ? 0.6 : 1);
-  if (carpooling()) dc += 0.3;                    // riding with neighbors keeps you in the loop
+  if (carpooling()) dc += 0.3;
+  if (onBus()) dh -= 0.3;                          // i3-a14: longer days on the bus                    // riding with neighbors keeps you in the loop
   dh += home.happy * 0.4 + (S.partner ? 0.6 : 0) + (S.dog ? 0.4 : 0) + kidsHome * kidJoy() - (S.money < 0 ? 2 : 0);
   dc += kidsHome * 0.2;
   if (S.council) dc += 0.8;
@@ -187,6 +192,7 @@ function weekTick(auto){
   // ---- advance one week ----
   S.happySum += S.happy * m; S.healthSum += S.health * m; S.monthsPlayed += m;
   const oldAge = age(), oldYear = new Date(S.date).getFullYear();
+  jobWeekEnd(notes);                               // i3: months on the job, apprenticeships, clearances, strikes
   S.date += 7 * 864e5; S.ageMonths += m; S.turn++; S.jobMonths += m; S.applied = false;
   if (age() > oldAge && age() % 10 === 0) notes.push(`🎂 Happy ${age()}th birthday!`);
   if (S.turn % 13 === 0 && !S.practice) {          // a quarterly report card in the Journal (doesn't stop skips)
@@ -195,6 +201,7 @@ function weekTick(auto){
     S.scoreQ = sc;
   }
   if (S.focus === 'work' && !job()) S.focus = 'rest';
+  if (S.focus === 'study' && !canStudy()) S.focus = 'rest';           // i3-a03: a certificate finished after the last diploma
   let review = null;
   const newYear = new Date(S.date).getFullYear();
   if (newYear > oldYear) {
@@ -202,6 +209,8 @@ function weekTick(auto){
     if (S.yearStart && LENGTHS[S.len].turns > 26) review = { year: oldYear, start: S.yearStart, end: snap, events: S.yearEvents || 0,
       milestones: S.log.filter(e => e.d.endsWith(String(oldYear)) && !e.m.includes(': ')).map(e => e.m).reverse().slice(0, 8) };
     S.yearStart = snap; S.yearEvents = 0;
+    // i3-a10: union jobs get a step raise every January after 6 months on the job
+    if (working() && job().union && !S.strike && (S.tenure || 0) >= 6) { bumpPay(1.015); log(`Union step raise: 1.5% at the ${job().title.toLowerCase()} job.`); }
   }
 
   badgeWeek(notes); scenarioWeek(notes);

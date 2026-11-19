@@ -237,7 +237,8 @@ await t.check('the region map shows a town\'s drive and jobs, with Apply', async
   await page.click('.maptabs button:nth-child(2)').catch(() => {});
   await page.click('.mpin[aria-label="Walla Walla"]');
   await page.waitForSelector('.mapdet >> text=21 mi each way');
-  assert((await page.$$('.mapdet .kv.job')).length === 5, 'Walla Walla should list 5 jobs');
+  const ww = await page.evaluate(() => JOBS.filter(x => x.city === 'wallawalla').length);   // 5, plus the round-3 jobs (VA clerk, electrician, phlebotomist)
+  assert(ww === 8 && (await page.$$('.mapdet .kv.job')).length === ww, `Walla Walla should list ${ww} jobs`);
 });
 
 await t.check('the List/Map choice is remembered', async () => {
