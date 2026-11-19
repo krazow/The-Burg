@@ -77,10 +77,10 @@ function tripWeek(lines){
   const t = S.trip; if (!t || !CITIES[t.city]) { S.trip = null; return null; }
   const c = CITIES[t.city], fx = { happy:0, health:0, community:0 }, done = [];
   const gas = tripGas(t.city);
-  if (gas) lines.push([`Trip to ${c.name}: gas`, -gas]);
+  if (gas) lines.push([`Trip to ${c.name}: gas`, -gas, `${c.miles} miles each way at ${CARS[S.car].mpg} mpg.`]);
   for (const id of t.stops) {
     const s = stopById(id); if (!s || stopBlocked(s)) continue;
-    if (s.cost) lines.push([s.name, -stopCost(s)]);
+    if (s.cost) lines.push([s.name, -stopCost(s), `A stop on your trip to ${c.name}${s.date && S.partner ? ', for two' : ''}.`]);
     const half = S.turn - ((S.stopLast || {})[id] ?? -99) < REPEAT_WEEKS ? 0.5 : 1;   // again so soon: less special
     let mult = half;
     if (s.date && S.partner) mult += 0.4;
@@ -105,7 +105,7 @@ function tripWeek(lines){
 /* ---- trip screens ---- */
 function tripPicker(){
   sheet(`<h2>🚗 Plan a trip</h2>
-    <p class="muted">One trip a week, up to ${tripMax()} stop${tripMax() === 1 ? '' : 's'}. It happens when you end the week.${S.trip ? ` You have a trip to ${CITIES[S.trip.city].name} planned.` : ''}</p>${debtTripNote()}
+    ${firstTime('trips')}<p class="muted">One trip a week, up to ${tripMax()} stop${tripMax() === 1 ? '' : 's'}. It happens when you end the week.${S.trip ? ` You have a trip to ${CITIES[S.trip.city].name} planned.` : ''}</p>${debtTripNote()}
     ${Object.entries(CITIES).filter(([k]) => k !== 'waitsburg').map(([k,c]) => {
       const gas = tripGas(k);
       return `<button class="kv job tripto" data-town="${k}"><span><span class="t">${TOWNIC[k]} ${c.name}</span><span class="s">${c.miles} mi each way · ${gas ? `gas about ${fmt(gas)}` : 'on your way home from work: no extra gas'}</span></span><span aria-hidden="true">›</span></button>`;
@@ -224,7 +224,7 @@ function goalsSheet(){
 }
 function goalsCard(){
   const got = Object.keys(S.badges || {}).length;
-  return `<div class="card"><h3>🎯 Life goals <span class="tag">${got}/${BADGES.length} badges</span></h3>
+  return `${firstTime('goals')}<div class="card"><h3>🎯 Life goals <span class="tag">${got}/${BADGES.length} badges</span></h3>
     ${(S.goals || []).length ? S.goals.map(id => { const b = badgeById(id); const got = S.badges && S.badges[id] != null;
       return b ? `<div class="kv"><span>${b.ic} ${b.name}<br><small class="muted">${b.desc}</small></span><span>${goalCounts(id) ? `✅ +${GOAL_POINTS}` : got ? '✅ (earned before you pinned it)' : 'Not yet'}</span></div>` : ''; }).join('')
       : `<p class="muted" style="margin:0 0 6px">Pin up to ${GOAL_MAX} goals for this life. Each one you reach after pinning it adds ${GOAL_POINTS} points to your Life Score.</p>`}
@@ -371,7 +371,7 @@ function skillWeek(notes, gig){
   if (carpooling()) practice('people', 0.3, notes);
 }
 function skillsCard(){
-  return `<div class="card"><h3>🧰 Skills</h3>${Object.entries(SKILLS).map(([k,x]) => { const lv = skillLv(k), pts = (S.skills || {})[k] || 0, next = SKILL_STEPS[lv];
+  return `${firstTime('skills')}<div class="card"><h3>🧰 Skills</h3>${Object.entries(SKILLS).map(([k,x]) => { const lv = skillLv(k), pts = (S.skills || {})[k] || 0, next = SKILL_STEPS[lv];
     return `<div class="kv"><span>${x.ic} ${x.name} <b>${'★'.repeat(lv)}${'☆'.repeat(3 - lv)}</b><br><small class="muted">${x.how}. ${x.perk}.</small></span><span>${lv >= 3 ? 'Max' : `${Math.floor(pts)}/${next}`}</span></div>`; }).join('')}</div>`;
 }
 
@@ -417,7 +417,7 @@ function bizCard(){
       <div class="kv"><span>Earned so far</span><span><b>${fmt(S.biz.earned)}</b></span></div>
       <div class="kv"><span>Worth if you sell</span><span>${fmt(bizValue())}</span></div>${lease}
       <button class="sm alt" id="bizsell">Sell the business</button></div>`; }
-  return `<div class="card"><h3>🏪 Start a business</h3><p class="muted" style="margin:0 0 6px">Small, risky, and it can grow. One at a time.</p>
+  return `${firstTime('biz')}<div class="card"><h3>🏪 Start a business</h3><p class="muted" style="margin:0 0 6px">Small, risky, and it can grow. One at a time.</p>
     ${Object.entries(BIZ).map(([k,b]) => `<div class="kv job"><div><div class="t">${b.ic} ${b.name}</div><div class="s">${b.desc}</div></div><button class="sm" data-biz="${k}">${fmt(cost(b.cost))}</button></div>`).join('')}</div>`;
 }
 function startBiz(k){
@@ -475,6 +475,11 @@ function scoreCard(){
   const bs = BADGES.filter(b => S.badges && S.badges[b.id]).map(b => b.ic).join(' ');
   if (bs) g.fillText(bs, 540, 1010);
   g.fillText(`Age ${age()} · ${EDU[S.edu]} · ${fmt(netWorth())}`, 540, 1100);
+  // i2-a29: a few highlights from the life story
+  const hl = lifeStory().rows.flatMap(r => r.text.map(t => `${r.year}: ${t}`)).filter(t => !/^\d+: Earned a badge/.test(t));
+  const few = hl.length > 2 ? [hl[0], hl[hl.length - 1]] : hl;
+  g.font = '30px system-ui, sans-serif';
+  few.forEach((t, i) => g.fillText(t.length > 52 ? t.slice(0, 50) + '…' : t, 540, 1160 + i * 42));
   g.fillStyle = '#9b2f1f'; g.font = '600 44px system-ui, sans-serif'; g.fillText('krazow.github.io/The-Burg', 540, 1260);
   return c;
 }
@@ -540,7 +545,7 @@ function wealthTrack(real){
   const L = LENGTHS[S.len], p = gameProgress(), want = L.target * p;
   if (p < 0.02) return '';
   const ok = real >= want;
-  return `<div class="kv"><span>${ok ? '✅' : '⏳'} Net worth on track?<br><small class="muted">By now (${Math.round(p * 100)}% of the way) you'd want about ${fmt(want)} in 2027 dollars</small></span><span><b>${ok ? 'On track' : `${Math.round(real / want * 100)}% there`}</b></span></div>`;
+  return `<div class="kv"><span>${ok ? '✅' : '⏳'} Net worth on track?<br><small class="muted">By now (${Math.round(p * 100)}% of the way) you'd want about ${fmt(want)} in ${term('dollars')}</small></span><span><b>${ok ? 'On track' : `${Math.round(real / want * 100)}% there`}</b></span></div>`;
 }
 function scoreButton(){
   if (S.practice) return '';
@@ -559,7 +564,7 @@ function showScoreNow(){
   const part = (l, sub, v, w) => `<div class="kv"><span>${l}<br><small class="muted">${sub}</small></span><span><b>${v}</b>/100 × ${w}% = <b>${Math.round(v * w / 100)}</b></span></div>`;
   const weakest = Object.entries(parts).sort((a, b) => a[1] - b[1])[0][0];
   sheet(`<h2>🏆 Life Score so far: ${score}</h2>
-    <p class="muted">${title}${mode() !== 'normal' ? ` (${MODES[mode()].name})` : ''}. This is what you'd score if the game ended today.${S.scoreQ != null ? ` Last report card: ${S.scoreQ}.` : ''}</p>
+    <p class="muted">${title}${mode() !== 'normal' ? ` (${MODES[mode()].name})` : ''}. This is the ${term('lifescore')} you'd get if the game ended today.${S.scoreQ != null ? ` Last report card: ${S.scoreQ}.` : ''}</p>
     ${part('Happiness', `average ${Math.round(avgH)} so far`, parts.happy, 30)}
     ${part('Health', `average ${Math.round(avgHe)} so far`, parts.health, 20)}
     ${part('Community', `now ${Math.round(S.community)}`, parts.community, 20)}
@@ -571,6 +576,59 @@ function showScoreNow(){
     <p class="muted">A report card goes in your Journal every 13 weeks.</p>
     <button class="btn primary" id="ok">Close</button>`);
   $('#ok').onclick = closeSheet;
+}
+// i2-a19: one concrete suggestion for Home, from the weakest part of the Life Score. Advice only: it never acts for you.
+function nextStep(){
+  if (S.practice || (!job() && !S.retired)) return null;            // no job: the "Find a job" banner already says so
+  const { parts } = lifeScore(), j = S.retired ? null : job();
+  const order = Object.entries(parts).sort((a, b) => a[1] - b[1]).map(([k]) => k);
+  const pick = {
+    wealth: () => {
+      if (j && !S.k401rate) return { t:'Save 5% in your 401(k): your employer adds 3% on top.', go:'life', b:'Life' };
+      const now = j ? takeHome(j) : 0, better = JOBS.filter(x => x.edu <= S.edu && x.id !== S.jobId && takeHome(x) > now * 1.1).sort((a, b) => takeHome(b) - takeHome(a))[0];
+      if (better && !S.retired) return { t:`${better.title} in ${CITIES[better.city].name} takes home about ${fmt(takeHome(better) - now)} more a week.`, go:'jobs', b:'Jobs' };
+      if (!S.retired && S.edu < 3 && S.focus !== 'study') return { t:`A ${EDU[S.edu + 1].toLowerCase()} opens better-paying jobs: try Take classes.`, go:'focus', b:'Focus' };
+      if (!HOMES[S.home].own && S.money > cost(HOMES.fixer.down) + cost(2000)) return { t:'You have enough for a down payment: owning a home builds equity.', go:'life', b:'Life' };
+      if (S.turn >= (S.stockUntil ?? -1)) return { t:`A stock-up grocery run makes food ${STOCK_OFF * 100}% cheaper for ${STOCK_WEEKS} weeks.`, go:'trip', b:'Plan a trip' };
+      return null;
+    },
+    happy: () => !['rest', 'outdoors', 'community'].includes(S.focus) ? { t:'Happiness is your weakest part: Get outside or Rest this week.', go:'focus', b:'Focus' }
+      : canCarpool() && !S.carpool ? { t:'Join a carpool: the long drive wears on you less.', go:'jobs', b:'Jobs' } : null,
+    health: () => !['rest', 'outdoors'].includes(S.focus) ? { t:'Health is your weakest part: Rest or Get outside this week.', go:'focus', b:'Focus' }
+      : S.health < 50 ? { t:'A doctor checkup on a trip does the most when your health is low.', go:'trip', b:'Plan a trip' } : null,
+    community: () => S.focus !== 'community' ? { t:`Community is your weakest part: Show up for town this week${seasonGoal() ? ' (it also counts for the town goal)' : ''}.`, go:'focus', b:'Focus' } : null
+  };
+  for (const k of order) { const h = pick[k](); if (h) return h; }
+  if (!(S.goals || []).length) return { t:`Pin up to ${GOAL_MAX} life goals: each one you reach adds ${GOAL_POINTS} points.`, go:'life', b:'Life' };
+  return null;
+}
+/* ---------- i2-a29: your life story, from the Journal and each year's review ---------- */
+const STORY_SKIP = /^(📋|Applied for|Trip to|Renewed the|The wheat lease came)/;
+const storyWorthy = e => e && (e.k || logKind(e.m)) !== 'ev' && !STORY_SKIP.test(e.m) || /^(Hired as|Retired at|Moved into|Started dating)/.test(e && e.m || '');
+// at New Year, a few of the year's milestones go into S.years, so the story survives the Journal's 120-entry limit
+function yearMilestones(y){ return S.log.filter(e => e.d.endsWith(String(y)) && storyWorthy(e)).reverse().slice(0, 3).map(e => e.m); }
+function lifeStory(){
+  const strip = m => String(m).replace(/<[^>]+>/g, '');
+  const yrs = (S.years || []).map(y => ({ year: y.year, age: y.age, m: y.m || [], d: y.end && y.start ? y.end.nw - y.start.nw : 0, h: y.end ? y.end.happy : 0 }));
+  const cur = new Date(S.date).getFullYear();
+  if (!yrs.some(y => y.year === cur)) yrs.push({ year: cur, age: age(), m: yearMilestones(cur), d: 0, h: S.happy });
+  for (const y of yrs) if (!y.m.length) y.m = yearMilestones(y.year);   // years the Journal still remembers
+  const first = S.log.length ? strip(S.log[S.log.length - 1].m) : '';
+  let rows = yrs.filter(y => y.m.length);
+  if (rows.length > 12) { const step = (rows.length - 1) / 11; rows = Array.from({ length: 12 }, (_, i) => rows[Math.round(i * step)]); }
+  const full = (S.years || []).filter(y => y.start && y.end);
+  const rich = full.slice().sort((a, b) => (b.end.nw - b.start.nw) - (a.end.nw - a.start.nw))[0];
+  const glad = full.slice().sort((a, b) => b.end.happy - a.end.happy)[0];
+  const best = [rich && rich.end.nw - rich.start.nw > 0 ? `Best year for money: ${rich.year} (${fmt(rich.end.nw - rich.start.nw)} more net worth).` : '',
+    glad && full.length > 1 ? `Happiest year: ${glad.year}.` : ''].filter(Boolean);
+  return { first, rows: rows.map(y => ({ year: y.year, age: y.age, text: y.m.map(strip) })), best };
+}
+function storyHTML(){
+  const st = lifeStory(); if (!st.rows.length && !st.first) return '';
+  return `<section class="story" id="story" aria-labelledby="storyh"><div class="storyhead"><h3 id="storyh">📖 ${esc(S.name)}'s story</h3><button class="sm alt" id="skipstory">Skip to the score</button></div>
+    ${st.first ? `<p>${esc(st.first)}</p>` : ''}
+    <ol class="storyl">${st.rows.map(r => `<li><b>${r.year} · age ${r.age}</b> ${r.text.map(esc).join(' ')}</li>`).join('')}</ol>
+    ${st.best.length ? `<p class="muted">${st.best.join(' ')}</p>` : ''}</section>`;
 }
 EVENTS.push(...STORY_EVENTS);
 /* ---------- ending ---------- */
@@ -601,8 +659,9 @@ function finish(reason){
   S.over = true;
   sheet(`<h2 style="text-align:center">${esc(S.name)}'s life in the Burg</h2>
     <p class="muted" style="text-align:center">${reason}</p>
+    ${S.practice ? '' : storyHTML()}
     ${S.bg !== 'fresh' || mode() !== 'normal' ? `<p class="muted" style="text-align:center">${BACKGROUNDS[S.bg].ic} ${BACKGROUNDS[S.bg].name} · ${MODES[mode()].ic} ${MODES[mode()].name}</p>` : ''}
-    <div class="score">${score}</div>
+    <div class="score" id="finalscore" tabindex="-1" aria-label="Life Score ${score}">${score}</div>
     <p style="text-align:center;margin-top:0"><b>${title}</b>${mode() !== 'normal' ? ` <span class="tag">${MODES[mode()].ic} ${MODES[mode()].name} score</span>` : ''}${isBest ? ` · <span class="tag cur">New best${mode() !== 'normal' ? ` (${MODES[mode()].name})` : ''}!</span>` : ''}</p>
     ${modeScoreNote()}
     <h3 style="margin-top:10px">How the score adds up</h3>
@@ -624,6 +683,7 @@ function finish(reason){
     <button class="btn ${LENGTHS[S.len].turns === Infinity && (S.kids || []).length && !S.practice ? 'ghost' : 'primary'}" id="again">Play again</button>`);
   const parent = { name:S.name, nw:netWorth(), community:S.community, slot:S.slot, mode:mode(), gen:S.gen || 1, date:S.date, col:S.col, wage:S.wage };
   if ($('#share')) $('#share').onclick = shareCard;
+  if ($('#skipstory')) $('#skipstory').onclick = () => { $('#story').remove(); const f = $('#finalscore'); f.scrollIntoView({ block: 'start' }); f.focus({ preventScroll: true }); };
   if ($('#legacy')) $('#legacy').onclick = () => legacySheet(parent);
   $('#again').onclick = () => { closeSheet(); S = null; useDice(); renderTitle(); };
 }
