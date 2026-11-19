@@ -206,7 +206,7 @@ function guideHTML(){
       <p><b>Badges:</b> earn them as your life unfolds. They're collected across all your lives (see them on the title screen).</p>
       <table><tr><th>Badge</th><th>How to earn it</th></tr>${BADGES.map(b => `<tr><td>${b.ic} ${b.name}</td><td>${b.desc}</td></tr>`).join('')}</table>
       <p><b>Life goals:</b> on the <b>Life</b> tab, pin up to ${GOAL_MAX} badges as goals for this life. Each one you reach <b>after</b> pinning it adds <b>${GOAL_POINTS} points</b> to your Life Score.</p>
-      <p><b>Stories:</b> some events unfold over weeks: fixing up the fixer-upper, a friend's food truck, and the flood that leads to a new levee (it only comes after high water that the town didn't sandbag with your help). What you choose at each step changes what comes next.</p>
+      <p><b>Stories:</b> some events unfold over weeks: fixing up the fixer-upper, a friend's food truck, a Little League season you coach (a losing streak, a comeback and the season party), and the flood that leads to a new levee (it only comes after high water that the town didn't sandbag with your help). What you choose at each step changes what comes next.</p>
       <p><b>🏁 Challenges</b> (on the title screen): set-up stories with a goal. ${Object.values(SCENARIOS).map(c => `${c.ic} <b>${c.name}</b>: ${c.desc}`).join(' ')}</p>`],
     ['grow', '🧰 Skills and your own business', `
       <p><b>Skills</b> grow with practice and show on the Life tab (★ levels 1–3):</p>
