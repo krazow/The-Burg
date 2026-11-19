@@ -4373,6 +4373,84 @@ old ones.
 
 </details>
 
+## Ideas round 52 (pick on the build board)
+
+64 ideas. Details: [docs/ideas/round-52.md](docs/ideas/round-52.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 52: The first hour</b> (29 ideas)</summary>
+
+- [ ] 🔴 **i52-a01** Two "Good first job" tags on the Jobs list in a first life (S)
+- [ ] 🔴 **i52-a02** "You're hired" names the drive and what it costs you (S)
+- [ ] 🔴 **i52-a03** The first "Work extra" tap says it's overtime on top of your job (S)
+- [ ] 🟠 **i52-a04** An ignored warning card counts what it has cost (M)
+- [ ] 🟠 **i52-a05** A rejection offers "Spend this week on Town" in one tap (S)
+- [ ] 🟠 **i52-a06** Job cards show your hiring chances in words (S)
+- [ ] 🟡 **i52-a07** No happiness loss for a rejection in your first month (S)
+- [ ] 🟠 **i52-a08** End Week asks once when you have no job and haven't applied (S)
+- [ ] 🟠 **i52-a09** Each job card says what the work week feels like (S)
+- [ ] 🔴 **i52-a10** No event repeats in your first 52 weeks (S)
+- [ ] 🟡 **i52-a11** A stray you found a home for stays found (S)
+- [ ] 🟠 **i52-a12** Big repair bills in your first half-year can be split (S)
+- [ ] 🟠 **i52-a13** A gamble that fails says what the careful choice would have done (S)
+- [ ] 🟡 **i52-a14** Event text doesn't claim a past you didn't have (S)
+- [ ] 🟠 **i52-a15** A new partner's next scene is a good one (S)
+- [ ] 🟡 **i52-a16** Cut the longest early event cards to under 35 words (S)
+- [ ] 🟠 **i52-a17** First lives start the first week of April (M)
+- [ ] 🟡 **i52-a18** January's town goal gets a January name (S)
+- [ ] 🟠 **i52-a19** Out and about lists open places before closed ones (S)
+- [ ] 🟠 **i52-a20** Your first birthday comes inside your first year (M)
+- [ ] 🟡 **i52-a21** A grad's negative net worth says it's mostly the student loan (S)
+- [ ] 🟠 **i52-a22** Kept the dog? It shows on Home from the next week (S)
+- [ ] 🟠 **i52-a23** The week strip counts a town-goal week when it happens (S)
+- [ ] 🟠 **i52-a24** Week 13's report card shows itself once (M)
+- [ ] 🟠 **i52-a25** A 6-month ending offers "Keep going to 2 years" (M)
+- [ ] 🟠 **i52-a26** The header says "Year 1 of 5", not "259 weeks left" (S)
+- [ ] 🟠 **i52-a27** A one-time "Your first month" recap after week 4 (M)
+- [ ] 🟠 **i52-a28** A neighbor's porch notes guide your first 13 weeks (L)
+- [ ] 🔴 **i52-a29** A first-hour retention test with five scripted newcomers (L)
+
+</details>
+
+<details><summary><b>Ideas 52: Clubs and organizations</b> (35 ideas)</summary>
+
+- [ ] 🔴 **i52-b01** Clubs card: join up to two town groups (L)
+- [ ] 🟠 **i52-b02** Try a meeting before you join (S)
+- [ ] 🔴 **i52-b03** Dues day on the bills (S)
+- [ ] 🔴 **i52-b04** Meeting nights ride on Show up for town (M)
+- [ ] 🟠 **i52-b05** Lapsed: three missed meetings and you're off the active list (S)
+- [ ] 🔴 **i52-b06** Hold an office: secretary, treasurer, president (M)
+- [ ] 🟠 **i52-b07** The annual meeting: nobody wants to be president (S)
+- [ ] 🔴 **i52-b08** Run the club's big event (L)
+- [ ] 🔴 **i52-b09** Members-only doors: what joining opens (M)
+- [ ] 🟠 **i52-b10** Spread too thin: the third club costs more than it gives (S)
+- [ ] 🟡 **i52-b11** Service club eyeglass box and the school vision check (S)
+- [ ] 🟡 **i52-b12** The service club's bike rodeo for kids (S)
+- [ ] 🟡 **i52-b13** Rival service clubs' tug-of-war at Celebration Days (S)
+- [ ] 🟡 **i52-b14** Flag Day: retire worn flags at the Legion (S)
+- [ ] 🟡 **i52-b15** Poppies at the post office for the veterans' post (S)
+- [ ] 🟠 **i52-b16** In through family: join the Legion auxiliary (S)
+- [ ] 🟡 **i52-b17** Your teen goes to Boys State or Girls State (S)
+- [ ] 🟠 **i52-b18** Garden club keeps the Main Street planters (M)
+- [ ] 🟡 **i52-b19** Yard of the month sign on your lawn (S)
+- [ ] 🟡 **i52-b20** Garden club plant sale: split your perennials (S)
+- [ ] 🟡 **i52-b21** The historical society's treasurer keeps a shoebox (S)
+- [ ] 🟡 **i52-b22** Booster club paints the bleachers in August (S)
+- [ ] 🟠 **i52-b23** Take the EMT class with the volunteer ambulance crew (M)
+- [ ] 🟠 **i52-b24** On call for the ambulance: the weekend pager (M)
+- [ ] 🟡 **i52-b25** Ribbon cutting: the Chamber welcomes your business (S)
+- [ ] 🟡 **i52-b26** Quilts for a veteran: the guild and the post together (S)
+- [ ] 🟠 **i52-b27** Be a scout den leader (M)
+- [ ] 🟡 **i52-b28** Scout popcorn sale in the fall (S)
+- [ ] 🟡 **i52-b29** Your teen's Eagle-style project, and how much you help (S)
+- [ ] 🟠 **i52-b30** Your congregation, or none, shows up when you're laid up (S)
+- [ ] 🟡 **i52-b31** Club scholarship night for your senior (S)
+- [ ] 🟡 **i52-b32** Club news in the Tattler (S)
+- [ ] 🟡 **i52-b33** Service pins: 10, 25 and 40 years (S)
+- [ ] 🟠 **i52-b34** Clubs on the end screen and for the heir (S)
+- [ ] 🔴 **i52-b35** Sim check: joiners versus ghosts (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
