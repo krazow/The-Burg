@@ -247,15 +247,15 @@ const MSW = 420, MSH = 330;
 const pinKeys = `onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.dispatchEvent(new MouseEvent('click',{bubbles:true}))}"`;
 function mainStreetSVG(){
   let s = `<svg class="mapsvg msmap" viewBox="0 0 ${MSW} ${MSH}" role="group" aria-label="Main Street close-up: tap a business">
-    <rect width="${MSW}" height="${MSH}" fill="#efe6d2"/>
-    <rect x="0" y="150" width="${MSW}" height="30" fill="#fffaf0"/><path d="M0 165 H${MSW}" stroke="#c9b48a" stroke-width="1.5" stroke-dasharray="10 8"/>
-    <rect x="203" y="0" width="14" height="${MSH}" fill="#fffaf0"/>
+    <rect width="${MSW}" height="${MSH}" style="fill:var(--map-block)"/>
+    <rect x="0" y="150" width="${MSW}" height="30" style="fill:var(--map-road)"/><path d="M0 165 H${MSW}" stroke="#c9b48a" stroke-width="1.5" stroke-dasharray="10 8"/>
+    <rect x="203" y="0" width="14" height="${MSH}" style="fill:var(--map-road)"/>
     <text x="100" y="169" class="mlbl" text-anchor="middle" font-weight="700">Main St. · 100 block</text><text x="318" y="169" class="mlbl" text-anchor="middle" font-weight="700">200 block</text>
     <text x="${MSW - 6}" y="${MSH - 4}" class="mlbl" text-anchor="end" font-size="7.5">Not to scale</text>`;
   for (const p of PLACES.filter(x => x.st === 'main')) {
     const shut = !!placeClosed(p), recent = (S.evPins || []).find(x => OUT_EVENT_BIZ[x.t] === p.id && S.turn - x.turn <= 4);
     s += `<g class="mpin mspin" data-biz="${p.id}" tabindex="0" role="button" aria-label="${esc(p.name)}, ${esc(p.addr)}: ${shut ? 'closed this week' : 'open this week'}" onclick="BIZTAP('${p.id}')" ${pinKeys}>
-      <circle cx="${p.x}" cy="${p.y}" r="42" fill="transparent"/><circle cx="${p.x}" cy="${p.y}" r="15" fill="${shut ? '#efe6d2' : '#fff'}" stroke="#3d2b1f" stroke-width="1.4"${shut ? ' stroke-dasharray="3 2"' : ''}/>
+      <circle cx="${p.x}" cy="${p.y}" r="42" fill="transparent"/><circle cx="${p.x}" cy="${p.y}" r="15" style="fill:${shut ? 'var(--map-pin-off)' : 'var(--map-pin)'};stroke:var(--map-ink)" stroke-width="1.4"${shut ? ' stroke-dasharray="3 2"' : ''}/>
       <text x="${p.x}" y="${p.y + 5.5}" font-size="15" text-anchor="middle">${p.ic}</text>
       <text x="${p.x}" y="${p.y + 27}" class="mtown" text-anchor="middle">${p.lb}</text></g>`;
     if (recent) s += `<g class="evbadge" pointer-events="none"><circle cx="${p.x + 14}" cy="${p.y - 12}" r="9" fill="#ffd166" stroke="#9b2f1f" stroke-width="1.5"/><text x="${p.x + 14}" y="${p.y - 8}" font-size="10" text-anchor="middle">${recent.ic}</text></g>`;
@@ -273,7 +273,7 @@ function outTownDetail(p){
   const b = placeById(p.biz), f = p.focus && FOCUS[p.focus];
   const btn = !f ? '' : S.focus === p.focus ? `<span class="tag cur">This week's focus: ${f.name}</span>`
     : `<button class="sm" onclick="MAPFOCUS('${p.focus}')">${f.ic} Spend this week here</button>`;
-  return `<div class="card mapdet"><h3>${b.ic} ${esc(b.name)}</h3><p style="margin:0 0 4px;font-size:14px">${p.work ? `You work here as ${esc(p.work.toLowerCase())}. ` : ''}${esc(b.desc)}</p>
+  return `<div class="card mapdet"><h3>${b.ic} ${esc(b.name)}</h3><p style="margin:0 0 4px;font-size:0.875rem">${p.work ? `You work here as ${esc(p.work.toLowerCase())}. ` : ''}${esc(b.desc)}</p>
     <p class="muted" style="margin:0 0 8px">📍 ${esc(b.addr)} · ${placeLine(b)}</p>
     <button class="sm alt" onclick="BIZTAP('${b.id}')">🛍️ Visit or see the card</button> ${btn}${recentList('T', p.k)}</div>`;
 }

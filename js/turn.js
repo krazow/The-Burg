@@ -15,7 +15,8 @@ function playWeeks(n){
   const after = () => {
     if (res.ending) return finish(res.ending);
     render();
-    if (S.newBadges && S.newBadges.length) { toast(S.newBadges.join(' · ')); S.newBadges = []; }
+    if (S.newBadges && S.newBadges.length) { toast(S.newBadges.join(' · ')); S.newBadges = []; sfx('badge'); }
+    else if (!res.ev) { if (n === 1) sfx('week'); buzz('week'); }   // i2-a04/a05: one small tick per press; ⏩ and Auto don't tick every week
     if (res.ev) showEvent(res.ev, res.review);     // a year in review that week comes after the event
     else if (res.review) showReview(res.review);
     const r = S.run, dm = S.money - r.money, ch = (n, v) => Math.abs(v) < 0.5 ? `${n} unchanged` : `${n} ${v > 0 ? 'up' : 'down'} ${Math.abs(Math.round(v))}`;
@@ -42,9 +43,9 @@ function showRunDetails(){
   const dm = S.money - r.money;
   sheet(`<h2>${r.weeks > 1 ? `The last ${r.weeks} weeks` : 'This week'}</h2>
     <p>${runChips()}</p>
-    ${S.last ? `<h3 style="margin-top:12px">${r.weeks > 1 ? 'The last week' : 'Money'}</h3>${S.last.lines.map(([l,v]) => `<div class="kv"><span>${l}</span><span style="color:${v<0?'var(--barn)':'var(--sage)'}">${v>0?'+':''}${fmt(v)}</span></div>`).join('')}
+    ${S.last ? `<h3 style="margin-top:12px">${r.weeks > 1 ? 'The last week' : 'Money'}</h3>${S.last.lines.map(([l,v]) => `<div class="kv"><span>${l}</span><span style="color:${v<0?'var(--down)':'var(--up)'}">${v>0?'+':''}${fmt(v)}</span></div>`).join('')}
       <div class="kv"><span><b>Paychecks and bills</b></span><span><b>${S.last.net>=0?'+':''}${fmt(S.last.net)}</b></span></div>` : ''}
-    ${r.happened.length ? `<h3 style="margin-top:12px">What happened</h3>${r.happened.map(h => `<div class="kv"><span>${h.ic} ${esc(h.title)}</span><span style="color:${h.money<0?'var(--barn)':'var(--sage)'}">${h.money ? (h.money>0?'+':'') + fmt(h.money) : ''}</span></div>`).join('')}` : ''}
+    ${r.happened.length ? `<h3 style="margin-top:12px">What happened</h3>${r.happened.map(h => `<div class="kv"><span>${h.ic} ${esc(h.title)}</span><span style="color:${h.money<0?'var(--down)':'var(--up)'}">${h.money ? (h.money>0?'+':'') + fmt(h.money) : ''}</span></div>`).join('')}` : ''}
     <div class="kv"><span><b>Total change in cash</b></span><span><b>${dm>=0?'+':''}${fmt(dm)}</b></span></div>${tattlerLine()}
     <button class="btn primary" id="ok">Close</button>`);
   $('#ok').onclick = closeSheet;
