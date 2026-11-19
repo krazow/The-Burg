@@ -170,7 +170,7 @@ const EVENTS = [
   { ic:'☕', title:'Someone catches your eye', w:2, when:() => !S.partner && age() >= 19 && age() < 75,
     text:'You keep running into the same person at Howlin\' Bean on Main Street.',
     choices:() => [
-      {label:'Ask them out', go:() => { if (chance(.6)) { S.partner = true; adj({happy:10}); log('Started dating someone special.'); return 'They said yes! You\'re seeing each other now.'; } adj({happy:-3}); return 'They\'re flattered but not interested. Ouch.'; }},
+      {label:'Ask them out', go:() => { const boost = S.danceBoost; S.danceBoost = false; if (chance(boost ? .72 : .6)) /* W27: a barn dance makes it 20% likelier */ { S.partner = true; adj({happy:10}); log('Started dating someone special.'); return 'They said yes! You\'re seeing each other now.'; } adj({happy:-3}); return 'They\'re flattered but not interested. Ouch.'; }},
       {label:'Just smile', go:() => 'Maybe next time.'}
     ]},
   { ic:'💔', title:'A rough patch', w:1, when:() => S.partner,
@@ -325,7 +325,7 @@ const EVENTS = [
    ============================================================ */
 // small state these events keep (new lives get it in newGame, older saves in migrate)
 const EVENT_STATE = () => ({ roadTo:null, healthPlan:null, skiPass:null, snowChains:null, gasFriend:false, applyBoost:0, hireBy:-1,
-  tradeBy:-1, raiseBoost:0, promoBoost:0, promo:null,
+  tradeBy:-1, raiseBoost:0, promoBoost:0, promo:null, danceBoost:false,   // danceBoost: W27
   // round 75 weather, part 2: the smoke rule at work, the air filter, a roof on the waiting list, the raised furnace,
   // a vacation day spent on an outage, the neighbor's walk, and the block captain's storm plan
   smokeRule:null, airFilter:null, roofWait:null, floodAsk:null, vacDay:null, walk:false, walkWinter:null, walkWinters:0, walkPie:false, captain:null });
@@ -754,6 +754,145 @@ Object.assign(EVENT_PLACE, Object.fromEntries(WORK_EVENTS.map(e => [e.title, 'wo
   'Bluewood season pass sale':['R','bluewood'], 'Chains required on the road to Bluewood':['R','dayton']
 });
 const tradeBonus = () => S.tradeBy === S.turn ? cr(500) : 0;   // R-21: a dealer's trade-in bonus, this week only
+
+/* ============================================================
+   🏡 Event pack A, part 2 (W16–W30): more town events in Waitsburg (review doc 2026-11-18, section A)
+   Town pacing category; every amount is in 2027 dollars and goes through cost(); labels show today's price.
+   ============================================================ */
+const ownHome = () => !!(HOMES[S.home] && HOMES[S.home].own);
+// W16: shoveling for neighbors counts as a week toward the winter town goal
+function townGoalWeek(key){
+  const g = seasonGoal(); if (!g || g.key !== key || S.practice) return '';
+  const id = seasonId(g);
+  if (!S.sgoal || S.sgoal.id !== id) S.sgoal = { id, prog:0, done:false };
+  if (S.sgoal.done) return '';
+  if (++S.sgoal.prog >= g.need) { S.sgoal.done = true; adj(g.fx); S.seasonWins = (S.seasonWins || 0) + 1; log(`Helped the town: ${g.name.toLowerCase()}.`, 'mile'); return ` That finished the town goal: ${g.name}!`; }
+  return ' It counts as a week toward the town goal.';
+}
+// W26: a windstorm hit within the last 6 weeks (its 8-week cooldown tells when)
+const windstormLately = () => S.evCd && S.evCd['Windstorm'] != null && S.evCd['Windstorm'] - 8 >= S.turn - 6;
+const TOWN_EVENTS_W2 = [
+  { ic:'☃️', title:'Snow day', w:2, when:m => inM(m,11,0,1),
+    text:'School is called off and the whole town is buried in white.',
+    choices:() => [
+      {label:'Sled at the park', go:() => { adj({happy:4, health:1}); return 'Red cheeks, a cracked sled and the best afternoon all winter.'; }},
+      {label:'Shovel the neighbors\' walks', go:() => { adj({community:3, health:-1}); return 'Every walk on the block is clear, and your back knows it.' + townGoalWeek('winter'); }}
+    ]},
+  { ic:'🥧', title:'Community potluck at Town Hall', yr:1, w:3, when:m => inM(m,8,9,10),
+    text:'Long tables, folding chairs and a sign-up sheet for dishes at Town Hall.',
+    choices:() => [
+      {label:`Bring a dish (-${fmtc(15)})`, go:() => { const good = skillLv('cook') >= 2; adj({money:-cr(15), community:3, happy:good ? 3 : 2}); practice('cook', 1);
+        return good ? 'Your dish was scraped clean first. Three people asked for the recipe.' : 'You brought a casserole and left with a full plate and new friends.'; }},
+      {label:'Skip it', go:() => 'You heard the pie table was something else.'}
+    ]},
+  { ic:'🐶', title:'"Lost dog" poster', w:2, when:() => !S.dog,
+    text:'A hand-drawn poster on the post office door: a brown mutt named Biscuit, last seen near the levee.',
+    choices:() => [
+      {label:'Search the levee', go:() => { adj({community:3}); if (chance(.3)) { adj({happy:3, money:cr(50)}); return `You found Biscuit asleep under a cottonwood. The family insisted on a ${fmtc(50)} reward.`; } return 'No luck, but half the town saw you looking.'; }},
+      {label:'Share the post', go:() => { adj({community:1}); return 'You shared it everywhere. Biscuit came home two days later.'; }}
+    ]},
+  { ic:'🍺', title:'Pour beer at the Celebration Days beer garden', yr:1, w:2, when:m => inM(m,4) && age() >= 21,
+    text:'The beer garden at the fairgrounds needs volunteers to pour for the Celebration Days crowd.',
+    choices:() => [
+      {label:'Volunteer a shift', go:() => { adj({community:3, happy:2, health:-1}); return 'Four hours on your feet, and you met half the county.'; }},
+      {label:`Just visit (-${fmtc(20)})`, go:() => { adj({money:-cr(20), happy:2}); return 'A cold one in the sun, and the races on the speakers.'; }}
+    ]},
+  { ic:'🏛️', title:'Town Hall roof fundraiser', yr:1, w:2,
+    text:'The old Town Hall roof leaks every time it rains. The town is raising money to fix it.',
+    choices:() => [
+      {label:`Donate (-${fmtc(100)})`, go:() => { adj({money:-cr(100), community:4}); return 'Your name is on the thermometer sign out front.'; }},
+      {label:'Help with the bake-off', go:() => { adj({community:2}); return 'You judged the bake-off and ate too many brownies.'; }},
+      {label:'Skip it', go:() => 'Somebody else will chip in.'}
+    ]},
+  { ic:'🌺', title:'Adopt a Main Street flower basket', yr:1, w:3, when:m => inM(m,3),
+    text:'The town is looking for sponsors for the hanging flower baskets on Main Street.',
+    choices:() => [
+      {label:`Adopt one (-${fmtc(40)})`, go:() => { adj({money:-cr(40), happy:1, community:3}); return 'Petunias spill over the sidewalk, with your name on a tag all summer.'; }},
+      {label:'Skip it', go:() => 'You enjoy the baskets anyway.'}
+    ]},
+  { ic:'⚾', title:'Little League needs a coach', yr:1, w:3, when:m => inM(m,2) && S.community >= 30 && !leagueOn(),
+    text:'The Little League team has twelve kids, a bucket of balls and no coach.',
+    choices:() => [
+      {label:'Coach this season', go:() => { adj({community:5, happy:2, health:-1}); chainSet('league', 2, {}, [3, 6]); return 'You have a clipboard, a whistle and twelve kids who can\'t wait.'; }},
+      {label:'Skip it', go:() => 'Somebody\'s dad stepped up.'}
+    ]},
+  { ic:'🚴', title:'A cross-country cyclist asks for water', w:2, when:m => inM(m,5,6,7),
+    text:'A sunburned cyclist riding the Lewis & Clark route stops on Main Street and asks where to fill a water bottle.',
+    choices:() => [
+      {label:`Offer a meal (-${fmtc(10)})`, go:() => { adj({money:-cr(10), happy:3, community:1}); return 'They told you about crossing the Rockies over a burger. They\'ll remember Waitsburg.'; }},
+      {label:'Fill their bottle', go:() => { adj({happy:1}); return 'Cold water and directions to the Dayton hill. Off they went.'; }}
+    ]},
+  { ic:'🥶', title:'Late frost kills the garden', yr:1, w:3, when:m => inM(m,4) && ownHome(),
+    text:'A hard frost overnight. Your tomato starts are black and limp.',
+    choices:() => [
+      {label:`Replant (-${fmtc(40)})`, go:() => { adj({money:-cr(40), happy:1}); return 'New starts from the garden center, and a sheet ready for the next cold night.'; }},
+      {label:'Let it go', go:() => { adj({happy:-2}); return 'No homegrown tomatoes this year.'; }}
+    ]},
+  { ic:'🎄', title:'Christmas lights contest', yr:1, w:3, when:m => inM(m,11),
+    text:'The town is judging the best-lit house this year.',
+    choices:() => [
+      {label:`Go big (-${fmtc(120)})`, go:() => { adj({money:-cr(120), happy:4, community:3}); if (chance(.25)) { adj({money:cr(100)}); return `You won! Cars slow down to look, and the prize is a ${fmtc(100)} gift card.`; } return 'Cars slow down to look. You came in second to the inflatable reindeer.'; }},
+      {label:`A few strings (-${fmtc(20)})`, go:() => { adj({money:-cr(20), happy:2}); return 'A few strings on the porch. Cozy.'; }},
+      {label:'Skip it', go:() => 'Your house stayed dark.'}
+    ]},
+  { ic:'🌳', title:'Neighbor\'s tree takes out your fence', yr:1, w:8, when:() => ownHome() && windstormLately(),
+    text:'The windstorm brought down your neighbor\'s old elm, right across your fence.',
+    choices:() => [
+      {label:`Split the cost (-${fmtc(300)})`, go:() => { adj({money:-cr(300), community:2}); return 'You split the bill and a pot of coffee. Good fences, good neighbors.'; }},
+      {label:`Go through insurance (-${fmtc(500)} deductible)`, go:() => { adj({money:-cr(500), community:-1}); return 'The insurance paid, after your deductible. Your neighbor is a little cool to you now.'; }},
+      {label:`Fix it yourself (-${fmtc(80)})`, if:() => skillLv('handy') >= 2, go:() => { adj({money:-cr(80), health:-1}); practice('handy', 1); return 'A chainsaw, new posts and a weekend. The fence is better than before.'; }}
+    ]},
+  { ic:'🤠', title:'Barn dance at the fairgrounds', yr:1, w:3, when:m => inM(m,9),
+    text:'A fiddle band, hay bales and a dance floor at the fairgrounds barn.',
+    choices:() => [
+      {label:`Go (-${fmtc(15)})`, go:() => { adj({money:-cr(15), happy:4, community:2}); if (!S.partner) { S.danceBoost = true; return 'You danced every dance. Somebody asked your name twice.'; } return 'You and your partner danced until the band packed up.'; }},
+      {label:'Skip it', go:() => 'You heard the fiddles from your porch.'}
+    ]},
+  { ic:'🦃', title:'Wild turkeys strut down Main Street', w:0.5, when:m => inM(m,2,3,4),
+    text:'A dozen wild turkeys are holding up traffic on Main Street.',
+    choices:() => [{label:'Take a picture', go:() => { adj({happy:1}); return 'Your turkey photo got more likes than anything you\'ve ever posted.'; }}]},
+  { ic:'🎓', title:'Graduation party invitations', yr:1, w:3, when:m => inM(m,5),
+    text:'Graduation cards for half the senior class are stuck to your fridge.',
+    choices:() => [
+      {label:`Cards for everyone (-${fmtc(25)})`, go:() => { adj({money:-cr(25), community:2, happy:1}); return 'A card and a little cash for every grad. The parents noticed.'; }},
+      {label:'Skip them', go:() => { adj({community:-1}); return 'You missed the parties. Somebody\'s aunt noticed.'; }}
+    ]},
+  { ic:'🐍', title:'Rattlesnake in the woodpile', yr:1, w:2, when:m => inM(m,5,6,7),
+    text:'A dry rattle from the woodpile. There\'s a snake in there.',
+    choices:() => [
+      {label:`Call the guy who relocates them (-${fmtc(40)})`, go:() => { adj({money:-cr(40)}); return 'He bagged it in two minutes and drove it out to the hills.'; }},
+      {label:'Handle it yourself', go:() => { if (chance(.15)) { const c = Math.round(medBill(1800)); adj({money:-c, health:-6}); return `It bit you. The hospital in Walla Walla cost ${fmt(c)} for the antivenom.`; } adj({happy:2}); return 'A long-handled shovel and steady nerves. The snake is in the canyon now.'; }}
+    ]}
+];
+EVENTS.push(...TOWN_EVENTS_W2);
+// W22: the Little League season, told in three steps. The later steps come when they're due (added to PLAN_DUE in features.js).
+const leagueOn = () => { const c = (S.chains || {}).league; return !!c && c.step > 1 && c.step < 99; };
+const LEAGUE_STEPS = [
+  { ic:'⚾', title:'A losing streak', when:() => chainAt('league', 2),
+    text:'Five games, five losses. The kids are hanging their heads in the dugout.',
+    choices:() => [
+      {label:'Keep it fun', go:() => { adj({happy:1}); chainSet('league', 3, { drills:false }, [3, 6]); return 'Ice cream after the game, win or lose. The kids are smiling again.'; }},
+      {label:'Extra practices', go:() => { adj({health:-1, community:1}); chainSet('league', 3, { drills:true }, [3, 6]); return 'Two extra practices a week. The parents brought lawn chairs.'; }}
+    ]},
+  { ic:'⚾', title:'The comeback', when:() => chainAt('league', 3),
+    text:'Bottom of the last inning, down by one, bases loaded.',
+    choices:() => [{label:'Watch from the dugout', go:() => { const d = chain('league').f.drills; adj({happy:d ? 4 : 3, community:d ? 2 : 1}); chainSet('league', 4, {}, [2, 4]);
+      return d ? 'A line drive to left, two runs score, and the kids pile on second base. The practices paid off.' : 'A dribbler past the pitcher, and the winning run slides home. Nobody stopped cheering for ten minutes.'; }}]},
+  { ic:'🍕', title:'The season party', when:() => chainAt('league', 4),
+    text:'The season is over. Time to celebrate with the team.',
+    choices:() => [
+      {label:`Pizza party (-${fmtc(40)})`, go:() => { adj({money:-cr(40), community:2, happy:2}); chainEnd('league'); return 'Pizza, trophies for everyone, and a card signed by the whole team.'; }},
+      {label:`Hot dogs at the park (-${fmtc(15)})`, go:() => { adj({money:-cr(15), community:1, happy:1}); chainEnd('league'); return 'Hot dogs, a water-balloon fight and a team photo.'; }}
+    ]}
+];
+Object.assign(EVENT_PLACE, {
+  'Snow day':['T','home'], 'Community potluck at Town Hall':['T','mainst'], '"Lost dog" poster':['T','river'],
+  'Pour beer at the Celebration Days beer garden':['T','fair'], 'Town Hall roof fundraiser':['T','mainst'], 'Adopt a Main Street flower basket':['T','mainst'],
+  'Little League needs a coach':['T','school'], 'A losing streak':['T','school'], 'The comeback':['T','school'], 'The season party':['T','school'],
+  'A cross-country cyclist asks for water':['T','mainst'], 'Late frost kills the garden':['T','home'], 'Christmas lights contest':['T','home'],
+  "Neighbor's tree takes out your fence":['T','home'], 'Barn dance at the fairgrounds':['T','fair'], 'Wild turkeys strut down Main Street':['T','mainst'],
+  'Graduation party invitations':['T','school'], 'Rattlesnake in the woodpile':['T','home']
+});
 
 /* ============================================================
    🌦️ WEATHER AND HARD YEARS, part 2 (ideas round 75): smoke at work and at home, roofs and deductibles after a
