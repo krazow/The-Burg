@@ -12,6 +12,7 @@ function eventOdds(trip){
 function rollEvent(month, trip){
   eventUpkeep();
   S.roadTo = trip && trip.city ? trip.city : commuteOneWay() >= 20 ? job().city : null;   // where this week's drive goes
+  const due = planDue(month); if (due) return due;   // i3-a30/a31/a32: life decisions that come when they're due
   const odds = eventOdds(trip);
   let r = Math.random();
   for (const cat of ['town', 'road', 'work']) { if (r < odds[cat]) return pickEvent(month, cat); r -= odds[cat]; }
