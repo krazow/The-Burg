@@ -124,8 +124,9 @@ for (const { len, strat, g, opts, label } of JOBS_LIST) {
         }
         const sc = lifeScore();
         return { weeks, ending, bad, events, score: sc.score, parts: sc.parts, nw: Math.round(sc.real), age: age(), edu: S.edu, kids: S.kids.length,
-                 debt: /debt/.test(ending || ''), endedOk: !!ending, wxCost: Math.round((S.wxLife || {}).cost || 0), wxSaved: Math.round((S.wxLife || {}).saved || 0), yrs: Math.max(0.5, S.turn / 52), cash: Math.round(S.money), bk: S.bk != null, climbed, nw65,
-                 src: Object.fromEntries(Object.entries(src).map(([k, v]) => [k, Math.round(v)])) };
+                 debt: /debt/.test(ending || ''), endedOk: !!ending, cash: Math.round(S.money), bk: S.bk != null, climbed, nw65,
+                 src: Object.fromEntries(Object.entries(src).map(([k, v]) => [k, Math.round(v)])),
+                 wxCost: Math.round((S.wxLife || {}).cost || 0), wxSaved: Math.round((S.wxLife || {}).saved || 0), yrs: Math.max(0.5, S.turn / 52) };
       }, [len, strat, opts]);
       r.len = len; r.strat = strat; r.errors = errors; r.label = label;
       results.push(r);
