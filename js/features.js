@@ -196,6 +196,7 @@ function badgeWeek(notes){
   for (const b of BADGES) if (!S.badges[b.id] && b.test()) {
     S.badges[b.id] = S.turn; all[b.id] = 1;
     const goal = (S.goals || []).includes(b.id);
+    buzz('badge');
     (S.newBadges = S.newBadges || []).push(`${b.ic} Badge earned: ${b.name}${goal ? ` (a life goal! +${GOAL_POINTS} Life Score)` : ''}`);   // a toast, not a stop
     log(`Earned a badge: ${b.name}.`, 'mile');
   }

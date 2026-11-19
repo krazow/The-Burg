@@ -534,6 +534,184 @@ await t.check('H2: Replace on a full board asks first, and Back changes nothing'
   await page.evaluate(() => { closeSheet(); localStorage.clear(); S = null; renderTitle(); });
 });
 
+/* ---------- round 2 feel: Settings, sound, vibration, text size, night theme, swipes, thumb reach, two columns, install ---------- */
+await t.check('i2-a03: Menu → Settings holds every comfort option; Back returns to the Menu, Escape closes it', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.click('[data-tab=menu]');
+  await page.click(`${open} #settings`);
+  await page.waitForSelector(`${open} .setrow`);
+  const groups = await page.$$eval('#sheet .setrow', g => g.map(x => x.getAttribute('aria-labelledby')));
+  for (const k of ['theme', 'textSize', 'sound', 'swipe']) assert(groups.includes('set-' + k), `no ${k} setting (${groups})`);
+  assert(await page.$eval('#sheet [data-set=sound][data-v=off]', b => b.getAttribute('aria-pressed') === 'true'), 'sound is not off by default');
+  assert(await page.$eval('#sheet [data-set=theme][data-v=auto]', b => b.getAttribute('aria-pressed') === 'true'), 'theme does not follow the phone by default');
+  await page.click(`${open} #back`);
+  await page.waitForSelector(`${open} #settings`);
+  await page.click(`${open} #settings`);
+  await page.keyboard.press('Escape');            // Escape = Back to the Menu
+  await page.waitForSelector(`${open} #settings`);
+  await page.keyboard.press('Escape');
+  assert(await page.isHidden('#modal'), 'Escape did not close the Menu');
+});
+
+await t.check('i2-a06/i2-a07: text size and night theme apply at once, are remembered, and come back after a reload', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => settingsSheet(true));
+  await page.click(`${open} [data-set=theme][data-v=night]`);
+  await page.click(`${open} [data-set=textSize][data-v=xl]`);
+  const r = await page.evaluate(() => ({ night: document.documentElement.classList.contains('night'), px: getComputedStyle(document.documentElement).fontSize,
+    bg: getComputedStyle(document.body).backgroundColor, pressed: document.querySelector('#sheet [data-set=textSize][data-v=xl]').getAttribute('aria-pressed') }));
+  assert(r.night && r.px === '20px' && r.bg === 'rgb(23, 18, 14)' && r.pressed === 'true', JSON.stringify(r));
+  await page.reload({ waitUntil: 'load' });
+  const after = await page.evaluate(() => ({ night: document.documentElement.classList.contains('night'), px: getComputedStyle(document.documentElement).fontSize }));
+  assert(after.night && after.px === '20px', `after reload: ${JSON.stringify(after)}`);
+  await page.evaluate(() => { setPref('theme', 'day'); setPref('textSize', 'normal'); applyPrefs(); });
+  assert(await page.evaluate(() => !document.documentElement.classList.contains('night') && getComputedStyle(document.documentElement).fontSize === '16px'), 'day / normal did not come back');
+});
+
+await t.check('i2-a07: "Match phone" follows the dark mode setting; Day and Night override it', async () => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  const night = () => page.evaluate(() => document.documentElement.classList.contains('night'));
+  await page.evaluate(() => { setPref('theme', 'auto'); applyPrefs(); });
+  assert(await night(), 'auto + dark phone is not night');
+  await page.evaluate(() => { setPref('theme', 'day'); applyPrefs(); });
+  assert(!(await night()), 'Day did not override a dark phone');
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.evaluate(() => { setPref('theme', 'auto'); applyPrefs(); });
+  assert(!(await night()), 'auto + light phone is night');
+  await page.emulateMedia({ colorScheme: 'dark' });           // the change listener switches without a reload
+  await page.waitForTimeout(50);
+  assert(await night(), 'did not follow the phone switching to dark');
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.evaluate(() => { localStorage.removeItem(PREF_KEY); applyPrefs(); });
+});
+
+await t.check('i2-a04: a buzz for a week, an event and a badge; none when Vibration is off', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => { window.__buzz = []; navigator.vibrate = p => { window.__buzz.push(p); return true; }; S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1])); });
+  await page.click('#end'); await clearSheets();
+  await page.evaluate(() => { S.badges = {}; });
+  await page.click('#end'); await clearSheets();
+  await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Celebration Days')));
+  const { got, want } = await page.evaluate(() => ({ got: window.__buzz.map(p => JSON.stringify(p)), want: ['week', 'event', 'badge'].map(k => JSON.stringify(BUZZ[k])) }));
+  assert(want.every(w => got.includes(w)), `buzzes: ${got}`);
+  await page.click(`${open} [data-i="2"]`); await clearSheets();
+  await page.evaluate(() => { setPref('vibrate', 'off'); window.__buzz = []; });
+  await page.click('#end'); await clearSheets();
+  await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Celebration Days')));
+  assert((await page.evaluate(() => window.__buzz.length)) === 0, 'buzzed with Vibration off');
+  await page.click(`${open} [data-i="2"]`); await clearSheets();
+});
+
+await t.check('i2-a05: sounds are off by default; once on, a week ticks, events chime, and ⏩ stays quiet', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => { sfx.last = null; AUDIO = null; });
+  await page.click('#end'); await clearSheets();
+  assert(await page.evaluate(() => sfx.last === null && AUDIO === null), 'a sound played (or audio started) while Sounds is off');
+  await page.evaluate(() => { setPref('sound', 'soft'); sfx.last = null; });
+  await page.click('#end'); await clearSheets();
+  assert((await page.evaluate(() => sfx.last)) === 'week' && await page.evaluate(() => !!AUDIO), 'no week sound');
+  await page.evaluate(() => { sfx.last = null; S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1])); });
+  await page.click('#ff4'); await clearSheets();
+  assert((await page.evaluate(() => sfx.last)) === null, `⏩ 4 played "${await page.evaluate(() => sfx.last)}"`);
+  await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Celebration Days')));
+  assert((await page.evaluate(() => sfx.last)) === 'event', 'no event chime');
+  await page.click(`${open} [data-i="0"]`);
+  assert(['good', 'bad', 'tap'].includes(await page.evaluate(() => sfx.last)), 'no sound for the result');
+  await clearSheets();
+  await page.evaluate(() => { setPref('sound', 'off'); });
+});
+
+const swipe = (sel, dx, dy, type = 'touch') => page.evaluate(([sel, dx, dy, type]) => {
+  const el = document.querySelector(sel), r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + Math.min(r.height / 2, 20);
+  const ev = (t, x, y) => el.dispatchEvent(new PointerEvent(t, { bubbles: true, pointerId: 7, pointerType: type, isPrimary: true, clientX: x, clientY: y }));
+  ev('pointerdown', x, y); ev('pointermove', x + dx / 2, y + dy / 2); ev('pointerup', x + dx, y + dy);
+}, [sel, dx, dy, type]);
+await t.check('i2-a22: swiping left and right changes tabs; scrolling, a mouse drag or Swipes off do not', async () => {
+  await life({ jobId: 'farmhand' });
+  await swipe('#main .card', -140, 10);
+  assert((await page.evaluate(() => tab)) === 'jobs', 'swipe left did not go to Jobs');
+  await page.waitForTimeout(120);
+  assert((await page.textContent('#sr')).includes('Jobs'), 'tab change not announced');
+  await swipe('#main .card', 140, 0);
+  assert((await page.evaluate(() => tab)) === 'home', 'swipe right did not come back Home');
+  await swipe('#main .card', 140, 0);
+  assert((await page.evaluate(() => tab)) === 'home', 'swiped past the first tab');
+  await swipe('#main .card', -60, 200);
+  assert((await page.evaluate(() => tab)) === 'home', 'a scroll changed tabs');
+  await swipe('#main .card', -140, 0, 'mouse');
+  assert((await page.evaluate(() => tab)) === 'home', 'a mouse drag changed tabs');
+  await page.evaluate(() => setPref('swipe', 'off'));
+  await swipe('#main .card', -140, 0);
+  assert((await page.evaluate(() => tab)) === 'home', 'swiped with Swipes off');
+  await page.evaluate(() => setPref('swipe', 'on'));
+});
+
+await t.check('i2-a22: a pop-up swipes closed from its handle, but an event asking for a choice cannot', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.click('[data-tab=menu]');
+  assert(await page.$(`${open} .grab`), 'the Menu has no handle');
+  await swipe('#sheet .grab', 0, 30);
+  assert(await page.isVisible('#modal'), 'a short pull closed it');
+  await swipe('#sheet .grab', 0, 150);
+  assert(await page.isHidden('#modal'), 'swiping the handle down did not close the Menu');
+  await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Celebration Days')));
+  assert(!(await page.$(`${open} .grab`)), 'an event with choices has a handle');
+  await page.evaluate(() => { const sh = document.querySelector('#sheet'); for (const [t, y] of [['pointerdown', 200], ['pointerup', 500]]) sh.dispatchEvent(new PointerEvent(t, { bubbles: true, pointerId: 8, pointerType: 'touch', isPrimary: true, clientX: 100, clientY: y })); });
+  await page.keyboard.press('Escape');
+  assert(await page.isVisible('#modal'), 'the event was dismissed without a choice');
+  await page.click(`${open} [data-i="2"]`);
+  assert(await page.$(`${open} .grab`), 'the result has no handle');
+  await swipe('#sheet .grab', 0, 150);
+  assert(await page.isHidden('#modal'), 'the result did not swipe closed');
+});
+
+await t.check('i2-a24: event choices sit at the bottom of the pop-up, and the result keeps the layout', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Celebration Days')));
+  const m = await page.evaluate(() => { const sh = document.querySelector('#sheet').getBoundingClientRect(), last = [...document.querySelectorAll('#sheet [data-i]')].pop().getBoundingClientRect();
+    return { ev: document.querySelector('#sheet').classList.contains('ev'), gap: sh.bottom - last.bottom, h: sh.height, vh: innerHeight }; });
+  assert(m.ev && m.gap < 60 && m.h >= m.vh * 0.55, JSON.stringify(m));
+  await page.click(`${open} [data-i="2"]`);
+  const r = await page.evaluate(() => { const sh = document.querySelector('#sheet').getBoundingClientRect(), ok = document.querySelector('#sheet #ok').getBoundingClientRect(); return { ev: document.querySelector('#sheet').classList.contains('ev'), gap: sh.bottom - ok.bottom }; });
+  assert(r.ev && r.gap < 60, `result layout ${JSON.stringify(r)}`);
+  await clearSheets();
+  await page.evaluate(() => sheet('<h2>Plain</h2><button id="ok">OK</button>'));
+  assert(!(await page.evaluate(() => document.querySelector('#sheet').classList.contains('ev'))), 'other pop-ups kept the event layout');
+  await page.evaluate(() => closeSheet());
+});
+
+await t.check('i2-a27: Home has a side column on a tablet held sideways, and one column on a phone', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.click('#end'); await clearSheets();
+  const cols = () => page.evaluate(() => { const a = document.querySelector('.hmain').getBoundingClientRect(), b = document.querySelector('.hside').getBoundingClientRect();
+    return { side: b.left >= a.right - 1 && b.top < a.bottom, recent: getComputedStyle(document.querySelector('.hside .wideonly')).display !== 'none' }; });
+  let c = await cols();
+  assert(!c.side && !c.recent, `phone: ${JSON.stringify(c)}`);
+  await page.setViewportSize({ width: 1024, height: 768 });
+  c = await cols();
+  assert(c.side && c.recent, `tablet: ${JSON.stringify(c)}`);
+  await page.setViewportSize({ width: 390, height: 844 });
+});
+
+await t.check('i2-a30: the install card waits for 8 weeks of play, installs on tap, and hides for good after', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => { window.__prompted = 0; const e = new Event('beforeinstallprompt', { cancelable: true }); e.prompt = () => { window.__prompted++; }; e.userChoice = Promise.resolve({ outcome: 'accepted' }); window.dispatchEvent(e); });
+  assert(!(await page.$('#install')), 'offered to install in the first week');
+  await page.evaluate(() => { S.turn = 8; render(); });
+  assert(await page.$('#install'), 'no install card after 8 weeks');
+  await page.click('#install');
+  await page.waitForTimeout(50);
+  assert((await page.evaluate(() => window.__prompted)) === 1 && await page.evaluate(() => prefs().installed === true), 'install did not prompt or was not remembered');
+  assert(!(await page.$('#install')), 'card still showing after installing');
+  // Not now hides it; the Android app (or a home-screen app) never shows it
+  await page.evaluate(() => { localStorage.removeItem(PREF_KEY); setPref('tips', ['focus', 'strip', 'tabs']); INSTALL_EVT = { prompt(){}, userChoice: Promise.resolve({ outcome: 'dismissed' }) }; render(); });
+  await page.click('#installno');
+  assert(!(await page.$('#install')) && await page.evaluate(() => !!prefs().installNo), 'Not now did not hide it');
+  await page.evaluate(() => { setPref('installNo', null); Object.defineProperty(document, 'referrer', { configurable: true, get: () => 'android-app://com.krazow.theburg' }); render(); });
+  assert(!(await page.$('#install')), 'shown inside the Android app');
+  await page.evaluate(() => { delete document.referrer; INSTALL_EVT = null; render(); });
+});
+
 
 /* ---------- round 3: money (insurance, housing, loans, investing, farm markets, debt help) ---------- */
 await t.check('i3-a27: filing for bankruptcy wipes the debt and keeps the life going, once', async () => {
