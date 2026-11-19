@@ -1382,6 +1382,23 @@ await t.check('i3-a24/a25: older saves get an estimated work record', async () =
   assert(near(r.y, 16.5) && near(r.p, 3) && r.pay === 2900 && r.will === false && r.care === null, JSON.stringify(r));
 });
 
+await t.check('i2-a29: an old save gets its past years in the life story, and says when earlier years came before the update', async () => {
+  const r = await ev(() => {
+    fresh('five', { jobId: 'farmhand' }); S.date = new Date(2029, 5, 1).getTime(); S.turn = 125; S.ageMonths = 20 * 12;
+    const g = JSON.parse(JSON.stringify(S)); delete g.years; delete g.storyEarly;
+    g.log = [{ d: 'Week of Mar 1, 2029', m: 'Earned a badge: Good dog.', k: 'mile' }, { d: 'Week of May 3, 2028', m: 'Hired as Wheat farm hand in Waitsburg!', k: 'money' },
+      { d: 'Week of Feb 2, 2028', m: 'Celebration Days: you ran.', k: 'ev' }, { d: 'Week of Jan 4, 2027', m: 'Rules turns 18 and rents a room above Main Street in Waitsburg.', k: 'ev' }];
+    const short = migrate(JSON.parse(JSON.stringify(g)));
+    const long = JSON.parse(JSON.stringify(g)); for (let i = 0; i < 120; i++) long.log.splice(1, 0, { d: 'Week of Apr 1, 2029', m: 'Quiet week.', k: 'ev' });
+    long.log = long.log.slice(0, 120); const big = migrate(long);
+    S = short; const st = lifeStory(); S = big; const st2 = lifeStory();
+    return { years: short.years, early: short.storyEarly, rows: st.rows.map(x => `${x.year}:${x.text.join(' ')}`), early2: big.storyEarly, first2: st2.rows[0].text[0] };
+  });
+  assert(r.years.length === 1 && r.years[0].year === 2028 && /Hired as/.test(r.years[0].m[0]) && r.years[0].age === 19, JSON.stringify(r.years));
+  assert(!r.early && r.rows.some(x => /^2028:.*Hired/.test(x)) && !r.rows.some(x => /Celebration/.test(x)), JSON.stringify(r.rows));
+  assert(r.early2 && /before this update/.test(r.first2), JSON.stringify(r));
+});
+
 await t.check('i3-a28 + jobs: the 13-week outlook counts union dues, the bus pass, furloughs, seasons, call-backs, unemployment, apprenticeship steps and certificates', async () => {
   const r = await ev(() => {
     // week one of the outlook matches the real week for a union apprentice who rides the bus

@@ -9,6 +9,57 @@ function fxWords(fx){
   const n = { happy:'happiness', health:'health', community:'community' };
   return Object.entries(fx).map(([k,v]) => `${v > 0 ? '▲' : '▼'} ${n[k]}`).join(', ');
 }
+/* ---------- i2-a20: tap a word to see what it means ---------- */
+const GLOSSARY = {
+  networth: { w:'Net worth', d:() => 'Everything you own minus what you owe: cash (below $0 it counts against you), your home equity, your vehicle, your 401(k), index funds at today\'s value, wine futures at what you paid until they pay out, and what your business would sell for. Then it takes off what\'s left on a truck loan, student loans and a home equity loan. It counts for 30% of your Life Score.' },
+  equity: { w:'Home equity', d:() => `The part of your home that is yours: the down payment, plus each mortgage payment's share, plus whatever the housing market adds or takes away (about ${HOME_GROW * 100}% a year in a normal market). A home equity loan borrows against it and counts against your net worth until it's paid. Selling costs ${SELL_FEE * 100}% in agent fees.` },
+  takehome: { w:'Take-home', d:() => 'Pay after about 15% taxes and the gas to drive to work and back (half with a carpool, less on remote days, and a bus pass instead of gas if you ride the county bus). Union dues and any 401(k) savings come out of it too.' },
+  k401: { w:'401(k)', d:() => `A retirement account. Put ${K401.slice(1).map(r => r * 100 + '%').join(' or ')} of each paycheck in before taxes; at 5% or more your employer adds 3%. It grows about 6% a year and counts in your net worth.` },
+  rut: { w:'rut', d:() => `After ${RUT_WEEKS} weeks of the same focus you're in a rut: happiness drops every week until you switch. Classes never cause a rut.` },
+  fade: { w:'works at', d:() => 'A focus works fully for 4 weeks in a row, then does a little less each week (down to 30%). Switch for a week to reset it.' },
+  lifescore: { w:'Life Score', d:() => `Your score out of 100: average happiness 30%, average health 20%, community at the end 20%, and net worth against your game length's target 30%. Pinned life goals you reach add points; a bankruptcy takes ${BK_PENALTY} off.` },
+  dollars: { w:'2027 dollars', d:() => `Prices rise about ${COL_RATE * 100}% a year. Targets are written in 2027 prices, so a dollar later in the game counts for a little less.` },
+  focus: { w:'focus', d:() => 'What you spend your week on. It repeats every week until you change it.' }
+};
+let TERM_N = 0;
+// a word you can tap (or focus and press Enter) to see what it means; screen readers hear the meaning on focus
+function term(key, label){
+  const g = GLOSSARY[key]; if (!g) return label || key;
+  const id = `gl${++TERM_N}`;
+  return `<button type="button" class="term" data-term="${key}" aria-expanded="false" aria-describedby="${id}">${label || g.w}</button><span class="sr-only" id="${id}">${g.d()}</span>`;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('[data-term]'); if (!b) return;
+  e.stopPropagation();
+  const open = b.getAttribute('aria-expanded') !== 'true', next = b.nextElementSibling && b.nextElementSibling.nextElementSibling;
+  if (next && next.classList.contains('termdef')) next.remove();
+  if (open) b.nextElementSibling.insertAdjacentHTML('afterend', `<span class="termdef" role="note"><b>${GLOSSARY[b.dataset.term].w}:</b> ${GLOSSARY[b.dataset.term].d()}</span>`);
+  b.setAttribute('aria-expanded', open);
+});
+/* ---------- i2-a17: first-time explainers, shown where a system opens up, once per device ---------- */
+const FIRST = {
+  trips: { ic:'🚗', t:'Trips', d:() => `Pick a town and up to ${TRIP_MAX} stops; the trip happens when you end the week. The town you commute to costs no extra gas. Other trips take part of your week, so your focus works at ${TRIP_TIME * 100}%. A stock-up run makes groceries ${STOCK_OFF * 100}% cheaper for ${STOCK_WEEKS} weeks.` },
+  goals: { ic:'🎯', t:'Life goals', d:() => `Pin up to ${GOAL_MAX} badges as goals. Each one you reach after pinning it adds ${GOAL_POINTS} points to your Life Score.` },
+  skills: { ic:'🧰', t:'Skills', d:() => `Skills grow as you practice: ${SKILL_STEPS.join(', ')} practice points for levels 1, 2 and 3. Each level saves money or opens a choice.` },
+  biz: { ic:'🏪', t:'Your own business', d:() => `One at a time: ${Object.values(BIZ).map(b => `${b.ic} ${b.name.toLowerCase()} (${fmtc(b.cost)})`).join(', ')}. Selling gets back 60% of the price, less about ${BIZ_DEP * 100}% a year as it ages.` },
+  k401: { ic:'🏦', t:'The 401(k)', d:() => `Save ${K401.slice(1).map(r => r * 100 + '%').join(' or ')} of each paycheck before taxes. At 5% or more your employer adds 3%: free money that grows about 6% a year.` },
+  school: { ic:'📚', t:'School', d:() => `Pick Take classes as your focus. ${EDU.slice(1).map((e, i) => `${e}: ${STUDY_NEED[i]} weeks`).join(', ')}. Classes never put you in a rut.` },
+  carpool: { ic:'🚙', t:'Carpools', d:() => 'With community 30 or more you can ride with neighbors on a 20+ mile commute: half the gas, an easier drive, and a little community. The carpool goes with the job.' }
+};
+let FIRST_SLOT = null;          // one explainer per screen: render() opens the slot, the first unseen explainer takes it
+function firstTime(key){
+  const x = FIRST[key];
+  if (!x || !S || S.practice || TUT || (prefs().first || {})[key] || FIRST_SLOT === 'used') return '';
+  if (FIRST_SLOT === 'open') FIRST_SLOT = 'used';
+  return `<div class="card tip first" data-firstcard="${key}"><div><b>${x.ic} New: ${x.t}.</b> ${x.d()}</div><button class="sm alt" data-first="${key}" aria-label="Got it: ${x.t}">Got it</button></div>`;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('[data-first]'); if (!b) return;
+  setPref('first', { ...(prefs().first || {}), [b.dataset.first]: 1 });
+  const c = b.closest('[data-firstcard]'); if (c) c.remove();
+  announce('Got it');
+});
+
 function guideHTML(){
   const W2 = 12/52;
   const pw = v => '$' + Math.round(v * W2).toLocaleString() + '/wk';
@@ -37,7 +88,8 @@ function guideHTML(){
       <p><b>Town goals:</b> each season the town has a goal you work toward with your focus: ${SEASON_GOALS.map(g => `${g.ic} <b>${g.name}</b> (${g.need} weeks of ${g.what})`).join(', ')}. Finish it before the season ends for a boost in community and happiness. Your progress shows above the focus buttons.</p>
       <p><b>Mix it up.</b> A focus works at full strength for 4 weeks in a row, then fades (down to 30%). After 8 weeks of the same thing you're <b>in a rut</b>, and happiness drops every week until you switch. Classes are the exception: study as long as you like.</p>
       <p><b>Skipping ahead:</b> <b>⏩ 4</b> and <b>⏩ 13</b> play several weeks with the same focus. <b>⏭ Auto</b> plays until something needs you (up to 26 weeks). Skips stop when an event needs a choice, at a milestone, or at New Year.</p>
-      <p><b>What the week did:</b> the strip above End Week shows your money (events included) and ▲▼ for each stat. Tap it to see every paycheck, bill and event.</p>`],
+      <p><b>What the week did:</b> the strip above End Week shows your money (events included) and ▲▼ for each stat. Tap it to see every paycheck, bill and event. Tap a line there to see <b>why</b> it cost what it did, and read why your stats moved.</p>
+      <p><b>Before you pick:</b> under the focus buttons, <b>Next week</b> estimates what the focus will add (stats and cash, before events). A button shows a percentage when that focus is fading from repeating it.</p>`],
     ['stats', '📊 Stats', `
       <p>Tap any stat on Home to see what moves it.</p>
       <ul><li><b>😊 Happiness (0–100).</b> Up: Rest, Get outside, Show up for town, a partner, a dog, kids, a nicer home, retirement. Down: stressful jobs, long commutes, overtime, classes, side hustles, debt, no job, ruts.</li>
@@ -163,6 +215,15 @@ function guideHTML(){
       <tr><td>Net worth</td><td>Against the target for your game length (in 2027 dollars)</td><td>30%</td></tr></table>
       <p>Titles: 85+ <b>Legend of the Burg</b>, 70+ <b>Pillar of the Community</b>, 55+ <b>Solid Waitsburger</b>, 40+ <b>Getting By on Main Street</b>, below that <b>Tumbleweed</b>. Your best score for each length is kept, and Relaxed and Hard scores are labeled and kept separately from Normal ones: tap <b>🏆 Your records</b> on the title screen to see them by length and mode, with your challenges and this week's weekly challenge.</p>
       <p><b>On track?</b> Life Score so far also shows whether your net worth is on track for how far through the game you are (in Lifetime, counted from 18 to 65).</p>`],
+    ['way', '🧭 Finding your way', `
+      <ul><li><b>Your first month:</b> a checklist on Home walks you through the basics: a job, your first week, the week strip, the 401(k), a life goal and a visit around town. Ticked steps are remembered on this device, and you can hide it.</li>
+      <li><b>Next step:</b> after that, Home shows one suggestion based on the weakest part of your Life Score. Tap it to go to the right place. It never acts for you.</li>
+      <li><b>New here?</b> The first time you open trips, the businesses, skills, life goals, the 401(k), school or carpools, a short card explains it. <b>Got it</b> hides it for good.</li>
+      <li><b>Underlined words</b> (like ${term('networth')}) explain themselves when you tap them.</li>
+      <li><b>Big choices</b> (moving, buying a vehicle, quitting) list what will change in cash, weekly costs and stats before you say yes.</li>
+      <li><b>Previously in the Burg:</b> come back after a while and a short recap shows what happened lately and where things stand.</li>
+      <li><b>Milestones:</b> new badges and skill levels get a card of their own after the week. <b>⚙️ Settings → Animations</b> turns off moving bars, counting cash and confetti (they're also off when your device asks for reduced motion).</li>
+      <li><b>Your life story:</b> when a life ends, its highlights year by year come before the score. Tap <b>Skip to the score</b> to jump past it. The score card you share includes a few highlights.</li></ul>`],
     ['tips', '💡 Tips', `
       <ul><li>Rotate your focus: a little work, a little town, a little rest. Long streaks fade and ruts hurt.</li>
       <li>Classes are a long game. A certificate or degree opens jobs that pay far more.</li>
@@ -269,6 +330,7 @@ function drawCoach(){
   const el = st.sel ? document.querySelector(st.sel) : null;
   if (st.sel && !el) { if (++TUT.tries < 12) return setTimeout(drawCoach, 150); return tutNext(); }   // skip a step whose target never appeared
   if (el && el.scrollIntoView && !el.closest('.endbar, .weekstrip, nav, .sheet')) el.scrollIntoView({ block: 'center' });
+  else if (el && el.scrollIntoView && el.closest('.sheet')) el.scrollIntoView({ block: 'nearest' });   // a long sheet: bring its button into view
   const r = el ? el.getBoundingClientRect() : null, pad = 6;
   const box = r ? { x: r.left - pad, y: r.top - pad, w: r.width + pad*2, h: r.height + pad*2 } : null;
   const vw = innerWidth, vh = innerHeight;
