@@ -4070,6 +4070,77 @@ old ones.
 
 </details>
 
+## Ideas round 48 (pick on the build board)
+
+57 ideas. Details: [docs/ideas/round-48.md](docs/ideas/round-48.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 48: Bundles part 6 and v1.0</b> (31 ideas)</summary>
+
+- [ ] 🟡 **i48-a01** Bundle: Walla Walla and Dayton drive-bys (M)
+- [ ] 🟠 **i48-a02** Bundle: Tri-Cities drive-bys (M)
+- [ ] 🟠 **i48-a03** Bundle: Commute and trip mishaps (M)
+- [ ] 🟠 **i48-a04** Bundle: Coffee, kitchen and grocery ladders (L)
+- [ ] 🟠 **i48-a05** Bundle: Bank, law office and salon ladders (L)
+- [ ] 🔴 **i48-a06** Bundle: Hospital and care work (L)
+- [ ] 🟠 **i48-a07** Bundle: Farm, elevator and ag tech careers (L)
+- [ ] 🟠 **i48-a08** Bundle: Tools of the trade: shop, road and rail (L)
+- [ ] 🟡 **i48-a09** Bundle: Campus, slopes and the big employers (L)
+- [ ] 🟡 **i48-a10** Bundle: Main Street menus and side jobs (M)
+- [ ] 🟠 **i48-a11** Bundle: Traits that change over a life (M)
+- [ ] 🔴 **i48-a12** Bundle: Accessibility sweep part 2: headings and spoken names (M)
+- [ ] 🟠 **i48-a13** Bundle: Zoom, Reduce Motion and Help demos (M)
+- [ ] 🟡 **i48-a14** Bundle: Performance sweep part 3: Jobs tab and old data (M)
+- [ ] 🟠 **i48-a15** Bundle: Long town crises (L)
+- [ ] 🟠 **i48-a16** Bundle: Neighbors through a crisis and the year after (M)
+- [ ] 🟠 **i48-a17** Bundle: Help rewrite, section by section (M)
+- [ ] 🟠 **i48-a18** Bundle: Rivers and wild things (M)
+- [ ] 🟠 **i48-a19** Bundle: Farm ground and the long view (L)
+- [ ] 🟠 **i48-a20** Bundle: A yard ready for summer (M)
+- [ ] 🟠 **i48-a21** Bundle: Event threads: work and town (M)
+- [ ] 🟡 **i48-a22** Bundle: Event threads: friends and neighbors (M)
+- [ ] 🟠 **i48-a23** Bundle: Buy, sell and swap (M)
+- [ ] 🟠 **i48-a24** Bundle: Reporter desk and the letters page (M)
+- [ ] 🟡 **i48-a25** Bundle: The paper of record (M)
+- [ ] 🟡 **i48-a26** Bundle: Cardinals on Friday night (M)
+- [ ] 🔴 **i48-a27** Bundle: Parent playtest fixes part 2 (M)
+- [ ] 🟡 **i48-a28** Bundle: Winter and spring traditions (M)
+- [ ] 🟡 **i48-a29** Bundle: Summer and fall traditions (M)
+- [ ] 🟠 **i48-a30** Bundle: December and traditions that carry on (L)
+- [ ] 🔴 **i48-a31** Release plan: v1.0 — A polished town (L)
+
+</details>
+
+<details><summary><b>Ideas 48: Playtest on Relaxed</b> (26 ideas)</summary>
+
+- [ ] 🔴 **i48-b01** A quick second tap on ⏩ can't pick an event choice (S)
+- [ ] 🔴 **i48-b02** Relaxed softens the rut too (S)
+- [ ] 🔴 **i48-b03** The rut reminds you again every 13 weeks (S)
+- [ ] 🔴 **i48-b04** The rut stop has focus buttons (S)
+- [ ] 🔴 **i48-b05** Skips stop when a stat drops into the red (S)
+- [ ] 🔴 **i48-b06** Before a long skip, check the focus (M)
+- [ ] 🟠 **i48-b07** The stop sheet says why it stopped and offers "Keep going" (S)
+- [ ] 🟠 **i48-b08** A report card that lands mid-skip shows on the stop sheet (S)
+- [ ] 🟠 **i48-b09** Eight weeks with no paycheck stop a skip (S)
+- [ ] 🟠 **i48-b10** Relaxed: fewer small events, so a skip goes farther (M)
+- [ ] 🟠 **i48-b11** Small choices from a skip wait in one sheet (M)
+- [ ] 🟠 **i48-b12** The dealer offer doesn't pull you off Home (S)
+- [ ] 🟠 **i48-b13** The end sheet names what cost you most (M)
+- [ ] 🟡 **i48-b14** The Relaxed end note mentions debt only if you were in debt (S)
+- [ ] 🟡 **i48-b15** Help says when skips really stop (S)
+- [ ] 🟡 **i48-b16** Skip buttons know how many weeks are left (S)
+- [ ] 🟠 **i48-b17** Relaxed shows what it saved you (M)
+- [ ] 🟠 **i48-b18** Relaxed: stats don't drift below 20 on their own (S)
+- [ ] 🟠 **i48-b19** A skip remembers what wore you down (M)
+- [ ] 🟡 **i48-b20** Life Score tile shows its change since the last skip (S)
+- [ ] 🟠 **i48-b21** A balance-sim bot that never changes focus (S)
+- [ ] 🟠 **i48-b22** A gameplay test for fast casual taps (S)
+- [ ] 🟡 **i48-b23** Halfway card in 6-month lives (S)
+- [ ] 🟡 **i48-b24** A Quick life badge (S)
+- [ ] 🟡 **i48-b25** "You pick for me" on small events in Relaxed (M)
+- [ ] 🟡 **i48-b26** Events during a skip say where you are in it (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
