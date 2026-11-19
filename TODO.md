@@ -1319,6 +1319,82 @@ old ones.
 
 </details>
 
+## Ideas round 12 (pick on the build board)
+
+62 ideas. Details: [docs/ideas/round-12.md](docs/ideas/round-12.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 12: The neighboring towns</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i12-a01** College Place joins the region map (M)
+- [ ] 🔴 **i12-a02** Each town gets a character card (S)
+- [ ] 🔴 **i12-a03** The Dayton rivalry game (M)
+- [ ] 🟠 **i12-a04** Bragging rights after the rivalry game (S)
+- [ ] 🟠 **i12-a05** Follow the Cardinals on the road (S)
+- [ ] 🟠 **i12-a06** More than sports: cross-town contests (M)
+- [ ] 🔴 **i12-a07** Regulars in every town (M)
+- [ ] 🟠 **i12-a08** Ties in your work town (M)
+- [ ] 🔴 **i12-a09** Live in another town (L)
+- [ ] 🟠 **i12-a10** Community follows you, but slowly (M)
+- [ ] 🟡 **i12-a11** Try a town before you move (S)
+- [ ] 🟠 **i12-a12** Move closer to the job? (S)
+- [ ] 🟡 **i12-a13** Coming home again (S)
+- [ ] 🟠 **i12-a14** The US-12 commuter club (M)
+- [ ] 🟡 **i12-a15** Leave early or leave late (S)
+- [ ] 🟡 **i12-a16** Fill up where gas is cheaper (S)
+- [ ] 🟠 **i12-a17** Jury duty in Walla Walla (S)
+- [ ] 🟡 **i12-a18** County seat errands (S)
+- [ ] 🟠 **i12-a19** Learn some Spanish in Pasco (M)
+- [ ] 🟡 **i12-a20** Three cities, three personalities (S)
+- [ ] 🔴 **i12-a21** Festival weeks as trip stops (M)
+- [ ] 🟡 **i12-a22** A weekly 'what's on' line per town (S)
+- [ ] 🟡 **i12-a23** Wine weekends crowd Walla Walla (S)
+- [ ] 🟠 **i12-a24** Hardware runs for the fixer-upper (S)
+- [ ] 🟡 **i12-a25** Dayton's small-town services (S)
+- [ ] 🟡 **i12-a26** Teens want to go to the big town (M)
+- [ ] 🟠 **i12-a27** Towns appear on the map as you hear of them (M)
+- [ ] 🟡 **i12-a28** Drive-time rings on the region map (S)
+- [ ] 🟡 **i12-a29** Same trip as last time (S)
+- [ ] 🟠 **i12-a30** Prescott, the sister town (M)
+- [ ] 🟠 **i12-a31** Out-of-town friends who need a visit (M)
+- [ ] 🟡 **i12-a32** Region map shows where you're known (S)
+
+</details>
+
+<details><summary><b>Ideas 12: Quick wins</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i12-b01** "End this life now" asks first (S)
+- [ ] 🔴 **i12-b02** Net worth breakdown adds up (S)
+- [ ] 🔴 **i12-b03** Debt warning names the right limit for the mode (S)
+- [ ] 🔴 **i12-b04** Replacing a full slot asks once more (S)
+- [ ] 🟠 **i12-b05** Undo a deleted life for a few seconds (S)
+- [ ] 🟠 **i12-b06** Starting a business asks first (S)
+- [ ] 🟠 **i12-b07** A calm debt card before the scary one (S)
+- [ ] 🟠 **i12-b08** Cash in the header turns red in debt (S)
+- [ ] 🟡 **i12-b09** Long names don't push the cash off the header (S)
+- [ ] 🟠 **i12-b10** Lifetime header says something useful on the right (S)
+- [ ] 🟠 **i12-b11** No "-$0" in the week strip (S)
+- [ ] 🟠 **i12-b12** A trade-in worth more than the car says "you get money back" (S)
+- [ ] 🟠 **i12-b13** Say why the ride buttons are greyed out (S)
+- [ ] 🟡 **i12-b14** 401(k) buttons show what they cost a week (S)
+- [ ] 🟡 **i12-b15** Greyed-out focus tiles say why (S)
+- [ ] 🟠 **i12-b16** Empty job list offers to clear the filter (S)
+- [ ] 🟡 **i12-b17** The Journal says it keeps the last 120 entries (S)
+- [ ] 🟡 **i12-b18** Names are escaped in Journal lines (S)
+- [ ] 🟠 **i12-b19** Multi-week details say the bills are for the last week (S)
+- [ ] 🟡 **i12-b20** The hospital note says where you land (S)
+- [ ] 🟠 **i12-b21** Save slots show mode, challenge and weekly tags (S)
+- [ ] 🟠 **i12-b22** No checkpoint copies of a weekly-challenge life (S)
+- [ ] 🟡 **i12-b23** The weekly challenge sheet shows your best this week (S)
+- [ ] 🟡 **i12-b24** The welcome toast fits how your life begins (S)
+- [ ] 🟡 **i12-b25** Legacy is "grandkid" everywhere (S)
+- [ ] 🟡 **i12-b26** Help numbers come from the game data (S)
+- [ ] 🟡 **i12-b27** Restore with nothing pasted says what to do (S)
+- [ ] 🟡 **i12-b28** Backup buttons say why they're off (S)
+- [ ] 🟡 **i12-b29** The quit sheet says benefits only follow a layoff (S)
+- [ ] 🟡 **i12-b30** The end screen counts kids raised honestly (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
