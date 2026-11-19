@@ -2392,6 +2392,81 @@ old ones.
 
 </details>
 
+## Ideas round 26 (pick on the build board)
+
+61 ideas. Details: [docs/ideas/round-26.md](docs/ideas/round-26.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 26: The valley's people and cultures</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i26-a01** Tamástslikt Cultural Institute: a day trip to learn (S)
+- [ ] 🔴 **i26-a02** The mercado in Walla Walla (S)
+- [ ] 🔴 **i26-a03** Día de los Muertos: a community altar exhibit (S)
+- [ ] 🔴 **i26-a04** A quinceañera invitation (S)
+- [ ] 🟠 **i26-a05** Fiestas patrias in September (S)
+- [ ] 🟠 **i26-a06** A Sunday soccer league (M)
+- [ ] 🔴 **i26-a07** Ana, the orchard crew lead: a story over a year (M)
+- [ ] 🟠 **i26-a08** Heat rules on the crew (S)
+- [ ] 🟠 **i26-a09** Tutor for the citizenship test (M)
+- [ ] 🟡 **i26-a10** A coworker's citizenship ceremony (S)
+- [ ] 🟠 **i26-a11** A tamalada in December (S)
+- [ ] 🟡 **i26-a12** Folklórico at the school spring show (S)
+- [ ] 🟡 **i26-a13** Spanish radio on the drive (S)
+- [ ] 🟠 **i26-a14** Hello in two languages around town (S)
+- [ ] 🟡 **i26-a15** Where the Walla Walla sweet onion came from (S)
+- [ ] 🟡 **i26-a16** Walla Walla's Chinese gardeners and laundries (S)
+- [ ] 🟡 **i26-a17** The Volga German families of 'Russian Town' (S)
+- [ ] 🟠 **i26-a18** Whitman Mission: a history that has two sides (S)
+- [ ] 🟡 **i26-a19** The pioneer village and the 33-mule combine (S)
+- [ ] 🔴 **i26-a20** Whose homeland this is: a page in Help (S)
+- [ ] 🟠 **i26-a21** Salmon come back to the Touchet (S)
+- [ ] 🟠 **i26-a22** Restoration crew tech: a job with the tribes' fisheries (M)
+- [ ] 🟠 **i26-a23** Mission and Pendleton on the region map (L)
+- [ ] 🟡 **i26-a24** A public powwow, as a guest (S)
+- [ ] 🟡 **i26-a25** Old-time threshing day (S)
+- [ ] 🟡 **i26-a26** A valley community cookbook (M)
+- [ ] 🟡 **i26-a27** A summer Pride picnic in Walla Walla (S)
+- [ ] 🔴 **i26-a28** A valley culture calendar in one data table (S)
+- [ ] 🔴 **i26-a29** Community readers for culture scenes (S)
+- [ ] 🟠 **i26-a30** 'Learned something' badges for visiting (S)
+- [ ] 🟡 **i26-a31** Saturday Spanish story time at the library (S)
+- [ ] 🟡 **i26-a32** Teach a coworker to drive the forklift, learn some Spanish back (S)
+
+</details>
+
+<details><summary><b>Ideas 26: Playtest of the newest content</b> (29 ideas)</summary>
+
+- [ ] 🔴 **i26-b01** Out-and-about players in the balance sim (S)
+- [ ] 🔴 **i26-b02** Free and $12 visits stop carrying an idle life (S)
+- [ ] 🔴 **i26-b03** Bug: the $300 will is never read (S)
+- [ ] 🔴 **i26-b04** What's new for the Out and about update (S)
+- [ ] 🔴 **i26-b05** Things to do under 21 at the tasting room and wine bar (M)
+- [ ] 🔴 **i26-b06** Traffic school only once in a while (S)
+- [ ] 🟠 **i26-b07** Pricey visits do something cheap ones can't (M)
+- [ ] 🟠 **i26-b08** The Little Kiss takes reservations (M)
+- [ ] 🟠 **i26-b09** Business events once a season each (S)
+- [ ] 🟠 **i26-b10** Commute filler events once a year (S)
+- [ ] 🟠 **i26-b11** Lift operators drive the Bluewood road (M)
+- [ ] 🟡 **i26-b12** The Bluewood pass on sale at the Dayton stop (S)
+- [ ] 🟠 **i26-b13** A second choice for one-button road and work events (M)
+- [ ] 🟠 **i26-b14** Every good deed costs a little (M)
+- [ ] 🟡 **i26-b15** The audiobook choice: two buttons, one result (S)
+- [ ] 🟡 **i26-b16** Snapping at a customer goes in your file (S)
+- [ ] 🟠 **i26-b17** Better coverage covers the clinic (S)
+- [ ] 🟠 **i26-b18** Staff perks where you work in town (M)
+- [ ] 🟡 **i26-b19** Work events show on your workplace pin (S)
+- [ ] 🟡 **i26-b20** Smaller tap areas on the Main Street close-up (S)
+- [ ] 🟡 **i26-b21** Places you can't use yet say so in the list (S)
+- [ ] 🟡 **i26-b22** Celebration Days is one week, not all of May (S)
+- [ ] 🟡 **i26-b23** Heir names: "Mary I" and generation 40 (S)
+- [ ] 🟡 **i26-b24** The grandkid's first Journal line is a milestone (S)
+- [ ] 🟡 **i26-b25** Legacy lives kept apart in records (M)
+- [ ] 🟠 **i26-b26** Event coverage report in the sim (M)
+- [ ] 🟠 **i26-b27** Weekday-only places cost a commuter half a day (M)
+- [ ] 🟡 **i26-b28** Shop local instead of the big-store run (S)
+- [ ] 🟡 **i26-b29** Your regular spot on the end screen (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
