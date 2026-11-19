@@ -17,23 +17,33 @@ added, finished or re-prioritized, both change in the same session.
 
 ---
 
+## Status (Nov 19, 2026)
+
+- **Live:** 0.2.0 at [krazow.github.io/The-Burg](https://krazow.github.io/The-Burg/) ([release](https://github.com/krazow/The-Burg/releases/tag/v0.2.0)).
+- **Merged, not released yet:** 0.2.1 hotfixes H1–H3 ([#153](https://github.com/krazow/The-Burg/pull/153)): safe saves, confirm before deleting a life, separate beta saves.
+- **Building now:** your 61 picks from Ideas 2 and Ideas 3, in six pull requests (settings and feel, clarity, flow, jobs and school, money, retirement). Each is marked "Building" below.
+- **Ideas:** 66 rounds on this list. New rounds are paused while the picks are built.
+
 ## Next up: P1, in order
 
-| # | Item | Why it's next | Issue |
-|---|---|---|---|
-| 1 | **Cut a new beta** (`/release now`) | `main` now has Around the region and all four gameplay phases (Life Score so far, carpools, backgrounds, modes, town goals, badges, stories, challenges, skills, businesses, weekly challenge, legacy). Beta 4 has none of it. | — |
-| 2 | **Try it, then promote** (`/release promote`) | The Android app is signed with The Burg's key since beta 4, so updates install over each other. | — |
-| 3 | **Pick from the review and the 90 events** (below) | The three 🔴 review bugs are fixed; the rest is yours to pick. | [#90](https://github.com/krazow/The-Burg/issues/90) |
+| # | Item | Why it's next |
+|---|---|---|
+| 1 | **Finish and merge the 61 picks** | In progress; each lands as its own pull request after tests and the balance check pass. |
+| 2 | **Cut and release 0.2.1** (`/release all`) | Ships the hotfixes and the picks to live players. |
+| 3 | **0.2.2 patch plan** (Ideas 64, i64-a) | 25 ranked fixes still open on main, led by the phone Back button, End Week double tap and a backup-restore escaping bug. |
 
 - [x] Cut a new beta with everything on `main` (0.2.0-beta.6)
 - [x] Try it on your phone, then `/release promote` (0.2.0-beta.6 promoted: [v0.2.0](https://github.com/krazow/The-Burg/releases/tag/v0.2.0))
 - [x] Pick review items and events to build (104 picked on the build board; all built)
+- [x] Hotfixes H1–H3 merged ([#153](https://github.com/krazow/The-Burg/pull/153))
+- [ ] Merge the 61 picks from Ideas 2 and Ideas 3
+- [ ] Release 0.2.1 (`/release all`)
 
 ## Soon: P2
 
 - [ ] **Manual play-test pass on real phones** (iPhone and Android install, offline, resume) — [#9](https://github.com/krazow/The-Burg/issues/9)
 
-## Feature: Out and about (Waitsburg's real businesses) — built, ships in the next beta
+## Feature: Out and about (Waitsburg's real businesses) — built, live in 0.2.0
 
 Waitsburg's open businesses come into the game: pins on a Main Street close-up map, places to visit for a small cost
 and a small boost, real jobs, and events from their real rhythms (Ten Ton's every-other-week bluegrass jam, Grenache
@@ -213,7 +223,7 @@ Fest at Atelier, winter breaks). Business list, how each one appears, decisions 
 - [x] Life systems at real places — [#53](https://github.com/krazow/The-Burg/issues/53)
 - [x] Out and about QA — [#54](https://github.com/krazow/The-Burg/issues/54)
 
-## Soon: Around the region (Dayton, Walla Walla and the Tri-Cities) — built, ships in the next beta
+## Soon: Around the region (Dayton, Walla Walla and the Tri-Cities) — built, live in 0.2.0
 
 Today the other towns are only places to work. This gives you reasons to go: errands, car care, eating out and
 outings, with real trade-offs (cheaper groceries in the big towns cost gas and time; skipping an oil change raises
@@ -5474,6 +5484,7 @@ that careless play stays at or below 60 and good play at or above 70.
 
 | Date | What | Where |
 |---|---|---|
+| Nov 19, 2026 | **Hotfixes for 0.2.1 merged**: damaged saves can't blank the game, deleting a life asks first, beta saves kept apart. | [#153](https://github.com/krazow/The-Burg/pull/153) |
 | Nov 19, 2026 | **Released 0.2.0 to production** (beta 6 promoted): Out and about, 60 road and work events, the review and balance fixes, records, What's new and Journal filters. | [v0.2.0](https://github.com/krazow/The-Burg/releases/tag/v0.2.0) |
 | Nov 18, 2026 | **Build board picks, all 104 built:** the review gotchas, balance and testing fixes, title screen with More options, Your records, What's new, Journal filters, event pacing by category, 30 road and 30 work events, and **Out and about** (20 Waitsburg businesses under stand-in names, Main Street map, visits, 7 local jobs, business events). | PRs [#97](https://github.com/krazow/The-Burg/pull/97), [#98](https://github.com/krazow/The-Burg/pull/98), [#99](https://github.com/krazow/The-Burg/pull/99), [#100](https://github.com/krazow/The-Burg/pull/100), [#101](https://github.com/krazow/The-Burg/pull/101) |
 | Nov 16, 2026 | Built **The Burg**: a turn-based life sim set in Waitsburg with 25 jobs across Waitsburg, Dayton, Walla Walla, Kennewick, Richland and Pasco; housing, vehicles, schooling, about 27 seasonal local events, Life Score, auto-save, installable with offline play. | `main` |
