@@ -6100,6 +6100,84 @@ old ones.
 
 </details>
 
+## Ideas round 75 (pick on the build board)
+
+64 ideas. Details: [docs/ideas/round-75.md](docs/ideas/round-75.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 75: Weather and hard years</b> (33 ideas)</summary>
+
+- [ ] 🔴 **i75-a01** One weather year that the wheat, wine, smoke and river all read (M)
+- [ ] 🟠 **i75-a02** A million-dollar rain in May (S)
+- [ ] 🟡 **i75-a03** A mild winter: the heat bill comes in low (S)
+- [ ] 🟠 **i75-a04** Gray January: the valley inversion (M)
+- [ ] 🟠 **i75-a05** A chinook wind melts the snow in a day (S)
+- [ ] 🟡 **i75-a06** Smoke years grow more common over the decades (S)
+- [ ] 🟠 **i75-a07** Outdoor crews get a smoke rule at work (M)
+- [ ] 🟡 **i75-a08** Build a box-fan air filter (S)
+- [ ] 🟠 **i75-a09** Your kid's inhaler in a smoke week (S)
+- [ ] 🔴 **i75-a10** The neighbor on home oxygen when the power fails (S)
+- [ ] 🟡 **i75-a11** Line crews from three states fill the café (S)
+- [ ] 🟠 **i75-a12** Every roofer is booked for months after the windstorm (M)
+- [ ] 🟡 **i75-a13** A wind-and-hail deductible on the home policy (M)
+- [ ] 🟠 **i75-a14** Raise the furnace and water heater after the flood (S)
+- [ ] 🔴 **i75-a15** Sell down the herd in a dry year (M)
+- [ ] 🟡 **i75-a16** An ice storm in calving season (S)
+- [ ] 🟠 **i75-a17** Coffee with the farmers in a bad year (S)
+- [ ] 🔴 **i75-a18** Storm debts: the people you helped help you (M)
+- [ ] 🟡 **i75-a19** No power, no remote day (S)
+- [ ] 🟠 **i75-a20** Hail cuts a stripe through the wheat (S)
+- [ ] 🟡 **i75-a21** Clear the neighbor's walk every snow (S)
+- [ ] 🟡 **i75-a22** One storm card in the recap (S)
+- [ ] 🔴 **i75-a23** Bad luck has a ceiling: two big weather hits a year (S)
+- [ ] 🟡 **i75-a24** Low water in August: the Touchet is too low to tube (S)
+- [ ] 🟡 **i75-a25** High wind closes Highway 12 to trucks (S)
+- [ ] 🟡 **i75-a26** Cards by lantern when the power's out (S)
+- [ ] 🟡 **i75-a27** De-ice the planes at 5 a.m. (S)
+- [ ] 🟡 **i75-a28** Heat limits in the suit at Hanford (S)
+- [ ] 🟠 **i75-a29** A short pack season in a dry year (S)
+- [ ] 🟡 **i75-a30** What the weather cost you this year (S)
+- [ ] 🟠 **i75-a31** Sim check: getting ready for weather pays off (S)
+- [ ] 🟠 **i75-a32** The house after the water: six weeks of drying out (L)
+- [ ] 🟠 **i75-a33** Block captain: your street's storm plan (L)
+
+</details>
+
+<details><summary><b>Ideas 75: Economy balance check</b> (31 ideas)</summary>
+
+- [ ] 🔴 **i75-b01** No full-time job pays under Washington's 2027 minimum wage (S)
+- [ ] 🔴 **i75-b02** Living costs at real 2027 prices: food $700, a room $650 (S)
+- [ ] 🟠 **i75-b03** Taxes by bracket instead of a flat 15% (M)
+- [ ] 🟠 **i75-b04** Health insurance costs something before 50 (S)
+- [ ] 🟠 **i75-b05** Unemployment pays 41% of your old pay, like Washington's (S)
+- [ ] 🟠 **i75-b06** Nurses, aides and techs paid closer to Washington rates (S)
+- [ ] 🔴 **i75-b07** Apprenticeships as long as Washington's: plumbers too (S)
+- [ ] 🟠 **i75-b08** Retail and the food plant need a reason to exist (S)
+- [ ] 🟠 **i75-b09** Office jobs far from home pay enough to make the drive worth it (S)
+- [ ] 🟠 **i75-b10** Public pensions at Washington's 2% a year (S)
+- [ ] 🔴 **i75-b11** Count the 401(k) at what it's worth after tax (S)
+- [ ] 🟠 **i75-b12** The employer match vests after 3 years (S)
+- [ ] 🟠 **i75-b13** Retirement draws rise with age, like the IRS table (S)
+- [ ] 🟡 **i75-b14** Retirees pay tax on the 401(k), not on Social Security (S)
+- [ ] 🔴 **i75-b15** The woodshop returns 15–40% a year, not 85–190% (S)
+- [ ] 🟠 **i75-b16** Cattle at real cow-calf prices (S)
+- [ ] 🟠 **i75-b17** The food truck beats plain side hustling (S)
+- [ ] 🔴 **i75-b18** A sim check: every business has a return ceiling (S)
+- [ ] 🔴 **i75-b19** A sim check: no job is beaten on every count (S)
+- [ ] 🟠 **i75-b20** A sim check: pay stays near real Washington wages (S)
+- [ ] 🔴 **i75-b21** A sim check: a broke start can climb out (M)
+- [ ] 🟠 **i75-b22** Collections stop calling once you're paying it down (S)
+- [ ] 🟠 **i75-b23** Classes in debt go on the student loan, not the card (S)
+- [ ] 🟠 **i75-b24** Every start must be winnable: fail the build if a planner goes bust (S)
+- [ ] 🟠 **i75-b25** Raises top out at 30% above inflation, not 60% (S)
+- [ ] 🟠 **i75-b26** Insurance at real Washington prices: car $130, home $100 (S)
+- [ ] 🟡 **i75-b27** Overtime pays time and a half (S)
+- [ ] 🟡 **i75-b28** Kids cost $950, and state childcare help keeps it fair (S)
+- [ ] 🟠 **i75-b29** Tuition at real Washington rates, cheaper on low pay (S)
+- [ ] 🟠 **i75-b30** Sim report: where the planner's wealth came from (M)
+- [ ] 🟡 **i75-b31** Sim report: real net worth at 65 and at the end (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
