@@ -38,8 +38,8 @@ function ssFactor(){
   return 0.6 + 0.8 * work * (0.4 + 0.6 * pay);
 }
 const ssPay = () => cost(SS_PAY * ssFactor());
-// i3-a24: school, county and state jobs earn a pension: 1.5% of your best pay there for each year, once you have 5 years
-const PENSION_RATE = 0.015, PENSION_VEST = 5;
+// i3-a24 / i75-b10: school, county and state jobs earn a pension: 2% (like Washington's PERS 2 and TRS 2) of your best pay there for each year, once you have 5 years
+const PENSION_RATE = 0.02, PENSION_VEST = 5;
 const pensionVested = () => !!S && (S.pensionYears || 0) >= PENSION_VEST;
 const pensionPay = () => pensionVested() ? cost(S.pensionYears * PENSION_RATE * (S.pensionPay || 0)) : 0;   // monthly, today's dollars
 // layoff risk by job: 1 = shaky (retail, seasonal), 0.2 = steady (public sector, licensed work)
@@ -48,6 +48,33 @@ const LAYOFF_RISK = { diner:1, hardware:1, lift:1, cellar:1, onion:1, retail:1, 
   para:.2, insure:.2, clerk:.2, co:.2, rn:.2, prof:.2, scientist:.2, farmhand:0,
   windtech:.5, damop:.2, forest:1, teacher:.2, vaclerk:.2, nukeop:.2, harvtruck:1, electrician:.5, plumber:.5, lineman:.2, welder:.5, phleb:.5, remote:.8 };
 const K401 = [0, 0.05, 0.10];
+// i75-b11/b12: a 401(k) counts at 88% in net worth (it's taxed when it comes out); the 3% match vests after 3 years at a job
+const K401_MATCH = 0.03, K401_AFTER_TAX = 0.88, K401_VEST_MONTHS = 36;
+// i75-b13: retirement draws: 4% a year from 62 to 72, then the IRS required-distribution table (age 73 to 102: divisor)
+const RMD_DIV = [26.5, 25.5, 24.6, 23.7, 22.9, 22.0, 21.1, 20.2, 19.4, 18.5, 17.7, 16.8, 16.0, 15.2, 14.4, 13.7, 12.9, 12.2, 11.5, 10.8, 10.1, 9.5, 8.9, 8.4, 7.8, 7.3, 6.8, 6.4, 6.0, 5.6];
+const drawRate = (a = age()) => a < 73 ? 0.04 : 1 / RMD_DIV[Math.min(RMD_DIV.length - 1, a - 73)];
+// i75-b14: retirees: Social Security and the pension are untaxed under $3,000 a month (10% above), 401(k) withdrawals 10%
+const RETIRE_TAX_FREE = 3000, RETIRE_TAX = 0.10;
+// i75-b01: Washington's 2027 minimum wage, about $17.60 an hour, full time (2027 dollars); every job pays at least this
+const MIN_WAGE_MONTH = 3050;
+// i75-b03: taxes by bracket (federal income tax plus Social Security and Medicare; Washington has no income tax).
+// The rate on a month's pay slides smoothly from 13% (up to $3,500) to 16% ($6,000), 20% ($8,000) and 22% ($9,000 and up),
+// in 2027 dollars that rise with pay, so a raise never lowers take-home
+const TAX_STEPS = [[3500, 0.13], [6000, 0.16], [8000, 0.20], [9000, 0.22]];
+function taxRate(monthly){
+  const p = monthly / (S ? S.wage : 1);
+  if (p <= TAX_STEPS[0][0]) return TAX_STEPS[0][1];
+  for (let i = 1; i < TAX_STEPS.length; i++) { const [a, ra] = TAX_STEPS[i - 1], [b, rb] = TAX_STEPS[i]; if (p <= b) return ra + (rb - ra) * (p - a) / (b - a); }
+  return TAX_STEPS[TAX_STEPS.length - 1][1];
+}
+// i75-b02: food and utilities for one adult (groceries about $400, power, water, sewer, trash, internet), 2027 dollars
+const FOOD_UTIL = 700;
+// i75-b04: health insurance before 50: the employee share at work, or Apple Health ($0) with no job or low pay
+const HEALTH_PREMIUM = 130, APPLE_HEALTH_PAY = 1900;
+// i75-b05: unemployment pays 41% of your last job's monthly pay, held between $1,500 and $4,900 (2027 dollars), for 26 weeks
+const UI_SHARE = 0.41, UI_MIN = 1500, UI_MAX = 4900;
+// i75-b08: the mall is always hiring; the food plant's harvest pack (August to October) pays 30% more in overtime
+const RETAIL_HIRE = 0.95, RETAIL_DISCOUNT = 0.10, PLANT_OT = 0.30, PLANT_OT_MONTHS = [7, 8, 9];
 const HARD_LIVING = 0.1;                  // Hard mode: rent, food and insurance cost 10% more (R15)
 const HUSTLE_FADE_AFTER = 26, HUSTLE_FADE = 0.5;   // side-hustle experience fades after 6 months off, half a week per week (B9)
 const LEASE_WEEKS = 260, LEASE_RENEW = 0.25, LEASE_GRACE = 8;   // a wheat lease runs 5 years; renewing costs 25% of a new lease (R13)
@@ -97,43 +124,43 @@ const CITIES = {
 
 // stress = happiness drain per month, wear = health drain per month
 const JOBS = [
-  {id:'farmhand', city:'waitsburg', title:'Wheat farm hand',            pay:2500, edu:0, stress:.2, wear:1.0},
-  {id:'diner',    city:'waitsburg', title:'Main Street diner cook',     pay:2300, edu:0, stress:.5, wear:.5},
-  {id:'para',     city:'waitsburg', title:'School paraeducator',        pay:2900, edu:1, stress:.4, wear:.1, pension:true},
+  {id:'farmhand', city:'waitsburg', title:'Wheat farm hand',            pay:3100, edu:0, stress:.2, wear:1.0},
+  {id:'diner',    city:'waitsburg', title:'Main Street diner cook',     pay:3050, edu:0, stress:.5, wear:.5},
+  {id:'para',     city:'waitsburg', title:'School paraeducator',        pay:3300, edu:1, stress:.4, wear:.1, pension:true},
   {id:'elevator', city:'waitsburg', title:'Grain elevator operator',    pay:3800, edu:1, stress:.4, wear:.7},
   {id:'insure',   city:'waitsburg', title:'Farm insurance agent',       pay:4900, edu:2, stress:.6, wear:0, remote:2},
-  {id:'hardware', city:'dayton',    title:'Hardware store clerk',       pay:2600, edu:0, stress:.3, wear:.3},
-  {id:'lift',     city:'dayton',    title:'Bluewood ski lift operator', pay:2400, edu:0, stress:.1, wear:.5},
+  {id:'hardware', city:'dayton',    title:'Hardware store clerk',       pay:3150, edu:0, stress:.3, wear:.3},
+  {id:'lift',     city:'dayton',    title:'Bluewood ski lift operator', pay:3080, edu:0, stress:.1, wear:.5},
   {id:'clerk',    city:'dayton',    title:'County courthouse clerk',    pay:3500, edu:1, stress:.5, wear:0, remote:2, pension:true},
-  {id:'cna',      city:'dayton',    title:'Hospital nursing assistant', pay:3400, edu:1, stress:.8, wear:.5},
-  {id:'cellar',   city:'wallawalla',title:'Winery cellar hand',         pay:3000, edu:0, stress:.3, wear:.7},
-  {id:'onion',    city:'wallawalla',title:'Sweet onion packing shed',   pay:2700, edu:0, stress:.4, wear:.9},
+  {id:'cna',      city:'dayton',    title:'Hospital nursing assistant', pay:3800, edu:1, stress:.8, wear:.5},
+  {id:'cellar',   city:'wallawalla',title:'Winery cellar hand',         pay:3350, edu:0, stress:.3, wear:.7},
+  {id:'onion',    city:'wallawalla',title:'Sweet onion packing shed',   pay:3200, edu:0, stress:.4, wear:.9},
   {id:'co',       city:'wallawalla',title:'Corrections officer',        pay:5000, edu:1, stress:1.3,wear:.7, pension:true},
-  {id:'rn',       city:'wallawalla',title:'Registered nurse',           pay:7300, edu:2, stress:1.0,wear:.5, pension:true},
+  {id:'rn',       city:'wallawalla',title:'Registered nurse',           pay:8600, edu:2, stress:1.0,wear:.5, pension:true},
   {id:'prof',     city:'wallawalla',title:'College professor',          pay:6700, edu:3, stress:.5, wear:0, remote:2},
-  {id:'retail',   city:'kennewick', title:'Mall retail associate',      pay:2600, edu:0, stress:.6, wear:.2},
-  {id:'mech',     city:'kennewick', title:'Auto mechanic',              pay:4400, edu:1, stress:.5, wear:.8},
-  {id:'imaging',  city:'kennewick', title:'Hospital imaging tech',      pay:5700, edu:2, stress:.6, wear:.2},
-  {id:'loan',     city:'kennewick', title:'Bank loan officer',          pay:6100, edu:3, stress:.8, wear:0, remote:2},
+  {id:'retail',   city:'kennewick', title:'Mall retail associate',      pay:3150, edu:0, stress:.6, wear:.2},
+  {id:'mech',     city:'kennewick', title:'Auto mechanic',              pay:4800, edu:1, stress:.5, wear:.8},
+  {id:'imaging',  city:'kennewick', title:'Hospital imaging tech',      pay:6400, edu:2, stress:.6, wear:.2},
+  {id:'loan',     city:'kennewick', title:'Bank loan officer',          pay:6900, edu:3, stress:.8, wear:0, remote:3},
   {id:'hanford',  city:'richland',  title:'Hanford cleanup technician', pay:6500, edu:1, stress:.8, wear:1.1},
-  {id:'labadmin', city:'richland',  title:'Research lab administrator', pay:4800, edu:2, stress:.5, wear:0, remote:2},
+  {id:'labadmin', city:'richland',  title:'Research lab administrator', pay:5400, edu:2, stress:.5, wear:0, remote:3},
   {id:'scientist',city:'richland',  title:'National lab scientist',     pay:9200, edu:3, stress:.8, wear:0, remote:2},
-  {id:'foodplant',city:'pasco',     title:'Food processing line worker',pay:3000, edu:0, stress:.6, wear:.9},
+  {id:'foodplant',city:'pasco',     title:'Food processing line worker',pay:3600, edu:0, stress:.6, wear:.9},
   {id:'airport',  city:'pasco',     title:'Airport ground crew',        pay:3700, edu:0, stress:.5, wear:.7},
   {id:'trucker',  city:'pasco',     title:'Truck driver (CDL)',         pay:5500, edu:1, stress:.9, wear:.8},
   {id:'rail',     city:'pasco',     title:'Rail yard conductor',        pay:6100, edu:1, stress:.8, wear:.8, union:true},
   // i3-a05: more valley jobs. Pay sits inside each school level's range, so none is a new best job (a rules test checks)
   {id:'windtech', city:'dayton',    title:'Wind turbine technician',    pay:5200, edu:2, stress:.5, wear:.7, where:'Wind farm in the Dayton hills', needMajor:'wind'},
   {id:'damop',    city:'pasco',     title:'Dam operator on the Snake',  pay:5000, edu:1, stress:.4, wear:.3, federal:true},
-  {id:'forest',   city:'dayton',    title:'Forest Service crew',        pay:3000, edu:0, stress:.3, wear:1.0, where:'Blue Mountains', season:[5,6,7,8], federal:true},
+  {id:'forest',   city:'dayton',    title:'Forest Service crew',        pay:3300, edu:0, stress:.3, wear:1.0, where:'Blue Mountains', season:[5,6,7,8], federal:true},
   {id:'teacher',  city:'waitsburg', title:'School teacher',             pay:5000, edu:3, stress:.7, wear:.1, where:'Waitsburg schools', needMajor:'teaching', union:true, pension:true},
   {id:'vaclerk',  city:'wallawalla',title:'VA hospital clerk',          pay:3600, edu:1, stress:.3, wear:0, federal:true},
   {id:'nukeop',   city:'richland',  title:'Nuclear plant operator',     pay:7000, edu:2, stress:.7, wear:.3},
   // i3-a06: seasonal work (the Bluewood lift below runs December to March)
   {id:'harvtruck',city:'waitsburg', title:'Harvest truck driver',       pay:3600, edu:1, stress:.5, wear:.6, season:[6,7], needCert:'cdl'},
-  // i3-a04: apprenticeships start at 60% of a journeyman's pay and step up every year
-  {id:'electrician',city:'wallawalla',title:'Electrician',              pay:5900, edu:1, stress:.4, wear:.6, union:true, apprentice:{weeks:208, startMult:.6}},
-  {id:'plumber',  city:'dayton',    title:'Plumber',                    pay:5400, edu:1, stress:.4, wear:.6, apprentice:{weeks:104, startMult:.6}},
+  // i3-a04 / i75-b07: apprenticeships start at 50% of a journeyman's pay and step up every year (about 8,000 hours, like Washington's)
+  {id:'electrician',city:'wallawalla',title:'Electrician',              pay:5900, edu:1, stress:.4, wear:.6, union:true, apprentice:{weeks:208, startMult:.5}},
+  {id:'plumber',  city:'dayton',    title:'Plumber',                    pay:5400, edu:1, stress:.4, wear:.6, apprentice:{weeks:208, startMult:.5}},
   {id:'lineman',  city:'pasco',     title:'Power lineman',              pay:6300, edu:1, stress:.6, wear:.9, union:true, apprentice:{weeks:156, startMult:.6}},
   // i3-a03: narrow doors from short certificates
   {id:'welder',   city:'pasco',     title:'Welder (fab shop)',          pay:3600, edu:0, stress:.4, wear:.8, needCert:'welding'},
@@ -204,8 +231,8 @@ const CERT_PERK = { pesticide:{ jobs:['farmhand','elevator','agtech'], mult:1.06
 const CLEAR_WEEKS = 12, CLEAR_PAY = 0.8, FIBER_COST = 900, BUS_PASS = 50, UNION_DUES = 0.015;
 
 const HOMES = {
-  room:  {name:'Rented room above Main Street', cost:550,  happy:0},
-  house: {name:'Rented house on a quiet street', cost:1150, happy:1.5},
+  room:  {name:'Rented room above Main Street', cost:650,  happy:0},
+  house: {name:'Rented house on a quiet street', cost:1250, happy:1.5},
   fixer: {name:'Fixer-upper by the Touchet',     cost:950,  happy:1.5, own:true, down:9000,  equityPer:260, value:160000},
   farm:  {name:'Farmhouse in the wheat hills',   cost:1650, happy:3,   own:true, down:30000, equityPer:520, value:300000}
 };
@@ -239,7 +266,7 @@ const kidsAtHome = () => (S.kids || []).filter(b => S.ageMonths - b < 18*12).len
 // H1: a fresh life's fields, used by newGame and to repair damaged saves
 function blankLife(name, len, slot = 0){
   return { v:3, slot, name, len, turn:0, date: new Date(2027,0,4).getTime(), ageMonths:18*12, evCd:{}, evDone:{}, last:null, ui:0,
-    col:1, wage:1, kids:[], k401:0, k401rate:0, mortgage:null, loanPay:0,
+    col:1, wage:1, kids:[], k401:0, k401rate:0, k401match:0, uiPay:null, mortgage:null, loanPay:0,   // i75-b12 unvested match, i75-b05 benefit
     money:1500, health:78, happy:60, community:30,
     edu:0, studyProg:0, jobId:null, jobMonths:0, raise:1, retired:false,
     home:'room', equity:0, car:'beater', carValue:2500, loanLeft:0,
@@ -287,7 +314,7 @@ function repairLife(s){
 }
 function migrate(s){
   repairLife(s);
-  const d = { slot:0, evPins:[], streakF:null, streakN:0, run:null, yearEvents:0, yearStart:null, evCd:{}, evDone:{}, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, mortgage:null, loanPay:0 };
+  const d = { slot:0, evPins:[], streakF:null, streakN:0, run:null, yearEvents:0, yearStart:null, evCd:{}, evDone:{}, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, k401match:0, uiPay:null, mortgage:null, loanPay:0 };   // i75: an older 401(k) counts as vested; old benefits pay the floor
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
   // Around the region (0.3.0): older lives count as just serviced and checked, with this year's tabs paid
   if (s.tenure === undefined) s.tenure = s.jobMonths || 0;          // i3-a01: older lives count the months since the last raise
@@ -340,7 +367,7 @@ const netWorth = () => {
   const loan = S.loanLeft > 0 ? S.loanLeft * (S.loanPay || CARS.truck.pay) * 0.85 : 0;
   const sloan = S.sloanLeft > 0 ? S.sloanLeft * S.sloanPay * 0.85 : 0;
   // round 3: index funds at market value, wine futures at what you paid, minus what's left on a home equity loan
-  return S.money + S.equity + S.carValue + (S.k401 || 0) + (S.biz ? bizValue() : 0) - loan - sloan
+  return S.money + S.equity + S.carValue + (S.k401 || 0) * K401_AFTER_TAX + (S.biz ? bizValue() : 0) - loan - sloan
     + (S.stocks || 0) + wineAtCost() - heBalance();
 };
 const curMonth = () => new Date(S.date).getMonth();

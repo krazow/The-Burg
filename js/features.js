@@ -7,7 +7,7 @@
    Other trips take part of your week, so your focus works at 75% that week.
    Places are described, not named (no real business names).
    ============================================================ */
-const TRIP_MAX = 3, TRIP_FX = 0.28, TRIP_TIME = 0.75, STOCK_WEEKS = 6, STOCK_OFF = 0.2, GROCERY_SHARE = 360, REPEAT_WEEKS = 4;
+const TRIP_MAX = 3, TRIP_FX = 0.28, TRIP_TIME = 0.75, STOCK_WEEKS = 6, STOCK_OFF = 0.2, GROCERY_SHARE = 400, REPEAT_WEEKS = 4;
 const inSeason = (...ms) => () => ms.includes(curMonth());
 const STOP_KINDS = { errand:'🛒 Errands', car:'🛻 Car care', eat:'🍽️ Eat out', do:'🎟️ Things to do', appt:'🩺 Appointments' };
 const STOPS = [
@@ -54,7 +54,7 @@ const townStops = city => STOPS.filter(s => s.towns.includes(city));
 const tripIsCommute = city => !S.retired && job() && job().city === city;
 const tripGas = city => tripIsCommute(city) ? 0 : CITIES[city].miles * 2 * cost(GAS) / CARS[S.car].mpg;
 // a stop costs more with your partner along on a dinner or a movie
-const stopCost = s => cost(s.cost) * (s.date && S.partner ? 2 : 1);
+const stopCost = (s, town) => cost(s.cost) * (s.date && S.partner ? 2 : 1) * (retailPerk(town) ? 1 - RETAIL_DISCOUNT : 1);   // i75-b08: the mall discount
 // breakdown odds: lower within 6 months of an oil change, higher after a year without one
 function careMult(){ const w = S.turn - (S.svc ?? 0); return w <= 26 ? 0.6 : w <= 52 ? 1 : 1.4; }
 const ditchMult = () => S.tires === S.car ? 0.4 : 1;
@@ -81,7 +81,7 @@ function tripWeek(lines){
   if (gas) lines.push([`Trip to ${c.name}: gas`, -gas, `${c.miles} miles each way at ${CARS[S.car].mpg} mpg.`]);
   for (const id of t.stops) {
     const s = stopById(id); if (!s || stopBlocked(s)) continue;
-    if (s.cost) lines.push([s.name, -stopCost(s), `A stop on your trip to ${c.name}${s.date && S.partner ? ', for two' : ''}.`]);
+    if (s.cost) lines.push([s.name, -stopCost(s, t.city), `A stop on your trip to ${c.name}${s.date && S.partner ? ', for two' : ''}${retailPerk(t.city) ? ', with your 10% employee discount' : ''}.`]);
     const half = S.turn - ((S.stopLast || {})[id] ?? -99) < REPEAT_WEEKS ? 0.5 : 1;   // again so soon: less special
     let mult = half;
     if (s.date && S.partner) mult += 0.4;
@@ -123,7 +123,7 @@ function tripSheet(city){
     const list = townStops(city).filter(s => s.kind === kind); if (!list.length) return '';
     return `<h3 class="triph">${label}</h3>` + list.map(s => {
       const why = stopBlocked(s);
-      const what = [s.cost ? fmt(stopCost(s)) : 'Free', s.fx ? fxWords(s.fx) : ''].filter(Boolean).join(' · ');
+      const what = [s.cost ? fmt(stopCost(s, city)) : 'Free', s.fx ? fxWords(s.fx) : ''].filter(Boolean).join(' · ');
       return `<button class="stopbtn${sel.includes(s.id) ? ' on' : ''}" data-stop="${s.id}" aria-pressed="${sel.includes(s.id)}" ${why ? 'disabled' : ''}>
         <span class="t">${s.ic} ${s.name}</span><span class="s">${why ? why : what}${s.date && S.partner && !why ? ' · for two' : ''}</span>${s.note && !why ? `<span class="s">${s.note}</span>` : ''}</button>`;
     }).join('');
@@ -138,7 +138,7 @@ function tripSheet(city){
     ${S.trip ? '<button class="btn ghost" id="cancel">Cancel my trip</button>' : ''}
     <button class="btn ghost" id="back">Other towns</button>`);
   const sum = () => {
-    const total = gas + sel.reduce((a, id) => a + stopCost(stopById(id)), 0);
+    const total = gas + sel.reduce((a, id) => a + stopCost(stopById(id), city), 0);
     $('#tripsum').textContent = sel.length ? `${sel.length} of ${max} stop${max === 1 ? '' : 's'} · about ${fmt(total)} in all` : `Pick up to ${max} stop${max === 1 ? '' : 's'}.`;
     $('#go').disabled = !sel.length;
     document.querySelectorAll('[data-stop]').forEach(b => {
@@ -1087,6 +1087,13 @@ function leaveJob(how){
   if (S.bonus && S.bonus.job === S.jobId && S.turn < S.bonus.until && ['notice', 'walk', 'new', 'fired'].includes(how)) {
     S.money -= S.bonus.amt; log(`Paid back the ${fmt(S.bonus.amt)} sign-on bonus for leaving inside a year.`, 'money');
   }
+  const j0 = jobById(S.jobId);
+  if (j0 && (how === 'laid' || how === 'season')) S.uiPay = uiFor(j0);   // i75-b05: benefits follow a layoff
+  if ((S.k401match || 0) > 0 && how !== 'season' && how !== 'retire') {   // i75-b12: an unvested match stays with the employer
+    const lost = Math.min(S.k401, S.k401match); S.k401 -= lost;
+    if (lost >= 1) log(`Left before the 401(k) match vested: ${fmt(lost)} of the employer's match went back to them. Your own savings stay yours.`, 'money');
+  }
+  if (how !== 'season') S.k401match = 0;          // a seasonal layoff with a call-back keeps its place toward vesting
   S.bonus = null; S.notice = null; S.strike = null; S.clearAt = -1; S.rung = 0; S.appWeeks = 0;
   S.jobId = null; if (S.focus === 'work') S.focus = 'rest';
 }
@@ -1112,7 +1119,8 @@ function hireOdds(x){
   if (x.id === 'hanford' && (S.certs || {}).welding) p += 0.1;   // i3-a03: Hanford hires welders
   if (inCollections()) p -= 0.1;                   // i3-a26: a collections account shows up on background checks
   if (bkActive() && x.pay >= 4800) p -= 0.15;      // i3-a27: the better-paying jobs look hard at a bankruptcy
-  return p + refBonus();                           // i3-a09
+  p += refBonus();                                 // i3-a09
+  return x.id === 'retail' ? Math.max(RETAIL_HIRE, p) : p;   // i75-b08: the mall is always hiring
 }
 const INTERVIEW = [
   { k:'honest', label:'Be straight about what you can and can\'t do yet', d:() => 0.05,
@@ -1126,7 +1134,7 @@ function resolveInterview(k){
   const iv = S.interview; S.interview = null;
   const x = iv && jobById(iv.id); if (!x) return null;
   const a = INTERVIEW.find(q => q.k === k), p = iv.p + (a ? a.d(x) : 0);
-  return { x, ok: chance(Math.min(0.92, p)) };
+  return { x, ok: chance(x.id === 'retail' ? Math.max(RETAIL_HIRE, Math.min(0.92, p)) : Math.min(0.92, p)) };
 }
 function interviewSheet(x){
   const r = refNow(), notes = [skillLv('people') ? `🗣️ People skill ${skillLv('people')}` : '', outLookBonus() ? '💇 a fresh haircut' : '',
@@ -1245,7 +1253,7 @@ function jobWeekEnd(notes){
 function jobPay(j, base, lines, f){
   if (S.strike) { const v = base * 0.4; lines.push(['Strike pay from the union', v]); return v; }
   if (S.furlough && S.turn < S.furlough.until) { S.furlough.owed += base; return 0; }
-  lines.push([`Paycheck${f.payMult ? ' + overtime' : ''}${clearing() ? ' (badged out until your clearance)' : apprenticing(j) ? ' (apprentice)' : ''}`, base]);
+  lines.push([`Paycheck${f.payMult || plantOT(j) > 1 ? ' + overtime' : ''}${clearing() ? ' (badged out until your clearance)' : apprenticing(j) ? ' (apprentice)' : ''}`, base]);
   return base;
 }
 function furloughBackPay(lines){
@@ -1267,7 +1275,7 @@ function jobOutlook(i, d, f){
     const x = jobById(S.recall.job); if (x && jobInSeason(x, mo) && !(job() && job().id !== x.id && S.notice == null)) { j = x; recalled = true; }
   }
   if (j) {
-    let pay = (recalled && S.jobId !== j.id ? j.pay * S.wage * (S.recall.raise || 1) * ladderOf(j)[S.recall.rung || 0].payMult : payNow(j)) * wage * W * (f.payMult || 1);
+    let pay = (recalled && S.jobId !== j.id ? j.pay * S.wage * (S.recall.raise || 1) * ladderOf(j)[S.recall.rung || 0].payMult : payNow(j)) * wage * W * (f.payMult || 1) * plantOT(j, mo);
     if (!recalled && clearing() && S.turn + i >= S.clearAt) pay /= CLEAR_PAY;        // the clearance comes through
     if (!recalled && apprenticing(j)) { const w0 = S.appWeeks; S.appWeeks = w0 + i; const m1 = appMult(j, true); S.appWeeks = w0; pay *= m1 / appMult(j, true); }
     if (S.strike && S.turn + i < S.strike.until) { gross = pay * 0.4; lines.push(['Strike pay', gross]); }
@@ -1278,7 +1286,7 @@ function jobOutlook(i, d, f){
     }
   } else if (!S.retired) {
     const left = (S.ui || 0) - i * W + (job() && job().season && !jobInSeason(job(), mo) ? Math.min(4, 12 - job().season.length) : 0);
-    if (left > 0) lines.push(['Unemployment benefits', 1100 * S.wage * wage * Math.min(W, left)]);
+    if (left > 0) lines.push(['Unemployment benefits', ((S.ui || 0) - i * W > 0 || !job() ? uiMonthly() : uiFor(job()) * S.wage) * wage * Math.min(W, left)]);   // i75-b05
   }
   return { gross, lines, big };
 }
@@ -1456,9 +1464,10 @@ function moneyOutlook(n = 13){
   for (let i = 0; i < n; i++) {
     const d = new Date(d0.getTime() + i * 7 * 864e5), lines = [], big = [], grow = Math.pow(1 + COL_RATE, i / 52);
     let gross = 0;
-    if (S.retired) { gross = ssPay() * W + pensionPay() * W; lines.push(['Social Security and pension', gross]); }
-    else { const jo = jobOutlook(i, d, f); gross = jo.gross * (1 - (S.k401rate ? K401[S.k401rate] : 0)); lines.push(...jo.lines.filter(l => l[0] !== 'Paycheck' && l[0] !== 'Strike pay'), [jo.lines.some(l => l[0] === 'Strike pay') ? 'Strike pay' : 'Paycheck', gross]); big.push(...jo.big); }   // i3: the job's own ups and downs
-    if (gross) lines.push(['Taxes', -gross * (S.retired ? 0.05 : 0.15)]);
+    let rate = 0;
+    if (S.retired) { gross = ssPay() * W + pensionPay() * W; lines.push(['Social Security and pension', gross]); rate = Math.max(0, gross - cost(RETIRE_TAX_FREE) * W) * RETIRE_TAX / gross; }
+    else { const jo = jobOutlook(i, d, f); rate = taxRate(jo.gross / W / Math.pow(1 + WAGE_RATE, i / 52)); gross = jo.gross * (1 - (S.k401rate ? K401[S.k401rate] : 0)); lines.push(...jo.lines.filter(l => l[0] !== 'Paycheck' && l[0] !== 'Strike pay'), [jo.lines.some(l => l[0] === 'Strike pay') ? 'Strike pay' : 'Paycheck', gross]); big.push(...jo.big); }   // i3: the job's own ups and downs
+    if (gross && rate) lines.push(['Taxes', -gross * rate]);   // i75-b03/b14
     if (S.partner && age() < 65) lines.push(["Partner's paycheck", 1400 * S.wage * W]);
     lines.push(...billLines(i));
     if (f.cost) lines.push([f.name, -cost(f.cost) * grow * W]);
