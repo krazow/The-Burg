@@ -123,8 +123,8 @@ const SCHOOL    = ['a trade program in Walla Walla','community college classes',
 const HOMES = {
   room:  {name:'Rented room above Main Street', cost:550,  happy:0},
   house: {name:'Rented house on a quiet street', cost:1150, happy:1.5},
-  fixer: {name:'Fixer-upper by the Touchet',     cost:950,  happy:1.5, own:true, down:9000,  equityPer:260},
-  farm:  {name:'Farmhouse in the wheat hills',   cost:1650, happy:3,   own:true, down:30000, equityPer:520}
+  fixer: {name:'Fixer-upper by the Touchet',     cost:950,  happy:1.5, own:true, down:9000,  equityPer:260, value:160000},
+  farm:  {name:'Farmhouse in the wheat hills',   cost:1650, happy:3,   own:true, down:30000, equityPer:520, value:300000}
 };
 const CARS = {
   beater:{name:'1998 pickup',            mpg:15, price:0,     breakdown:.12},
@@ -163,7 +163,7 @@ function blankLife(name, len, slot = 0){
     badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false,
     earnYears:0, earnSum:0, pensionYears:0, pensionPay:0, ltc:null, care:null, snowbird:null, scholar:null, will:false, probate:null, roomHost:false, hostLast:-99,
     skills:{}, biz:null, weekly:null, rng:null, rngEv:null, gen:1, goalAt:{}, carpoolJob:null, hustleLast:0, highWater:null, recentF:[], out:outDefault(),
-    ...EVENT_STATE() };
+    ...EVENT_STATE(), ...MONEY_STATE() };
 }
 // H1: put back anything a damaged save is missing or has a bad value for, so rendering never throws
 function repairLife(s){
@@ -226,7 +226,9 @@ const commuteGasFactor = (j = job()) => driveDays(j) * (S && S.carpool && j && C
 const netWorth = () => {
   const loan = S.loanLeft > 0 ? S.loanLeft * (S.loanPay || CARS.truck.pay) * 0.85 : 0;
   const sloan = S.sloanLeft > 0 ? S.sloanLeft * S.sloanPay * 0.85 : 0;
-  return S.money + S.equity + S.carValue + (S.k401 || 0) + (S.biz ? bizValue() : 0) - loan - sloan;
+  // round 3: index funds at market value, wine futures at what you paid, minus what's left on a home equity loan
+  return S.money + S.equity + S.carValue + (S.k401 || 0) + (S.biz ? bizValue() : 0) - loan - sloan
+    + (S.stocks || 0) + wineAtCost() - heBalance();
 };
 const curMonth = () => new Date(S.date).getMonth();
 const dateLabel = () => { const d = new Date(S.date); return `Week of ${MONTHS[d.getMonth()].slice(0,3)} ${d.getDate()}, ${d.getFullYear()}`; };

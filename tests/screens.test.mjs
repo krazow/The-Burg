@@ -89,7 +89,15 @@ for (const [label, w, h, nightXL] of SIZES) {
     ['jobs', async () => { await page.click('[data-tab=jobs]'); }],
     ['life', async () => { await page.click('[data-tab=life]'); }],
     ['life-skills-biz', async () => { await page.evaluate(() => { S.money = 9000; S.skills = { handy: 30, cook: 10, people: 50 }; S.goals = ['dog']; S.goalAt = { dog: 0 }; S.biz = { type: 'shop', weeks: 5, earned: 140, paidYear: null }; render(); }); }],
-    ['journal', async () => { await page.click('[data-tab=log]'); }],
+    // round 3 money: an owner's home card, investing, crop insurance and stored wheat; a herd; the insurance sheet; bankruptcy; the harvest choice
+    ['life-money', async () => { await page.evaluate(() => { S.money = 30000; S.home = 'fixer'; S.equity = 40000; S.mortgage = 950; S.mortRate = 7.5; S.rate = 6.25; S.homeGrow = 0.07; S.stocks = 4200;
+      S.heLeft = 60; S.hePay = 210; S.heRate = 7.5; S.date = new Date(2027, 9, 4).getTime(); S.smoke = 2027; S.wine = [{ y: 2026, paid: 2500, at: S.turn + 100, smoke: true }];
+      S.biz = { type: 'wheat', weeks: 30, earned: 5000, paidYear: 2027, dep: 1, lease: 260, stored: 6000, ins: true }; render(); }); }],
+    ['life-cattle', async () => { await page.evaluate(() => { S.heLeft = 0; S.rate = 7; S.biz = { type: 'cattle', weeks: 30, earned: 800, dep: 1, cows: 5, calves: 4, check: S.turn - 8 }; render(); }); }],
+    ['insurance', async () => { await page.click('#inssheet'); }],
+    ['bankruptcy', async () => { await page.evaluate(() => { closeSheet(); S.money = -41000; bankruptcySheet('Buried in debt.'); }); }],
+    ['harvest-choice', async () => { await page.evaluate(() => { closeSheet(); S.money = 9000; S.home = 'room'; S.biz = { type: 'wheat', weeks: 30, earned: 0, paidYear: 2027, dep: 1, lease: 260, crop: 7000, bad: true, ins: true }; showEvent(DUE_EVENTS[0]); }); }],
+    ['journal', async () => { await page.evaluate(() => { closeSheet(); S.biz = null; }); await page.click('[data-tab=log]'); }],
     ['home-map', async () => { await page.click('[data-tab=home]'); await page.click('#main .maptog button:nth-child(2)'); }],
     ['main-street', async () => { await page.click('.mpin[aria-label="Main Street"]'); await page.evaluate(() => document.querySelector('.msmap').scrollIntoView({ block: 'center' })); }],
     ['business-card', async () => { await page.evaluate(() => { S.ageMonths = 25 * 12; bizSheet('pasta'); }); }],
