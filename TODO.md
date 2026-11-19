@@ -3462,6 +3462,80 @@ old ones.
 
 </details>
 
+## Ideas round 40 (pick on the build board)
+
+60 ideas. Details: [docs/ideas/round-40.md](docs/ideas/round-40.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 40: Road event pack 2</b> (30 ideas)</summary>
+
+- [ ] 🟡 **i40-a01** Highway 12: Road spray and an empty washer tank (S)
+- [ ] 🟡 **i40-a02** Highway 12: A hitchhiker at the Lowden turnoff (S)
+- [ ] 🔴 **i40-a03** Highway 12: Black ice puts you in the ditch (M)
+- [ ] 🟠 **i40-a04** Highway 12: The check-engine light on the beater (S)
+- [ ] 🟡 **i40-a05** Highway 12: The low-fuel light past Touchet (S)
+- [ ] 🟡 **i40-a06** Highway 12: A radio call-in contest (S)
+- [ ] 🟡 **i40-a07** Highway 12: A garage-sale sign in Touchet (S)
+- [ ] 🟠 **i40-a08** Highway 12: Hay bales spill off a pickup ahead (S)
+- [ ] 🔴 **i40-a09** Commute: The drive starts to feel endless (M)
+- [ ] 🟡 **i40-a10** Commute: The boss asks you to grab parts on the way in (S)
+- [ ] 🟠 **i40-a11** Commute: A rest-area nap after a night shift (S)
+- [ ] 🟠 **i40-a12** Trip: You forgot your wallet at home (S)
+- [ ] 🟡 **i40-a13** Trip: The kids get carsick (S)
+- [ ] 🟠 **i40-a14** Trip: Your trip buddy cancels last minute (M)
+- [ ] 🟡 **i40-a15** Walla Walla: A youth team car wash (S)
+- [ ] 🟡 **i40-a16** Walla Walla: A sidewalk chalk festival downtown (S)
+- [ ] 🟡 **i40-a17** Walla Walla: Free day at the fort museum (S)
+- [ ] 🟡 **i40-a18** Walla Walla: Open mic night at a coffee house (S)
+- [ ] 🟡 **i40-a19** Dayton: A summer concert on the courthouse lawn (S)
+- [ ] 🟡 **i40-a20** Dayton: An elk herd on the Bluewood road (S)
+- [ ] 🟠 **i40-a21** Dayton: The 4-H auction at the county fair (M)
+- [ ] 🟡 **i40-a22** Kennewick: Photos with the mall Santa (S)
+- [ ] 🟠 **i40-a23** Kennewick: A big-name concert at the arena (S)
+- [ ] 🔴 **i40-a24** Kennewick: Job fair at the convention center (S)
+- [ ] 🟠 **i40-a25** Kennewick: A fender-bender in the big-box lot (M)
+- [ ] 🟡 **i40-a26** Kennewick: A water park day in August (S)
+- [ ] 🟡 **i40-a27** Pasco: Help a lost driver, in Spanish (S)
+- [ ] 🟠 **i40-a28** Pasco: Tamales from a church sale (S)
+- [ ] 🟡 **i40-a29** Richland: Family science night at the lab (S)
+- [ ] 🟡 **i40-a30** Wallula: Peaches and melons from a pickup bed (S)
+
+</details>
+
+<details><summary><b>Ideas 40: Work event pack 2</b> (30 ideas)</summary>
+
+- [ ] 🟠 **i40-b01** [Field] The ski lift stops with riders in the wind (S)
+- [ ] 🟡 **i40-b02** [Field] You lose your dosimeter badge at Hanford (S)
+- [ ] 🟡 **i40-b03** [Field] A lost bag on the carousel (S)
+- [ ] 🟠 **i40-b04** [Field] The line speeds up for a big order (S)
+- [ ] 🟡 **i40-b05** [Field] Frost watch in the vineyard (S)
+- [ ] 🔴 **i40-b06** [Office] A storm-claim rush after hail (S)
+- [ ] 🟡 **i40-b07** [Office] A student asks you for a letter (S)
+- [ ] 🔴 **i40-b08** [Office] A grant deadline at the lab (M)
+- [ ] 🟡 **i40-b09** [Office] A loan you have to turn down (S)
+- [ ] 🟠 **i40-b10** [Office] The year-end audit (S)
+- [ ] 🔴 **i40-b11** [Care] Working the holiday shift (S)
+- [ ] 🟠 **i40-b12** [Care] Run the school flu-shot clinic (M)
+- [ ] 🟠 **i40-b13** [Care] A student melts down in the hall (S)
+- [ ] 🟠 **i40-b14** [Care] Night shifts wreck your sleep (M)
+- [ ] 🟡 **i40-b15** [Care] Your CPR card is due (M)
+- [ ] 🟠 **i40-b16** [Service] A grease fire on the flat-top (S)
+- [ ] 🟡 **i40-b17** [Service] Inventory count night (S)
+- [ ] 🔴 **i40-b18** [Service] A shoplifter at your register (S)
+- [ ] 🟡 **i40-b19** [Service] A tour bus stops for lunch (S)
+- [ ] 🟠 **i40-b20** [Service] A regular stops coming in (S)
+- [ ] 🟠 **i40-b21** [Trades] Your drive-time clock runs out an hour from home (S)
+- [ ] 🟡 **i40-b22** [Trades] Called in on your day off (S)
+- [ ] 🟠 **i40-b23** [Trades] A customer's car comes back (S)
+- [ ] 🟡 **i40-b24** [Trades] An inmate asks you to mail a letter (S)
+- [ ] 🟠 **i40-b25** [Trades] The dust alarm at the grain elevator (S)
+- [ ] 🟠 **i40-b26** [Waitsburg business] The espresso machine dies on a Saturday (S)
+- [ ] 🔴 **i40-b27** [Waitsburg business] A council member wants your story pulled (M)
+- [ ] 🟡 **i40-b28** [Waitsburg business] Your cash drawer is $40 short (S)
+- [ ] 🔴 **i40-b29** [Waitsburg business] The builder lets you lead a small job (S)
+- [ ] 🟡 **i40-b30** [Waitsburg business] Soil-sample season for the ag tech (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
