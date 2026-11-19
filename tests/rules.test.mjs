@@ -570,7 +570,7 @@ await t.check('i75-b15–b17: the shop costs $6,000, cattle $16,000 with a vet l
 // over the side hustle those weeks would have paid. Time spent is ignored, so the 30% ceiling is high on purpose.
 await t.check('i75-b18: every business returns between 0% and 30% a year (index funds: about 6%)', async () => {
   const r = await ev(() => {
-    const rnd = Math.random, wy = wheatYield; let ey = 0; for (let i = 0; i < 20000; i++) ey += wy(); ey /= 20000;
+    const rnd = Math.random, wy = wheatYield; let ey = 0; for (let i = 0; i < 20000; i++) { if (S) S.wx = null; ey += wy(); } ey /= 20000;   // i75-a01: a new weather year each draw
     const own = { shop: 'rest', truck: 'hustle', cattle: 'outdoors', wheat: 'work' }, out = {};
     try {
       wheatYield = () => ey;
@@ -1383,7 +1383,7 @@ await t.check('i3-a15: wheat has a July price; the harvest waits on sell-or-stor
 await t.check('i3-a16: crop insurance costs about what a drought year loses on average, charged in April', async () => {
   const r = await ev(() => {
     fresh('two', { money: 20000, date: new Date(2027, 3, 5).getTime() }); render(); startBiz('wheat');
-    const sample = ins => { S.biz.ins = ins; const a = []; for (let i = 0; i < 4000; i++) a.push(wheatYield()); return a; };
+    const sample = ins => { S.biz.ins = ins; const a = []; for (let i = 0; i < 4000; i++) { S.wx = null; a.push(wheatYield()); } return a; };   // i75-a01: a new weather year each draw
     const off = sample(false), on = sample(true);
     const lines = []; bizWeek(lines, []); const prem = (lines.find(l => /premium/.test(l[0])) || [])[1]; const again = []; bizWeek(again, []);
     return { minOff: Math.min(...off), minOn: Math.min(...on), gain: (on.reduce((a, v) => a + v, 0) - off.reduce((a, v) => a + v, 0)) / 4000 * 6000, prem, twice: again.some(l => /premium/.test(l[0])) }; });
