@@ -3994,6 +3994,82 @@ old ones.
 
 </details>
 
+## Ideas round 47 (pick on the build board)
+
+62 ideas. Details: [docs/ideas/round-47.md](docs/ideas/round-47.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 47: Bundles and release plans 3</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i47-a01** Bundle: Bug-fix sweep: kids, trips and commutes (M)
+- [ ] 🔴 **i47-a02** Bundle: Bug-fix sweep: screen readers, focus and zoom (M)
+- [ ] 🔴 **i47-a03** Bundle: Performance sweep: a fast launch and a small save (M)
+- [ ] 🟠 **i47-a04** Bundle: Performance sweep: Help, the Journal and End Week (M)
+- [ ] 🔴 **i47-a05** Bundle: Sim checks for trips, traits and event links (M)
+- [ ] 🟠 **i47-a06** Bundle: Accessibility: names, labels and keys (M)
+- [ ] 🟠 **i47-a07** Bundle: Trip rules that add up (M)
+- [ ] 🟠 **i47-a08** Bundle: Carpools, vanpools and remote days (M)
+- [ ] 🟡 **i47-a09** Bundle: A region map that plans the trip (M)
+- [ ] 🔴 **i47-a10** Bundle: A shorter tutorial that shows how you win (M)
+- [ ] 🟠 **i47-a11** Bundle: Tips at the right moment (S)
+- [ ] 🔴 **i47-a12** Bundle: Help you can search and skim (M)
+- [ ] 🔴 **i47-a13** Bundle: Traits with two sides (M)
+- [ ] 🟠 **i47-a14** Bundle: Interests and a motto (M)
+- [ ] 🟠 **i47-a15** Bundle: The character card (M)
+- [ ] 🟡 **i47-a16** Bundle: Highway 12 road events (S)
+- [ ] 🟠 **i47-a17** Bundle: Shifts that cost you later (M)
+- [ ] 🔴 **i47-a18** Bundle: Work events that test your job (M)
+- [ ] 🔴 **i47-a19** Bundle: Faces behind the counter (S)
+- [ ] 🟠 **i47-a20** Bundle: Apprentice to your own crew (L)
+- [ ] 🔴 **i47-a21** Bundle: Event threads: links as data (L)
+- [ ] 🟠 **i47-a22** Bundle: People who come back (M)
+- [ ] 🔴 **i47-a23** Bundle: A town crisis engine and your role (L)
+- [ ] 🟠 **i47-a24** Bundle: Crises: fire, ice and high water (L)
+- [ ] 🔴 **i47-a25** Bundle: Kids show up in the week (M)
+- [ ] 🟠 **i47-a26** Bundle: The cost of kids, made plain (M)
+- [ ] 🟠 **i47-a27** Bundle: The Tattler you open (L)
+- [ ] 🟠 **i47-a28** Bundle: The valley ledger (L)
+- [ ] 🔴 **i47-a29** Release plan: v0.8 — Fast, clear and easy to learn (L)
+- [ ] 🔴 **i47-a30** Release plan: v0.9 — A town that remembers (L)
+
+</details>
+
+<details><summary><b>Ideas 47: Holidays and traditions</b> (32 ideas)</summary>
+
+- [ ] 🟠 **i47-b01** New Year's Day: first hike of the year, year after year (S)
+- [ ] 🟡 **i47-b02** New Year's Eve: midnight at nine for the little ones (S)
+- [ ] 🟡 **i47-b03** Valentine's: classroom valentines, handmade or a box (S)
+- [ ] 🟡 **i47-b04** Valentine's: carnations to the senior center (S)
+- [ ] 🟠 **i47-b05** St. Patrick's Day: plant peas, the old gardener's rule (S)
+- [ ] 🟡 **i47-b06** St. Patrick's Day: cook at the lodge hall corned beef feed (S)
+- [ ] 🟡 **i47-b07** Easter: sunrise service on the cemetery hill (S)
+- [ ] 🟠 **i47-b08** Mother's Day when Mom is gone (S)
+- [ ] 🔴 **i47-b09** Father's Day: pass on what Dad taught you (M)
+- [ ] 🟠 **i47-b10** Memorial Day: read the names at the roll call (S)
+- [ ] 🟠 **i47-b11** Memorial weekend camp spot: book it in January (M)
+- [ ] 🟡 **i47-b12** Graduation: chaperone the all-night safe party (S)
+- [ ] 🟡 **i47-b13** Fourth of July: the family's spot on the levee (S)
+- [ ] 🟠 **i47-b14** Fourth of July: the dog and the fireworks (S)
+- [ ] 🟡 **i47-b15** Labor Day: dog swim on the pool's last day (S)
+- [ ] 🟠 **i47-b16** First day of school: the porch photo every year (M)
+- [ ] 🟡 **i47-b17** Halloween: trunk-or-treat in the church lot (S)
+- [ ] 🟠 **i47-b18** Halloween: the full-size candy bar house (S)
+- [ ] 🟡 **i47-b19** Halloween: homemade costume or store-bought (S)
+- [ ] 🟠 **i47-b20** Veterans Day: the kid interviews Grandpa (S)
+- [ ] 🟠 **i47-b21** Thanksgiving: the Turkey Bowl in the yard (S)
+- [ ] 🟡 **i47-b22** Fall: deer camp with the same crew (M)
+- [ ] 🔴 **i47-b23** Lighting of Main Street: Santa rides the fire engine (M)
+- [ ] 🟠 **i47-b24** Christmas: one new ornament every year (M)
+- [ ] 🟠 **i47-b25** Christmas morning: one big gift or a pile (S)
+- [ ] 🟡 **i47-b26** Christmas: twelve nights of porch gifts for a neighbor (S)
+- [ ] 🟠 **i47-b27** Celebration Days royalty: your teen runs for court (M)
+- [ ] 🔴 **i47-b28** Christmas club savings at the bank (M)
+- [ ] 🔴 **i47-b29** Traditions ledger: years in a row for every holiday (L)
+- [ ] 🟠 **i47-b30** The first holiday with an empty chair (M)
+- [ ] 🟠 **i47-b31** Teen opts out: keep it, change it, or let it go (M)
+- [ ] 🟡 **i47-b32** Pass the hosting to the next generation (M)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
