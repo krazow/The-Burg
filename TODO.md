@@ -777,6 +777,80 @@ old ones.
 
 </details>
 
+## Ideas round 5 (pick on the build board)
+
+60 ideas. Details: [docs/ideas/round-5.md](docs/ideas/round-5.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 5: Fresh-eyes playtest</b> (28 ideas)</summary>
+
+- [ ] 🔴 **i5-a01** Fix age running a year behind at birthdays (S)
+- [ ] 🔴 **i5-a02** Life Score so far is right in the first month (S)
+- [ ] 🔴 **i5-a03** Year in review counts the big moments (S)
+- [ ] 🔴 **i5-a04** Signature yearly events always happen (S)
+- [ ] 🔴 **i5-a05** Active perks with weeks left on Home (S)
+- [ ] 🟠 **i5-a06** Event results link to the screen they're about (S)
+- [ ] 🟠 **i5-a07** Job tips show take-home and the drive (S)
+- [ ] 🟠 **i5-a08** Job board shows what the drive costs you in happiness (S)
+- [ ] 🟡 **i5-a09** Switching jobs shows what you give up (S)
+- [ ] 🟠 **i5-a10** Happiness at the top needs something new (L)
+- [ ] 🟠 **i5-a11** Pay extra on the mortgage or truck loan (M)
+- [ ] 🟡 **i5-a12** A heads-up when cash just sits there (S)
+- [ ] 🟡 **i5-a13** Fold out-and-about into one Journal line a week (S)
+- [ ] 🟠 **i5-a14** Out and about shows what's new to you (S)
+- [ ] 🟡 **i5-a15** Events notice what you've already done (S)
+- [ ] 🟠 **i5-a16** Fresh text for events that repeat (L)
+- [ ] 🟠 **i5-a17** Event drought guard (S)
+- [ ] 🟡 **i5-a18** One-choice events as a quick news card (S)
+- [ ] 🟡 **i5-a19** Choice labels show the real cost (S)
+- [ ] 🟡 **i5-a20** A turned-down date isn't a dead end (M)
+- [ ] 🟡 **i5-a21** Nudge to finish a half-done degree (S)
+- [ ] 🟠 **i5-a22** End screen: one thing to try next time (S)
+- [ ] 🟡 **i5-a23** The last year gets a review too (S)
+- [ ] 🟡 **i5-a24** Your work history on the Jobs tab (S)
+- [ ] 🟡 **i5-a25** Tips put themselves away once you've done the thing (S)
+- [ ] 🟡 **i5-a26** Suggest Auto in a quiet stretch (S)
+- [ ] 🟡 **i5-a27** Score pill shows the trend (S)
+- [ ] 🟠 **i5-a28** A playtest bot that writes a readable story (M)
+
+</details>
+
+<details><summary><b>Ideas 5: Outdoors and the region</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i5-b01** A forecast chip that changes this week's focus (M)
+- [ ] 🔴 **i5-b02** Smoke weeks: an air-quality meter in late summer (M)
+- [ ] 🔴 **i5-b03** Pick where you get outside (M)
+- [ ] 🟠 **i5-b04** Camp at Lewis and Clark Trail State Park (S)
+- [ ] 🟠 **i5-b05** An outdoor gear shelf (M)
+- [ ] 🔴 **i5-b06** An Outdoors skill (S)
+- [ ] 🟠 **i5-b07** The elk draw: apply in spring, hunt in fall (M)
+- [ ] 🟡 **i5-b08** Winter steelhead on the Touchet (S)
+- [ ] 🟡 **i5-b09** Morel season in the Blues (S)
+- [ ] 🟡 **i5-b10** Pheasant opener on a neighbor's stubble (S)
+- [ ] 🟡 **i5-b11** Huckleberry picking in August (S)
+- [ ] 🟠 **i5-b12** Lost on a Blue Mountains trail (S)
+- [ ] 🟡 **i5-b13** Join county search and rescue (M)
+- [ ] 🟠 **i5-b14** Fire season closes the Blues (S)
+- [ ] 🟡 **i5-b15** The wheat hills change color on the region map (S)
+- [ ] 🟠 **i5-b16** Prescott, Dixie, Starbuck and Pomeroy as day trips (M)
+- [ ] 🟠 **i5-b17** Milton-Freewater: big buys without sales tax (S)
+- [ ] 🔴 **i5-b18** Weekend road trips: Spokane, Pendleton, Lewiston, Seattle (L)
+- [ ] 🟠 **i5-b19** Zoom the map out to the Northwest (M)
+- [ ] 🟡 **i5-b20** Pendleton Round-Up in September (S)
+- [ ] 🟡 **i5-b21** Snoqualmie Pass report on Seattle trips (S)
+- [ ] 🟠 **i5-b22** Heat wave week and the cooling bill (S)
+- [ ] 🟠 **i5-b23** Winter blues and short days (S)
+- [ ] 🟠 **i5-b24** A wildlife life list (M)
+- [ ] 🟠 **i5-b25** Plant willows on Coppei Creek (S)
+- [ ] 🟠 **i5-b26** Work weekends at Bluewood for a free pass (S)
+- [ ] 🟡 **i5-b27** Tubing the Touchet in July (S)
+- [ ] 🟡 **i5-b28** Burn ban season (S)
+- [ ] 🟠 **i5-b29** Bring someone outside with you (S)
+- [ ] 🟠 **i5-b30** A year outside: a seasonal outing card (M)
+- [ ] 🟡 **i5-b31** Ski lessons for you or the kids (S)
+- [ ] 🟡 **i5-b32** A cabin up the Touchet road (L)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
