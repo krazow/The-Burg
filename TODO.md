@@ -1471,6 +1471,88 @@ old ones.
 
 </details>
 
+## Ideas round 14 (pick on the build board)
+
+68 ideas. Details: [docs/ideas/round-14.md](docs/ideas/round-14.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 14: Vehicles and getting around</b> (33 ideas)</summary>
+
+- [ ] 🔴 **i14-a01** More rides on the used lot: AWD wagon, minivan, hybrid (M)
+- [ ] 🔴 **i14-a02** Sell it yourself: private sale or quick trade-in (M)
+- [ ] 🟠 **i14-a03** A pickup in a neighbor's driveway: buy it, or get it checked first (M)
+- [ ] 🟠 **i14-a04** The project truck in the shed (L)
+- [ ] 🔴 **i14-a05** Change your own oil in the driveway (S)
+- [ ] 🟡 **i14-a06** A rolling tool chest (S)
+- [ ] 🔴 **i14-a07** A used electric car on a rural road (L)
+- [ ] 🟠 **i14-a08** A charger comes to Main Street (S)
+- [ ] 🟠 **i14-a09** Bike to Dayton in good weather (M)
+- [ ] 🟠 **i14-a10** Walk to work on Main Street (S)
+- [ ] 🟡 **i14-a11** A bike for the kids (S)
+- [ ] 🔴 **i14-a12** Driver's ed and the learner's permit (M)
+- [ ] 🟠 **i14-a13** The teen's first fender bender (S)
+- [ ] 🟡 **i14-a14** Renew your license every eight years (S)
+- [ ] 🔴 **i14-a15** The pump price on the Home tab (S)
+- [ ] 🟠 **i14-a16** The ride board at the grocery store (M)
+- [ ] 🟠 **i14-a17** Help a neighbor move with your pickup (S)
+- [ ] 🔴 **i14-a18** A winter kit in the trunk (S)
+- [ ] 🟠 **i14-a19** Highway 12 is closed (S)
+- [ ] 🟡 **i14-a20** Shovel out the neighbor's car (S)
+- [ ] 🟠 **i14-a21** Palouse Falls and Lyons Ferry on a summer Saturday (S)
+- [ ] 🟡 **i14-a22** Wrong turn on a gravel road (S)
+- [ ] 🔴 **i14-a23** What happens while your truck is in the shop (S)
+- [ ] 🟠 **i14-a24** Pick your loan: 3, 5 or 7 years (S)
+- [ ] 🟡 **i14-a25** Name your truck (S)
+- [ ] 🟠 **i14-a26** One car or two (M)
+- [ ] 🟡 **i14-a27** Someone took the catalytic converter (S)
+- [ ] 🟠 **i14-a28** Retire the old beater: scrap it or give it to the school shop (S)
+- [ ] 🟠 **i14-a29** A recall notice in the mail (S)
+- [ ] 🟡 **i14-a30** A rock chip in the windshield (S)
+- [ ] 🟠 **i14-a31** Pack a cooler for trips (S)
+- [ ] 🟡 **i14-a32** Jump-start a stranger in the Kennewick lot (S)
+- [ ] 🟠 **i14-a33** Tractors and combines on the road (M)
+
+</details>
+
+<details><summary><b>Ideas 14: Friends and social life</b> (35 ideas)</summary>
+
+- [ ] 🔴 **i14-b01** Your crew: one friendship meter for your circle (M)
+- [ ] 🔴 **i14-b02** Saturday invites from the group text (S)
+- [ ] 🔴 **i14-b03** Say no too often and the invites stop (S)
+- [ ] 🟠 **i14-b04** Game night, and your turn to host (S)
+- [ ] 🟠 **i14-b05** A winter bowling league in Walla Walla (M)
+- [ ] 🟠 **i14-b06** Becoming a regular at the ale house (S)
+- [ ] 🟡 **i14-b07** The regulars' table: who's at the bar tonight (S)
+- [ ] 🟡 **i14-b08** Fantasy football at the sports bar (M)
+- [ ] 🟡 **i14-b09** Cards with the old-timers: cribbage at the café (S)
+- [ ] 🔴 **i14-b10** The yearly group trip: who books it? (M)
+- [ ] 🔴 **i14-b11** A falling out, and making up (M)
+- [ ] 🟠 **i14-b12** Make up at Celebration Days (S)
+- [ ] 🟠 **i14-b13** Lending money to a friend (S)
+- [ ] 🟡 **i14-b14** A friend needs your couch (M)
+- [ ] 🔴 **i14-b15** Small-town dating: everyone knows by Monday (M)
+- [ ] 🟠 **i14-b16** A dating app with a 60-mile radius (M)
+- [ ] 🟡 **i14-b17** Friends set you up on a blind date (S)
+- [ ] 🟡 **i14-b18** Running into your ex at the grocery (S)
+- [ ] 🔴 **i14-b19** Being new in town: from stranger to local (M)
+- [ ] 🟡 **i14-b20** The two-finger steering-wheel wave (S)
+- [ ] 🟡 **i14-b21** Who are your people? The first question you get (S)
+- [ ] 🟠 **i14-b22** Social battery: introvert or extrovert as a play style (L)
+- [ ] 🟠 **i14-b23** Quiet ways to belong (S)
+- [ ] 🟠 **i14-b24** You're the subject of the gossip (M)
+- [ ] 🟡 **i14-b25** A friend tells you a secret (S)
+- [ ] 🟠 **i14-b26** The jam regulars' potluck (S)
+- [ ] 🟡 **i14-b27** Carpool to a bluegrass festival (S)
+- [ ] 🟠 **i14-b28** Celebration Days: who's back in town (S)
+- [ ] 🟡 **i14-b29** The street dance after the parade (S)
+- [ ] 🟠 **i14-b30** Friendsgiving for the folks with nowhere to go (S)
+- [ ] 🟡 **i14-b31** Friends drift as life changes (M)
+- [ ] 🟡 **i14-b32** After-shift beers with coworkers (S)
+- [ ] 🟡 **i14-b33** Elk camp with the crew (S)
+- [ ] 🟡 **i14-b34** A surprise party for a friend's 40th (S)
+- [ ] 🟠 **i14-b35** Who shows up: friends at your send-off (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
