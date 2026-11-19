@@ -3838,6 +3838,88 @@ old ones.
 
 </details>
 
+## Ideas round 45 (pick on the build board)
+
+68 ideas. Details: [docs/ideas/round-45.md](docs/ideas/round-45.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 45: Caring for the land</b> (34 ideas)</summary>
+
+- [ ] 🔴 **i45-a01** The valley ledger: a slow land-health number (L)
+- [ ] 🔴 **i45-a02** Water what you planted: the July survival check (S)
+- [ ] 🔴 **i45-a03** Trees that grow on the map (M)
+- [ ] 🟠 **i45-a04** Count smolts at the screw trap in April (S)
+- [ ] 🟠 **i45-a05** Walk the creek counting redds (S)
+- [ ] 🟠 **i45-a06** Leave the log in the river or cut it for firewood (S)
+- [ ] 🟡 **i45-a07** Fish screen on the ditch, cost-shared (M)
+- [ ] 🔴 **i45-a08** Talk the boss into no-till (L)
+- [ ] 🟠 **i45-a09** A thunderstorm cuts gullies in the field (S)
+- [ ] 🟡 **i45-a10** Plant a cover crop on the corner (M)
+- [ ] 🟠 **i45-a11** Sandhill cranes overhead in March (S)
+- [ ] 🟠 **i45-a12** The winter raptor route (M)
+- [ ] 🟡 **i45-a13** A barn owl box on the shed (S)
+- [ ] 🟡 **i45-a14** The Christmas bird count (S)
+- [ ] 🟠 **i45-a15** Goatheads in the park (S)
+- [ ] 🟠 **i45-a16** The weed board letter: knapweed on your lot (S)
+- [ ] 🟡 **i45-a17** Weeds spread if you leave them (M)
+- [ ] 🔴 **i45-a18** Make your yard wildfire-ready (M)
+- [ ] 🟡 **i45-a19** Chipper day on the street (S)
+- [ ] 🟠 **i45-a20** Burn the ditch or wait for the crew (S)
+- [ ] 🟡 **i45-a21** Let the lawn go golden in August (S)
+- [ ] 🟠 **i45-a22** Trade the lawn for native plants (M)
+- [ ] 🟠 **i45-a23** A beaver dam backs water into a field (M)
+- [ ] 🟡 **i45-a24** Bag the river after the tubing weekends (S)
+- [ ] 🟠 **i45-a25** Salmon in the classroom (S)
+- [ ] 🟡 **i45-a26** Leave the field corner for the birds (S)
+- [ ] 🟡 **i45-a27** Spray drift on your garden (S)
+- [ ] 🟠 **i45-a28** The land trust needs a preserve steward (M)
+- [ ] 🟠 **i45-a29** Sell a conservation easement on your ground (L)
+- [ ] 🟡 **i45-a30** A spring walk on the prairie preserve (S)
+- [ ] 🔴 **i45-a31** The valley you leave: a stewardship line on the end screen (M)
+- [ ] 🟡 **i45-a32** Help explains stewardship without a sermon (S)
+- [ ] 🟠 **i45-a33** Steelhead come back stronger in a long game (M)
+- [ ] 🟡 **i45-a34** Pollinator strip with the school (S)
+
+</details>
+
+<details><summary><b>Ideas 45: Events that connect</b> (34 ideas)</summary>
+
+- [ ] 🔴 **i45-b01** One marks table that events write and read (S)
+- [ ] 🔴 **i45-b02** Bluewood snow chains help on Highway 12 too (S)
+- [ ] 🔴 **i45-b03** The levee holds when the Touchet runs high (S)
+- [ ] 🔴 **i45-b04** Vern, the wheat farmer you hauled for (M)
+- [ ] 🟠 **i45-b05** The stray comes back to you (M)
+- [ ] 🔴 **i45-b06** Your famous pie (M)
+- [ ] 🟠 **i45-b07** The designated driver gets a reputation (S)
+- [ ] 🟠 **i45-b08** Eleven votes: the council race you lost (M)
+- [ ] 🟠 **i45-b09** A council seat shows up at the town's big days (M)
+- [ ] 🔴 **i45-b10** The new hire you trained becomes your boss (M)
+- [ ] 🟡 **i45-b11** The coworker who took the promotion you passed on (S)
+- [ ] 🟠 **i45-b12** Your old boss calls after the layoff (M)
+- [ ] 🟠 **i45-b13** Wing the safety inspection, get hurt later (S)
+- [ ] 🔴 **i45-b14** Toughing it out adds up (M)
+- [ ] 🟡 **i45-b15** Working sick spreads (S)
+- [ ] 🟠 **i45-b16** Trooper Dahl on Highway 12 (M)
+- [ ] 🟠 **i45-b17** The gas-station old-timer, over the years (M)
+- [ ] 🟠 **i45-b18** The friend you visited in the hospital (S)
+- [ ] 🟡 **i45-b19** Your carpool buddy's wedding (S)
+- [ ] 🟡 **i45-b20** The person from Howlin' Bean (M)
+- [ ] 🟡 **i45-b21** The dealer calls back (S)
+- [ ] 🟡 **i45-b22** A full freezer feeds later events (S)
+- [ ] 🟠 **i45-b23** The food truck shows up around town (M)
+- [ ] 🔴 **i45-b24** New folks next door after moving day (M)
+- [ ] 🟡 **i45-b25** The sandbag crew in the windstorm (S)
+- [ ] 🟠 **i45-b26** Years of Friday nights for your kid (M)
+- [ ] 🟠 **i45-b27** The Tattler follows up on what you skipped (M)
+- [ ] 🔴 **i45-b28** Threads in the Journal (S)
+- [ ] 🟠 **i45-b29** Event links as data (L)
+- [ ] 🟡 **i45-b30** What the town remembers, on the Life tab (S)
+- [ ] 🔴 **i45-b31** Sim check: links never pay careless play (S)
+- [ ] 🟡 **i45-b32** The retiree from work knocks on doors for you (S)
+- [ ] 🟡 **i45-b33** The health plan choice looks back at your year (S)
+- [ ] 🟡 **i45-b34** The training course pays off at the rollout (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
