@@ -1707,6 +1707,82 @@ old ones.
 
 </details>
 
+## Ideas round 17 (pick on the build board)
+
+62 ideas. Details: [docs/ideas/round-17.md](docs/ideas/round-17.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 17: Starting out</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i17-a01** Graduation night: a three-choice opening scene (M)
+- [ ] 🔴 **i17-a02** Three doors on day one: a starter job, a program, a place (M)
+- [ ] 🔴 **i17-a03** Opening weeks run on their own small event pool (M)
+- [ ] 🔴 **i17-a04** Staying with family: a new starting background (L)
+- [ ] 🟠 **i17-a05** Moving-out week: pack the pickup (S)
+- [ ] 🟠 **i17-a06** Move back home for a while (M)
+- [ ] 🟠 **i17-a07** The pickup is Dad's, and he wants it back (M)
+- [ ] 🟠 **i17-a08** Open your first checking account (S)
+- [ ] 🟠 **i17-a09** Your phone: stay on the family plan or get your own (S)
+- [ ] 🟠 **i17-a10** On your parents' health insurance until 26 (S)
+- [ ] 🟡 **i17-a11** Car insurance drops at 25 (S)
+- [ ] 🟡 **i17-a12** First speeding ticket on Highway 12 (S)
+- [ ] 🟠 **i17-a13** Graduation money in a card (S)
+- [ ] 🔴 **i17-a14** Friends leave in August, come home at Thanksgiving (M)
+- [ ] 🟠 **i17-a15** Where your class went: four classmates you can follow (M)
+- [ ] 🟡 **i17-a16** Your old coach still checks in (S)
+- [ ] 🟡 **i17-a17** Running Start credits from high school (S)
+- [ ] 🟠 **i17-a18** Ask three people before you pick a path (S)
+- [ ] 🟠 **i17-a19** A job shadow day (M)
+- [ ] 🔴 **i17-a20** Financial aid: fill out the FAFSA by the deadline (M)
+- [ ] 🟠 **i17-a21** Talk to the recruiter: enlist at 18–20 (L)
+- [ ] 🟠 **i17-a22** Your 90-day review at your first job (S)
+- [ ] 🟡 **i17-a23** Young bodies bounce back, late nights tempt (S)
+- [ ] 🟡 **i17-a24** Rental history: your first landlord's reference (S)
+- [ ] 🟠 **i17-a25** Adulting badges: firsts that count (S)
+- [ ] 🟡 **i17-a26** A younger brother who needs a ride (S)
+- [ ] 🟠 **i17-a27** The 18-year-old's money list on Home (S)
+- [ ] 🟡 **i17-a28** A summer fire crew for 18–24 (M)
+- [ ] 🟡 **i17-a29** Turning 21 with your friends (S)
+- [ ] 🟠 **i17-a30** The plan you made at 18, looked at again at 25 (M)
+
+</details>
+
+<details><summary><b>Ideas 17: Getting it to players</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i17-b01** A link preview that shows the town when shared (S)
+- [ ] 🔴 **i17-b02** A README written for players first (S)
+- [ ] 🔴 **i17-b03** A real privacy policy page at its own address (S)
+- [ ] 🔴 **i17-b04** Release notes players actually read (S)
+- [ ] 🔴 **i17-b05** A Waitsburg launch kit: flyer, poster and tear-off strips (M)
+- [ ] 🔴 **i17-b06** Measuring what players do without tracking them (M)
+- [ ] 🔴 **i17-b07** A beta tester group with a 'try this' list (M)
+- [ ] 🔴 **i17-b08** Free and ad-free, said plainly, with the costs written down (S)
+- [ ] 🟠 **i17-b09** Microsoft Store listing kit (M)
+- [ ] 🟠 **i17-b10** One listing file for every store and the site (S)
+- [ ] 🟠 **i17-b11** Showcase lives for screenshots that can be remade (M)
+- [ ] 🟠 **i17-b12** A 30-second trailer made by the game itself (M)
+- [ ] 🟠 **i17-b13** A press kit page (S)
+- [ ] 🟠 **i17-b14** A story for the local paper (S)
+- [ ] 🟠 **i17-b15** Celebration Days booth mode (M)
+- [ ] 🟠 **i17-b16** Shared computers at the library and school (S)
+- [ ] 🟠 **i17-b17** Launch week challenge on the library board (S)
+- [ ] 🟠 **i17-b18** A page for Waitsburg's real businesses (S)
+- [ ] 🟠 **i17-b19** Plain-language report forms on GitHub (M)
+- [ ] 🟠 **i17-b20** A public roadmap in plain words (S)
+- [ ] 🟠 **i17-b21** Support and FAQ from one file (S)
+- [ ] 🟠 **i17-b22** A 'Get the game' page that picks the right install (M)
+- [ ] 🟠 **i17-b23** iPhone as a first-class web app (M)
+- [ ] 🟠 **i17-b24** Honest age rating answers, kept honest (S)
+- [ ] 🟠 **i17-b25** A note for parents and teachers (S)
+- [ ] 🟠 **i17-b26** A kind review ask, once (S)
+- [ ] 🟠 **i17-b27** A store-day checklist the release prints (S)
+- [ ] 🟡 **i17-b28** Count downloads from what's already public (S)
+- [ ] 🟡 **i17-b29** A problems log that stays on the phone (S)
+- [ ] 🟡 **i17-b30** One version number everywhere (S)
+- [ ] 🟡 **i17-b31** A first-five-minutes test like a store reviewer (M)
+- [ ] 🟡 **i17-b32** A small website with the game at /play (L)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
