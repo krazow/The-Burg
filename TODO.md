@@ -851,6 +851,84 @@ old ones.
 
 </details>
 
+## Ideas round 6 (pick on the build board)
+
+64 ideas. Details: [docs/ideas/round-6.md](docs/ideas/round-6.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 6: Family and generations</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i6-a01** Name your kids, and see them on the Family card (S)
+- [ ] 🔴 **i6-a02** How you raised them shapes the heir (M)
+- [ ] 🔴 **i6-a03** A 529 college fund for each kid (M)
+- [ ] 🔴 **i6-a04** A letter from your grandparent (S)
+- [ ] 🔴 **i6-a05** Split the estate among your kids (S)
+- [ ] 🔴 **i6-a06** Family traditions that carry down (M)
+- [ ] 🔴 **i6-a07** Empty nest: the house goes quiet (M)
+- [ ] 🟠 **i6-a08** Raising teens: a parenting style (M)
+- [ ] 🟠 **i6-a09** Hand the old truck down to your teen (S)
+- [ ] 🟠 **i6-a10** A brother or sister in the valley (M)
+- [ ] 🟠 **i6-a11** In-laws come with the partner (M)
+- [ ] 🟡 **i6-a12** Your own family reunion at the park (S)
+- [ ] 🟠 **i6-a13** Memorial Day at the family plot (S)
+- [ ] 🟠 **i6-a14** Bring your teen into the family business (M)
+- [ ] 🟠 **i6-a15** Hand the business to a grown kid (L)
+- [ ] 🟠 **i6-a16** The family home keeps its history (M)
+- [ ] 🟠 **i6-a17** Boomerang kid moves back home (S)
+- [ ] 🟡 **i6-a18** Help a grown kid with a down payment (S)
+- [ ] 🟡 **i6-a19** Your kid's wedding (S)
+- [ ] 🟡 **i6-a20** A partner with kids from before (S)
+- [ ] 🟡 **i6-a21** Co-parenting after a split (M)
+- [ ] 🟡 **i6-a22** Foster a kid through the county (M)
+- [ ] 🟠 **i6-a23** Inherited favors and grudges (M)
+- [ ] 🟠 **i6-a24** Town choices stick for the next generation (M)
+- [ ] 🟡 **i6-a25** The years show across generations (M)
+- [ ] 🟡 **i6-a26** Stories at the Thanksgiving table (S)
+- [ ] 🟠 **i6-a27** Turn down the family money (S)
+- [ ] 🟠 **i6-a28** Choose which grandkid carries on (M)
+- [ ] 🟠 **i6-a29** Overlap generations: switch to your kid at 65 (L)
+- [ ] 🟡 **i6-a30** A puppy from the old dog's litter (S)
+- [ ] 🟡 **i6-a31** Anniversaries that add up (S)
+- [ ] 🟡 **i6-a32** Your family's marks on the map (S)
+
+</details>
+
+<details><summary><b>Ideas 6: Look, sound and map</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i6-b01** A drawn portrait that ages with you (M)
+- [ ] 🔴 **i6-b02** Your house on Home, drawn from what you own (M)
+- [ ] 🔴 **i6-b03** The title scene follows your latest life (M)
+- [ ] 🟠 **i6-b04** Day and dusk on the town map (M)
+- [ ] 🔴 **i6-b05** Main Street changes as you play (M)
+- [ ] 🟠 **i6-b06** Footprints: the places you go most (S)
+- [ ] 🟠 **i6-b07** Region map remembers your trips (M)
+- [ ] 🟠 **i6-b08** Weather on the map (S)
+- [ ] 🟠 **i6-b09** The Touchet rises and falls (S)
+- [ ] 🟡 **i6-b10** Wheat trucks at harvest (S)
+- [ ] 🔴 **i6-b11** Season accent colors across the app (S)
+- [ ] 🟠 **i6-b12** A home that ages with you (M)
+- [ ] 🟠 **i6-b13** Holiday touches on Home (S)
+- [ ] 🟡 **i6-b14** Your truck on the map looks like your truck (S)
+- [ ] 🟠 **i6-b15** Original icon set to replace emoji in key spots (M)
+- [ ] 🟡 **i6-b16** Paper texture and a stamp look (S)
+- [ ] 🟠 **i6-b17** A soundtrack made in code (M)
+- [ ] 🟡 **i6-b18** Town sounds on the map (S)
+- [ ] 🟡 **i6-b19** Haptic patterns that mean something (S)
+- [ ] 🟠 **i6-b20** Theme picker: Barn, Wheat, Creek, Night (S)
+- [ ] 🟡 **i6-b21** Dark map palette (S)
+- [ ] 🟠 **i6-b22** Small life moments animate once (M)
+- [ ] 🟡 **i6-b23** Weather in the header (S)
+- [ ] 🟠 **i6-b24** A portrait album at the end (M)
+- [ ] 🟡 **i6-b25** Your kids appear by the house (S)
+- [ ] 🟠 **i6-b26** A hand-drawn Waitsburg map style (L)
+- [ ] 🟡 **i6-b27** Map labels that tell you something (S)
+- [ ] 🟠 **i6-b28** Night lights show who's home (S)
+- [ ] 🟡 **i6-b29** Animated week turn (S)
+- [ ] 🟡 **i6-b30** Pet portrait that ages (M)
+- [ ] 🟠 **i6-b31** Splash and icon tied to the season (S)
+- [ ] 🟡 **i6-b32** Little easter eggs on the map (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
