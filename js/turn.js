@@ -13,7 +13,7 @@ function playWeeks(n){
   }
   save();
   const after = () => {
-    if (res.ending) return finish(res.ending);
+    if (res.ending) return res.debt && canBankrupt() ? bankruptcySheet(res.ending) : finish(res.ending);   // i3-a27
     render();
     if (S.newBadges && S.newBadges.length) { toast(S.newBadges.join(' · ')); S.newBadges = []; }
     if (res.ev) showEvent(res.ev, res.review);     // a year in review that week comes after the event
@@ -88,9 +88,10 @@ function weekTick(auto){
   const rentV = -(home.own && S.mortgage ? S.mortgage : cost(home.cost))*m;
   lines.push([home.own ? 'Mortgage' : 'Rent', rentV]);
   bizWeek(lines, notes);
+  moneyWeek(lines, notes);                         // round 3: property tax, home equity loan, index funds, wine futures
   const trip = tripWeek(lines);                    // this week's trip around the region, if one is planned
   const stocked = S.turn < S.stockUntil;
-  const foodV = -cost(520 - (stocked ? GROCERY_SHARE * STOCK_OFF : 0))*(1 - skillLv('cook') * 0.04)*m, insV = -cost(160)*m;
+  const foodV = -cost(520 - (stocked ? GROCERY_SHARE * STOCK_OFF : 0))*(1 - skillLv('cook') * 0.04)*m, insV = -cost(insMonthly())*m;   // i3-a19: what you picked on the insurance sheet ($160 by default)
   lines.push([stocked ? 'Food & utilities (stocked up)' : 'Food & utilities', foodV]);
   lines.push(['Insurance & phone', insV]);
   if (mode() === 'hard') lines.push(['Higher living costs (Hard, +10%)', (rentV + foodV + insV) * HARD_LIVING]);   // R15: 10% of rent, food and insurance
@@ -121,7 +122,10 @@ function weekTick(auto){
   const net = lines.reduce((a,[,v]) => a + v, 0);
   S.money += net;
   S.last = { lines: lines.filter(([,v]) => Math.round(v)), net };
-  if (home.own) S.equity = S.equity * Math.pow(1.025, 1/52) + home.equityPer * m;   // principal paid + 2.5%/yr appreciation
+  debtWeek(notes);                                 // i3-a26: long debt goes to collections
+  // i3-a21: the valley's home prices move with this year's market (2.5% a year on average); owners gain principal + appreciation
+  S.homeIdx = (S.homeIdx || 1) * Math.pow(1 + (S.homeGrow ?? 0.025), 1/52);
+  if (home.own) S.equity = S.equity * Math.pow(1 + (S.homeGrow ?? 0.025), 1/52) + home.equityPer * m;
   S.carValue = Math.max(500, S.carValue * Math.pow(0.99, m));
   S.k401 *= Math.pow(1.06, 1/52);
   S.col *= Math.pow(1 + COL_RATE, 1/52); S.wage *= Math.pow(1 + WAGE_RATE, 1/52);
@@ -166,6 +170,7 @@ function weekTick(auto){
   const dice = eventDice();         // R8: events roll their own dice, so a weekly challenge brings everyone the same events
   let ev = S.noEvents ? null : rollEvent(curMonth(), trip);   // town, road and work events, paced by category
   dice.done();
+  { const due = S.noEvents ? null : takeDue(); if (due) ev = due; }   // a harvest choice or a market drop comes first
   if (ev) {
     S.evCd[ev.title] = S.turn + (ev.yr ? 40 : 8);
     { const pl = eventPlace(ev); S.evPins = [{ t: ev.title, ic: ev.ic, m: pl[0], k: pl[1], turn: S.turn + 1, r: '' }, ...(S.evPins || [])].slice(0, 12); }
@@ -217,9 +222,10 @@ function weekTick(auto){
   }
   if (!ending && S.turn >= L.turns) ending = `${L.label} in the Burg is in the books.`;
   const debtEnd = mode() === 'hard' ? -25000 : -40000;
-  if (!ending && mode() !== 'relaxed' && S.money < debtEnd) ending = `Buried in debt, ${S.name} packed up and left Waitsburg.`;
+  let debt = false;
+  if (!ending && mode() !== 'relaxed' && S.money < debtEnd) { ending = `Buried in debt, ${S.name} packed up and left Waitsburg.`; debt = true; }
   if (mode() === 'relaxed' && S.money < -40000) S.money = -40000;   // Relaxed: a debt counselor stops the slide
-  return { ev, notes, ending, review };
+  return { ev, notes, ending, review, debt };
 }
 
 function deltaChips(before){
