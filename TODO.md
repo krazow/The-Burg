@@ -6028,6 +6028,78 @@ old ones.
 
 </details>
 
+## Ideas round 74 (pick on the build board)
+
+58 ideas. Details: [docs/ideas/round-74.md](docs/ideas/round-74.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 74: Health, body and aging</b> (29 ideas)</summary>
+
+- [ ] 🔴 **i74-a01** Injuries that fit the job (M)
+- [ ] 🔴 **i74-a02** Washington sick hours that pile up (S)
+- [ ] 🔴 **i74-a03** A mental health day, no questions asked (S)
+- [ ] 🟠 **i74-a04** Ambulance district membership (S)
+- [ ] 🟠 **i74-a05** A seat on the county medical van (M)
+- [ ] 🟠 **i74-a06** Desk jobs wear too after 40 (S)
+- [ ] 🟠 **i74-a07** Physical therapy twice a week, or tough it out (M)
+- [ ] 🟠 **i74-a08** Dental coverage on the insurance sheet (S)
+- [ ] 🟠 **i74-a09** Get outside changes shape as you age (M)
+- [ ] 🟡 **i74-a10** Chair exercise at the senior center (S)
+- [ ] 🟠 **i74-a11** Grown-up shots at 50 and 65 (S)
+- [ ] 🟠 **i74-a12** Who drives Dad to Walla Walla: you or your sister (M)
+- [ ] 🟠 **i74-a13** A respite weekend at the adult day program (S)
+- [ ] 🟠 **i74-a14** Paid family leave to care for a parent (M)
+- [ ] 🟡 **i74-a15** A memory check for Dad, gently (S)
+- [ ] 🟠 **i74-a16** The trucker's DOT medical card (S)
+- [ ] 🟠 **i74-a17** A debrief after a hard shift (S)
+- [ ] 🟠 **i74-a18** Between jobs: COBRA or the state exchange (M)
+- [ ] 🟡 **i74-a19** Night glare on Highway 12 after 60 (S)
+- [ ] 🟡 **i74-a20** The visiting specialist at the Dayton clinic (S)
+- [ ] 🟠 **i74-a21** Weeks to get in: booked appointments (M)
+- [ ] 🟠 **i74-a22** Hard years in the body show after 55 (M)
+- [ ] 🟡 **i74-a23** Healing takes longer after 60 (S)
+- [ ] 🟡 **i74-a24** Teeth at 70: a bridge, an implant or dentures (S)
+- [ ] 🟠 **i74-a25** Tell the boss, or keep it private (S)
+- [ ] 🟡 **i74-a26** A blood pressure kiosk at the grocery (S)
+- [ ] 🟠 **i74-a27** Who looks after the caregiver? (S)
+- [ ] 🟡 **i74-a28** Drive a neighbor to their appointment (S)
+- [ ] 🟠 **i74-a29** A gentle Help page: your body over a life (S)
+
+</details>
+
+<details><summary><b>Ideas 74: Accessibility audit</b> (29 ideas)</summary>
+
+- [ ] 🔴 **i74-b01** [Sheets] The Tab key can reach the backup code boxes (S)
+- [ ] 🔴 **i74-b02** [Sheets] Delete, Quit and Replace open on the safe button (S)
+- [ ] 🟠 **i74-b03** [Sheets] Confirm sheets are alert dialogs that read their warning (S)
+- [ ] 🔴 **i74-b04** [All] Text size starts from the phone's own text setting (S)
+- [ ] 🔴 **i74-b05** [Home] The Net worth button says the amount out loud (S)
+- [ ] 🟠 **i74-b06** [Tabs] Switching tabs keeps focus on the tab you picked (S)
+- [ ] 🟠 **i74-b07** [Header] Header tags and cash say what they mean (S)
+- [ ] 🟡 **i74-b08** [Header] The life progress bar is read as "week 12 of 26" (S)
+- [ ] 🟠 **i74-b09** [Home] The week summary says when a stat turns low (S)
+- [ ] 🟠 **i74-b10** [All] Spoken names keep the words you can see (S)
+- [ ] 🟠 **i74-b11** [Jobs] The ▲▼ pay difference is read in words (S)
+- [ ] 🟠 **i74-b12** [Money] Red and green follow the sign; zero is gray (S)
+- [ ] 🟠 **i74-b13** [Money] Short forms are read in full: a week, a month, miles (M)
+- [ ] 🟠 **i74-b14** [End] The big score and its math read as plain sentences (S)
+- [ ] 🔴 **i74-b15** [Night] Low stat bars stay visible in the dark theme (S)
+- [ ] 🟠 **i74-b16** [All] Grayed-out buttons are still readable (S)
+- [ ] 🟠 **i74-b17** [Windows] Bars and picked buttons show in Windows contrast themes (M)
+- [ ] 🟠 **i74-b18** [Maps] Pins say if they're your focus, open, or had news (S)
+- [ ] 🟡 **i74-b19** [Maps] The List/Map and Waitsburg/region switches say which is on (S)
+- [ ] 🟠 **i74-b20** [Help] Contents buttons move focus to the section, not just the page (S)
+- [ ] 🟡 **i74-b21** [Journal] The Journal is a list with real dates (S)
+- [ ] 🟠 **i74-b22** [Title] Badge emoji on the title screen say their names (S)
+- [ ] 🟡 **i74-b23** [Reading] Long text is left-aligned, and map labels are upright (S)
+- [ ] 🟡 **i74-b24** [Plain words] A Plain words setting for money terms (M)
+- [ ] 🟡 **i74-b25** [Docs] Idea marks have a word, not just a color (S)
+- [ ] 🟠 **i74-b26** [Tests] Three new checks in the screens test (S)
+- [ ] 🟡 **i74-b27** [Event] Escape on an event says why it stays open (S)
+- [ ] 🟡 **i74-b28** [Home] Focus tiles say the full focus name and its cost (S)
+- [ ] 🟡 **i74-b29** [Reading] The game holds up when readers widen text spacing (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
