@@ -40,7 +40,7 @@ await t.check('Life tab: moving to a rented house costs $300 and raises the rent
   const s = await S();
   assert(s.home === 'house' && s.money === 4700, `home ${s.home}, money ${s.money}`);
   await page.click('[data-tab=home]'); await page.click('#end'); await clearSheets();
-  assert(near((await S()).last.lines.find(l => l[0] === 'Rent')[1], -1150 * 12 / 52), 'rent not charged at the new rate');
+  assert(near((await S()).last.lines.find(l => l[0] === 'Rent')[1], -1250 * 12 / 52), 'rent not charged at the new rate');
 });
 
 await t.check('Life tab: buying the fixer-upper takes the down payment and starts a mortgage', async () => {
