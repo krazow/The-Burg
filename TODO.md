@@ -4830,6 +4830,77 @@ old ones.
 
 </details>
 
+## Ideas round 58 (pick on the build board)
+
+57 ideas. Details: [docs/ideas/round-58.md](docs/ideas/round-58.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 58: Your own goals and plans</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i58-a01** The five-year plan: three lines you write at the start (M)
+- [ ] 🔴 **i58-a02** Plan lines check themselves: on track, behind, done (S)
+- [ ] 🔴 **i58-a03** The first-of-the-month check-in (S)
+- [ ] 🔴 **i58-a04** Let a goal go, on purpose (S)
+- [ ] 🟠 **i58-a05** A hard year pauses the plan (S)
+- [ ] 🟠 **i58-a06** Why it matters: one reason on each goal (S)
+- [ ] 🟠 **i58-a07** A realistic check when you write a goal (S)
+- [ ] 🔴 **i58-a08** The Waitsburg bucket list: pick five from the valley (M)
+- [ ] 🟠 **i58-a09** Bucket list items wave at you when they're in reach (S)
+- [ ] 🟠 **i58-a10** A bucket list for the second half (S)
+- [ ] 🟡 **i58-a11** Unfinished bucket items pass down (S)
+- [ ] 🔴 **i58-a12** Promise the kids something, out loud (M)
+- [ ] 🟠 **i58-a13** Promises to your partner: a joint plan (M)
+- [ ] 🟠 **i58-a14** A promise to Mom you inherit (M)
+- [ ] 🟠 **i58-a15** Kept promises outweigh kept goals (S)
+- [ ] 🟠 **i58-a16** Say it out loud: tell someone your goal (M)
+- [ ] 🟡 **i58-a17** A resolution buddy at the morning walking group (S)
+- [ ] 🟡 **i58-a18** Quitter's Day: the second Friday in January (S)
+- [ ] 🟠 **i58-a19** Career target with a date and a boss who knows (M)
+- [ ] 🔴 **i58-a20** The game notices when you drift (S)
+- [ ] 🟡 **i58-a21** Small steps: a Journal line at a quarter, half and three-quarters (S)
+- [ ] 🟡 **i58-a22** A Goals filter in the Journal (S)
+- [ ] 🟠 **i58-a23** Plans in the year in review (S)
+- [ ] 🟠 **i58-a24** Goals sized to the game length (S)
+- [ ] 🟡 **i58-a25** Life-stage suggestions on the plan sheet (S)
+- [ ] 🟡 **i58-a26** When two plans pull against each other (M)
+- [ ] 🟠 **i58-a27** Help your kid toward their goal (M)
+- [ ] 🔴 **i58-a28** Plan vs. what happened: the end-screen page (M)
+- [ ] 🟠 **i58-a29** What you didn't plan that mattered most (S)
+- [ ] 🟡 **i58-a30** Plans in the Tattler obituary and the shelf (S)
+- [ ] 🔴 **i58-a31** Guard test: goals never move the score (S)
+- [ ] 🟠 **i58-a32** A goal bot in the balance sim (M)
+
+</details>
+
+<details><summary><b>Ideas 58: Playtest as three people</b> (25 ideas)</summary>
+
+- [ ] 🔴 **i58-b01** [Retiree] Phone Back closes the open sheet, not the game (S)
+- [ ] 🔴 **i58-b02** [Strategist] Multi-week event money pays out week by week (S)
+- [ ] 🔴 **i58-b03** [Strategist] A trip every week stops beating a balanced life (M)
+- [ ] 🟠 **i58-b04** [Retiree] Stat bars stay in sight after you scroll (S)
+- [ ] 🟠 **i58-b05** [Retiree] The event's 📍 line opens that spot on the map (S)
+- [ ] 🟠 **i58-b06** [Retiree] Coming home at 55: an older start for Lifetime (M)
+- [ ] 🟠 **i58-b07** [Parent] The big red button isn't always the one that costs money (S)
+- [ ] 🟠 **i58-b08** [Parent] End Week shows how many weeks in a row (S)
+- [ ] 🟠 **i58-b09** [Strategist] The score-so-far sheet shows each part's scale (S)
+- [ ] 🟠 **i58-b10** [Strategist] What a change is worth, on the score sheet (M)
+- [ ] 🟠 **i58-b11** [Strategist] Sort the job board by "best for your life" (S)
+- [ ] 🟠 **i58-b12** [Parent] Auto answers small events the way you did last time (M)
+- [ ] 🟠 **i58-b13** [Retiree] A first life's job board opens on Waitsburg and Dayton (S)
+- [ ] 🟠 **i58-b14** [Strategist] Side hustle stops being a trap build (M)
+- [ ] 🟡 **i58-b15** [Retiree] Week one says "Just moved in", not "Tumbleweed" (S)
+- [ ] 🟡 **i58-b16** [Retiree] Choices without a price say what they cost you (S)
+- [ ] 🟡 **i58-b17** [Retiree] Result chips read as words for screen readers (S)
+- [ ] 🟡 **i58-b18** [Parent] Fun events ask who watches the kid (S)
+- [ ] 🟡 **i58-b19** [Parent] A quiet "Saved" mark after every week (S)
+- [ ] 🟡 **i58-b20** [Parent] Small event results show as a toast, not a second sheet (S)
+- [ ] 🟡 **i58-b21** [Parent] A standing visit that rides along on skips (M)
+- [ ] 🟡 **i58-b22** [Strategist] Your health plan shows on the Life tab (S)
+- [ ] 🟡 **i58-b23** [Strategist] The recruiter says "next 4 weeks" and which jobs (S)
+- [ ] 🟡 **i58-b24** [Strategist] A build card on the end screen (M)
+- [ ] 🟡 **i58-b25** [Retiree] A simple screen: stats, focus and End Week (L)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
