@@ -3009,6 +3009,85 @@ old ones.
 
 </details>
 
+## Ideas round 34 (pick on the build board)
+
+65 ideas. Details: [docs/ideas/round-34.md](docs/ideas/round-34.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 34: School and kids' lives</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i34-a01** A school record for each kid (M)
+- [ ] 🔴 **i34-a02** Report cards come home in January and June (S)
+- [ ] 🔴 **i34-a03** Parent-teacher conference night (S)
+- [ ] 🟠 **i34-a04** Join the PTO (M)
+- [ ] 🟡 **i34-a05** The PTO cash box is $80 short (S)
+- [ ] 🟠 **i34-a06** The bus stop at the end of the gravel road (S)
+- [ ] 🟡 **i34-a07** Fog delay: school starts two hours late (S)
+- [ ] 🟠 **i34-a08** Transfer your kid to Walla Walla or Dayton schools (M)
+- [ ] 🟠 **i34-a09** Homeschool a kid (L)
+- [ ] 🟡 **i34-a10** Kindergarten round-up (S)
+- [ ] 🟡 **i34-a11** Booster club concession stand (S)
+- [ ] 🟡 **i34-a12** Band trip fundraiser: sell fruit boxes (S)
+- [ ] 🟡 **i34-a13** The spring musical needs a set crew (S)
+- [ ] 🟠 **i34-a14** Homecoming week and the Main Street parade (S)
+- [ ] 🟡 **i34-a15** Field trip chaperone (S)
+- [ ] 🟠 **i34-a16** The school nurse calls: come get your kid (S)
+- [ ] 🟡 **i34-a17** Sports physicals and the August paperwork pile (S)
+- [ ] 🟠 **i34-a18** A trouble at school: your kid is being picked on (S)
+- [ ] 🟡 **i34-a19** Your kid wants to quit (S)
+- [ ] 🔴 **i34-a20** Teen's first summer job (M)
+- [ ] 🟠 **i34-a21** Driver's ed and the insurance bill (S)
+- [ ] 🔴 **i34-a22** FAFSA night in the school library (S)
+- [ ] 🟠 **i34-a23** College applications and fees (M)
+- [ ] 🔴 **i34-a24** Local scholarship night (S)
+- [ ] 🟡 **i34-a25** Help with the scholarship essay (S)
+- [ ] 🟡 **i34-a26** The all-night grad party (S)
+- [ ] 🟠 **i34-a27** Grad open house in the backyard (S)
+- [ ] 🟠 **i34-a28** School counselor: college, trades or the farm (M)
+- [ ] 🟡 **i34-a29** Coach the junior high basketball team (M)
+- [ ] 🟠 **i34-a30** Help with homework at the kitchen table (S)
+- [ ] 🟡 **i34-a31** Parent volunteer hours on the Family card (S)
+- [ ] 🟡 **i34-a32** Yearbook ad for your business (S)
+
+</details>
+
+<details><summary><b>Ideas 34: Buying, renting and housing</b> (33 ideas)</summary>
+
+- [ ] 🔴 **i34-b01** Buying takes weeks: a house hunt with showings, offer and closing (L)
+- [ ] 🔴 **i34-b02** Three listings, each with one hidden catch (M)
+- [ ] 🔴 **i34-b03** Pay for the inspection or waive it (S)
+- [ ] 🟠 **i34-b04** Make an offer: under, at or over asking (M)
+- [ ] 🟡 **i34-b05** The appraisal comes in low (S)
+- [ ] 🟡 **i34-b06** Earnest money and the deal that falls through (S)
+- [ ] 🔴 **i34-b07** Closing costs on top of the down payment (S)
+- [ ] 🔴 **i34-b08** A USDA rural loan: no money down in Waitsburg (L)
+- [ ] 🟠 **i34-b09** First-time buyer class and down payment help (M)
+- [ ] 🟡 **i34-b10** Mortgage insurance until you hit 20% (S)
+- [ ] 🟠 **i34-b11** The escrow letter: taxes and insurance went up (S)
+- [ ] 🟠 **i34-b12** Your insurer won't renew after fire season (M)
+- [ ] 🔴 **i34-b13** A manufactured home on a rented lot (M)
+- [ ] 🟡 **i34-b14** The park is sold to an investor (S)
+- [ ] 🟠 **i34-b15** Put the home on your own land (M)
+- [ ] 🔴 **i34-b16** Housing is scarce: listings come and go (M)
+- [ ] 🟠 **i34-b17** Hear about a place before it's listed (S)
+- [ ] 🟡 **i34-b18** Join the waitlist for the rented house (S)
+- [ ] 🔴 **i34-b19** The landlord is selling: 60 days to move (M)
+- [ ] 🟠 **i34-b20** Month-to-month or sign for a year (S)
+- [ ] 🟡 **i34-b21** The 90-day rent notice: talk, pay or move (S)
+- [ ] 🟠 **i34-b22** Rental help: the housing voucher waitlist (M)
+- [ ] 🔴 **i34-b23** Moving day: hire movers, rent a truck, or call friends (S)
+- [ ] 🔴 **i34-b24** Selling takes time: list it and wait (M)
+- [ ] 🟡 **i34-b25** The buyer's inspection asks for repairs (S)
+- [ ] 🟡 **i34-b26** Buy before you sell: two payments at once (S)
+- [ ] 🟠 **i34-b27** The house that comes with the job (M)
+- [ ] 🟠 **i34-b28** An old owner sells on contract (M)
+- [ ] 🟡 **i34-b29** Buy out your siblings' share of the family house (M)
+- [ ] 🟡 **i34-b30** Your parents help with the down payment (S)
+- [ ] 🟡 **i34-b31** Closing day: keys at the law office (S)
+- [ ] 🟠 **i34-b32** Help page: buying a home in six steps (S)
+- [ ] 🟡 **i34-b33** Senior apartments in Dayton: the waitlist (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
