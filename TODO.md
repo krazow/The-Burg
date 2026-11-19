@@ -2467,6 +2467,84 @@ old ones.
 
 </details>
 
+## Ideas round 27 (pick on the build board)
+
+64 ideas. Details: [docs/ideas/round-27.md](docs/ideas/round-27.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 27: The owner's tools</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i27-a01** This week's odds, and why an event won't fire (S)
+- [ ] 🔴 **i27-a02** Try an event without keeping the result (M)
+- [ ] 🔴 **i27-a03** Dev-touched lives never set best scores (S)
+- [ ] 🔴 **i27-a04** What changed this week: a save diff (S)
+- [ ] 🔴 **i27-a05** Bug codes that replay to the exact week (L)
+- [ ] 🔴 **i27-a06** Balance dashboard from sim runs (L)
+- [ ] 🔴 **i27-a07** Balance diff on every pull request (M)
+- [ ] 🔴 **i27-a08** A cost() check for hand-typed dollars (S)
+- [ ] 🔴 **i27-a09** Button price matches what it charges (S)
+- [ ] 🟠 **i27-a10** Every event has a real map pin (S)
+- [ ] 🟠 **i27-a11** Sheets that fit on a small phone (M)
+- [ ] 🟠 **i27-a12** Every choice writes a journal line (S)
+- [ ] 🟠 **i27-a13** Choice outcome table (M)
+- [ ] 🟡 **i27-a14** Big swings need a tag (S)
+- [ ] 🟡 **i27-a15** Season words match the months (S)
+- [ ] 🟠 **i27-a16** Event catalog page (M)
+- [ ] 🟡 **i27-a17** Content counts by season and place (S)
+- [ ] 🟠 **i27-a18** Score breakdown per bot (S)
+- [ ] 🟠 **i27-a19** Jobs report from the sim (M)
+- [ ] 🟡 **i27-a20** Event money and score impact (M)
+- [ ] 🟡 **i27-a21** Weekly stat lines for one bot life (M)
+- [ ] 🟠 **i27-a22** Ceiling headroom in the sim summary (S)
+- [ ] 🟠 **i27-a23** Try a tuning change in the sim from the command line (M)
+- [ ] 🟡 **i27-a24** All the balance numbers in one file (M)
+- [ ] 🟡 **i27-a25** A fast sim that runs without a browser (L)
+- [ ] 🟠 **i27-a26** Save doctor: paste a save and check it (S)
+- [ ] 🟠 **i27-a27** Pin a moment and come back to it (S)
+- [ ] 🟡 **i27-a28** Walk a story chain step by step (M)
+- [ ] 🟠 **i27-a29** Mistakes show on screen in dev mode (S)
+- [ ] 🟡 **i27-a30** Prices across the decades (S)
+- [ ] 🟡 **i27-a31** New-event starter (S)
+- [ ] 🟡 **i27-a32** Help and data agree (S)
+
+</details>
+
+<details><summary><b>Ideas 27: The long-term vision</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i27-b01** Name the next three versions: 2.0 People, 2.5 Seasons, 3.0 Towns (S)
+- [ ] 🔴 **i27-b02** A 'not building' list in the README (S)
+- [ ] 🔴 **i27-b03** Move Waitsburg's data into one town file (M)
+- [ ] 🔴 **i27-b04** Every save knows its home town (S)
+- [ ] 🟠 **i27-b05** Find every hard-coded 'Waitsburg' in game text (S)
+- [ ] 🟡 **i27-b06** Engine and content in separate folders (L)
+- [ ] 🔴 **i27-b07** A new-town checklist (S)
+- [ ] 🟠 **i27-b08** A town champion for each edition (S)
+- [ ] 🟠 **i27-b09** Dayton edition pilot: a home town 11 miles up the road (L)
+- [ ] 🟡 **i27-b10** 'Pick your town' card that stays hidden until it's real (S)
+- [ ] 🟡 **i27-b11** Walla Walla edition as the 3.0 big-town test (L)
+- [ ] 🟠 **i27-b12** The sim plays every edition before it ships (S)
+- [ ] 🟡 **i27-b13** Your heir can grow up in the next town over (M)
+- [ ] 🔴 **i27-b14** 2.5 'Seasons' starts with a real-year calendar file (M)
+- [ ] 🟠 **i27-b15** Update the calendar every January as a release step (S)
+- [ ] 🔴 **i27-b16** The first seasonal drop: Celebration Days, May 2027 (M)
+- [ ] 🟠 **i27-b17** Drops stay in the game as reruns (S)
+- [ ] 🔴 **i27-b18** The town layer: one switch, off by default (S)
+- [ ] 🟠 **i27-b19** A tiny town file the game can read, never needs (M)
+- [ ] 🟡 **i27-b20** Town averages from the bots, shipped with each release (S)
+- [ ] 🟠 **i27-b21** A community-written chapter: 'The Year the Elevator Closed' (L)
+- [ ] 🟠 **i27-b22** A writing night at the library (S)
+- [ ] 🟡 **i27-b23** A paper form for the NPC plan (S)
+- [ ] 🟡 **i27-b24** Credits inside the moment, not just on a page (S)
+- [ ] 🟡 **i27-b25** A school partnership: one student event pack each spring (M)
+- [ ] 🟠 **i27-b26** A historical-society fact check before history ships (S)
+- [ ] 🟡 **i27-b27** A 'make your own town' guide for other small towns (M)
+- [ ] 🟠 **i27-b28** Decide the license: open engine, Waitsburg content kept (S)
+- [ ] 🟠 **i27-b29** One big thing per version (S)
+- [ ] 🟠 **i27-b30** A size and speed budget the tests enforce (S)
+- [ ] 🟡 **i27-b31** A yearly cut list: retire what nobody uses (S)
+- [ ] 🟡 **i27-b32** A 'State of the Burg' note on the game's birthday (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
