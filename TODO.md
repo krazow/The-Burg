@@ -5881,6 +5881,75 @@ old ones.
 
 </details>
 
+## Ideas round 72 (pick on the build board)
+
+55 ideas. Details: [docs/ideas/round-72.md](docs/ideas/round-72.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 72: Raising kids in a small town</b> (28 ideas)</summary>
+
+- [ ] 🔴 **i72-a01** A bond meter for each kid, fed by family weeks (M)
+- [ ] 🔴 **i72-a02** Each kid keeps five memories of you (M)
+- [ ] 🔴 **i72-a03** Their path at 18 comes from how they grew up (L)
+- [ ] 🔴 **i72-a04** Count on family only works if a kid is close (S)
+- [ ] 🔴 **i72-a05** Balance: kids can't be a free happiness pump (S)
+- [ ] 🟠 **i72-a06** Each kid has a spark: sports, animals, music, books or engines (M)
+- [ ] 🟠 **i72-a07** Family dinners: weeks you're home by six (S)
+- [ ] 🟠 **i72-a08** The younger one remembers what the older got (S)
+- [ ] 🟠 **i72-a09** The kid who's always at your table (S)
+- [ ] 🟠 **i72-a10** The in-home daycare in town has a waitlist (M)
+- [ ] 🟠 **i72-a11** Everyone knows your kid: slip-ups touch your standing (M)
+- [ ] 🟠 **i72-a12** They follow you into your trade, or swear off it (S)
+- [ ] 🟠 **i72-a13** How often they call depends on the bond (S)
+- [ ] 🟠 **i72-a14** Your kid moves back to raise their own kids here (S)
+- [ ] 🟠 **i72-a15** Who's in the room at the end (S)
+- [ ] 🟠 **i72-a16** Tailgate talk: your teen asks what you'd do (S)
+- [ ] 🟠 **i72-a17** One Family page per kid: time, money and memories (M)
+- [ ] 🟡 **i72-a18** Allowance or paid chores: a money lesson that sticks (S)
+- [ ] 🟡 **i72-a19** Pulling a teen out of Waitsburg High mid-way (S)
+- [ ] 🟡 **i72-a20** The child tax credit on your refund (S)
+- [ ] 🟡 **i72-a21** A gap year on the harvest crew (S)
+- [ ] 🟡 **i72-a22** Your kid ships out to basic training (S)
+- [ ] 🟡 **i72-a23** The welding certificate at the community college (S)
+- [ ] 🟡 **i72-a24** The college visit road trip (S)
+- [ ] 🟡 **i72-a25** Match your teen's car savings dollar for dollar (S)
+- [ ] 🟡 **i72-a26** Sixteen and wants to quit school for a job (S)
+- [ ] 🟡 **i72-a27** An 18-year receipt for each kid (S)
+- [ ] 🟡 **i72-a28** A grown kid asks you to co-sign a loan (S)
+
+</details>
+
+<details><summary><b>Ideas 72: The first ten minutes, revisited</b> (27 ideas)</summary>
+
+- [ ] 🔴 **i72-b01** The first Home tip shows before you have a job (S)
+- [ ] 🔴 **i72-b02** No paycheck yet? A one-tap Side hustle in the meantime (S)
+- [ ] 🔴 **i72-b03** "Your cash lasts about 5 weeks" while you're job hunting (S)
+- [ ] 🔴 **i72-b04** Certificate fees paid week by week, not all up front (M)
+- [ ] 🔴 **i72-b05** Index funds keep a month of bills back (S)
+- [ ] 🔴 **i72-b06** Tap the money in the header for this week's in and out (S)
+- [ ] 🟠 **i72-b07** "Can apply" starts switched on until your first job (S)
+- [ ] 🟠 **i72-b08** Out-of-season jobs fold under "Hiring later this year" (S)
+- [ ] 🟠 **i72-b09** A seasonal first job says when it ends, before you take it (S)
+- [ ] 🟠 **i72-b10** Interview answers speak to you: "You have no People skill yet" (S)
+- [ ] 🟠 **i72-b11** Life tab: "Right now" first, "Later in life" folded (M)
+- [ ] 🟠 **i72-b12** No buttons grayed out for years (the will at 18) (S)
+- [ ] 🟠 **i72-b13** Program chips and certificates wait for your first Take classes week (S)
+- [ ] 🟠 **i72-b14** Out and about says "doesn't use your week" until your first visit (S)
+- [ ] 🟠 **i72-b15** Net worth says "cash plus your pickup" while that's all it is (S)
+- [ ] 🟠 **i72-b16** The 0/N badge count waits for your first badge (S)
+- [ ] 🟠 **i72-b17** First-month events mark the careful choice with 🛡️ (S)
+- [ ] 🟠 **i72-b18** A rough first life offers Relaxed, once (M)
+- [ ] 🟠 **i72-b19** A button budget test for the first weeks (M)
+- [ ] 🟠 **i72-b20** After you apply, the Jobs board says "Next chance: next week" (S)
+- [ ] 🟡 **i72-b21** Stat bars show where "doing fine" starts (S)
+- [ ] 🟡 **i72-b22** Insurance card says "the basics are covered" on a new life (S)
+- [ ] 🟡 **i72-b23** The Map switch arrives after your first month (S)
+- [ ] 🟡 **i72-b24** First launch asks one comfort question (S)
+- [ ] 🟡 **i72-b25** Your first town goal is sized for a newcomer (S)
+- [ ] 🟡 **i72-b26** The trip chip says what a trip is for (S)
+- [ ] 🟡 **i72-b27** Focus fade waits until your second month, then speaks in words (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
