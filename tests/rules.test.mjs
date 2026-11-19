@@ -912,6 +912,119 @@ await t.check('business events: at their places, on their days; the doctor and t
   assert(/Mother Hubbard/.test(r.inh[0]) && r.inh[1][1] === 'mainst', JSON.stringify(r.inh));
 });
 
+// ---- flow items (i2-a11, a12, a13, a25, a28, a09) and the End Week double-tap guard ----
+await t.check('a focus plan takes turns week by week, a hand-picked focus pauses it for one week, and job-only picks fall back to Rest', async () => {
+  const r = await ev(() => {
+    fresh('two', { jobId: 'farmhand' }); S.plan = ['work', 'community', 'outdoors']; S.planI = 0; S.focus = planFocus();
+    const seen = [S.focus]; for (let i = 0; i < 4; i++) { weekTick(false); seen.push(S.focus); }
+    S.focus = 'rest'; const pausedTurn = S.planI; weekTick(false); const afterPause = S.focus;
+    S.jobId = null; S.plan = ['work', 'outdoors']; S.planI = 1; weekTick(false); const noJob = S.focus;
+    return { seen, pausedTurn, afterPause, noJob };
+  });
+  assert(r.seen.join() === 'work,community,outdoors,work,community', `rotation ${r.seen}`);
+  assert(r.afterPause === ['work', 'community', 'outdoors'][(r.pausedTurn + 1) % 3], `after a hand pick the plan should carry on, got ${r.afterPause}`);
+  assert(r.noJob === 'rest', `Work extra hours with no job should fall back to Rest, got ${r.noJob}`);
+});
+
+await t.check('a one-item plan still ruts, and a rotation never does', async () => {
+  const r = await ev(() => {
+    fresh('two', { jobId: 'farmhand' }); S.plan = ['rest']; S.focus = planFocus(); weeks(12); const lazy = S.streakN;
+    fresh('two', { jobId: 'farmhand' }); S.plan = ['work', 'community', 'outdoors', 'rest']; S.focus = planFocus(); weeks(12); const mixed = S.streakN;
+    return { lazy, mixed };
+  });
+  assert(r.lazy === 12 && r.mixed === 1, JSON.stringify(r));
+});
+
+await t.check('old saves get an empty plan, and a damaged plan keeps only real focuses', async () => {
+  const r = await ev(() => { fresh('two'); const o = clone(S); delete o.plan; delete o.planI; const a = migrate(o);
+    const b = clone(S); b.plan = ['work', 'nap', 7, 'rest', 'study', 'hustle', 'community']; migrate(b); return { a: [a.plan, a.planI], b: b.plan }; });
+  assert(JSON.stringify(r.a) === '[[],0]', JSON.stringify(r.a));
+  assert(r.b.join() === 'work,rest,study,hustle', r.b.join());
+});
+
+await t.check('Auto until: a season change or a stat dropping below 35 stops Auto, and says why', async () => {
+  const r = await ev(() => {
+    fresh('two', { jobId: 'farmhand' }); playWeeks(AUTO_MAX, AUTO_UNTIL.season.test); closeSheet();
+    const season = { weeks: S.run.weeks, month: curMonth(), said: /Auto stopped: Spring is here/.test($('#sheet').textContent) };
+    fresh('two', { jobId: 'farmhand', health: 36, focus: 'work' }); playWeeks(AUTO_MAX, AUTO_UNTIL.low.test);
+    const low = { weeks: S.run.weeks, health: S.health, said: /Health dropped to/.test($('#sheet').textContent) }; closeSheet();
+    fresh('two', { jobId: 'farmhand', health: 20 }); const st = { money: S.money, happy: S.happy, health: 20, community: S.community };
+    const already = AUTO_UNTIL.low.test(st);       // already below 35 at the start: that alone doesn't stop Auto
+    return { season, low, already };
+  });
+  assert(r.season.month === 2 && r.season.said, JSON.stringify(r.season));
+  assert(r.low.health < 35 && r.low.weeks < 26 && r.low.said, JSON.stringify(r.low));
+  assert(r.already === null, 'a stat already low should not stop Auto at once');
+});
+
+await t.check('skips never change results: the same dice give the same life whether played one week at a time or on Auto', async () => {
+  const r = await ev(() => {
+    const run = auto => { newGame('Same', 'two', 0, { weekly: '2027-W05' }); S.jobId = 'farmhand'; S.noEvents = true; S.plan = ['work', 'community', 'outdoors']; S.focus = planFocus();
+      if (auto) while (S.turn < 8) { playWeeks(8 - S.turn); closeSheet(); } else for (let i = 0; i < 8; i++) { playWeeks(1); closeSheet(); }
+      return [S.turn, Math.round(S.money * 100), Math.round(S.happy * 1000), Math.round(S.health * 1000), Math.round(S.community * 1000)].join(); };
+    const a = run(false), b = run(true); localStorage.clear(); return { a, b };
+  });
+  assert(r.a === r.b, `${r.a} vs ${r.b}`);
+});
+
+await t.check('skips play one-choice events on their own and list them, but stop for a real choice', async () => {
+  const r = await ev(() => {
+    const ok = e => e.choices().filter(c => !c.if || c.if());
+    fresh('two', { jobId: 'farmhand' }); S.noEvents = false; S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1]));   // no milestone card in the way
+    const one = EVENTS.find(e => !e.once && ok(e).length === 1), two = EVENTS.find(e => !e.once && ok(e).length >= 2);
+    const real = rollEvent;
+    rollEvent = () => one; playWeeks(4); const a = { weeks: S.run.weeks, auto: S.run.happened.filter(h => h.auto).length, sheet: !$('#modal').classList.contains('hidden') }; closeSheet();
+    rollEvent = () => two; playWeeks(4); const b = { weeks: S.run.weeks, sheet: !$('#modal').classList.contains('hidden') }; closeSheet();
+    rollEvent = real;
+    return { a, b };
+  });
+  assert(r.a.weeks === 4 && r.a.auto === 4 && !r.a.sheet, `one-choice: ${JSON.stringify(r.a)}`);
+  assert(r.b.weeks === 1 && r.b.sheet, `real choice: ${JSON.stringify(r.b)}`);
+});
+
+await t.check('a double tap on End Week plays one week, not two', async () => {
+  const r = await ev(() => {
+    fresh('two', { jobId: 'farmhand' }); S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1])); PLAY_AT = -1e9; const t0 = S.turn;
+    tapPlay(1, { detail: 1 }); closeSheet(); tapPlay(1, { detail: 2 }); tapPlay(1, { detail: 1 }); closeSheet();
+    const quick = S.turn - t0; PLAY_AT = -1e9; tapPlay(1, { detail: 1 }); closeSheet();
+    return { quick, later: S.turn - t0 };
+  });
+  assert(r.quick === 1, `a double tap played ${r.quick} weeks`);
+  assert(r.later === 2, 'a tap after a moment should play the next week');
+});
+
+await t.check('watching the weeks go by plays the same weeks in steps, and reduced motion or the default plays them instantly', async () => {
+  const r = await ev(async () => {
+    fresh('two', { jobId: 'farmhand' }); tab = 'home'; localStorage.removeItem(PREF_KEY);
+    const def = watchWeeks();
+    setPref('speed', 'watch'); const t0 = S.turn; playWeeks(4);
+    const mid = { rolling: !!ROLL, turn: S.turn - t0, stopBtn: !!$('#stoproll') };
+    await new Promise(res => setTimeout(res, ROLL_MS * 6)); closeSheet();
+    const done = { rolling: !!ROLL, turn: S.turn - t0 };
+    playWeeks(13); await new Promise(res => setTimeout(res, ROLL_MS + 40)); stopRoll(); const stopped = S.turn - t0 - 4; closeSheet();
+    setPref('speed', 'instant');
+    return { def, mid, done, stopped };
+  });
+  assert(r.def === false, 'Instant should be the default');
+  assert(r.mid.rolling && r.mid.turn === 1 && r.mid.stopBtn, `while rolling: ${JSON.stringify(r.mid)}`);
+  assert(!r.done.rolling && r.done.turn === 4, `after rolling: ${JSON.stringify(r.done)}`);
+  assert(r.stopped >= 1 && r.stopped < 13, `Stop should end the roll early (played ${r.stopped})`);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const rm = await ev(() => { setPref('speed', 'watch'); const w = watchWeeks(); fresh('two', { jobId: 'farmhand' }); playWeeks(4); const now = { w, rolling: !!ROLL, turn: S.turn }; closeSheet(); setPref('speed', 'instant'); return now; });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  assert(!rm.w && !rm.rolling && rm.turn === 4, `reduced motion: ${JSON.stringify(rm)}`);
+});
+
+await t.check('the town scene follows the seasons, on the title screen and the town map', async () => {
+  const r = await ev(() => {
+    const s = [0, 3, 6, 9].map(m => scene(m).match(/data-season="(\w+)"/)[1]);
+    fresh('two'); S.date = new Date(2027, 10, 1).getTime(); save(); const title = titleMonth();
+    const map = townSVG().match(/data-season="(\w+)"/)[1];
+    return { s, title, map, differ: scene(0) !== scene(6) };
+  });
+  assert(r.s.join() === 'Winter,Spring,Summer,Fall' && r.differ, r.s.join());
+  assert(r.title === 10 && r.map === 'Fall', JSON.stringify(r));
+});
 // ---- jobs and school (ideas round 3) ----
 await t.check('i3-a05: no new or gated job is a new best job for the simulation\'s job picker (at every school level and vehicle)', async () => {
   const r = await ev(() => {

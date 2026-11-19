@@ -21,7 +21,9 @@ async function clearSheets(max = 6) {
     await b.click();
   }
 }
-async function endWeek() { await page.click('#end'); await clearSheets(); }
+// End Week ignores a second tap within 350 ms of the last week (double-tap guard), so wait like a person would
+async function tapEnd() { await page.waitForFunction(() => performance.now() - PLAY_AT >= 350); await page.click('#end'); }
+async function endWeek() { await tapEnd(); await clearSheets(); }
 
 await page.goto(srv.url, { waitUntil: 'load' });
 
@@ -69,7 +71,8 @@ await t.check('ending a week moves the date forward 7 days and pays you', async 
 await t.check('an event shows choices, and choosing one shows a result', async () => {
   let seen = false;
   for (let i = 0; i < 20 && !seen; i++) {
-    await page.click('#end');
+    const t0 = (await S()).turn; await tapEnd();
+    assert((await S()).turn === t0 + 1, 'End Week did not play a week');
     for (let k = 0; k < 3; k++) {
       const choice = await page.$(`${open} [data-i]`);
       if (choice) {
@@ -88,7 +91,9 @@ await t.check('an event shows choices, and choosing one shows a result', async (
 
 await t.check('⏩ 4 weeks plays up to four weeks and stops early when something happens', async () => {
   const before = (await S()).turn;
-  await page.click('#ff4');
+  assert(!(await page.isVisible('#ff4')), '⏩ 4 should hide behind a long press on a narrow phone');
+  await page.dispatchEvent('#end', 'contextmenu');      // a long press on End Week opens the skip options
+  await page.click(`${open} #sk4`);
   await clearSheets();
   const d = (await S()).turn - before;
   assert(d >= 1 && d <= 4, `skipped ${d} weeks`);
@@ -180,7 +185,7 @@ await t.check('a single-choice event resolves in one tap', async () => {
 await t.check('a long streak of one focus fades, and a rut gets a warning', async () => {
   await page.evaluate(() => { S.focus = 'rest'; S.streakF = 'rest'; S.streakN = 8; render(); });
   assert((await page.textContent('.fdesc')).includes('weeks in a row'), 'Home should show the streak');
-  await page.click('#end');
+  await tapEnd();
   await page.waitForSelector(`${open} >> text=in a rut`);
   await clearSheets();
   await page.click('[data-f=community]');
@@ -254,7 +259,7 @@ await t.check('the List/Map choice is remembered', async () => {
 
 await t.check('the last week ends the game with a Life Score, and Play again returns to the title', async () => {
   await page.evaluate(() => { S.turn = LENGTHS[S.len].turns - 1; });
-  await page.click('#end');
+  await tapEnd();
   await clearSheets(1);
   await page.waitForSelector(`${open} #again`);
   await page.waitForSelector(`${open} >> text=How the score adds up`);
@@ -267,7 +272,7 @@ await t.check('the last week ends the game with a Life Score, and Play again ret
 
 await t.check('a 2-year game shows a year in review at New Year', async () => {
   await page.evaluate(() => { newGame('Yr', 'two', 4); S.jobId = 'farmhand'; S.date = new Date(2027, 11, 27).getTime(); tab = 'home'; render(); });
-  await page.click('#end');
+  await tapEnd();
   for (let i = 0; i < 4 && !(await page.$(`${open} >> text=2027 in review`)); i++) {
     const b = await page.$(`${open} #ok, ${open} [data-i]`); if (!b) break; await b.click();
   }

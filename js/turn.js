@@ -2,16 +2,61 @@
 /* ---------- turn processing (one turn = one week) ---------- */
 function endTurn(){ playWeeks(1); }
 
+let ROLL = null;              // i2-a28: weeks rolling by on screen (null when not)
+let PLAY_AT = -1e9;           // when the last End Week or skip finished, so a double tap plays one week
+const ROLL_MS = 260, LOW_STOP = 35, AUTO_MAX = 26;
+// i2-a11: what ⏭ Auto plays until, besides anything that needs you (an event with a choice, a milestone, New Year)
+const AUTO_UNTIL = {
+  event:  { name:'Something needs me', short:'' },
+  low:    { name:`A stat drops below ${LOW_STOP} (happiness, health or community)`, short:'a stat drops',
+            test: st => { const s = [['happy','Happiness'],['health','Health'],['community','Community']].find(([k]) => S[k] < LOW_STOP && st[k] >= LOW_STOP);
+              return s ? `${s[1]} dropped to ${Math.round(S[s[0]])}.` : null; } },
+  broke:  { name:'Cash drops below $0', short:'cash runs out', test: st => S.money < 0 && st.money >= 0 ? `Cash dropped below $0 (${fmt(S.money)}).` : null },
+  season: { name:'The season changes', short:'the season turns', test: st => SEASON(curMonth()) !== st.season ? `${SEASON(curMonth())} is here.` : null }
+};
+const autoUntil = () => AUTO_UNTIL[prefs().autoUntil] ? prefs().autoUntil : 'event';
+// i2-a28: "watch" shows each week go by; Instant is the default, and reduced motion always plays instantly
+const reducedMotion = () => calmMotion();          // the device setting or Settings → Animations off
+const watchWeeks = () => prefs().speed === 'watch' && !reducedMotion();
+// the End Week and skip buttons come through here: a second tap of a double tap (or a held-down Enter) is ignored
+function tapPlay(n, e){
+  if (ROLL || !S || S.over || (e && e.detail > 1) || performance.now() - PLAY_AT < 350) return;
+  if (n === 'auto') autoPlay(); else playWeeks(n);
+}
+function autoPlay(){ const k = autoUntil(); playWeeks(AUTO_MAX, AUTO_UNTIL[k].test || null); }
+function stopRoll(){ if (!ROLL) return; clearTimeout(ROLL.t); const fin = ROLL.fin; ROLL = null; fin(); }
+
 // Plays up to n weeks. Skips (n > 1) stop when something needs the player: an event with a real choice,
-// a milestone note, a year in review, or the end of the game.
-function playWeeks(n){
+// a milestone note, a year in review, the end of the game, or the player's own Auto stop (i2-a11).
+// One-choice events don't stop a skip: they resolve in place and show up in the week strip's details (i2-a13).
+function playWeeks(n, stop = null){
+  if (ROLL) return;
   S.run = { weeks: 0, money: S.money, happy: S.happy, health: S.health, community: S.community, happened: [] };
-  let res;
-  for (let i = 0; i < n; i++) {
+  const st = { money: S.money, happy: S.happy, health: S.health, community: S.community, season: SEASON(curMonth()) };
+  let res, why = null;
+  const step = () => {
     res = weekTick(n > 1); S.run.weeks++;
-    if (res.ending || res.ev || res.notes.length || res.review) break;
+    if (res.ending || res.ev || res.notes.length || res.review) return true;
+    if (stop && (why = stop(st))) return true;
+    return S.run.weeks >= n;
+  };
+  if (n > 1 && watchWeeks()) {
+    const life = S;
+    ROLL = { n, fin: () => finishRun(res, why, n) };
+    const tick = () => {
+      if (!ROLL || S !== life) { ROLL = null; return; }
+      if (step()) { ROLL = null; return finishRun(res, why, n); }
+      save(); render(); ROLL.t = setTimeout(tick, ROLL_MS);
+    };
+    return tick();
   }
+  while (!step());
+  finishRun(res, why, n);
+}
+function finishRun(res, why, n){
+  PLAY_AT = performance.now();
   save();
+  const notes = why ? [...res.notes, `⏸ Auto stopped: ${why}`] : res.notes;
   const after = () => {
     if (res.ending) return res.debt && canBankrupt() ? bankruptcySheet(res.ending) : finish(res.ending);   // i3-a27
     COUNT_FROM = { money: S.run.money, happy: S.run.happy, health: S.run.health, community: S.run.community };   // i2-a08: stats count up from last week
@@ -24,11 +69,12 @@ function playWeeks(n){
     if (S.newBadges && S.newBadges.length) { const won = S.newBadges; S.newBadges = []; save(); sfx('badge'); buzz('badge'); celebrate(won, next); }
     else { if (!res.ev) { if (n === 1) sfx('week'); buzz('week'); } next(); }   // i2-a04/a05: one small tick per press
     const r = S.run, dm = S.money - r.money, ch = (n, v) => Math.abs(v) < 0.5 ? `${n} unchanged` : `${n} ${v > 0 ? 'up' : 'down'} ${Math.abs(Math.round(v))}`;
-    announce(`${r.weeks > 1 ? r.weeks + ' weeks' : 'Week'} done. Cash ${dm >= 0 ? 'up' : 'down'} ${fmt(Math.abs(dm))}, now ${fmt(S.money)}. ${ch('Happiness', S.happy - r.happy)}, ${ch('health', S.health - r.health)}, ${ch('community', S.community - r.community)}. ${dateLabel()}.`);
+    const own = r.happened.filter(h => h.auto).length;
+    announce(`${r.weeks > 1 ? r.weeks + ' weeks' : 'Week'} done. Cash ${dm >= 0 ? 'up' : 'down'} ${fmt(Math.abs(dm))}, now ${fmt(S.money)}. ${ch('Happiness', S.happy - r.happy)}, ${ch('health', S.health - r.health)}, ${ch('community', S.community - r.community)}. ${own ? `${own} event${own > 1 ? 's' : ''} with no choice to make played out: see the week strip. ` : ''}${dateLabel()}.`);
   };
-  if (res.notes.length) {
+  if (notes.length) {
     sheet(`<h2>${S.run.weeks > 1 ? S.run.weeks + ' weeks later' : 'This week'}</h2>
-      ${res.notes.map(t => `<p><b>${t}</b></p>`).join('')}
+      ${notes.map(t => `<p><b>${t}</b></p>`).join('')}
       <p>${runChips()}</p>
       <button class="btn primary" id="ok">Continue</button>`);
     $('#ok').onclick = () => { closeSheet(); after(); };
@@ -195,6 +241,7 @@ function lineWhy(l, f, j){
 function weekTick(auto){
   const L = LENGTHS[S.len], m = W, k = 0.28;
   const lines = [], notes = [];
+  LIFE_UNDO = [];                                  // i2-a25: a played week can't be undone
   jobWeekStart(notes);                             // i3: an interview's answer, notice, seasons and recalls
   const f = FOCUS[S.focus] || FOCUS.rest, j = S.retired ? null : job();
   if (syncCarpool()) log('Your carpool ended with the job change: you drive alone now.');
@@ -319,7 +366,7 @@ function weekTick(auto){
       if (ch.length === 1) {
         const m0 = S.money, r = ch[0].go();
         if (r) log(`${ev.title}: ${r}`);
-        if (S.run) S.run.happened.push({ ic: ev.ic, title: ev.title, money: S.money - m0 });
+        if (S.run) S.run.happened.push({ ic: ev.ic, title: ev.title, money: S.money - m0, auto: 1 });
         if (S.evPins && S.evPins[0] && S.evPins[0].t === ev.title) S.evPins[0].r = r || '';
         ev = null;
       }
@@ -339,6 +386,7 @@ function weekTick(auto){
   }
   if (S.focus === 'work' && !job()) S.focus = 'rest';
   if (S.focus === 'study' && !canStudy()) S.focus = 'rest';           // i3-a03: a certificate finished after the last diploma
+  if (S.plan && S.plan.length) { S.planI = ((S.planI || 0) + 1) % S.plan.length; S.focus = planFocus(); }   // i2-a12: next week's turn in the rotation
   let review = null;
   const newYear = new Date(S.date).getFullYear();
   if (newYear > oldYear) {

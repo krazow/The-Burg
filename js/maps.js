@@ -145,11 +145,11 @@ function townPlaces(){
   return P;
 }
 function townSVG(){
-  const P = townPlaces();
-  let s = `<svg class="mapsvg" viewBox="0 0 ${TW} ${TH}" role="group" aria-label="Map of Waitsburg">
-    <rect width="${TW}" height="${TH}" style="fill:var(--map-town-bg)"/>
-    <path d="M0 0 H${TW} V60 C320 80 260 50 200 70 S80 60 0 90Z" style="fill:var(--map-field)" opacity=".45"/>
-    <path d="M0 250 C80 235 150 262 220 290 S330 300 ${TW} 285 V${TH} H0Z" style="fill:var(--map-field)" opacity=".4"/>
+  const P = townPlaces(), sc = seasonColors(curMonth());   // i2-a09: the fields around town follow the seasons (dimmed by the night theme)
+  let s = `<svg class="mapsvg" viewBox="0 0 ${TW} ${TH}" role="group" aria-label="Map of Waitsburg in ${SEASON(curMonth()).toLowerCase()}" data-season="${SEASON(curMonth())}">
+    <rect width="${TW}" height="${TH}" class="sfield" fill="${sc.fieldA}"/>
+    <path d="M0 0 H${TW} V60 C320 80 260 50 200 70 S80 60 0 90Z" class="sfield" fill="${sc.fieldB}" opacity=".45"/>
+    <path d="M0 250 C80 235 150 262 220 290 S330 300 ${TW} 285 V${TH} H0Z" class="sfield" fill="${sc.fieldB}" opacity=".4"/>
     <rect x="96" y="96" width="250" height="160" rx="22" style="fill:var(--map-block)"/>
     <path d="M${TW} 52 C350 72 312 96 270 116 S200 148 150 160 S60 196 0 228" fill="none" style="stroke:var(--map-water)" stroke-width="9" stroke-linecap="round"/>
     <path d="M232 ${TH} C230 290 214 250 222 205 S200 152 196 148" fill="none" style="stroke:var(--map-water)" stroke-width="4" stroke-linecap="round"/>
@@ -205,4 +205,4 @@ window.MAPTAP = k => { MAPSEL = MAPSEL === k ? null : k; render(); };
 window.MAPTAB = s => { MAPSIDE = s; MAPSEL = null; render(); };
 window.MAPPREF = v => { setPref('mapView', !!v); MAPSIDE = null; MAPSEL = null; render(); };
 window.TRIPTO = k => tripSheet(k);
-window.MAPFOCUS = f => { S.focus = f; save(); render(); toast(`This week: ${FOCUS[f].name}`); };
+window.MAPFOCUS = f => handFocus(f, true);

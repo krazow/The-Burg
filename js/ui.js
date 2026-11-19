@@ -1,24 +1,46 @@
 // The Burg: ui.js (part 2 of 8; scripts load in order and share one global scope)
 /* ---------- title screen ---------- */
-const SCENE = `<svg class="scene" viewBox="0 0 420 170" aria-hidden="true">
-  <rect width="420" height="170" rx="18" fill="#cfe5f2"/>
-  <circle cx="335" cy="48" r="24" fill="#f4d58d"/>
-  <path d="M0 105 C70 70 130 90 200 80 S330 60 420 85 V170 H0Z" fill="#8fae7e"/>
+// i2-a09: the town scene follows the seasons (colors plus a few seasonal touches), so long games feel time pass
+const SEASON_COLORS = {
+  Winter: { sky:'#dfe9f1', sun:'#f3efdc', hill:'#e9eef2', fieldA:'#dfe5e8', fieldB:'#c5ced4', river:'#9cbfd6' },
+  Spring: { sky:'#d3ebf7', sun:'#f4d58d', hill:'#93c47d', fieldA:'#b5d88a', fieldB:'#86b061', river:'#7fb3d5' },
+  Summer: { sky:'#cfe5f2', sun:'#f4d58d', hill:'#8fae7e', fieldA:'#e9c46a', fieldB:'#c99a3b', river:'#7fb3d5' },
+  Fall:   { sky:'#efe1cc', sun:'#f0c27a', hill:'#b38a52', fieldA:'#dba15a', fieldB:'#a8692f', river:'#7fa9c4' }
+};
+const seasonColors = m => SEASON_COLORS[SEASON(((m % 12) + 12) % 12)];
+function scene(m = new Date().getMonth()){
+  if (!Number.isInteger(m)) m = new Date().getMonth();
+  const se = SEASON(((m % 12) + 12) % 12), c = SEASON_COLORS[se];
+  const extra = {
+    Winter: `<path d="M76 41 L95 19 L114 41 Z" fill="#fff"/><path d="M224 81 L257 56 L290 81 Z" fill="#fff"/>
+      ${[[40,30],[150,22],[190,50],[300,28],[380,40],[60,70],[360,70]].map(([x,y]) => `<circle cx="${x}" cy="${y}" r="2.6" fill="#fff"/>`).join('')}`,
+    Spring: [[30,128],[60,138],[150,132],[200,140],[320,130],[370,136],[110,150]].map(([x,y], i) => `<circle cx="${x}" cy="${y}" r="3.2" fill="${i % 2 ? '#f2a7b8' : '#fff4b0'}"/>`).join(''),
+    Summer: '<circle cx="335" cy="48" r="31" fill="#f4d58d" opacity=".35"/>',
+    Fall: [[170,92],[196,86],[322,92]].map(([x,y], i) => `<rect x="${x-1.5}" y="${y}" width="3" height="16" fill="#6b4a2b"/><circle cx="${x}" cy="${y-2}" r="10" fill="${['#c8642a','#e0a03a','#b5452a'][i]}"/>`).join('')
+  }[se];
+  return `<svg class="scene" viewBox="0 0 420 170" aria-hidden="true" data-season="${se}">
+  <rect width="420" height="170" rx="18" fill="${c.sky}"/>
+  <circle cx="335" cy="48" r="24" fill="${c.sun}"/>
+  <path d="M0 105 C70 70 130 90 200 80 S330 60 420 85 V170 H0Z" fill="${c.hill}"/>
   <rect x="78" y="40" width="34" height="80" fill="#fbf6ea"/><polygon points="78,40 95,20 112,40" fill="#fbf6ea"/>
   <rect x="114" y="62" width="26" height="58" fill="#efe3c8"/><rect x="86" y="50" width="18" height="10" fill="#9b2f1f"/>
   <rect x="230" y="78" width="54" height="40" fill="#9b2f1f"/><polygon points="226,80 257,58 288,80" fill="#6f1f14"/>
   <rect x="250" y="96" width="14" height="22" fill="#fbf6ea"/>
-  <path d="M0 120 C90 100 180 125 260 118 S380 100 420 110 V170 H0Z" fill="#e9c46a"/>
-  <path d="M0 145 C100 130 220 152 320 142 S400 132 420 138 V170 H0Z" fill="#c99a3b"/>
-  <path d="M30 160 C120 150 200 162 300 155" stroke="#7fb3d5" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M0 120 C90 100 180 125 260 118 S380 100 420 110 V170 H0Z" fill="${c.fieldA}"/>
+  <path d="M0 145 C100 130 220 152 320 142 S400 132 420 138 V170 H0Z" fill="${c.fieldB}"/>
+  <path d="M30 160 C120 150 200 162 300 155" stroke="${c.river}" stroke-width="5" fill="none" stroke-linecap="round"/>
+  ${extra}
 </svg>`;
+}
+// the title screen shows the season of the life you played last (or today's, with no lives yet)
+const titleMonth = () => { const g = slots().filter(Boolean).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0], m = g && g.date ? new Date(g.date).getMonth() : NaN; return Number.isInteger(m) ? m : new Date().getMonth(); };
 
 function renderTitle(){
   const all = slots(), used = all.filter(Boolean).length;
   const more = !!prefs().moreOpts;
   let len = 'half';
   $('#app').innerHTML = `<div class="title">
-    ${SCENE}
+    ${scene(titleMonth())}
     <h1>The Burg</h1>
     <div class="sub">Make a life in Waitsburg, Washington.</div>
     ${used ? `<label class="field">Your lives (${used}/${SLOT_COUNT})</label>
@@ -157,7 +179,7 @@ function whatsNew(){
 function loadSlot(i){
   const g = slots()[i]; if (!g) return;
   if (S && !S.over && S.slot !== i) save();
-  S = migrate(clone(g)); S.slot = i; tab = 'home'; MAPSIDE = null; MAPSEL = null; useDice();
+  LIFE_UNDO = []; S = migrate(clone(g)); S.slot = i; tab = 'home'; MAPSIDE = null; MAPSEL = null; useDice();
   closeSheet(); render(); window.scrollTo(0,0);
   if (g.savedAt && Date.now() - g.savedAt >= RECAP_AFTER && S.recapAt !== g.savedAt && !S.practice) recapSheet(g.savedAt);
 }
@@ -363,6 +385,7 @@ function loadSheet(){
   $('#no').onclick = closeSheet;
 }
 function newGame(name, len, slot = 0, opts = {}){
+  LIFE_UNDO = []; PLAY_AT = -1e9;
   S = blankLife(name, len, slot);                 // road and work events (health plan, ski pass, job-hunt help and more) included
   S.bg = BACKGROUNDS[opts.bg] ? opts.bg : 'fresh'; S.mode = MODES[opts.mode] ? opts.mode : 'normal';
   if (BACKGROUNDS[S.bg].set) BACKGROUNDS[S.bg].set(S);
@@ -384,6 +407,7 @@ function render(){
   const pct = L.turns === Infinity ? Math.min(100, (age()-18)/(85-18)*100) : S.turn / L.turns * 100;
   const big = L.turns === Infinity || L.turns >= 104;
   const left = L.turns === Infinity ? `Age ${age()}` : `${L.turns - S.turn} weeks left`;
+  const nar = S.practice ? '' : ' skipx';          // i2-a23: on narrow phones the ⏩ buttons hide behind a long press on End Week
   $('#app').innerHTML = `
   <header class="top">
     <div class="row"><h2>${esc(S.name)}${S.practice ? ' <span class="tag">Practice</span>' : ''}${mode() !== 'normal' && !S.practice ? ` <span class="tag">${MODES[mode()].ic} ${MODES[mode()].name}</span>` : ''}${S.scenario ? ` <span class="tag">🏁</span>` : ''}${S.weekly ? ` <span class="tag">📅</span>` : ''}${S.gen > 1 ? ` <span class="tag">🌳 ${S.gen}</span>` : ''}</h2><div class="hdr-r"><div class="money">${fmt(S.money)}</div><button id="helpbtn" aria-label="Help and tutorial">?</button></div></div>
@@ -392,8 +416,9 @@ function render(){
   </header>
   <main id="main"></main>
   ${tab==='home' ? `${S.run ? `<button class="weekstrip" id="strip" aria-label="What the last ${S.run.weeks > 1 ? S.run.weeks + ' weeks' : 'week'} did: details"><span class="wl">${S.run.weeks > 1 ? `Last ${S.run.weeks} wks` : 'Last week'}</span><span class="wc">${runChips()}</span><span class="more">›</span></button>` : ''}
-    <div class="endbar"><button class="btn primary" id="end">End Week →<small>${FOCUS[S.focus].ic} ${FOCUS_SHORT[S.focus]}</small></button>
-    <button class="btn ghost" id="ff4" aria-label="Skip 4 weeks">⏩ 4</button>${big ? `<button class="btn ghost" id="ff13" aria-label="Skip 13 weeks">⏩ 13</button>` : ''}<button class="btn ghost" id="auto" aria-label="Play until something happens">⏭ Auto</button></div>` : ''}
+    <div class="endbar${ROLL ? ' rolling' : ''}">${ROLL ? `<button class="btn primary" id="stoproll">⏹ Stop<small>${S.run.weeks} of up to ${ROLL.n} weeks</small></button>`
+      : `<button class="btn primary" id="end" aria-keyshortcuts="Shift+Enter" aria-description="Press and hold, or Shift+Enter, for more ways to skip ahead">End Week →<small>${FOCUS[S.focus].ic} ${FOCUS_SHORT[S.focus]}</small></button>
+    <button class="btn ghost${nar}" id="ff4" aria-label="Skip 4 weeks">⏩ 4</button>${big ? `<button class="btn ghost${nar}" id="ff13" aria-label="Skip 13 weeks">⏩ 13</button>` : ''}<button class="btn ghost" id="auto" aria-label="Auto: play until ${autoUntil() === 'event' ? 'something needs you' : AUTO_UNTIL[autoUntil()].short + ' or something needs you'}. Press and hold for options">⏭ Auto</button>`}</div>` : ''}
   <nav><div class="in">
     ${[['home','🏠','Home'],['jobs','💼','Jobs'],['life','🌾','Life'],['log','📜','Journal']].map(([k,ic,l]) =>
       `<button data-tab="${k}" class="${tab===k?'on':''}"${tab===k?' aria-current="page"':''}><span class="ic" aria-hidden="true">${ic}</span>${l}</button>`).join('')}
@@ -404,10 +429,11 @@ function render(){
     tab = b.dataset.tab; MAPSIDE = null; MAPSEL = null; render(); window.scrollTo(0,0);
   });
   $('#helpbtn').onclick = showHelp;
-  if ($('#end')) $('#end').onclick = endTurn;
-  if ($('#ff4')) $('#ff4').onclick = () => playWeeks(4);
-  if ($('#ff13')) $('#ff13').onclick = () => playWeeks(13);
-  if ($('#auto')) $('#auto').onclick = () => playWeeks(26);
+  if ($('#end')) { $('#end').onclick = e => { if (holdDone(e)) return; tapPlay(1, e); }; holdOpens($('#end'), skipSheet); }
+  if ($('#ff4')) $('#ff4').onclick = e => tapPlay(4, e);
+  if ($('#ff13')) $('#ff13').onclick = e => tapPlay(13, e);
+  if ($('#auto')) { $('#auto').onclick = e => { if (holdDone(e)) return; tapPlay('auto', e); }; holdOpens($('#auto'), skipSheet); }
+  if ($('#stoproll')) $('#stoproll').onclick = stopRoll;
   if ($('#strip')) $('#strip').onclick = showRunDetails;
   FIRST_SLOT = 'open';
   ({home:renderHome, jobs:renderJobs, life:renderLife, log:renderLog})[tab]();
@@ -415,6 +441,40 @@ function render(){
   if (COUNT_FROM) { const from = COUNT_FROM; COUNT_FROM = null; if (tab === 'home') animateStats(from); }
   document.querySelectorAll('[data-apply]').forEach(b => b.onclick = () => apply(b.dataset.apply));
   document.querySelectorAll('[data-locked]').forEach(b => b.onclick = () => explainLocked(b.dataset.locked));
+}
+// i2-a23: press and hold (or right-click, or Shift+Enter) opens the skip options; the release after a hold isn't a tap
+function holdOpens(el, fn){
+  let t = null;
+  const clear = () => clearTimeout(t);
+  el.addEventListener('pointerdown', e => { if (e.button) return; el._held = false; clear(); t = setTimeout(() => { el._held = true; fn(); }, 520); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => el.addEventListener(ev, clear));
+  el.addEventListener('contextmenu', e => { e.preventDefault(); clear(); if (!el._held) { el._held = true; fn(); } });
+  el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); e.stopPropagation(); fn(); } });
+}
+const holdDone = e => { const el = e.currentTarget; if (el && el._held) { el._held = false; return true; } return false; };
+// the skip options: ⏩ 4 and ⏩ 13, what ⏭ Auto plays until (i2-a11), and whether to watch the weeks go by (i2-a28)
+function skipSheet(){
+  if (!S || S.over || ROLL) return;
+  const L = LENGTHS[S.len], big = L.turns === Infinity || L.turns >= 104;
+  const k = autoUntil(), sp = watchWeeks() ? 'watch' : 'instant', rm = reducedMotion();
+  const opt = (grp, val, on, label, dis) => `<button class="btn ghost opt${on ? ' on' : ''}" role="radio" aria-checked="${on}" data-${grp}="${val}"${dis ? ' disabled' : ''}>${on ? '✓ ' : ''}${label}</button>`;
+  sheet(`<h2>Skip ahead</h2>
+    <p class="muted">Skips keep your ${S.plan && S.plan.length ? 'focus plan' : 'focus'} and stop when something needs you: an event with a choice, a milestone or New Year. Events with only one way to go play out on their own.</p>
+    <div class="skiprow"><button class="btn primary" id="sk4">⏩ 4 weeks</button>${big ? '<button class="btn primary" id="sk13">⏩ 13 weeks</button>' : ''}</div>
+    <h3 style="margin-top:14px" id="untilh">⏭ Auto plays up to ${AUTO_MAX} weeks, until…</h3>
+    <div role="radiogroup" aria-labelledby="untilh">${Object.entries(AUTO_UNTIL).map(([key, o]) => opt('until', key, k === key, o.name)).join('')}</div>
+    <h3 style="margin-top:14px" id="speedh">While skipping</h3>
+    <div role="radiogroup" aria-labelledby="speedh">${opt('speed', 'instant', sp === 'instant', 'Jump straight there')}${opt('speed', 'watch', sp === 'watch', 'Watch the weeks go by', rm)}</div>
+    ${rm ? '<p class="muted">Your device asks for less motion, so skips jump straight there.</p>' : ''}
+    <button class="btn primary" id="skauto">⏭ Auto now</button>
+    <button class="btn ghost" id="close">Close</button>`);
+  $('#sk4').onclick = () => { closeSheet(); playWeeks(4); };
+  if ($('#sk13')) $('#sk13').onclick = () => { closeSheet(); playWeeks(13); };
+  $('#skauto').onclick = () => { closeSheet(); autoPlay(); };
+  $('#close').onclick = closeSheet;
+  const keep = sel => { const id = document.activeElement && document.activeElement.dataset; skipSheet(); const b = id && $(`#sheet [data-${sel}="${id[sel]}"]`); if (b) setTimeout(() => b.focus(), 40); };
+  document.querySelectorAll('#sheet [data-until]').forEach(b => b.onclick = () => { setPref('autoUntil', b.dataset.until); render(); keep('until'); });
+  document.querySelectorAll('#sheet [data-speed]').forEach(b => b.onclick = () => { setPref('speed', b.dataset.speed); keep('speed'); });
 }
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const statColor = v => v >= 60 ? 'var(--sage)' : v >= 35 ? 'var(--wheat-d)' : 'var(--barn)';
@@ -489,7 +549,7 @@ function renderHome(){
   ${S.health < 30 ? sugg('health', 'rest', `🤒 Health is low (${Math.round(S.health)}).`) : ''}
   ${overtimeTip() ? `<div class="card warn">${overtimeTip()}</div>` : ''}
   ${S.money < -15000 ? `<div class="card warn">⚠️ Your debt is getting dangerous. Below ${fmt(mode() === 'hard' ? -25000 : -40000)} you'll have to leave town${canBankrupt() ? ' or file for bankruptcy' : ''}.</div>` : inCollections() ? `<div class="card warn">📞 Your debt is in collections: daily calls (−happiness) and worse odds on job applications and loans until you're back above $0.</div>` : ''}
-  <div class="card"><div class="focushead"><h3>This week's focus</h3></div>${scenarioLine()}${seasonLine()}${mapToggle()}
+  <div class="card"><div class="focushead"><h3>This week's focus</h3><button class="sm alt" id="planbtn" aria-pressed="${!!(S.plan && S.plan.length)}" aria-label="Focus plan: ${S.plan && S.plan.length ? 'on' : 'off'}">🗓 Plan${S.plan && S.plan.length ? ' ✓' : ''}</button></div>${scenarioLine()}${seasonLine()}${mapToggle()}
     ${prefs().mapView ? mapBlock('T') : `<div class="fgrid">${Object.entries(FOCUS).map(([k,x]) => {
       const dis = (x.needsJob && (!j || S.retired)) || (x.study && !canStudy());
       const eff = dis ? 1 : focusEffect(k, S.streakF === k ? S.streakN + 1 : 1);   // i2-a02: a fading focus says how strong it still is
@@ -497,6 +557,7 @@ function renderHome(){
     }).join('')}</div>
     <div class="fdesc"><b>${f.ic} ${f.name}:</b> ${focusDesc(f)}${previewLine(S.focus)}</div>`}
     ${prefs().mapView ? previewLine(S.focus) : ''}
+    ${planLine()}
     ${outButton()}
   </div></div>
   <aside class="hside" aria-label="At a glance">
@@ -511,10 +572,11 @@ function renderHome(){
   </aside></div>`;
   $('#tripchip').onclick = () => S.trip ? tripSheet(S.trip.city) : tripPicker();
   $('#outbtn').onclick = outSheet;
-  document.querySelectorAll('.fbtn').forEach(b => b.onclick = () => { S.focus = b.dataset.f; save(); render(); const n = document.querySelector(`.fbtn[data-f="${S.focus}"]`); if (n) n.focus({ preventScroll: true }); const p = $('#fprev'); if (p) announce(p.textContent.replace(/\s+/g, ' ').trim()); });
+  document.querySelectorAll('#main .fbtn[data-f]').forEach(b => b.onclick = () => { handFocus(b.dataset.f); const n = document.querySelector(`.fbtn[data-f="${S.focus}"]`); if (n) n.focus({ preventScroll: true }); const p = $('#fprev'); if (p) announce(p.textContent.replace(/\s+/g, ' ').trim()); });
+  $('#planbtn').onclick = planSheet;
   document.querySelectorAll('[data-stat]').forEach(b => b.onclick = () => showStatInfo(b.dataset.stat));
   if ($('#scorenow')) $('#scorenow').onclick = showScoreNow;
-  document.querySelectorAll('[data-sugg]').forEach(b => b.onclick = () => { S.focus = b.dataset.sugg; save(); render(); toast(`This week: ${FOCUS[S.focus].name}`); });
+  document.querySelectorAll('[data-sugg]').forEach(b => b.onclick = () => handFocus(b.dataset.sugg, true));
   document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { tab = b.dataset.go; render(); window.scrollTo(0,0); });
   document.querySelectorAll('[data-cl], [data-next]').forEach(b => b.onclick = () => goTo(b.dataset.cl || b.dataset.next));
   if ($('#clhide')) $('#clhide').onclick = () => { setPref('clHide', true); renderHome(); announce('Checklist hidden. It\'s in the Help guide under Finding your way.'); };
@@ -538,6 +600,38 @@ function installNow(){
     Promise.resolve(e.userChoice).then(c => { if (c && c.outcome === 'accepted') { setPref('installed', true); toast('📲 Installed: find the Burg on your home screen.'); } else setPref('installNo', Date.now()); if (S && tab === 'home') renderHome(); }).catch(() => {});
   } catch(err){}
   if (S && tab === 'home') renderHome();
+}
+// i2-a12: picking a focus by hand; with a plan on, it pauses the plan for this week only
+function handFocus(k, say){
+  S.focus = k; save(); render();
+  const p = planFocus();
+  if (p && p !== k) toast(`Plan paused this week: ${FOCUS[k].name}. Back to the plan next week.`);
+  else if (say) toast(`This week: ${FOCUS[k].name}`);
+}
+function planLine(){
+  if (!S.plan || !S.plan.length) return '';
+  const i = (S.planI || 0) % S.plan.length, p = planFocus();
+  const list = S.plan.map((k, j) => j === i ? `<b>${FOCUS[k].ic} ${FOCUS_SHORT[k]}</b>` : `${FOCUS[k].ic} ${FOCUS_SHORT[k]}`).join(' → ');
+  return `<div class="planline">🗓 Plan: ${list}${p !== S.focus ? ` <span class="muted">(paused this week)</span>` : ''}</div>`;
+}
+function planSheet(){
+  let cur = S.plan && S.plan.length ? [...S.plan] : [S.focus];
+  const draw = () => {
+    sheet(`<h2>🗓 Focus plan</h2>
+      <p class="muted">Pick up to ${PLAN_MAX} focuses that take turns, one a week, so you don't have to change it by hand. Picking a focus yourself pauses the plan for that week. A focus still fades if it comes up week after week, so mix it up.</p>
+      <ol class="planlist">${cur.map((k, i) => `<li><span>Week ${i + 1}: ${FOCUS[k].ic} ${FOCUS[k].name}</span><button class="sm alt" data-rm="${i}" aria-label="Remove week ${i + 1}, ${FOCUS[k].name}">✕</button></li>`).join('') || '<li class="muted">No weeks yet.</li>'}</ol>
+      ${cur.length < PLAN_MAX ? `<p style="margin:8px 0 6px"><b>Add week ${cur.length + 1}:</b></p><div class="fgrid">${Object.entries(FOCUS).map(([k, x]) =>
+        `<button class="fbtn" data-add="${k}" ${planOK(k) ? '' : 'disabled'} aria-label="Add ${x.name}"><span class="ic">${x.ic}</span><b>${FOCUS_SHORT[k]}</b></button>`).join('')}</div>` : ''}
+      <button class="btn primary" id="psave" ${cur.length ? '' : 'disabled'}>Use this plan</button>
+      ${S.plan && S.plan.length ? '<button class="btn ghost" id="poff">Stop the plan</button>' : ''}
+      <button class="btn ghost" id="close">Cancel</button>`);
+    document.querySelectorAll('#sheet [data-rm]').forEach(b => b.onclick = () => { cur.splice(+b.dataset.rm, 1); draw(); });
+    document.querySelectorAll('#sheet [data-add]').forEach(b => b.onclick = () => { cur.push(b.dataset.add); draw(); });
+    $('#psave').onclick = () => { S.plan = cur.slice(0, PLAN_MAX); S.planI = 0; S.focus = planFocus(); save(); closeSheet(); render(); toast(`🗓 Plan on: ${S.plan.map(k => FOCUS_SHORT[k]).join(' → ')}`); };
+    if ($('#poff')) $('#poff').onclick = () => { S.plan = []; S.planI = 0; save(); closeSheet(); render(); toast('Plan off: your focus stays put until you change it'); };
+    $('#close').onclick = closeSheet;
+  };
+  draw();
 }
 const STATINFO = {
   happy: { t:'😊 Happiness', up:['Rest & recharge, Get outside, Show up for town', 'A partner, a dog, kids at home, a nicer home', 'Retirement'],
@@ -734,8 +828,8 @@ function eduCard(){
   </div>`;
 }
 function renderLife(){
-  const h = HOMES[S.home];
-  $('#main').innerHTML = `${S.practice ? '' : goalsCard()}${S.practice ? '' : skillsCard()}${S.practice ? '' : bizCard()}${S.practice ? '' : townLifeCard()}
+  const h = HOMES[S.home], u = undoTop();
+  $('#main').innerHTML = `${u ? `<div class="card undo" role="status"><span>↩ ${esc(u.label)}</span><button class="sm" id="undo" aria-label="Undo: ${esc(u.label)}">Undo</button></div>` : ''}${S.practice ? '' : goalsCard()}${S.practice ? '' : skillsCard()}${S.practice ? '' : bizCard()}${S.practice ? '' : townLifeCard()}
 ${S.edu < 3 ? firstTime('school') : ''}${eduCard()}
   <div class="card"><h3>🏡 Home in Waitsburg</h3>
     ${Object.entries(HOMES).map(([k,x]) => {
@@ -777,6 +871,7 @@ ${S.edu < 3 ? firstTime('school') : ''}${eduCard()}
     <div class="kv"><span>Town council</span><span>${S.council ? 'Council member' : '—'}</span></div>
   </div>`;
   if ($('#goals')) $('#goals').onclick = goalsSheet;
+  if ($('#undo')) $('#undo').onclick = lifeUndo;
   document.querySelectorAll('[data-biz]').forEach(b => b.onclick = () => startBiz(b.dataset.biz));
   if ($('#renew')) $('#renew').onclick = () => { const err = renewLease(); if (err) return toast(err); save(); render(); toast('🌾 Lease renewed for 5 years'); };
   if ($('#bizsell')) $('#bizsell').onclick = () => { sheet(`<h2>Sell your business?</h2><p>You'd get about ${fmt(bizValue())}.</p><button class="btn primary" id="y">Sell</button><button class="btn ghost" id="n">Keep it</button>`); $('#y').onclick = () => { closeSheet(); sellBiz(); }; $('#n').onclick = closeSheet; };
@@ -805,6 +900,43 @@ ${S.edu < 3 ? firstTime('school') : ''}${eduCard()}
   if ($('#wine')) $('#wine').onclick = () => { if (buyWine()) { save(); render(); toast(`🍷 You're in on the ${wineYear()} vintage`); } };
 }
 
+/* i2-a25: undo Life-tab changes until End Week. Each change made from the Life tab (or a sheet it opened) keeps a
+   copy of the life from just before it. Undo puts that copy back, keeping this week's focus. The list is cleared when
+   a week is played (weekTick), when something else changes the life, and after any change that rolled the dice. */
+let LIFE_UNDO = [], undoPre = null;
+const UNDO_MAX = 5;
+const undoKey = () => JSON.stringify({ ...S, savedAt: 0, focus: 0, plan: 0, planI: 0 });
+function undoTop(){
+  const u = LIFE_UNDO[LIFE_UNDO.length - 1];
+  return u && S && u.life === S.slot && u.after === undoKey() ? u : null;   // stale once anything else changed the life
+}
+function lifeUndo(){
+  const u = undoTop(); if (!u) return;
+  const cur = S;
+  S = JSON.parse(u.snap); S.focus = cur.focus; S.plan = cur.plan; S.planI = cur.planI;
+  LIFE_UNDO.pop(); save(); render();
+  toast(`Undone: ${u.label}`); announce(`Undone: ${u.label}`);
+  setTimeout(() => { const b = $('#undo'); if (b) b.focus({ preventScroll: true }); }, 40);
+}
+document.addEventListener('click', e => {
+  if (!S || S.over || S.practice || tab !== 'life' || ROLL || !e.target.closest || !e.target.closest('#main, #sheet') || e.target.closest('#undo')) return;
+  const orig = Math.random, pre = { S, snap: JSON.stringify(S), key: undoKey(), logN: S.log.length, toast: $('#toast').textContent, used: false };
+  pre.wrap = function(){ pre.used = true; return orig.apply(this, arguments); };   // notice any roll of the dice
+  Math.random = pre.wrap; undoPre = pre;
+  setTimeout(() => {
+    if (Math.random === pre.wrap) Math.random = orig;
+    if (undoPre === pre) undoPre = null;
+    if (S !== pre.S) return;
+    if (pre.used) { LIFE_UNDO = []; return; }      // a change with a roll of the dice can't be undone (no rerolls)
+    const k = undoKey(); if (k === pre.key) return;
+    const t = $('#toast').textContent;
+    const label = S.log.length > pre.logN ? S.log[0].m : t && t !== pre.toast ? t : 'your last change';
+    if (LIFE_UNDO.length && LIFE_UNDO[LIFE_UNDO.length - 1].after !== pre.key) LIFE_UNDO = [];   // something else changed the life in between
+    LIFE_UNDO.push({ snap: pre.snap, after: k, label, life: S.slot });
+    LIFE_UNDO = LIFE_UNDO.slice(-UNDO_MAX);
+    if (tab === 'life' && $('#modal').classList.contains('hidden') && !$('#undo')) { const y = window.scrollY; render(); window.scrollTo(0, y); }
+  }, 0);
+}, true);
 function moveHome(k){
   const x = HOMES[k], old = HOMES[S.home];
   const he = old.own ? heBalance() : 0, sale = old.own ? Math.round(S.equity * (1 - SELL_FEE) - he) : 0;   // i3-a21: 6% agent fees; i3-a23: the equity loan is paid off
@@ -882,6 +1014,7 @@ function showMenu(){
     <button class="btn ghost" id="backup">📤 Back up or restore</button>
     <p class="muted" style="margin-top:12px">${esc(S.name)}'s life is in slot ${S.slot+1} and also saves itself after every week.</p>
     <button class="btn ghost" id="settings">⚙️ Settings</button>
+    <button class="btn ghost" id="skipopts">⏩ Skip and Auto options</button>
     <button class="btn ghost" id="help">❓ Help & tutorial</button>
     <button class="btn ghost" id="title">Back to title screen</button>
     <button class="btn ghost" id="retireNow">End this life now (see score)</button>
@@ -890,6 +1023,7 @@ function showMenu(){
   $('#load').onclick = loadSheet;
   $('#backup').onclick = backupSheet;
   $('#settings').onclick = () => settingsSheet(true);
+  $('#skipopts').onclick = skipSheet;
   $('#help').onclick = showHelp;
   $('#title').onclick = () => { save(); closeSheet(); S = null; renderTitle(); };
   $('#retireNow').onclick = confirmRetire;
@@ -948,6 +1082,7 @@ function sheet(html){
 }
 function closeSheet(){
   const wasOpen = !$('#modal').classList.contains('hidden');
+  if (wasOpen && typeof PLAY_AT !== 'undefined') PLAY_AT = -1e9;   // a sheet in between means the next End Week tap is on purpose
   $('#modal').classList.add('hidden');
   if (wasOpen) setTimeout(() => { const el = lastFocus && document.getElementById(lastFocus); if (el && !TUT) el.focus({ preventScroll: true }); }, 30);
 }

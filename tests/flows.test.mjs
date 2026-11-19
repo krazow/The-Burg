@@ -534,6 +534,69 @@ await t.check('H2: Replace on a full board asks first, and Back changes nothing'
   await page.evaluate(() => { closeSheet(); localStorage.clear(); S = null; renderTitle(); });
 });
 
+await t.check('Life tab: Undo takes back a change made this week, one step at a time, until End Week', async () => {
+  await life({ jobId: 'farmhand', money: 20000 }, 'life');
+  const before = await S();
+  await page.click('[data-k401="1"]');
+  await page.click('[data-car="sedan"]'); await page.click(`${open} #y`);
+  await page.waitForSelector('#undo');
+  assert((await page.textContent('.undo')).includes('sedan'), 'the Undo bar should say what it undoes');
+  await page.click('#undo');
+  let s = await S();
+  assert(s.car === before.car && s.k401rate === 1, `first undo: car ${s.car}, 401(k) ${s.k401rate}`);
+  await page.click('#undo');
+  s = await S();
+  assert(s.k401rate === 0 && near(s.money, before.money), 'second undo should restore the 401(k) rate and the cash');
+  assert(!(await page.$('#undo')), 'nothing left to undo');
+  await page.click('[data-k401="2"]'); await page.waitForSelector('#undo');
+  await page.click('[data-tab=home]'); await page.click('#end'); await clearSheets(); await page.click('[data-tab=life]');
+  assert(!(await page.$('#undo')), 'a played week cannot be undone');
+});
+
+await t.check('Life tab: a change that rolled the dice cannot be undone (no rerolls)', async () => {
+  await life({ jobId: 'farmhand' }, 'life');
+  await setup(() => { document.querySelector('#main').insertAdjacentHTML('afterbegin', '<button id="rnd">Roll</button>'); $('#rnd').onclick = () => { S.money += Math.round(Math.random() * 100) + 1; save(); }; });
+  await page.click('#rnd'); await page.waitForTimeout(50); await setup(() => render());
+  assert(!(await page.$('#undo')), 'a dice roll was offered for undo');
+});
+
+await t.check('a long press, Shift+Enter or the Menu opens the skip options; Auto until and the speed are remembered', async () => {
+  await life({ jobId: 'farmhand' }, 'home', 'five');
+  assert(await page.isVisible('#auto') && !(await page.isVisible('#ff4')) && !(await page.isVisible('#ff13')), 'a narrow phone shows End Week and Auto only');
+  await page.focus('#end'); await page.keyboard.press('Shift+Enter');
+  await page.waitForSelector(`${open} #sk13`);
+  assert((await S()).turn === 0, 'Shift+Enter should not play a week');
+  await page.click(`${open} [data-until="season"]`);
+  assert(await page.getAttribute(`${open} [data-until="season"]`, 'aria-checked') === 'true', 'the pick is not shown as checked');
+  await page.click(`${open} #close`);
+  assert(/season turns/.test(await page.getAttribute('#auto', 'aria-label')), 'Auto should say what it plays until');
+  await page.click('#auto'); await clearSheets();
+  const s = await S();
+  assert(s.turn >= 8 && s.turn <= 9 && new Date(s.date).getMonth() === 2, `Auto until the season changes stopped at week ${s.turn}`);
+  await page.click('[data-tab=menu]'); await page.click(`${open} #skipopts`); await page.click(`${open} [data-until="event"]`); await page.click(`${open} #close`);
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await setup(() => render());
+  assert(await page.isVisible('#ff4') && await page.isVisible('#ff13'), 'wide screens keep the ⏩ buttons');
+  await page.setViewportSize({ width: 390, height: 844 });
+});
+
+await t.check('🗓 Plan: build a rotation, End Week follows it, and picking by hand pauses it for a week', async () => {
+  await life({ jobId: 'farmhand' }, 'home');
+  await page.click('#planbtn');
+  await page.click(`${open} [data-rm="0"]`);
+  for (const k of ['work', 'community', 'outdoors']) await page.click(`${open} [data-add="${k}"]`);
+  await page.click(`${open} #psave`);
+  assert((await S()).focus === 'work' && (await page.textContent('.planline')).includes('Plan'), 'plan not on');
+  assert(await page.getAttribute('#planbtn', 'aria-pressed') === 'true', 'Plan toggle not pressed');
+  await page.waitForTimeout(400); await page.click('#end'); await clearSheets();
+  assert((await S()).focus === 'community', 'End Week should move on to the next focus in the plan');
+  await page.click('[data-f=rest]');
+  assert((await page.textContent('.planline')).includes('paused'), 'a hand pick should pause the plan');
+  await page.waitForTimeout(400); await page.click('#end'); await clearSheets();
+  assert((await S()).focus === 'outdoors', 'the plan should pick up again the next week');
+  await page.click('#planbtn'); await page.click(`${open} #poff`);
+  assert(!(await S()).plan.length && !(await page.$('.planline')), 'Stop the plan should turn it off');
+});
 // ---- jobs and school (ideas round 3), by tapping ----
 await t.check('i3-a07/a08: Apply opens an interview; an answer leads to the offer, and a hard-to-fill job lets you ask for more', async () => {
   await life({ edu: 2, community: 60 }, 'jobs');
@@ -568,7 +631,7 @@ await t.check('i3-a01/a09: the Jobs tab shows your ladder; giving notice ends th
   await page.click(`${open} #notice`);
   assert(!(await page.$('#quit')) && (await page.textContent('#main')).includes('last day'), 'notice not shown');
   await page.click('[data-tab=home]');
-  for (let i = 0; i < 3; i++) { await page.click('#end'); await clearSheets(); }
+  for (let i = 0; i < 3; i++) { await page.waitForTimeout(400); await page.click('#end'); await clearSheets(); }   // three presses, not a double tap
   const s = await S();
   assert(s.jobId === null && s.ref && s.ref.k === 'good', JSON.stringify({ job: s.jobId, ref: s.ref }));
 });
@@ -651,15 +714,15 @@ await t.check('i2-a07: "Match phone" follows the dark mode setting; Day and Nigh
 await t.check('i2-a04: a buzz for a week, an event and a badge; none when Vibration is off', async () => {
   await life({ jobId: 'farmhand' });
   await page.evaluate(() => { window.__buzz = []; navigator.vibrate = p => { window.__buzz.push(p); return true; }; S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1])); });
-  await page.click('#end'); await clearSheets();
+  await page.waitForTimeout(400); await page.click('#end'); await clearSheets();   // a second press, not a double tap
   await page.evaluate(() => { S.badges = {}; });
-  await page.click('#end'); await clearSheets();
+  await page.waitForTimeout(400); await page.click('#end'); await clearSheets();   // a second press, not a double tap
   await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Celebration Days')));
   const { got, want } = await page.evaluate(() => ({ got: window.__buzz.map(p => JSON.stringify(p)), want: ['week', 'event', 'badge'].map(k => JSON.stringify(BUZZ[k])) }));
   assert(want.every(w => got.includes(w)), `buzzes: ${got}`);
   await page.click(`${open} [data-i="2"]`); await clearSheets();
   await page.evaluate(() => { setPref('vibrate', 'off'); window.__buzz = []; });
-  await page.click('#end'); await clearSheets();
+  await page.waitForTimeout(400); await page.click('#end'); await clearSheets();   // a second press, not a double tap
   await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Celebration Days')));
   assert((await page.evaluate(() => window.__buzz.length)) === 0, 'buzzed with Vibration off');
   await page.click(`${open} [data-i="2"]`); await clearSheets();
@@ -668,13 +731,13 @@ await t.check('i2-a04: a buzz for a week, an event and a badge; none when Vibrat
 await t.check('i2-a05: sounds are off by default; once on, a week ticks, events chime, and ⏩ stays quiet', async () => {
   await life({ jobId: 'farmhand' });
   await page.evaluate(() => { sfx.last = null; AUDIO = null; });
-  await page.click('#end'); await clearSheets();
+  await page.waitForTimeout(400); await page.click('#end'); await clearSheets();   // a second press, not a double tap
   assert(await page.evaluate(() => sfx.last === null && AUDIO === null), 'a sound played (or audio started) while Sounds is off');
   await page.evaluate(() => { setPref('sound', 'soft'); sfx.last = null; });
-  await page.click('#end'); await clearSheets();
+  await page.waitForTimeout(400); await page.click('#end'); await clearSheets();   // a second press, not a double tap
   assert((await page.evaluate(() => sfx.last)) === 'week' && await page.evaluate(() => !!AUDIO), 'no week sound');
   await page.evaluate(() => { sfx.last = null; S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1])); });
-  await page.click('#ff4'); await clearSheets();
+  await page.waitForTimeout(400); await page.dispatchEvent('#end', 'contextmenu'); await page.click(`${open} #sk4`); await clearSheets();   // ⏩ 4 sits behind a long press on a narrow phone
   assert((await page.evaluate(() => sfx.last)) === null, `⏩ 4 played "${await page.evaluate(() => sfx.last)}"`);
   await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Celebration Days')));
   assert((await page.evaluate(() => sfx.last)) === 'event', 'no event chime');

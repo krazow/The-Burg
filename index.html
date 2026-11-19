@@ -39,6 +39,7 @@ html.night{color-scheme:dark;
   --map-trail:rgba(241,230,212,.7); --map-pin-on:#f7c2b5; --map-pin-off:#9a8c7a;
 }
 html.night .modal{background:rgba(0,0,0,.65)}
+html.night .mapsvg .sfield,html.night .scene{filter:brightness(.45) saturate(.85)}
 html.night .tip{color:var(--soil)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--cream);color:var(--soil);
@@ -195,6 +196,16 @@ main{flex:1;padding:14px 14px calc(var(--safe-b) + 200px)}
 .chint{font-size:0.8438rem;color:var(--accent);font-weight:700}
 @media (prefers-reduced-motion: reduce){.cring.tap,.cfinger{animation:none}}
 .sm,.chip,.maptog button,.maptabs button,.sumchip,.totop,.weekstrip,.statbtn,.toc button{min-height:44px}
+/* i2-a23: narrow phones keep End Week and Auto; the ⏩ skips live behind a long press */
+@media (max-width: 400px){.endbar .skipx{display:none}}
+.endbar #end,.endbar #auto{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+.endbar.rolling #stoproll{flex:1;line-height:1.15}.endbar #stoproll small{display:block;font-size:12.5px;font-weight:600;opacity:.9;margin-top:2px}
+.skiprow{display:flex;gap:8px}.skiprow .btn{flex:1}
+.btn.opt{text-align:left;font-size:0.96875rem;padding:11px 14px;margin-top:8px;min-height:48px}.btn.opt.on{border-color:var(--barn);background:var(--tint)}
+.focushead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}.focushead h3{margin:0}
+.planlist{margin:8px 0;padding-left:0;list-style:none}.planlist li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.planline{margin-top:6px;font-size:.875rem}
+.undo{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .sm,.chip{min-width:44px}.slotbtns .sm{min-width:48px}
 .triph{margin:12px 0 4px;font-size:0.9375rem}
 .stopbtn{display:block;width:100%;text-align:left;border:2px solid var(--line);background:var(--card);border-radius:12px;padding:9px 12px;margin:6px 0;min-height:48px}
