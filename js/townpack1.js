@@ -6,7 +6,7 @@
    ============================================================ */
 // small state these events keep (new lives get it in newGame, older saves in migrate, through EVENT_STATE)
 function townStateA(){ return { cat:false, generator:false }; }
-function ownHome(){ return !!HOMES[S.home].own; }
+// ownHome() comes from js/events.js (pack A, part 2)
 const CAT_MONTHLY = 20;            // W14: a barn cat costs about $20 a month and brings half a dog's cheer
 // W1, W8, W13: helping out counts as a week toward this season's town goal (#77)
 function townGoalHelp(){

@@ -683,7 +683,7 @@ function jobRow(x){
     : `<button class="sm" data-apply="${x.id}" ${S.applied?'disabled':''}>Apply</button>`;
   const tags = [x.remote === 5 ? '🏠 fully remote' : x.remote ? `🏠 ${x.remote} remote days` : '', x.season ? `🗓️ ${seasonWords(x)}` : '', x.union ? '🪪 union' : '',
     x.apprentice && !cur ? `🧰 apprentice, ${x.apprentice.weeks / 52} yrs to full pay` : '', CLEARANCE.includes(x.id) && !cur ? '🔐 clearance' : '', majorFits(x) ? '🎓 your major' : ''].filter(Boolean);
-  return `<div class="kv job${lock ? ' lockedrow' : ''}"><div><div class="t">${cur ? esc(jobTitle(x)) : x.title}</div>
+  return `<div class="kv job${lock ? ' lockedrow' : ''}" data-job="${x.id}"><div><div class="t">${cur ? esc(jobTitle(x)) : x.title}</div>
     <div class="s">${x.where ? esc(x.where) + ', ' : ''}${c.name}${c.miles ? ` · ${c.miles} mi` : ' · no commute'} · pay ${wk(payNow(x, cur))}${c.miles ? `, gas ${wk(commuteCost(c.miles, CARS[S.car], x))}` : ''}${tags.length ? ` · ${tags.join(' · ')}` : ''}</div></div>
     <div style="text-align:right"><div class="pay">${fmt(th)}/wk</div>
     <div class="s">${cur ? 'take-home' : base && Math.abs(diff) >= 1 ? `<span class="${diff>0?'upt':'downt'}">${diff>0?'▲':'▼'} ${fmt(Math.abs(diff))}</span>` : 'take-home'}</div>${btn}</div></div>`;
@@ -830,7 +830,7 @@ function eduCard(){
 }
 function renderLife(){
   const h = HOMES[S.home], u = undoTop();
-  $('#main').innerHTML = `${u ? `<div class="card undo" role="status"><span>↩ ${esc(u.label)}</span><button class="sm" id="undo" aria-label="Undo: ${esc(u.label)}">Undo</button></div>` : ''}${S.practice ? '' : goalsCard()}${S.practice ? '' : skillsCard()}${S.practice ? '' : bizCard()}${S.practice ? '' : townLifeCard()}
+  $('#main').innerHTML = `${u ? `<div class="card undo" role="status"><span>↩ ${esc(u.label)}</span><button class="sm" id="undo" aria-label="Undo: ${esc(u.label)}">Undo</button></div>` : ''}${S.practice ? '' : goalsCard()}${S.practice ? '' : skillsCard()}${S.practice ? '' : bizCard()}${S.practice ? '' : townLifeCard()}${healthCard()}
 ${S.edu < 3 ? firstTime('school') : ''}${eduCard()}
   <div class="card"><h3>🏡 Home in Waitsburg</h3>
     ${Object.entries(HOMES).map(([k,x]) => {
@@ -865,7 +865,7 @@ ${S.edu < 3 ? firstTime('school') : ''}${eduCard()}
     <p class="muted" style="margin:6px 0">Put part of each paycheck away before taxes. At 5% or more your employer adds 3%, yours after ${K401_VEST_MONTHS / 12} years at the job. It grows about 6% a year and pays out when you retire, taxed then, so net worth counts it at ${Math.round(K401_AFTER_TAX * 100)}%.</p>
     <div class="maptog">${K401.map((r,i) => `<button class="${S.k401rate===i?'on':''}" data-k401="${i}">${r*100}%</button>`).join('')}</div>`}
   </div>
-  ${S.practice ? '' : planningCard()}
+  ${planningCard()}
   <div class="card"><h3>❤️ Household</h3>
     <div class="kv"><span>Partner</span><span>${S.partner ? 'Together 💕' : 'Single'}</span></div>
     <div class="kv"><span>Dog</span><span>${S.dog ? 'One good dog 🐕' : 'None'}</span></div>
@@ -887,7 +887,7 @@ ${S.edu < 3 ? firstTime('school') : ''}${eduCard()}
     $('#no').onclick = closeSheet; });
   document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => moveHome(b.dataset.home));
   document.querySelectorAll('[data-car]').forEach(b => b.onclick = () => buyCar(b.dataset.car));
-  if (!S.practice) planningWire();
+  planningWire();
   document.querySelectorAll('[data-k401]').forEach(b => b.onclick = () => { S.k401rate = +b.dataset.k401; save(); renderLife(); toast(`Saving ${K401[S.k401rate]*100}% of each paycheck`); });
   // round 3: insurance, the house, crop and herd, investing
   if ($('#inssheet')) $('#inssheet').onclick = () => insSheet();
@@ -923,7 +923,7 @@ function lifeUndo(){
   setTimeout(() => { const b = $('#undo'); if (b) b.focus({ preventScroll: true }); }, 40);
 }
 document.addEventListener('click', e => {
-  if (!S || S.over || S.practice || tab !== 'life' || ROLL || !e.target.closest || !e.target.closest('#main, #sheet') || e.target.closest('#undo')) return;
+  if (!S || S.over || tab !== 'life' || ROLL || !e.target.closest || !e.target.closest('#main, #sheet') || e.target.closest('#undo')) return;
   const orig = Math.random, pre = { S, snap: JSON.stringify(S), key: undoKey(), logN: S.log.length, toast: $('#toast').textContent, used: false };
   pre.wrap = function(){ pre.used = true; return orig.apply(this, arguments); };   // notice any roll of the dice
   Math.random = pre.wrap; undoPre = pre;

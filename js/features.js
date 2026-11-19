@@ -47,19 +47,19 @@ const debtTripNote = () => S.money < 0 ? `<div class="card warn">💳 You're ${f
 function stopBlocked(s){
   if (s.min21 && age() < 21) return '21 and over';
   if (s.when && !s.when()) return `Only ${s.season}`;
-  if (s.ok && !s.ok()) return s.id === 'tires' ? 'Already on this vehicle' : 'Not now';
+  if (s.ok && !s.ok()) return s.okWhy ? s.okWhy() : s.id === 'tires' ? 'Already on this vehicle' : 'Not now';
   return '';
 }
 const townStops = city => STOPS.filter(s => s.towns.includes(city));
 const tripIsCommute = city => !S.retired && job() && job().city === city;
 const tripGas = city => tripIsCommute(city) ? 0 : CITIES[city].miles * 2 * cost(GAS) / CARS[S.car].mpg;
 // a stop costs more with your partner along on a dinner or a movie
-const stopCost = (s, town) => cost(s.cost) * (s.date && S.partner ? 2 : 1) * (retailPerk(town) ? 1 - RETAIL_DISCOUNT : 1);   // i75-b08: the mall discount
+const stopCost = (s, town) => (s.id === 'dentist' && dentalOn() ? 0 : cost(s.cost)) * (s.date && S.partner ? 2 : 1) * (retailPerk(town) ? 1 - RETAIL_DISCOUNT : 1);   // i75-b08: the mall discount; i74-a08: checkups are free with dental
 // breakdown odds: lower within 6 months of an oil change, higher after a year without one
 function careMult(){ const w = S.turn - (S.svc ?? 0); return w <= 26 ? 0.6 : w <= 52 ? 1 : 1.4; }
 const ditchMult = () => S.tires === S.car ? 0.4 : 1;
 // plan this week's trip; returns '' or why it can't be planned
-function planTrip(city, ids){
+function planTrip(city, ids, van = false){
   if (awaySouth()) return 'You\'re in Arizona until April.';   // i3-a30
   if (!CITIES[city] || city === 'waitsburg') return 'Pick a town to visit.';
   ids = [...new Set(ids)];
@@ -71,17 +71,19 @@ function planTrip(city, ids){
     const why = stopBlocked(s); if (why) return `${s.name}: ${why.toLowerCase()}.`;
   }
   S.trip = { city, stops: ids };
+  if (van && vanFits(city, ids)) S.trip.van = true;   // i74-a05: the county medical van
   return '';
 }
 // runs inside weekTick's money step: adds the trip's lines, does its errands and returns the stat effects
 function tripWeek(lines){
   const t = S.trip; if (!t || !CITIES[t.city]) { S.trip = null; return null; }
   const c = CITIES[t.city], fx = { happy:0, health:0, community:0 }, done = [];
-  const gas = tripGas(t.city);
+  const van = vanTrip(t), gas = van ? 0 : tripGas(t.city);
   if (gas) lines.push([`Trip to ${c.name}: gas`, -gas, `${c.miles} miles each way at ${CARS[S.car].mpg} mpg.`]);
+  if (van) lines.push(['County medical van', -cost(VAN_FARE), 'A seat on the county van to your appointments: no driving, but it takes the whole day.']);
   for (const id of t.stops) {
     const s = stopById(id); if (!s || stopBlocked(s)) continue;
-    if (s.cost) lines.push([s.name, -stopCost(s, t.city), `A stop on your trip to ${c.name}${s.date && S.partner ? ', for two' : ''}${retailPerk(t.city) ? ', with your 10% employee discount' : ''}.`]);
+    if (stopCost(s, t.city)) lines.push([s.name, -stopCost(s, t.city), `A stop on your trip to ${c.name}${s.date && S.partner ? ', for two' : ''}${retailPerk(t.city) ? ', with your 10% employee discount' : ''}.`]);
     const half = S.turn - ((S.stopLast || {})[id] ?? -99) < REPEAT_WEEKS ? 0.5 : 1;   // again so soon: less special
     let mult = half;
     if (s.date && S.partner) mult += 0.4;
@@ -92,15 +94,16 @@ function tripWeek(lines){
     if (s.id === 'oil') S.svc = S.turn;
     if (s.id === 'tires') S.tires = S.car;
     if (s.id === 'dentist') S.dentist = S.turn;
+    stopDone(s, fx);                                  // i74: shots, physical therapy, a respite weekend
     (S.stopLast = S.stopLast || {})[id] = S.turn;
     done.push(s.name.charAt(0).toLowerCase() + s.name.slice(1));
   }
   S.trip = null;
   if (!done.length) return null;
   (S.towns = S.towns || {})[t.city] = 1;
-  log(`Trip to ${c.name}${tripIsCommute(t.city) ? ' on the way home from work' : ''}: ${done.join(', ')}.`, 'trip');
+  log(`Trip to ${c.name}${van ? ' on the county medical van' : tripIsCommute(t.city) ? ' on the way home from work' : ''}: ${done.join(', ')}.`, 'trip');
   if (S.run) S.run.happened.push({ ic:'🚗', title:`Trip to ${c.name}`, money:0 });
-  return { fx, away: !tripIsCommute(t.city), city: t.city };
+  return { fx, away: van || !tripIsCommute(t.city), city: t.city, van };
 }
 
 /* ---- trip screens ---- */
@@ -119,11 +122,13 @@ function tripSheet(city){
   const c = CITIES[city], gas = tripGas(city);
   const max = tripMax();
   let sel = S.trip && S.trip.city === city ? S.trip.stops.filter(id => !stopBlocked(stopById(id))).slice(0, max) : [];
+  const vanShown = city === 'wallawalla' && vanOK();
+  let van = vanShown && !!(S.trip && S.trip.van);
   const groups = Object.entries(STOP_KINDS).map(([kind, label]) => {
     const list = townStops(city).filter(s => s.kind === kind); if (!list.length) return '';
     return `<h3 class="triph">${label}</h3>` + list.map(s => {
       const why = stopBlocked(s);
-      const what = [s.cost ? fmt(stopCost(s, city)) : 'Free', s.fx ? fxWords(s.fx) : ''].filter(Boolean).join(' · ');
+      const what = [stopCost(s, city) ? fmt(stopCost(s, city)) : 'Free', s.fx ? fxWords(s.fx) : ''].filter(Boolean).join(' · ');
       return `<button class="stopbtn${sel.includes(s.id) ? ' on' : ''}" data-stop="${s.id}" aria-pressed="${sel.includes(s.id)}" ${why ? 'disabled' : ''}>
         <span class="t">${s.ic} ${s.name}</span><span class="s">${why ? why : what}${s.date && S.partner && !why ? ' · for two' : ''}</span>${s.note && !why ? `<span class="s">${s.note}</span>` : ''}</button>`;
     }).join('');
@@ -133,12 +138,15 @@ function tripSheet(city){
     ${debtTripNote()}
     ${S.trip && S.trip.city !== city ? `<p class="muted">This replaces your trip to ${CITIES[S.trip.city].name}.</p>` : ''}
     ${groups}
+    ${vanShown ? `<h3 class="triph">🚐 Getting there</h3><button class="stopbtn" id="van" aria-pressed="${van}"><span class="t">🚐 Ride the county medical van</span><span class="s">${fmtc(VAN_FARE)} instead of gas · takes the whole day: your focus works at ${VAN_TIME * 100}%</span><span class="s">For appointment stops only.</span></button>` : ''}
     <p id="tripsum" class="tripsum" aria-live="polite"></p>
     <button class="btn primary" id="go">Plan this trip</button>
     ${S.trip ? '<button class="btn ghost" id="cancel">Cancel my trip</button>' : ''}
     <button class="btn ghost" id="back">Other towns</button>`);
   const sum = () => {
-    const total = gas + sel.reduce((a, id) => a + stopCost(stopById(id), city), 0);
+    const vanOn = van && vanFits(city, sel);
+    if ($('#van')) { $('#van').classList.toggle('on', vanOn); $('#van').setAttribute('aria-pressed', vanOn); $('#van').disabled = !!sel.length && !vanFits(city, sel); }
+    const total = (vanOn ? cost(VAN_FARE) : gas) + sel.reduce((a, id) => a + stopCost(stopById(id), city), 0);
     $('#tripsum').textContent = sel.length ? `${sel.length} of ${max} stop${max === 1 ? '' : 's'} · about ${fmt(total)} in all` : `Pick up to ${max} stop${max === 1 ? '' : 's'}.`;
     $('#go').disabled = !sel.length;
     document.querySelectorAll('[data-stop]').forEach(b => {
@@ -152,11 +160,12 @@ function tripSheet(city){
     sel = sel.includes(id) ? sel.filter(x => x !== id) : sel.length < max ? [...sel, id] : sel; sum();
   });
   $('#go').onclick = () => {
-    const err = planTrip(city, sel); if (err) return toast(err);
+    const err = planTrip(city, sel, van); if (err) return toast(err);
     save(); closeSheet(); render(); toast(`🚗 Trip to ${c.name} planned for this week`);
   };
   if ($('#cancel')) $('#cancel').onclick = () => { S.trip = null; save(); closeSheet(); render(); toast('Trip canceled'); };
   $('#back').onclick = tripPicker;
+  if ($('#van')) $('#van').onclick = () => { van = !van; sum(); };
   sum();
 }
 const tripChip = () => S.trip ? `🚗 Trip: ${CITIES[S.trip.city].name} (${S.trip.stops.length})` : '🚗 Plan a trip';
@@ -504,7 +513,7 @@ const WINE_COST = 2500, WINE_WEEKS = 156, WINERY = 'Old Kiln Cellars', BROKER = 
 const WINE_Q = { great:{ x:1.5, t:'a great vintage, and the wine sold out' }, good:{ x:1.25, t:'a good, solid vintage' }, smoke:{ x:0.75, t:'wildfire smoke got into the grapes, and the wine sold cheap' } };
 const COLLECT_WEEKS = 12, COLLECT_FEE = 150, COLLECT_HAPPY = 0.8, BK_WEEKS = 364, BK_PENALTY = 8, BK_RATE = 3;
 const INS_PHONE = 75, INS_AUTO = { full:70, liab:35 }, INS_RENTERS = 15, INS_HOME = 15, INS_DED = { 500:15, 1000:0, 2500:-10 }, AUTO_DED = 500, RENTERS_DED = 250;
-const MONEY_STATE = () => ({ ins:{ auto:'full', renters:true, ded:1000 }, homeIdx:1, homeGrow:HOME_GROW, rate:BASE_RATE, mortRate:null,
+const MONEY_STATE = () => ({ ins:{ auto:'full', renters:true, ded:1000, dental:false, amb:false }, homeIdx:1, homeGrow:HOME_GROW, rate:BASE_RATE, mortRate:null,
   heLeft:0, hePay:0, heRate:0, stocks:0, mkt:{ y:2027, bad:false, dropAt:null }, wine:[], smoke:null, wheatPrice:WHEAT_BASE,
   debtWeeks:0, bk:null, ptaxDone:null, due:[], monKey:2027 * 12 });
 
@@ -512,7 +521,7 @@ const MONEY_STATE = () => ({ ins:{ auto:'full', renters:true, ded:1000 }, homeId
 function insParts(){
   const i = S.ins || {}, own = !!HOMES[S.home].own, ded = INS_DED[i.ded] != null ? i.ded : 1000;
   return [['📱 Phone', INS_PHONE], [i.auto === 'liab' ? '🛻 Vehicle: liability only' : '🛻 Vehicle: full coverage', INS_AUTO[i.auto === 'liab' ? 'liab' : 'full']],
-    own ? [`🏡 Homeowners ($${ded.toLocaleString()} deductible)`, INS_HOME + INS_DED[ded]] : [i.renters === false ? '🏠 No renters insurance' : '🏠 Renters insurance', i.renters === false ? 0 : INS_RENTERS]];
+    own ? [`🏡 Homeowners ($${ded.toLocaleString()} deductible)`, INS_HOME + INS_DED[ded]] : [i.renters === false ? '🏠 No renters insurance' : '🏠 Renters insurance', i.renters === false ? 0 : INS_RENTERS], ...insExtras()];   // i74-a04/a08
 }
 const insMonthly = () => insParts().reduce((a, [, v]) => a + v, 0);
 // what a loss costs you after insurance: 'auto' (your vehicle), 'home' (an owned house; a landlord covers a rented one), 'stuff' (your belongings)
@@ -533,11 +542,16 @@ function insSheet(focusSel){
       <p class="muted">Storms, fires and break-ins: you pay up to the deductible, insurance pays the rest. A $500 deductible costs ${fmtc(INS_DED[500])} more a month; $2,500 saves ${fmtc(-INS_DED[2500])}.</p>`
       : `<h3>🏠 Renters insurance</h3><div class="maptog" role="group" aria-label="Renters insurance">${opt('renters', true, `Yes ${fmtc(INS_RENTERS)}/mo`)}${opt('renters', false, 'No')}</div>
       <p class="muted">Your landlord insures the building, not your things. Renters insurance pays for a break-in or a fire after a ${fmtc(RENTERS_DED)} deductible.</p>`}
+    <h3>🩺 Medical</h3><p class="muted">${healthMonthly() ? `Your health plan is ${fmtc(healthMonthly())}/mo, paid as its own Health care bill.` : 'Apple Health covers you for $0 right now.'} It doesn't cover teeth or the ambulance ride: those two are add-ons here.</p>
+    <h3>🦷 Dental</h3><div class="maptog" role="group" aria-label="Dental coverage">${opt('dental', true, `Yes ${fmtc(DENTAL)}/mo`)}${opt('dental', false, 'No')}</div>
+    <p class="muted">Yearly dentist checkups are free with it, and a cracked tooth costs ${fmtc(TOOTH_DENTAL)} instead of ${fmtc(TOOTH_BILL)}.</p>
+    <h3>🚑 Ambulance district</h3><div class="maptog" role="group" aria-label="Ambulance district membership">${opt('amb', true, `Member ${fmtc(AMB_YEAR)}/yr`)}${opt('amb', false, 'No')}</div>
+    <p class="muted">The volunteer ambulance's membership: members pay nothing for the ride on a hospital trip. Without it the ride is ${fmtc(AMB_RIDE)} on top of the stay.</p>
     ${insParts().map(([l, v]) => `<div class="kv"><span>${l}</span><span>${fmtc(v)}/mo</span></div>`).join('')}
     <div class="kv"><span><b>Insurance & phone</b></span><span><b>${wk(cost(insMonthly()))}</b></span></div>
     <button class="btn primary" id="ok">Done</button>`);
   document.querySelectorAll('#sheet [data-ins]').forEach(b => b.onclick = () => {
-    const g = b.dataset.ins, v = b.dataset.v; S.ins[g] = g === 'renters' ? v === 'true' : g === 'ded' ? +v : v; save();
+    const g = b.dataset.ins, v = b.dataset.v; S.ins[g] = ['renters', 'dental', 'amb'].includes(g) ? v === 'true' : g === 'ded' ? +v : v; save();
     insSheet(`[data-ins="${g}"][data-v="${v}"]`); announce(`Insurance and phone now ${wk(cost(insMonthly()))}.`);
   });
   $('#ok').onclick = () => { closeSheet(); render(); };
@@ -1423,6 +1437,7 @@ const PLAN_DUE = [
     choices:() => [{label:'Hand over the certificate', go:() => { S.scholar.y = new Date(S.date).getFullYear(); S.scholar.n++; adj({ community:3, happy:2 });
       return `The whole gym clapped. That's ${S.scholar.n} graduate${S.scholar.n === 1 ? '' : 's'} helped so far.`; }}]}
 ];
+PLAN_DUE.push(...LEAGUE_STEPS);   // W22: the Little League season's later steps (js/events.js)
 // i3-a34: the odd guest, in the weeks right after a hosting weekend
 const PLAN_EVENTS = [
   { ic:'🛏️', title:'Wine weekend guests', w:3, when:() => S.roomHost && S.turn - (S.hostLast ?? -99) <= 1,

@@ -184,7 +184,7 @@ await t.check('every event\'s every choice works and shows a result', async () =
   }
   assert(tried >= titles.length, `only ${tried} choices across ${titles.length} events`);
   const cats = await page.evaluate(() => ['road', 'work'].map(c => EVENTS.filter(e => e.cat === c).length));
-  assert(cats[0] === 31 && cats[1] === 32, `expected 31 road and 32 work events (with the contract vote and the federal shutdown), got ${cats}`);
+  assert(cats[0] === 31 && cats[1] === 34, `expected 31 road and 34 work events (with the contract vote, the federal shutdown, a personal day and desk stiffness), got ${cats}`);
   console.log(`     (${tried} choices across ${titles.length} events)`);
 });
 
@@ -510,7 +510,7 @@ await t.check('Journal filter chips: Money, Events, Milestones and Trips, with o
 });
 
 await t.check('Out and about: visit every business from Home, with its card, limits and results', async () => {
-  const ids = await page.evaluate(() => PLACES.map(p => p.id));
+  const ids = await page.evaluate(() => PLACES.filter(p => !(p.hide && p.hide())).map(p => p.id));   // the senior center shows from 65 (health tests)
   for (const id of ids) {
     await life({ jobId: 'farmhand', money: 5000, ageMonths: 30 * 12, partner: false }, 'home');
     await setup(() => { S.date = new Date(2027, 4, 10).getTime(); S.turn = 4; render(); });
@@ -1172,6 +1172,94 @@ await t.check('i3-a24: the retire button counts a vested pension', async () => {
   await page.click('#retire'); await page.click('[data-tab=home]'); await page.click('#end'); await clearSheets();
   const l = Object.fromEntries((await S()).last.lines);
   assert(l['Pension'] > 0 && l['Social Security'] > 0, JSON.stringify(l));
+});
+
+// Event pack A, part 2 (W16–W30): every choice of every new town event, with the life each one needs
+await t.check('W16–W30: every choice of the new Waitsburg events works, costs rise with prices, and each has a place', async () => {
+  const W2 = ['Snow day', 'Community potluck at Town Hall', '"Lost dog" poster', 'Pour beer at the Celebration Days beer garden', 'Town Hall roof fundraiser',
+    'Adopt a Main Street flower basket', 'Little League needs a coach', 'A cross-country cyclist asks for water', 'Late frost kills the garden',
+    'Christmas lights contest', "Neighbor's tree takes out your fence", 'Barn dance at the fairgrounds', 'Wild turkeys strut down Main Street',
+    'Graduation party invitations', 'Rattlesnake in the woodpile'];
+  const info = await page.evaluate(W2 => W2.map(t => { const e = EVENTS.find(x => x.title === t); return e && { cat: e.cat || 'town', place: !!EVENT_PLACE[t] }; }), W2);
+  info.forEach((x, i) => assert(x && x.cat === 'town' && x.place, `${W2[i]}: missing, not a town event, or no place`));
+  // a homeowner with Handy 2 and Cook 2, single, so every choice is open; prices at 1.5x the 2027 level
+  const base = { home: 'fixer', money: 20000, community: 50, ageMonths: 30 * 12, col: 1.5, partner: false, skills: { handy: 24, cook: 24 } };
+  let tried = 0;
+  for (const title of W2) {
+    await life(base, 'home', 'life');
+    const n = await page.evaluate(t => EVENTS.find(e => e.title === t).choices().filter(c => !c.if || c.if()).length, title);
+    const want = await page.evaluate(t => EVENTS.find(e => e.title === t).choices().length, title);
+    assert(n === want, `${title}: only ${n} of ${want} choices open`);
+    for (let i = 0; i < n; i++) {
+      await life(base, 'home', 'life');
+      await page.evaluate(t => showEvent(EVENTS.find(e => e.title === t)), title);
+      assert((await page.textContent('#sheet .evplace')).includes('Waitsburg') || (await page.textContent('#sheet .evplace')).includes('Home'), `${title}: no place shown`);
+      const label = await page.textContent(`${open} [data-i="${i}"]`);
+      const m = label.match(/-\$([\d,]+)/);
+      const m0 = (await S()).money;
+      await page.click(`${open} [data-i="${i}"]`);
+      const ok = await page.$(`${open} #ok`);
+      const text = ok ? await page.textContent('#sheet') : await page.textContent('#toast');
+      assert(text && text.trim().length > 3, `${title} choice ${i + 1} showed no result`);
+      if (ok) await ok.click();
+      const spent = m0 - (await S()).money;
+      // a cost in the label is today's price (1.5x), and that's what the choice takes (luck can add a reward or a bill on top)
+      if (m && !/Handle it|Search|Go big/.test(label)) assert(Math.abs(spent - Number(m[1].replace(/,/g, ''))) <= 1, `${title}: label ${label} but spent ${spent}`);
+      tried++;
+    }
+  }
+  assert(tried === 32, `expected 32 choices, tried ${tried}`);
+  // who and when: renters never lose a garden or a fence, a dog owner skips the poster, the beer garden is 21+ in May
+  const gate = await page.evaluate(() => {
+    const ev = t => EVENTS.find(e => e.title === t);
+    S.home = 'room'; const renter = ev('Late frost kills the garden').when(4);
+    S.home = 'fixer'; const owner = ev('Late frost kills the garden').when(4), april = ev('Late frost kills the garden').when(3);
+    S.dog = true; const dog = ev('"Lost dog" poster').when(5); S.dog = false;
+    S.ageMonths = 20 * 12; const young = ev('Pour beer at the Celebration Days beer garden').when(4); S.ageMonths = 30 * 12;
+    const may = ev('Pour beer at the Celebration Days beer garden').when(4);
+    S.community = 25; const lowCom = ev('Little League needs a coach').when(2); S.community = 50;
+    const noWind = ev("Neighbor's tree takes out your fence").when(5);
+    S.evCd['Windstorm'] = S.turn + 6; const wind = ev("Neighbor's tree takes out your fence").when(5);
+    S.home = 'house'; const windRenter = ev("Neighbor's tree takes out your fence").when(5); S.home = 'fixer';
+    return { renter, owner, april, dog, young, may, lowCom, noWind, wind, windRenter };
+  });
+  assert(!gate.renter && gate.owner && !gate.april && !gate.dog && !gate.young && gate.may && !gate.lowCom && !gate.noWind && gate.wind && !gate.windRenter, JSON.stringify(gate));
+  // W16: shoveling counts toward the winter town goal
+  await life({ ...base, date: new Date(2028, 0, 10).getTime() }, 'home', 'life');
+  await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Snow day')));
+  await page.click(`${open} [data-i="1"]`); await clearSheets();
+  assert(((await S()).sgoal || {}).prog === 1, 'shoveling did not count toward the winter goal');
+  // W27: a barn dance while single makes the next "catches your eye" likelier, once
+  await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Barn dance at the fairgrounds')));
+  await page.click(`${open} [data-i="0"]`); await clearSheets();
+  assert((await S()).danceBoost === true, 'no barn-dance boost');
+  await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Someone catches your eye')));
+  await page.click(`${open} [data-i="0"]`); await clearSheets();
+  assert((await S()).danceBoost === false, 'the boost was not used up');
+});
+
+await t.check('W22: the Little League season runs coach → losing streak → comeback → season party, each when it\'s due', async () => {
+  for (const [streak, party] of [[0, 0], [1, 1]]) {
+    await life({ community: 50, money: 5000, date: new Date(2028, 2, 6).getTime() }, 'home', 'life');
+    await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Little League needs a coach')));
+    await page.click(`${open} [data-i="0"]`); await clearSheets();
+    assert(await page.evaluate(() => leagueOn() && !EVENTS.find(e => e.title === 'Little League needs a coach').when(2)), 'coaching did not start the season');
+    for (const [title, pick] of [['A losing streak', streak], ['The comeback', 0], ['The season party', party]]) {
+      const due = await page.evaluate(() => { S.turn = S.chains.league.at; const d = planDue(curMonth()); return d && d.title; });
+      assert(due === title, `expected ${title} to be due, got ${due}`);
+      await page.evaluate(t => showEvent(PLAN_DUE.find(e => e.title === t)), title);
+      const n = await page.$$eval(`${open} [data-i]`, b => b.length);
+      assert(pick < n, `${title}: no choice ${pick + 1}`);
+      await page.click(`${open} [data-i="${pick}"]`); await clearSheets();
+    }
+    const end = await page.evaluate(() => ({ step: S.chains.league.step, on: leagueOn(), again: EVENTS.find(e => e.title === 'Little League needs a coach').when(2) }));
+    assert(end.step === 99 && !end.on && end.again, JSON.stringify(end));
+  }
+  // skipping never starts the story
+  await life({ community: 50, date: new Date(2028, 2, 6).getTime() }, 'home', 'life');
+  await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Little League needs a coach')));
+  await page.click(`${open} [data-i="1"]`); await clearSheets();
+  assert(!(await page.evaluate(() => leagueOn() || !!planDue(curMonth()))), 'skipping started the season');
 });
 
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });
