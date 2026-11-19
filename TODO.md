@@ -3386,6 +3386,82 @@ old ones.
 
 </details>
 
+## Ideas round 39 (pick on the build board)
+
+62 ideas. Details: [docs/ideas/round-39.md](docs/ideas/round-39.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 39: Bundles and release plans 2</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i39-a01** Bundle: Bug-fix sweep: backgrounds, challenges and the heir's ride (M)
+- [ ] 🔴 **i39-a02** Bundle: Balance sweep: careless play fixes (M)
+- [ ] 🔴 **i39-a03** Bundle: Balance sim: careless bots and hard ceilings (M)
+- [ ] 🟠 **i39-a04** Bundle: Hard mode that's really hard (M)
+- [ ] 🟠 **i39-a05** Bundle: Challenges retuned (M)
+- [ ] 🔴 **i39-a06** Bundle: Late life that feels late (L)
+- [ ] 🟠 **i39-a07** Bundle: Family money, the family home and downsizing (M)
+- [ ] 🔴 **i39-a08** Bundle: Backgrounds that score alike (M)
+- [ ] 🟠 **i39-a09** Bundle: Farm kid and Grad stories (M)
+- [ ] 🟠 **i39-a10** Bundle: Transplant and Young parent stories (M)
+- [ ] 🔴 **i39-a11** Bundle: Open as you go: one unlock table (M)
+- [ ] 🟠 **i39-a12** Bundle: Unlock moments in play (M)
+- [ ] 🔴 **i39-a13** Bundle: Shared places wear down and get cared for (L)
+- [ ] 🟠 **i39-a14** Bundle: Library, pool and gym through the year (M)
+- [ ] 🔴 **i39-a15** Bundle: Dayton up close (L)
+- [ ] 🔴 **i39-a16** Bundle: Walla Walla up close (L)
+- [ ] 🔴 **i39-a17** Bundle: The Tri-Cities up close (L)
+- [ ] 🔴 **i39-a18** Bundle: Waitsburg street by street (L)
+- [ ] 🔴 **i39-a19** Bundle: A school record for each kid (M)
+- [ ] 🔴 **i39-a20** Bundle: Teens on the way to graduation (M)
+- [ ] 🔴 **i39-a21** Bundle: A house hunt that takes weeks (L)
+- [ ] 🔴 **i39-a22** Bundle: Moving in a tight market (M)
+- [ ] 🔴 **i39-a23** Bundle: Your papers and the admin hour (L)
+- [ ] 🟠 **i39-a24** Bundle: Insurance you choose (M)
+- [ ] 🔴 **i39-a25** Bundle: Rough patches and making up (M)
+- [ ] 🔴 **i39-a26** Bundle: After a split (L)
+- [ ] 🔴 **i39-a27** Bundle: Veteran rank and deep cuts (M)
+- [ ] 🔴 **i39-a28** Bundle: Harvest food through the year (M)
+- [ ] 🔴 **i39-a29** Bundle: Food when money is tight (M)
+- [ ] 🔴 **i39-a30** Bundle: Far trips (L)
+- [ ] 🔴 **i39-a31** Release plan: v0.6 — Fair starts, open as you go (L)
+- [ ] 🔴 **i39-a32** Release plan: v0.7 — Home, paperwork and the wider valley (L)
+
+</details>
+
+<details><summary><b>Ideas 39: Waitsburg event pack 2</b> (30 ideas)</summary>
+
+- [ ] 🟡 **i39-b01** January: Boil-water notice after a main break (S)
+- [ ] 🟠 **i39-b02** February: Crab feed at the fairgrounds (S)
+- [ ] 🟠 **i39-b03** February: Chili cook-off at the Legion hall (S)
+- [ ] 🟠 **i39-b04** March: A calving night on the neighbor's ranch (S)
+- [ ] 🟡 **i39-b05** March: Spring bulky-item pickup day (S)
+- [ ] 🟡 **i39-b06** April: Free trees on Arbor Day at the park (S)
+- [ ] 🟡 **i39-b07** April: Kids' bike rodeo and helmet giveaway (S)
+- [ ] 🟡 **i39-b08** May: A honeybee swarm in your tree (S)
+- [ ] 🟡 **i39-b09** May: Wasp nest under the eaves (S)
+- [ ] 🟡 **i39-b10** May: A lemonade stand on the corner (S)
+- [ ] 🟠 **i39-b11** June: Skunk under the porch (S)
+- [ ] 🟡 **i39-b12** June: Fiftieth anniversary party at the Legion hall (S)
+- [ ] 🟠 **i39-b13** July: Bats in the attic (S)
+- [ ] 🟠 **i39-b14** July: Odd-even watering days (M)
+- [ ] 🟡 **i39-b15** July: A loose horse on Coppei Avenue (S)
+- [ ] 🟠 **i39-b16** August: Feed the neighbors' animals for a week (S)
+- [ ] 🟡 **i39-b17** August: A loud party next door (S)
+- [ ] 🟡 **i39-b18** September: Your dog digs up the neighbor's bulbs (S)
+- [ ] 🟠 **i39-b19** September: Kittens under the shed (M)
+- [ ] 🟡 **i39-b20** September: The school wants a career-day speaker (S)
+- [ ] 🟠 **i39-b21** October: Sweep the chimney before the first fire (M)
+- [ ] 🟡 **i39-b22** October: Leaves clog the storm drain (S)
+- [ ] 🟠 **i39-b23** October: A quarter beef from down the road (M)
+- [ ] 🔴 **i39-b24** October: Check on the quiet neighbor (S)
+- [ ] 🟡 **i39-b25** November: Turkey raffle at the hardware counter (S)
+- [ ] 🟠 **i39-b26** November: Write a column for the Tattler (S)
+- [ ] 🟡 **i39-b27** December: Live nativity needs a donkey wrangler (S)
+- [ ] 🟠 **i39-b28** Any: Tree roots heave your sidewalk (S)
+- [ ] 🟡 **i39-b29** Any: Coyotes in the wheat at night (S)
+- [ ] 🟠 **i39-b30** Any: A free piano if you can move it (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
