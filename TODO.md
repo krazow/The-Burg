@@ -3692,6 +3692,74 @@ old ones.
 
 </details>
 
+## Ideas round 43 (pick on the build board)
+
+54 ideas. Details: [docs/ideas/round-43.md](docs/ideas/round-43.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 43: Accessibility audit</b> (29 ideas)</summary>
+
+- [ ] 🔴 **i43-a01** [Home] Week strip says its numbers, not just "details" (S)
+- [ ] 🔴 **i43-a02** [Event] Event text is read when the sheet opens (S)
+- [ ] 🔴 **i43-a03** [Event] The result sheet is named for the event, not "Message" (S)
+- [ ] 🔴 **i43-a04** [Home] Tabbed-to buttons scroll clear of the bottom bars (S)
+- [ ] 🔴 **i43-a05** [Tutorial] Tab stays inside the coach bubble and the lit spot (S)
+- [ ] 🟠 **i43-a06** [Tutorial] The coach bubble is read once, with a name (S)
+- [ ] 🟠 **i43-a07** [All] Toasts are announced once, not twice (S)
+- [ ] 🔴 **i43-a08** [All] Control borders reach 3:1 contrast (S)
+- [ ] 🟠 **i43-a09** [Title] The name box shows the blue focus ring (S)
+- [ ] 🟠 **i43-a10** [Life] The school progress bar is a real progress bar (S)
+- [ ] 🟠 **i43-a11** [Home] Stat buttons drop the <label> inside them (S)
+- [ ] 🟠 **i43-a12** [Title] Game length, Start and Mode are named groups (S)
+- [ ] 🟠 **i43-a13** [Help] "Back to contents" buttons say which section they leave (S)
+- [ ] 🟠 **i43-a14** [Sheets] The game behind a sheet or Help is inert (S)
+- [ ] 🟠 **i43-a15** [All] One h1 per screen and tab titles as h2 (S)
+- [ ] 🟡 **i43-a16** [Sheets] Dialog names skip the leading emoji (S)
+- [ ] 🟡 **i43-a17** [All] Decorative emoji are hidden from screen readers (M)
+- [ ] 🟠 **i43-a18** [Home] End Week says what it will do in plain words (S)
+- [ ] 🔴 **i43-a19** [Home] At 200% zoom the week strip no longer sits on End Week (M)
+- [ ] 🔴 **i43-a20** [Header] The header stops sticking when the screen is short (S)
+- [ ] 🟠 **i43-a21** [Header] Name and cash wrap instead of running together (S)
+- [ ] 🟠 **i43-a22** [Home] Stat cards go to one column when zoomed (S)
+- [ ] 🟡 **i43-a23** [Help] The contents list is one column on narrow screens (S)
+- [ ] 🟡 **i43-a24** [Sheets] Sheets appear without sliding when Reduce Motion is on (S)
+- [ ] 🟠 **i43-a25** [End] Read-heavy sheets put focus on the heading (S)
+- [ ] 🟠 **i43-a26** [Trip] Full or blocked stops can still be focused to hear why (S)
+- [ ] 🟠 **i43-a27** [Maps] Arrow keys move between map pins (M)
+- [ ] 🟡 **i43-a28** [Home] A skip link to End Week (S)
+- [ ] 🟠 **i43-a29** [Tests] Add these checks to the screen test (M)
+
+</details>
+
+<details><summary><b>Ideas 43: Performance audit</b> (25 ideas)</summary>
+
+- [ ] 🔴 **i43-b01** Save only the life you're playing (M)
+- [ ] 🔴 **i43-b02** Stop re-downloading the game on every launch (M)
+- [ ] 🔴 **i43-b03** Open Help without building the whole guide (M)
+- [ ] 🟠 **i43-b04** Empty the Help screen when it closes (S)
+- [ ] 🟠 **i43-b05** First visit downloads each file once, not twice (M)
+- [ ] 🟠 **i43-b06** Minify the scripts in the release kit (M)
+- [ ] 🟠 **i43-b07** Load Help and the tutorial on first tap (S)
+- [ ] 🟠 **i43-b08** Paint the title screen before the big event tables (M)
+- [ ] 🟠 **i43-b09** Event Journal lines save their kind (S)
+- [ ] 🟠 **i43-b10** Journal lines keep the week number, not the date text (S)
+- [ ] 🟠 **i43-b11** Cap what one End Week remembers (S)
+- [ ] 🟠 **i43-b12** Switching tabs redraws only the tab (M)
+- [ ] 🟠 **i43-b13** One save and one redraw per event week (S)
+- [ ] 🟠 **i43-b14** A tiny slot list for the title screen (S)
+- [ ] 🟡 **i43-b15** Forget event cooldowns that ran out (S)
+- [ ] 🟡 **i43-b16** Build the region map's rivers once (S)
+- [ ] 🟡 **i43-b17** Cache the Help guide text by version (S)
+- [ ] 🟡 **i43-b18** Let the browser skip off-screen Journal lines (S)
+- [ ] 🟡 **i43-b19** Jobs tab works out take-home pay once a week (M)
+- [ ] 🟡 **i43-b20** Copy a life without the JSON round-trip (S)
+- [ ] 🟡 **i43-b21** Keep the save small as features grow: a save-size line in the sim (S)
+- [ ] 🟡 **i43-b22** Cache index.html once, not twice (S)
+- [ ] 🟠 **i43-b23** A backup file that's 7 KB, not 125 KB (S)
+- [ ] 🟡 **i43-b24** Build the Jobs list while the phone is idle (S)
+- [ ] 🟡 **i43-b25** Run the old-save move once, not on every save (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
