@@ -1562,6 +1562,40 @@ await t.check('old 0.2.0 saves: a seasonal worker loaded out of season keeps the
   assert(r.after === null && r.recall === 'lift', `laid off after the next season ${JSON.stringify(r)}`);
 });
 
+await t.check('Waitsburg pack A, part 1 (W1–W15): months, who sees what, town goals, prices that rise, and the barn cat', async () => {
+  const r = await ev(() => {
+    const E = t => EVENTS.find(e => e.title === t), open = e => e.choices().filter(c => !c.if || c.if()).map(c => c.label);
+    fresh('two', { community: 20 });
+    const all = TOWN_EVENTS_A1.every(e => evCat(e) === 'town' && EVENT_PLACE[e.title] && EVENT_PLACE[e.title][0] === 'T');
+    const months = { 'Preston Park cleanup day': [3], 'Museum open house': [5], 'Fourth of July parade': [6], 'Trout opener on Coppei Creek': [3], 'Library book sale': [9],
+      'Ice storm knocks out power': [11, 0, 1], 'Frozen pipes': [11, 0, 1], 'Citywide yard sale': [5], 'School fundraiser auction': [2], 'Fire district pancake breakfast': [4],
+      'Smoke from a wheat-field fire': [7], 'Mice in the walls': [9], "Neighbor's chickens loose in your yard": [2, 3, 4, 5, 6, 7] };
+    const badMonth = Object.entries(months).filter(([t, ms]) => [...Array(12).keys()].some(m => E(t).when(m) !== ms.includes(m))).map(([t]) => t);
+    const lowFloat = open(E('Fourth of July parade')).length, lowFlip = open(E('Fire district pancake breakfast')).length;
+    S.community = 45; const hiFloat = open(E('Fourth of July parade')).length, hiFlip = open(E('Fire district pancake breakfast')).length;
+    const renterPipes = open(E('Frozen pipes')).length; S.home = 'fixer'; const ownerPipes = open(E('Frozen pipes')).length;
+    S.skills = { handy: 8 }; const handyPipes = open(E('Frozen pipes')).length;
+    const once = !!E('An old friend moves back').once, yearly = ['Preston Park cleanup day', 'Mice in the walls', 'Ice storm knocks out power'].every(t => E(t).yr) && !E('FFA bake sale').yr;
+    // helping in the April cleanup counts as a week toward the spring town goal
+    S.date = new Date(2027, 3, 10).getTime(); S.sgoal = null; const h0 = S.community; E('Preston Park cleanup day').choices()[0].go(); const goal1 = S.sgoal && S.sgoal.prog;
+    S.sgoal.prog = SEASON_GOALS[0].need - 1; const wins = S.seasonWins || 0; const msg = E('Preston Park cleanup day').choices()[0].go(); const done = S.sgoal.done && S.seasonWins === wins + 1 && /town goal/.test(msg);
+    // prices rise with the cost of living
+    S.col = 1.5; const m0 = S.money; E('Trout opener on Coppei Creek').choices()[0].go(); const paid = m0 - S.money; const label = open(E('Trout opener on Coppei Creek'))[0];
+    // the barn cat: half a dog's cheer, about $20 a month, and it can't be adopted twice
+    fresh('two', { focus: 'rest' }); const b0 = week().lines; const happy0 = S.happy;
+    fresh('two', { focus: 'rest', cat: true }); const b1 = week().lines; const noSecond = !open(E('Mice in the walls')).some(l => /cat/.test(l));
+    return { all, badMonth, lowFloat, hiFloat, lowFlip, hiFlip, renterPipes, ownerPipes, handyPipes, once, yearly, goal1, done, paid, label, catBill: b1['Cat food'], noCatBill: b0['Cat food'], noSecond, h0 };
+  });
+  assert(r.all, 'every pack event is a town event with a Waitsburg map place');
+  assert(!r.badMonth.length, `wrong months: ${r.badMonth}`);
+  assert(r.lowFloat === 1 && r.hiFloat === 2 && r.lowFlip === 1 && r.hiFlip === 2, `community-gated choices ${JSON.stringify(r)}`);
+  assert(r.renterPipes === 1 && r.ownerPipes === 1 && r.handyPipes === 2, `frozen pipes choices ${JSON.stringify(r)}`);
+  assert(r.once && r.yearly, 'repeat rules are off');
+  assert(r.goal1 === 1 && r.done, `town goal ${JSON.stringify(r)}`);
+  assert(near(r.paid, 45) && r.label.includes('$45'), `the license should cost $45 at +50% prices: ${r.paid} / ${r.label}`);
+  assert(near(r.catBill, -20 * W) && r.noCatBill === undefined && r.noSecond, `cat ${JSON.stringify(r)}`);
+});
+
 // ---- ideas round 75, economy balance (i75-b01 … b14) ----
 await t.check('i75-b01: every full-time job pays at least Washington\'s 2027 minimum wage, and the starting jobs keep their order', async () => {
   const r = await ev(() => ({ min: MIN_WAGE_MONTH, low: JOBS.filter(j => j.pay < MIN_WAGE_MONTH).map(j => `${j.id} ${j.pay}`),
