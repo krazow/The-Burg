@@ -20,9 +20,10 @@ added, finished or re-prioritized, both change in the same session.
 ## Status (Nov 19, 2026)
 
 - **Live:** 0.2.0 at [krazow.github.io/The-Burg](https://krazow.github.io/The-Burg/) ([release](https://github.com/krazow/The-Burg/releases/tag/v0.2.0)).
-- **Merged, not released yet:** 0.2.1 hotfixes H1–H3 ([#153](https://github.com/krazow/The-Burg/pull/153)): safe saves, confirm before deleting a life, separate beta saves.
-- **Building now:** your 61 picks from Ideas 2 and Ideas 3, in six pull requests (settings and feel, clarity, flow, jobs and school, money, retirement). Each is marked "Building" below.
-- **Ideas:** 66 rounds on this list. New rounds are paused while the picks are built.
+- **Merged for 0.2.1, not released yet:** hotfixes H1–H3 and all 61 picks (retirement, money, settings and feel, jobs and school, clarity, flow).
+- **Next:** release 0.2.1. Before that, round 69's release-readiness items: rewrite the 0.2.1 changelog (i69-a02), the What's new list (i69-a01) and the property-tax warning for old saves (i69-a06).
+- **Ideas:** 75 rounds; new rounds are paused.
+- **Finished work** is summarized in [Work Done](https://claude.ai/artifact/2EqC2tqhaJ56sKB4PtTV52).
 
 ## Next up: P1, in order
 
@@ -36,7 +37,7 @@ added, finished or re-prioritized, both change in the same session.
 - [x] Try it on your phone, then `/release promote` (0.2.0-beta.6 promoted: [v0.2.0](https://github.com/krazow/The-Burg/releases/tag/v0.2.0))
 - [x] Pick review items and events to build (104 picked on the build board; all built)
 - [x] Hotfixes H1–H3 merged ([#153](https://github.com/krazow/The-Burg/pull/153))
-- [ ] Merge the 61 picks from Ideas 2 and Ideas 3
+- [x] Merge the 61 picks from Ideas 2 and Ideas 3
 - [ ] Release 0.2.1 (`/release all`)
 
 ## Soon: P2
