@@ -5269,6 +5269,79 @@ old ones.
 
 </details>
 
+## Ideas round 64 (pick on the build board)
+
+59 ideas. Details: [docs/ideas/round-64.md](docs/ideas/round-64.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 64: 0.2.2 patch plan</b> (26 ideas)</summary>
+
+- [ ] 🔴 **i64-a01** 01 · Phone Back stays in the game and never answers a sheet (M)
+- [ ] 🔴 **i64-a02** 02 · Double-tap on End Week plays one week (S)
+- [ ] 🔴 **i64-a03** 03 · Reloading during an event shows it again (S)
+- [ ] 🔴 **i64-a04** 04 · New: a restored backup can run code via a name or journal line (S)
+- [ ] 🔴 **i64-a05** 05 · Names with HTML show as plain text everywhere (S)
+- [ ] 🔴 **i64-a06** 06 · An ending sticks even if you close the app (S)
+- [ ] 🔴 **i64-a07** 07 · The tap that opens or closes a sheet can't land on a choice (S)
+- [ ] 🔴 **i64-a08** 08 · A save that fails says so (S)
+- [ ] 🔴 **i64-a09** 09 · Help with tuition can't push you past the debt limit (S)
+- [ ] 🔴 **i64-a10** 10 · Hard mode's debt warning names the real limit (S)
+- [ ] 🟠 **i64-a11** 11 · Money reads $1,500 on every phone, never $NaN (S)
+- [ ] 🟠 **i64-a12** 12 · Age stops running a year behind (S)
+- [ ] 🟠 **i64-a13** 13 · Retirees see no Apply buttons (S)
+- [ ] 🟠 **i64-a14** 14 · A new job clears leftover unemployment (S)
+- [ ] 🟠 **i64-a15** 15 · Grandkid only after a full life, and kept if you tap Not now (M)
+- [ ] 🟠 **i64-a16** 16 · Badge toasts stop replaying after you reopen (S)
+- [ ] 🟠 **i64-a17** 17 · The app opens offline from a link with ?source=home (S)
+- [ ] 🟠 **i64-a18** 18 · The wheat lease can't pay early, late or flip for profit (S)
+- [ ] 🟠 **i64-a19** 19 · The $300 will reaches the grandkid (S)
+- [ ] 🟠 **i64-a20** 20 · Two open copies don't erase each other's weeks (M)
+- [ ] 🟡 **i64-a21** 21 · Leaving the app saves this week's changes (S)
+- [ ] 🟡 **i64-a22** 22 · Health plan savings pay week by week (M)
+- [ ] 🟡 **i64-a23** 23 · Single parent and Debt-free agree on out of debt (S)
+- [ ] 🟡 **i64-a24** 24 · No commute childcare for a teenager (S)
+- [ ] 🟡 **i64-a25** 25 · Old winter tires don't come back with a new car (S)
+- [ ] 🟡 **i64-a26** 26 · The heir's car and the car value floor use today's dollars (S)
+
+</details>
+
+<details><summary><b>Ideas 64: The Touchet River</b> (33 ideas)</summary>
+
+- [ ] 🔴 **i64-b01** One river level that every river event reads (M)
+- [ ] 🔴 **i64-b02** The Blues snowpack sets the river's year (S)
+- [ ] 🔴 **i64-b03** A River card on the Home tab (L)
+- [ ] 🔴 **i64-b04** Think it over on the river bench (M)
+- [ ] 🔴 **i64-b05** The kids build a raft out of pallets (M)
+- [ ] 🟠 **i64-b06** Three swimming holes, each with its own catch (M)
+- [ ] 🟠 **i64-b07** June water is still snowmelt (S)
+- [ ] 🟠 **i64-b08** The rope swing gets cut down (S)
+- [ ] 🟠 **i64-b09** A life jacket loaner board at the bridge (S)
+- [ ] 🟡 **i64-b10** Skipping-stone record on the gravel bar (S)
+- [ ] 🟠 **i64-b11** August low water: a voluntary pull-back (M)
+- [ ] 🟠 **i64-b12** Ditch rider: a summer job opening headgates (M)
+- [ ] 🟡 **i64-b13** Use it or lose it: the five-year water right letter (S)
+- [ ] 🟠 **i64-b14** Shelf ice on the Touchet: look, don't walk (M)
+- [ ] 🟡 **i64-b15** The night the ice goes out (S)
+- [ ] 🟠 **i64-b16** High-water marks on the bridge piling (M)
+- [ ] 🟠 **i64-b17** Walk the levee with the inspector in October (M)
+- [ ] 🟡 **i64-b18** Levee district dues on the tax bill (S)
+- [ ] 🟠 **i64-b19** An evening lap on the riverwalk (S)
+- [ ] 🟡 **i64-b20** A bench with their name on it (S)
+- [ ] 🟡 **i64-b21** Ask the big question on the footbridge (S)
+- [ ] 🟠 **i64-b22** Adopt a mile of the Touchet (M)
+- [ ] 🟡 **i64-b23** What the cleanup pulls out of the river (S)
+- [ ] 🟠 **i64-b24** The heron at the bend (S)
+- [ ] 🟡 **i64-b25** The ospreys come back to the light pole (S)
+- [ ] 🟡 **i64-b26** Ducklings cross Main Street (S)
+- [ ] 🟠 **i64-b27** A river life list in the journal (M)
+- [ ] 🟠 **i64-b28** Read the regs or pay the fine (M)
+- [ ] 🟡 **i64-b29** Bonfire on the gravel bar (S)
+- [ ] 🟡 **i64-b30** The low-water crossing goes under (S)
+- [ ] 🟠 **i64-b31** Your teen jumped off the bridge (M)
+- [ ] 🟡 **i64-b32** The dog comes home smelling like the river (S)
+- [ ] 🟡 **i64-b33** Follow the old mill race (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
