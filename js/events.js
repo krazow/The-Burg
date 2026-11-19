@@ -213,7 +213,7 @@ const EVENTS = [
     text:'A big wind tears through the valley overnight.',
     choices:() => [{label:'Check the damage', go:() => {
       if (HOMES[S.home].own) { const c = Math.round(cost(1200) * (1 - skillLv('handy') * 0.15)), p = youPay('home', c); adj({money:-p, happy:-3}); practice('handy', 1); return `You lost shingles. Sharp Point Builders fixed the roof: ${fmt(c)}${skillLv('handy') ? ' (you did part of it yourself)' : ''}.${covered(c, p)}`; }
-      adj({money:-cost(60), happy:-1}); return 'Power was out a day and the fridge food spoiled.'; }}]},
+      if (S.generator) return 'Power was out a day, but your generator kept the fridge cold.'; adj({money:-cost(60), happy:-1}); return 'Power was out a day and the fridge food spoiled.'; }}]},
   { ic:'🧅', title:'Walla Walla Sweets are in', yr:1, w:3, when:m => inM(m,5,6),
     text:'The sweet onion harvest is here.',
     choices:() => [
@@ -325,7 +325,7 @@ const EVENTS = [
    ============================================================ */
 // small state these events keep (new lives get it in newGame, older saves in migrate)
 const EVENT_STATE = () => ({ roadTo:null, healthPlan:null, skiPass:null, snowChains:null, gasFriend:false, applyBoost:0, hireBy:-1,
-  tradeBy:-1, raiseBoost:0, promoBoost:0, promo:null });
+  tradeBy:-1, raiseBoost:0, promoBoost:0, promo:null, ...townStateA() });
 // the doc's job groups, mapped to every job in JOBS
 const JOB_GROUP = { farmhand:'field', cellar:'field', onion:'field', foodplant:'field', hanford:'field', lift:'field', airport:'field', agtech:'field',
   insure:'office', clerk:'office', loan:'office', labadmin:'office', prof:'office', scientist:'office', teller:'office', reporter:'office',
