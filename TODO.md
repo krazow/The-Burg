@@ -4972,6 +4972,77 @@ old ones.
 
 </details>
 
+## Ideas round 60 (pick on the build board)
+
+57 ideas. Details: [docs/ideas/round-60.md](docs/ideas/round-60.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 60: 0.2.1 patch plan</b> (28 ideas)</summary>
+
+- [ ] 🔴 **i60-a01** H1 · A damaged save or thin backup never blanks the game (S)
+- [ ] 🔴 **i60-a02** H2 · One tap can no longer delete a life (S)
+- [ ] 🔴 **i60-a03** H3 · Beta lives live under their own keys (S)
+- [ ] 🔴 **i60-a04** 01 · Double-tap on End Week plays one week (S)
+- [ ] 🔴 **i60-a05** 02 · Reloading during an event shows it again (S)
+- [ ] 🔴 **i60-a06** 03 · An ending sticks even if you close the app (S)
+- [ ] 🔴 **i60-a07** 04 · Phone Back closes the sheet, never the game or an answer (M)
+- [ ] 🔴 **i60-a08** 05 · Leaving the app saves this week's changes (S)
+- [ ] 🔴 **i60-a09** 06 · The tap that opens or closes a sheet can't land on a choice (S)
+- [ ] 🔴 **i60-a10** 07 · A save that fails says so (S)
+- [ ] 🔴 **i60-a11** 08 · 'Help with tuition' can't end your life in debt (S)
+- [ ] 🔴 **i60-a12** 09 · The debt warning names your mode's real limit (S)
+- [ ] 🔴 **i60-a13** 10 · Grandkid only after a full life, and waits if you tap Not now (M)
+- [ ] 🟠 **i60-a14** 11 · The app opens offline from a link with ?source=home (S)
+- [ ] 🟠 **i60-a15** 12 · Two open copies don't erase each other's weeks (M)
+- [ ] 🟠 **i60-a16** 13 · A name with HTML in it shows as plain text (S)
+- [ ] 🟠 **i60-a17** 14 · Badge toasts stop replaying after you reopen (S)
+- [ ] 🟠 **i60-a18** 15 · Money reads $1,500 on every phone, never $NaN (S)
+- [ ] 🟠 **i60-a19** 16 · The $300 will reaches the grandkid (S)
+- [ ] 🟠 **i60-a20** 17 · Age stops running a year behind (S)
+- [ ] 🟠 **i60-a21** 18 · Retirees can't be hired into a job that never pays (S)
+- [ ] 🟠 **i60-a22** 19 · A new job clears leftover unemployment (S)
+- [ ] 🟠 **i60-a23** 20 · The wheat lease can't pay early, late or flip for profit (S)
+- [ ] 🟡 **i60-a24** 21 · Multi-week event money pays out week by week (M)
+- [ ] 🟡 **i60-a25** 22 · Single parent and Debt-free agree on 'out of debt' (S)
+- [ ] 🟡 **i60-a26** 23 · No commute childcare for a teenager (S)
+- [ ] 🟡 **i60-a27** 24 · Old winter tires don't come back with a new car (S)
+- [ ] 🟡 **i60-a28** 25 · The heir's pickup and a car's floor value use today's dollars (S)
+
+</details>
+
+<details><summary><b>Ideas 60: What players will say</b> (29 ideas)</summary>
+
+- [ ] 🔴 **i60-b01** 'How do I tell you?' A 💬 Tell us sheet that sends through Formspree (M)
+- [ ] 🔴 **i60-b02** One outbox for notes and characters, sent when you're back online (M)
+- [ ] 🔴 **i60-b03** Every note says where you were, in a line you read first (S)
+- [ ] 🔴 **i60-b04** A plain privacy line on the feedback sheet (S)
+- [ ] 🟠 **i60-b05** Stay under Formspree's 50 a month (S)
+- [ ] 🔴 **i60-b06** Your notes list, and What's new says when one is fixed (S)
+- [ ] 🟡 **i60-b07** A short reply to your note, shipped in the next update (S)
+- [ ] 🟠 **i60-b08** One question at the end of a life (S)
+- [ ] 🟠 **i60-b09** 'I didn't get it': Still stuck? at the bottom of each Help page (S)
+- [ ] 🟠 **i60-b10** A first-life check-in at week 12: 'How's it going?' (S)
+- [ ] 🟠 **i60-b11** One switch turns off every feedback ask (S)
+- [ ] 🟡 **i60-b12** 'Where's my job?' Request a job from the Jobs tab (S)
+- [ ] 🟠 **i60-b13** 'It closes at 2 on Sunday': Something wrong here? on business cards (S)
+- [ ] 🟠 **i60-b14** 'That's not what happened here': report the last event (S)
+- [ ] 🟠 **i60-b15** A 'Known problems' list shown before you write (S)
+- [ ] 🟠 **i60-b16** A feedback report script turns the Formspree export into a page (M)
+- [ ] 🟠 **i60-b17** Tests send notes to a fake Formspree (S)
+- [ ] 🟠 **i60-b18** Tester diary for the first 50 players (M)
+- [ ] 🟡 **i60-b19** Credit me as: first names for notes that changed the game (S)
+- [ ] 🟠 **i60-b20** 'I didn't know you could tap the map': a one-time tap-a-place hint (S)
+- [ ] 🟡 **i60-b21** 'Is that a real store?' Business cards say it's a stand-in (S)
+- [ ] 🟠 **i60-b22** 'What's equity?' Tap a money word for a one-line meaning (M)
+- [ ] 🟠 **i60-b23** 'Gas is cheaper than that': where the numbers come from (S)
+- [ ] 🟠 **i60-b24** 'Same event again?' Short games don't repeat small events (S)
+- [ ] 🔴 **i60-b25** 'I tapped End Week by accident': a short pause after a sheet closes (S)
+- [ ] 🟡 **i60-b26** 'I found my house!' A 'my place' pin on the Waitsburg map (S)
+- [ ] 🟡 **i60-b27** 'Can my brother try it?' A guest life that leaves yours alone (M)
+- [ ] 🟠 **i60-b28** 'Where even is Waitsburg?' A first-launch card for strangers (S)
+- [ ] 🟡 **i60-b29** 'Does it work without signal?' Help shows Ready offline (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
