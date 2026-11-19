@@ -20,9 +20,10 @@ added, finished or re-prioritized, both change in the same session.
 ## Status (Nov 19, 2026)
 
 - **Live:** 0.2.0 at [krazow.github.io/The-Burg](https://krazow.github.io/The-Burg/) ([release](https://github.com/krazow/The-Burg/releases/tag/v0.2.0)).
-- **Merged, not released yet:** 0.2.1 hotfixes H1–H3 ([#153](https://github.com/krazow/The-Burg/pull/153)): safe saves, confirm before deleting a life, separate beta saves.
-- **Building now:** your 61 picks from Ideas 2 and Ideas 3, in six pull requests (settings and feel, clarity, flow, jobs and school, money, retirement). Each is marked "Building" below.
-- **Ideas:** 66 rounds on this list. New rounds are paused while the picks are built.
+- **Merged for 0.2.1, not released yet:** hotfixes H1–H3 and 43 of your 61 picks (retirement, money, settings and feel, jobs and school).
+- **Building now:** the last 18 picks: flow ([#163](https://github.com/krazow/The-Burg/pull/163), 7 items) and clarity ([#164](https://github.com/krazow/The-Burg/pull/164), 11 items). They merge on their own once tests pass.
+- **Next:** release 0.2.1 once those land; round 69's release-readiness items (i69-a) cover the changelog and old-save checks.
+- **Ideas:** 75 rounds so far; a new round is added every few minutes until you say stop.
 
 ## Next up: P1, in order
 
