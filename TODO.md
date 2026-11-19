@@ -5732,6 +5732,82 @@ old ones.
 
 </details>
 
+## Ideas round 70 (pick on the build board)
+
+62 ideas. Details: [docs/ideas/round-70.md](docs/ideas/round-70.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 70: Farm and ranch life</b> (34 ideas)</summary>
+
+- [ ] 🔴 **i70-a01** Forward-sell part of next year's wheat in spring (M)
+- [ ] 🔴 **i70-a02** A spring weather outlook on the farm sheet (S)
+- [ ] 🔴 **i70-a03** Pick your crop insurance level: 50, 70 or 85% (S)
+- [ ] 🟠 **i70-a04** Falling number: rain at harvest docks the price (S)
+- [ ] 🟠 **i70-a05** The river is closed: the barge locks shut and the price drops (S)
+- [ ] 🟠 **i70-a06** The farm sheet keeps a record of every crop year (S)
+- [ ] 🔴 **i70-a07** Farm full-time: run your own ground as your job (L)
+- [ ] 🟠 **i70-a08** Equipment notes: a used tractor and drill on a five-year loan (M)
+- [ ] 🟠 **i70-a09** Share a drill with the neighbor (S)
+- [ ] 🟠 **i70-a10** A land contract: the old farmer carries the note (M)
+- [ ] 🟠 **i70-a11** A beginning-farmer loan from the county farm loan office (M)
+- [ ] 🟠 **i70-a12** Put the steep ground in the conservation program (S)
+- [ ] 🟠 **i70-a13** A grain bin at home instead of the elevator (S)
+- [ ] 🟠 **i70-a14** Run for the co-op elevator board (M)
+- [ ] 🟠 **i70-a15** Grow the herd: keep back heifers instead of selling them (M)
+- [ ] 🟠 **i70-a16** Cattle prices run in long waves (S)
+- [ ] 🔴 **i70-a17** Branding day: the neighbors work your calves, you work theirs (S)
+- [ ] 🟠 **i70-a18** A wolf takes a calf: file the state claim (S)
+- [ ] 🟠 **i70-a19** A cow dog that knows the work (S)
+- [ ] 🟠 **i70-a20** Breaking ice on the water trough (S)
+- [ ] 🟠 **i70-a21** Custom-graze a neighbor's yearlings for the summer (S)
+- [ ] 🟠 **i70-a22** Build fence for ranchers: a spring side hustle (S)
+- [ ] 🟡 **i70-a23** Farm-sit while a family goes to the fair (S)
+- [ ] 🟠 **i70-a24** Ranch hand on a cow-calf outfit near Dayton (M)
+- [ ] 🟠 **i70-a25** Crop adjuster: walk the hailed fields (M)
+- [ ] 🟠 **i70-a26** Ag lender at the farm credit office (M)
+- [ ] 🟡 **i70-a27** Auctioneer school: call the Tuesday sale (M)
+- [ ] 🟠 **i70-a28** Lease a bearing vineyard block and sell the grapes (M)
+- [ ] 🟡 **i70-a29** Custom crush: make wine from your own grapes (S)
+- [ ] 🟠 **i70-a30** Chickpeas in the rotation: the hummus contract (S)
+- [ ] 🔴 **i70-a31** Farm ground gets its own slot, apart from the one business (M)
+- [ ] 🟡 **i70-a32** The rain gauge on the fence post (S)
+- [ ] 🟠 **i70-a33** Farm safety: the rollbar and the seatbelt (S)
+- [ ] 🟡 **i70-a34** Winter grower meetings at the fairgrounds (S)
+
+</details>
+
+<details><summary><b>Ideas 70: One-handed phone play</b> (28 ideas)</summary>
+
+- [ ] 🔴 **i70-b01** Text size reaches the header, tabs and End Week (S)
+- [ ] 🔴 **i70-b02** Swipe a sheet down from anywhere when it's at the top (S)
+- [ ] 🟠 **i70-b03** Tap the dim area above a sheet to close it (S)
+- [ ] 🟠 **i70-b04** Tap the tab you're on to jump to the top (S)
+- [ ] 🟠 **i70-b05** Each tab remembers where you were (M)
+- [ ] 🟠 **i70-b06** Buying or changing something keeps your place (M)
+- [ ] 🔴 **i70-b07** Help closes from the bottom of the screen (S)
+- [ ] 🟠 **i70-b08** The header folds to one slim line when you scroll (S)
+- [ ] 🟠 **i70-b09** No text smaller than 12px (S)
+- [ ] 🟠 **i70-b10** The backup code box doesn't zoom the page on iPhone (S)
+- [ ] 🟡 **i70-b11** The name box's keyboard says Go and capitalizes (S)
+- [ ] 🔴 **i70-b12** Sounds sleep when you switch apps (S)
+- [ ] 🟠 **i70-b13** Sideways sheets slide in from the side (M)
+- [ ] 🟠 **i70-b14** A left-hand setting (S)
+- [ ] 🟡 **i70-b15** Sideways chip rows show there's more (S)
+- [ ] 🟡 **i70-b16** Swipes show and feel when they count (S)
+- [ ] 🔴 **i70-b17** The safe answer is always the bottom button (S)
+- [ ] 🟡 **i70-b18** True black night theme for OLED phones (S)
+- [ ] 🟠 **i70-b19** A year in review you didn't see waits for you (M)
+- [ ] 🟡 **i70-b20** More room between side-by-side small buttons (S)
+- [ ] 🔴 **i70-b21** Home doesn't shift under your thumb (S)
+- [ ] 🔴 **i70-b22** Toasts let taps through (S)
+- [ ] 🟠 **i70-b23** A reach check in the screen tests (M)
+- [ ] 🟡 **i70-b24** Filters ride above the tab bar (M)
+- [ ] 🟡 **i70-b25** A Continue button at the bottom of the title screen (S)
+- [ ] 🟠 **i70-b26** The Menu fits on one screen (S)
+- [ ] 🟡 **i70-b27** The open tab is easy to see in sunlight (S)
+- [ ] 🟡 **i70-b28** Toasts wait if you've left the app (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
