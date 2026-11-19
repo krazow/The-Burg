@@ -21,16 +21,17 @@ const ev = (fn, arg) => page.evaluate(fn, arg);
 const t = runner();
 const W = 12 / 52;
 
-await t.check('a weekly paycheck is the monthly pay × 12/52, taxed 15%', async () => {
+await t.check('a weekly paycheck is the monthly pay × 12/52, taxed 13% on a small paycheck (i75-b03)', async () => {
   const r = await ev(() => { fresh('two', { jobId: 'farmhand', focus: 'rest' }); return week().lines; });
-  assert(near(r['Paycheck'], 2500 * W), `paycheck ${r['Paycheck']}`);
-  assert(near(r['Taxes'], -2500 * W * 0.15), `taxes ${r['Taxes']}`);
-  assert(near(r['Rent'], -550 * W) && near(r['Food & utilities'], -520 * W) && near(r['Insurance & phone'], -160 * W), 'bills are off');
+  assert(near(r['Paycheck'], 3100 * W), `paycheck ${r['Paycheck']}`);
+  assert(near(r['Taxes'], -3100 * W * 0.13), `taxes ${r['Taxes']}`);
+  assert(near(r['Rent'], -650 * W) && near(r['Food & utilities'], -700 * W) && near(r['Insurance & phone'], -160 * W), 'bills are off');
+  assert(near(r['Health care'], -130 * W), `health care at work before 50 ${r['Health care']}`);
 });
 
 await t.check('Work extra hours pays 20% more', async () => {
   const r = await ev(() => { fresh('two', { jobId: 'farmhand', focus: 'work' }); return week().lines; });
-  assert(near(r['Paycheck + overtime'], 2500 * W * 1.2), `overtime paycheck ${r['Paycheck + overtime']}`);
+  assert(near(r['Paycheck + overtime'], 3100 * W * 1.2), `overtime paycheck ${r['Paycheck + overtime']}`);
 });
 
 await t.check('gas covers the commute both ways on 21 workdays plus errands, at your vehicle\'s mileage', async () => {
@@ -73,9 +74,9 @@ await t.check('a financed pickup charges a fixed payment for 60 months, then is 
 
 await t.check('the 401(k) takes 5% pre-tax, adds a 3% match, and grows', async () => {
   const r = await ev(() => { fresh('two', { jobId: 'farmhand', k401rate: 1 }); const l = week().lines; return { l, k: S.k401 }; });
-  const g = 2500 * W;
+  const g = 3100 * W;
   assert(near(r.l['401(k) contribution'], -g * 0.05), `contribution ${r.l['401(k) contribution']}`);
-  assert(near(r.l['Taxes'], -(g * 0.95) * 0.15), 'taxes should come after the contribution');
+  assert(near(r.l['Taxes'], -(g * 0.95) * 0.13), 'taxes should come after the contribution');
   assert(near(r.k, g * 0.08 * Math.pow(1.06, 1/52), 0.01), `balance ${r.k}`);
 });
 
@@ -169,7 +170,7 @@ await t.check('debt charges about 1.5% a month, and below -$40,000 the game ends
 
 await t.check('unemployment benefits last 6 months after a layoff, then stop', async () => {
   const r = await ev(() => { fresh('two', { jobId: null, ui: 6 }); const first = week().lines['Unemployment benefits']; weeks(26); return { first, later: Object.fromEntries(S.last.lines)['Unemployment benefits'] }; });
-  assert(near(r.first, 1100 * W) && !r.later, JSON.stringify(r));
+  assert(near(r.first, 1500 * W) && !r.later, JSON.stringify(r));   // i75-b05: an old save's benefits pay the $1,500 floor
 });
 
 await t.check('16 weeks of classes earn a trade certificate, and tuition is charged weekly', async () => {
@@ -182,9 +183,9 @@ await t.check('kids cost about $650 a month each until they turn 18', async () =
   assert(near(r['Kids (2)'], -650 * 2 * W), JSON.stringify(r));
 });
 
-await t.check('net worth is cash + home equity + vehicle + 401(k) − what\'s left on the truck loan', async () => {
+await t.check('net worth is cash + home equity + vehicle + 401(k) after tax − what\'s left on the truck loan', async () => {
   const r = await ev(() => { fresh('two', { money: 1000, equity: 20000, carValue: 5000, k401: 3000, loanLeft: 10, loanPay: 500 }); return netWorth(); });
-  assert(near(r, 1000 + 20000 + 5000 + 3000 - 10 * 500 * 0.85, 0.0001), `net worth ${r}`);
+  assert(near(r, 1000 + 20000 + 5000 + 3000 * 0.88 - 10 * 500 * 0.85, 0.0001), `net worth ${r}`);   // i75-b11: the 401(k) after tax
 });
 
 await t.check('older saves are filled in when loaded (and an owned home gets its mortgage)', async () => {
@@ -323,7 +324,7 @@ await t.check('trip planning: up to 3 stops, in that town, in season, 21+ for ta
 await t.check('a stock-up grocery run makes groceries 20% cheaper for 6 weeks (B6)', async () => {
   const r = await ev(() => { fresh('two', { date: new Date(2027, 5, 7).getTime() }); planTrip('kennewick', ['stock']);
     const out = [week().lines]; for (let i = 0; i < 6; i++) out.push(week().lines); return out.map(l => l['Food & utilities (stocked up)'] ?? l['Food & utilities']); });
-  const cheap = -(520 - 360 * 0.2) * W;
+  const cheap = -(700 - 400 * 0.2) * W;
   assert(r.slice(0, 6).every(v => near(v, cheap, 0.02)), `stocked weeks ${r}`);
   assert(r[6] < cheap * 1.05, `week 7 should be back to full price: ${r[6]}`);
 });
@@ -381,7 +382,7 @@ await t.check('remote days cut commute gas and wear; a carpool halves gas and ad
       can: (fresh('two', { jobId: 'rail', community: 25 }), canCarpool()), can2: (S.community = 35, canCarpool()), near: (fresh('two', { jobId: 'cellar', community: 50 }), canCarpool()) };
   });
   assert(near(r.full, -(58 * 2 * 21 + 300) * W * 3.89 / 15), `full ${r.full}`);
-  assert(near(r.remote, -(62 * 2 * 21 * 0.6 + 300) * W * 3.89 / 15), `remote ${r.remote}`);
+  assert(near(r.remote, -(62 * 2 * 21 * 0.4 + 300) * W * 3.89 / 15), `remote ${r.remote}`);   // i75-b09: 3 remote days
   assert(near(r.pool, -(58 * 2 * 21 * 0.5 + 300) * W * 3.89 / 15), `carpool ${r.pool}`);
   assert(!r.can && r.can2 && r.near, `carpool rules ${JSON.stringify(r)}`);
 });
@@ -442,7 +443,7 @@ await t.check('Relaxed softens drains and never ends in debt; Hard costs more an
   });
   assert(r.relaxed > r.normal + 1, `relaxed ${r.relaxed} vs normal ${r.normal}`);
   assert(!r.rEnd && r.rMoney >= -40000, `relaxed debt ${r.rEnd} ${r.rMoney}`);
-  assert(/debt/.test(r.hEnd || '') && near(r.hCost, -(550 + 520 + 160) * 0.1 * W) && near(r.lay, r.layN * 1.6), JSON.stringify(r));
+  assert(/debt/.test(r.hEnd || '') && near(r.hCost, -(650 + 700 + 160) * 0.1 * W) && near(r.lay, r.layN * 1.6), JSON.stringify(r));
 });
 
 await t.check('best scores are kept per mode', async () => {
@@ -505,7 +506,7 @@ await t.check('skills grow with practice and pay off', async () => {
     fresh('two', { jobId: 'farmhand', focus: 'hustle', date: new Date(2027, 4, 3).getTime() }); weeks(10); const handy = S.skills.handy;
     return { people, food, labels, handy }; });
   assert(r.people === 2, `people level after 25 weeks of town ${r.people}`);
-  assert(near(r.food, -520 * W * 0.88), `cook level 3 food ${r.food}`);
+  assert(near(r.food, -700 * W * 0.88), `cook level 3 food ${r.food}`);
   assert(r.labels.some(l => /yourself/.test(l)), 'mechanic level 2 should offer fixing it yourself');
   assert(r.handy >= 9, `yard-work hustles should build handy: ${r.handy}`);
 });
@@ -1045,10 +1046,10 @@ await t.check('i3-a01: the promotion needs months on the job, and the top rung n
     const E = t => EVENTS.find(e => e.title === t);
     fresh('two', { jobId: 'farmhand', tenure: 6 }); const early = E('A promotion offer').when();
     S.tenure = 13; const ok1 = E('A promotion offer').when(); E('A promotion offer').choices()[0].go();
-    const t1 = jobTitle(), p1 = payNow(job()) / (2500 * S.wage);
+    const t1 = jobTitle(), p1 = payNow(job()) / (jobById('farmhand').pay * S.wage);
     S.tenure = 40; const noEdu = E('A promotion offer').when(), need = rungNeeds(nextRung());
     S.edu = 1; const ok2 = E('A promotion offer').when(); E('A promotion offer').choices()[0].go();
-    const t2 = jobTitle(), p2 = payNow(job()) / (2500 * S.wage), top = E('A promotion offer').when();
+    const t2 = jobTitle(), p2 = payNow(job()) / (jobById('farmhand').pay * S.wage), top = E('A promotion offer').when();
     S.focus = 'rest'; const h = S.happy; S.happy = 60; const lines = week(); const dh = S.happy - 60;
     fresh('two', { jobId: 'farmhand' }); S.happy = 60; week(); const dh0 = S.happy - 60;
     // a new job starts at the bottom again
@@ -1064,7 +1065,7 @@ await t.check('i3-a01: the promotion needs months on the job, and the top rung n
 await t.check('i3-a02: a program becomes your major at graduation, for +10% pay and better odds at matching jobs', async () => {
   const r = await ev(() => {
     fresh('two', { program: 'nursing', focus: 'study', studyProg: 15.5 }); week();
-    const major = S.major, edu = S.edu, cna = payNow(jobById('cna')) / (3400 * S.wage), mech = payNow(jobById('mech')) / (4400 * S.wage);
+    const major = S.major, edu = S.edu, cna = payNow(jobById('cna')) / (jobById('cna').pay * S.wage), mech = payNow(jobById('mech')) / (jobById('mech').pay * S.wage);
     const o1 = hireOdds(jobById('cna')), o2 = hireOdds(jobById('mech'));
     const tuition = (() => { fresh('two', { program: 'wine', focus: 'study' }); return week().lines['Tuition']; })();
     fresh('two', { edu: 2, major: 'business' }); const windLock = extraLock(jobById('windtech')); S.major = 'wind'; const windOk = extraLock(jobById('windtech'));
@@ -1090,15 +1091,16 @@ await t.check('i3-a03: a certificate costs a fee and Take classes weeks, then op
   assert(r.cdl === 1 && r.open === '' && r.after === null, `done after 6 weeks ${JSON.stringify(r)}`);
 });
 
-await t.check('i3-a04: an apprentice starts at 60% and steps up each year to full journeyman pay; leaving resets it', async () => {
+await t.check('i3-a04 / i75-b07: a plumber apprentice starts at 50% and steps up each year over 4 years to full journeyman pay; leaving resets it', async () => {
   const r = await ev(() => {
     fresh('two', { edu: 1 }); startJob('plumber'); const full = 5400 * S.wage;
     const p0 = payNow(job()) / full; S.appWeeks = 52; const p1 = payNow(job()) / full;
-    S.appWeeks = 103; S.tenure = 24; const noPromo = canPromote(); week(); const p2 = payNow(job()) / (5400 * S.wage), done = !apprenticing();
+    S.appWeeks = 104; const p2y = payNow(job()) / full; S.appWeeks = 207; S.tenure = 48; const noPromo = canPromote(); week(); const p2 = payNow(job()) / (5400 * S.wage), done = !apprenticing();
     startJob('diner'); startJob('plumber'); const reset = S.appWeeks;
-    return { p0, p1, p2, done, noPromo, reset };
+    return { p0, p1, p2y, p2, done, noPromo, reset, weeks: jobById('plumber').apprentice.weeks, elec: jobById('electrician').apprentice.startMult };
   });
-  assert(Math.abs(r.p0 - 0.6) < 1e-9 && Math.abs(r.p1 - 0.8) < 1e-9 && Math.abs(r.p2 - 1) < 1e-9 && r.done, `apprentice pay ${JSON.stringify(r)}`);
+  assert(r.weeks === 208 && r.elec === 0.5, `plumber and electrician apprenticeships ${JSON.stringify(r)}`);
+  assert(Math.abs(r.p0 - 0.5) < 1e-9 && Math.abs(r.p1 - 0.625) < 1e-9 && Math.abs(r.p2y - 0.75) < 1e-9 && Math.abs(r.p2 - 1) < 1e-9 && r.done, `apprentice pay ${JSON.stringify(r)}`);
   assert(!r.noPromo && r.reset === 0, `apprentice rules ${JSON.stringify(r)}`);
 });
 
@@ -1414,12 +1416,12 @@ await t.check('i3-a25: every week with a paycheck adds to your work record, in 2
     fresh('life', { jobId: null, focus: 'rest' }); weeks(52); return { a, idle: S.earnYears }; });
   assert(near(r.a.y, 1) && r.a.avg > 3700 && r.a.avg < 3900 && r.idle === 0, JSON.stringify(r));
 });
-await t.check('i3-a24: public jobs vest a pension after 5 years that pays 1.5% of best pay per year in retirement', async () => {
+await t.check('i3-a24: public jobs vest a pension after 5 years that pays 2% of best pay (i75-b10) per year in retirement', async () => {
   const r = await ev(() => { fresh('life', { jobId: 'clerk', focus: 'rest' }); weeks(52 * 4); const at4 = { vested: pensionVested(), pay: pensionPay() };
     weeks(52 * 2); const yrs = S.pensionYears, best = S.pensionPay; S.retired = true; S.jobId = null; const l = week().lines;
     fresh('life', { jobId: 'hanford', focus: 'rest' }); weeks(52 * 6); const priv = S.pensionYears;
-    return { at4, yrs, best, pension: l['Pension'], expect: cost(yrs * 0.015 * best) * W, priv, log: JSON.stringify(S.log), pub: JOBS.filter(j => j.pension).map(j => j.id) }; });
-  assert(!r.at4.vested && r.at4.pay === 0, 'not vested at 4 years');
+    return { at4, yrs, best, pension: l['Pension'], expect: cost(yrs * 0.02 * best) * W, rate: PENSION_RATE, priv, log: JSON.stringify(S.log), pub: JOBS.filter(j => j.pension).map(j => j.id) }; });
+  assert(!r.at4.vested && r.at4.pay === 0 && r.rate === 0.02, 'not vested at 4 years');
   assert(near(r.yrs, 6, 0.02) && near(r.pension, r.expect, 0.02) && r.pension > 0, JSON.stringify(r));
   assert(r.priv === 0 && r.pub.join() === 'para,clerk,co,rn,teacher', JSON.stringify(r.pub));
 });
@@ -1491,8 +1493,8 @@ await t.check('i3-a34: a spare room pays on the first weekend of May, July, Sept
 });
 await t.check('i3-a24/a25: older saves get an estimated work record', async () => {
   const r = await ev(() => { const old = JSON.parse(JSON.stringify(fresh('life', { ageMonths: 40 * 12, jobId: 'para', jobMonths: 36 }))); for (const k of ['earnYears', 'earnSum', 'pensionYears', 'pensionPay', 'will', 'ltc', 'care']) delete old[k];
-    const m = migrate(old); return { y: m.earnYears, p: m.pensionYears, pay: m.pensionPay, will: m.will, care: m.care }; });
-  assert(near(r.y, 16.5) && near(r.p, 3) && r.pay === 2900 && r.will === false && r.care === null, JSON.stringify(r));
+    const m = migrate(old); return { y: m.earnYears, p: m.pensionYears, pay: m.pensionPay, pp: jobById('para').pay, will: m.will, care: m.care }; });
+  assert(near(r.y, 16.5) && near(r.p, 3) && r.pay === r.pp && r.will === false && r.care === null, JSON.stringify(r));
 });
 
 await t.check('i2-a29: an old save gets its past years in the life story, and says when earlier years came before the update', async () => {
@@ -1558,6 +1560,96 @@ await t.check('old 0.2.0 saves: a seasonal worker loaded out of season keeps the
   });
   assert(r.grace === 'lift' && r.kept === 'lift' && r.cleared === null, `grace ${JSON.stringify(r)}`);
   assert(r.after === null && r.recall === 'lift', `laid off after the next season ${JSON.stringify(r)}`);
+});
+
+// ---- ideas round 75, economy balance (i75-b01 … b14) ----
+await t.check('i75-b01: every full-time job pays at least Washington\'s 2027 minimum wage, and the starting jobs keep their order', async () => {
+  const r = await ev(() => ({ min: MIN_WAGE_MONTH, low: JOBS.filter(j => j.pay < MIN_WAGE_MONTH).map(j => `${j.id} ${j.pay}`),
+    order: ['diner', 'lift', 'farmhand', 'hardware', 'onion', 'para'].map(id => jobById(id).pay), retail: jobById('retail').pay }));
+  assert(r.min === 3050 && !r.low.length, `under the minimum wage: ${r.low.join(', ')}`);
+  assert(r.order.every((p, i) => i === 0 || p > r.order[i - 1]) && r.order[0] >= 3050 && r.order[5] <= 3400 && r.retail >= 3050, `order ${r.order}`);
+});
+
+await t.check('i75-b02: living costs at 2027 prices: food and utilities $700, a room $650, the rented house $1,250', async () => {
+  const r = await ev(() => { fresh('two', { focus: 'rest' }); const a = week().lines; fresh('two', { focus: 'rest', home: 'house' }); const b = week().lines;
+    return { food: a['Food & utilities'], room: a['Rent'], house: b['Rent'], share: GROCERY_SHARE }; });
+  assert(near(r.food, -700 * W) && near(r.room, -650 * W) && near(r.house, -1250 * W) && r.share === 400, JSON.stringify(r));
+});
+
+await t.check('i75-b03: taxes by bracket: 13% to 22%, smooth (a raise never lowers take-home), rising with pay, and the Jobs list uses them', async () => {
+  const r = await ev(() => { fresh('two');
+    const rates = [3000, 3500, 6000, 8000, 9000, 12000].map(p => taxRate(p));
+    let mono = true, prev = 0; for (let p = 1000; p <= 15000; p += 50) { const th = p * (1 - taxRate(p)); if (th < prev) mono = false; prev = th; }
+    S.wage = 1.5; const scaled = taxRate(6000 * 1.5); S.wage = 1;
+    fresh('two', { jobId: 'scientist', focus: 'rest' }); const l = week().lines; const want = -9200 * W * 0.22;
+    fresh('two'); const th = takeHome(jobById('rn')), expTh = 8600 * W * (1 - taxRate(8600)) - commuteCost(21, CARS[S.car], jobById('rn')) * W;
+    return { rates, mono, scaled, tax: l['Taxes'], want, th, expTh }; });
+  assert(near(r.rates[0], 0.13) && near(r.rates[1], 0.13) && near(r.rates[2], 0.16) && near(r.rates[3], 0.20) && near(r.rates[4], 0.22) && near(r.rates[5], 0.22), `rates ${r.rates}`);
+  assert(r.mono && near(r.scaled, 0.16), `take-home must rise with pay; brackets rise with S.wage (${r.scaled})`);
+  assert(near(r.tax, r.want, 0.01) && near(r.th, r.expTh, 0.001), JSON.stringify(r));
+});
+
+await t.check('i75-b04: health insurance costs $130 a month while working before 50; no job means Apple Health for $0', async () => {
+  const r = await ev(() => { fresh('two', { focus: 'rest' }); const none = week().lines['Health care'];
+    fresh('two', { focus: 'rest', jobId: 'diner' }); const work = week().lines['Health care'];
+    fresh('life', { focus: 'rest', jobId: 'diner', ageMonths: 55 * 12 }); const old = week().lines['Health care'];
+    fresh('two', { jobId: 'diner' }); const out = moneyOutlook().weeks.length; return { none, work, old, out, lowPay: APPLE_HEALTH_PAY }; });
+  assert(!r.none && near(r.work, -130 * W) && near(r.old, -180 * W) && r.lowPay === 1900 && r.out === 13, JSON.stringify(r));
+});
+
+await t.check('i75-b05: unemployment pays 41% of the last job\'s pay, between $1,500 and $4,900, after a layoff (not a quit)', async () => {
+  const r = await ev(() => {
+    const laid = id => { fresh('two', { jobId: id, focus: 'rest' }); leaveJob('laid'); S.ui = 6; return week().lines['Unemployment benefits'] / W; };
+    const rn = laid('rn'), diner = laid('diner');
+    fresh('two', { jobId: 'rn' }); S.ui = 0; leaveJob('notice'); const quit = week().lines['Unemployment benefits'];
+    fresh('two', { jobId: 'lift', date: new Date(2027, 2, 29).getTime() }); weeks(2); const season = S.uiPay;
+    return { rn, diner, quit, season }; });
+  assert(near(r.rn, 8600 * 0.41, 0.001) && near(r.diner, 1500, 0.001) && !r.quit, JSON.stringify(r));
+  assert(near(r.season, 1500, 0.001), `a seasonal layoff sets the benefit too: ${r.season}`);
+});
+
+await t.check('i75-b06/b08/b09: nurses, aides and techs at valley rates; the food plant, loan officer and lab office pay for the drive', async () => {
+  const r = await ev(() => { const p = id => jobById(id).pay;
+    fresh('two'); const best3 = takeHome(jobById('remote')) > takeHome(jobById('loan')) && takeHome(jobById('scientist')) > takeHome(jobById('loan'));
+    return { rn: p('rn'), cna: p('cna'), imaging: p('imaging'), para: p('para'), mech: p('mech'), plant: p('foodplant'), loan: p('loan'), lab: p('labadmin'),
+      remote: [jobById('loan').remote, jobById('labadmin').remote], best3 }; });
+  assert(r.rn === 8600 && r.cna === 3800 && r.imaging === 6400 && r.para === 3300 && r.mech === 4800, JSON.stringify(r));
+  assert(r.plant === 3600 && r.loan === 6900 && r.lab === 5400 && r.remote.join() === '3,3' && r.best3, JSON.stringify(r));
+});
+
+await t.check('i75-b08: the mall is always hiring and gives 10% off Tri-Cities stops; the food plant pays 30% harvest overtime', async () => {
+  const r = await ev(() => { fresh('two', { community: 0 }); const odds = hireOdds(jobById('retail'));
+    fresh('two', { jobId: 'retail', date: new Date(2027, 5, 7).getTime() }); planTrip('kennewick', ['court']); const court = week().lines['The mall food court'];
+    fresh('two', { jobId: 'foodplant', focus: 'rest', date: new Date(2027, 7, 9).getTime() }); const aug = week().lines['Paycheck + overtime'];
+    fresh('two', { jobId: 'foodplant', focus: 'rest', date: new Date(2027, 4, 3).getTime() }); const may = week().lines['Paycheck'];
+    return { odds, court, aug, may }; });
+  assert(r.odds >= 0.95 && near(r.court, -14 * 0.9, 0.01), JSON.stringify(r));
+  assert(near(r.aug, 3600 * W * 1.3) && near(r.may, 3600 * W), JSON.stringify(r));
+});
+
+await t.check('i75-b11/b12: the 401(k) counts at 88% after tax; the match vests after 3 years, and leaving sooner gives it back', async () => {
+  const r = await ev(() => {
+    fresh('two', { jobId: 'farmhand', k401rate: 1, focus: 'rest' }); weeks(10); const k = S.k401, m = S.k401match; startJob('diner'); const after = S.k401;
+    fresh('two', { jobId: 'farmhand', k401rate: 1, focus: 'rest', tenure: 35.9 }); weeks(2); const vested = S.k401match; startJob('diner'); const kept = S.k401 > 0;
+    fresh('two', { k401: 10000, money: 0, carValue: 0 }); const nw = netWorth();
+    return { k, m, after, vested, kept, nw, log: S.log.length }; });
+  assert(near(r.m, r.k * 3 / 8, 0.02) && near(r.after, r.k - r.m, 0.001), `unvested match ${JSON.stringify(r)}`);
+  assert(r.vested === 0 && r.kept && near(r.nw, 8800), JSON.stringify(r));
+});
+
+await t.check('i75-b13/b14: retirement draws follow the IRS table after 73; Social Security is untaxed under $3,000, 401(k) draws taxed 10%', async () => {
+  const r = await ev(() => {
+    const rates = [62, 72, 73, 80, 90].map(a => drawRate(a));
+    fresh('life', { retired: true, k401: 100000, ageMonths: 80 * 12, earnYears: 35, earnSum: 35 * (2000 + 4000 / 6) }); const l = week().lines;
+    return { rates, w: l['401(k) withdrawal'], tax: l['Taxes'], ss: l['Social Security'] }; });
+  assert(near(r.rates[0], 0.04) && near(r.rates[1], 0.04) && near(r.rates[2], 1 / 26.5) && near(r.rates[3], 1 / 20.2) && near(r.rates[4], 1 / 12.2), `rates ${r.rates}`);
+  assert(near(r.w, 100000 / 20.2 * W / 12, 0.001) && near(r.tax, -r.w * 0.1, 0.001), JSON.stringify(r));
+});
+
+await t.check('i75: older saves load with the new fields filled in (unvested match 0, benefits at the floor)', async () => {
+  const r = await ev(() => { const old = JSON.parse(JSON.stringify(fresh('two', { jobId: 'farmhand', k401: 500, ui: 3 }))); delete old.k401match; delete old.uiPay;
+    const m = migrate(old); S = m; S.jobId = null; const ui = week().lines['Unemployment benefits']; return { match: m.k401match, uiPay: m.uiPay, ui }; });
+  assert(r.match === 0 && r.uiPay === null && near(r.ui, 1500 * W), JSON.stringify(r));
 });
 
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });

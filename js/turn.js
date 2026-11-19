@@ -163,7 +163,7 @@ function focusPreview(fk){
   const fx = focusFx(fk, eff, away), cash = [];
   const rut = fk !== 'study' && n > RUT_WEEKS;
   if (rut) fx.happy = (fx.happy || 0) - 1.2;
-  if (f.payMult && j) cash.push(['overtime after taxes', payNow(j) * W * (f.payMult - 1) * (1 - K401[S.k401rate || 0]) * 0.85]);
+  if (f.payMult && j) cash.push(['overtime after taxes', payNow(j) * W * (f.payMult - 1) * (1 - K401[S.k401rate || 0]) * (1 - taxRate(payNow(j) * f.payMult))]);
   if (f.hustle) { if (truckSeason()) cash.push(['a food-truck weekend', cost(1400) * (1 + skillLv('cook') * 0.15) * W]); else { const g = currentGig(); cash.push([g.name, hustlePay(g, 0.5)]); } }
   if (f.cost) cash.push([f.name.toLowerCase(), -cost(f.cost) * W]);
   if (f.study && !S.certStudy && S.edu < 3) cash.push(['tuition', -cost(TUITION[S.edu]) * W]);
@@ -194,7 +194,7 @@ function billLines(off = 0){
   const rentV = -(home.own && S.mortgage ? S.mortgage : c(home.cost))*m;
   out.push([home.own ? 'Mortgage' : 'Rent', rentV]);
   const stocked = S.turn + off < S.stockUntil;
-  const foodV = -c(520 - (stocked ? GROCERY_SHARE * STOCK_OFF : 0))*(1 - skillLv('cook') * 0.04)*m, insV = -c(insMonthly())*m;   // i3-a19: what you picked on the insurance sheet ($160 by default)
+  const foodV = -c(FOOD_UTIL - (stocked ? GROCERY_SHARE * STOCK_OFF : 0))*(1 - skillLv('cook') * 0.04)*m, insV = -c(insMonthly())*m;   // i3-a19: what you picked on the insurance sheet ($160 by default)
   out.push([stocked ? 'Food & utilities (stocked up)' : 'Food & utilities', foodV]);
   out.push(['Insurance & phone', insV]);
   if (mode() === 'hard') out.push(['Higher living costs (Hard, +10%)', (rentV + foodV + insV) * HARD_LIVING]);   // R15: 10% of rent, food and insurance
@@ -208,10 +208,35 @@ function billLines(off = 0){
   const kidsHome = kidsAtHome();
   if (kidsHome) out.push([kidsHome > 1 ? `Kids (${kidsHome})` : 'Kid', -kidCost()*kidsHome*m]);
   const a0 = Math.floor((S.ageMonths + off * m) / 12);
-  if (a0 >= 50) out.push(['Health care', -c(a0 >= 65 ? 420 : 180)*m]);
+  { const h = healthMonthly(a0, off); if (h) out.push(['Health care', -c(h)*m]); }   // i75-b04: an employee share before 50
   if (S.ltc && S.ltc.ins && !S.care) out.push(['Long-term care insurance', -c(LTC_PREMIUM)*m]);
   if (S.care && careMonthly() > 0) out.push([CARE[S.care].bill, -c(careMonthly())*m]);
   return out;
+}
+// i75-b04: health care each month (2027 dollars): $180 from 50 and $420 from 65; before 50, the $130 employee share while
+// you work at a job paying $1,900 or more, or Apple Health ($0) with no job or low pay
+function healthMonthly(a0 = age(), off = 0){
+  if (a0 >= 50) return a0 >= 65 ? 420 : 180;
+  const j = S.retired ? null : job();
+  if (!j || (S.notice != null && S.turn + off >= S.notice) || !jobInSeason(j, new Date(S.date + off * 7 * 864e5).getMonth())) return 0;
+  return payNow(j) / (S.wage || 1) >= APPLE_HEALTH_PAY ? HEALTH_PREMIUM : 0;
+}
+// i75-b08: the Pasco food plant runs harvest overtime from August to October
+// i75-b05: unemployment benefits a month: 41% of the last job's pay (set when you were laid off), between $1,500 and $4,900
+const uiFor = j => clamp(UI_SHARE * payNow(j) / (S.wage || 1), UI_MIN, UI_MAX);
+const uiMonthly = () => (S.uiPay || UI_MIN) * S.wage;
+const plantOT = (j, mo = curMonth()) => j && j.id === 'foodplant' && PLANT_OT_MONTHS.includes(mo) ? 1 + PLANT_OT : 1;
+// i75-b08: a mall retail associate gets 10% off stops in the Tri-Cities
+const retailPerk = town => !!(S && S.jobId === 'retail' && !S.retired && ['kennewick', 'pasco', 'richland'].includes(town));
+// i75-b13/b14: a retiree's money for one week: Social Security, the pension, the 401(k) draw, and the tax on them
+function retireeIncome(lines, m, draw = true){
+  const ss = ssPay() * m, pen = pensionVested() ? pensionPay() * m : 0;
+  lines.push(['Social Security', ss]); if (pen) lines.push(['Pension', pen]);
+  let w = 0;
+  if (draw && S.k401 > 0) { w = Math.min(S.k401, S.k401 * drawRate() * m / 12); S.k401 -= w; lines.push(['401(k) withdrawal', w]); }
+  const tax = Math.max(0, ss + pen - cost(RETIRE_TAX_FREE) * m) * RETIRE_TAX + w * RETIRE_TAX;
+  if (tax > 0) lines.push(['Taxes', -tax, `Social Security and the pension are untaxed up to ${fmtc(RETIRE_TAX_FREE)} a month; above that, and on 401(k) withdrawals, about ${RETIRE_TAX * 100}%.`]);
+  return ss + pen + w;
 }
 // i3-a24/a25: a week of work adds to your Social Security record and, in a public job, your pension
 function workYear(j, m){
@@ -229,11 +254,11 @@ function lineWhy(l, f, j){
   const home = HOMES[S.home], car = CARS[S.car];
   if (l === 'Social Security') return 'Your Social Security check, paid weekly. It grows with the years you worked and rises with prices.';
   if (l === 'Pension') return 'Your public pension: you vested by working enough years in a public job.';
-  if (l === '401(k) withdrawal') return 'In retirement about 4% of your 401(k) comes out each year.';
-  if (/^Paycheck/.test(l) && j) return `${j.title}: ${wk(payNow(j))}${f.payMult ? ', plus 20% for working extra hours' : ''}${S.raise > 1.005 ? `, with ${Math.round((S.raise - 1) * 100)}% in raises` : ''}. Pay grows about 2.5% a year.`;
+  if (l === '401(k) withdrawal') return `In retirement ${(drawRate() * 100).toFixed(1)}% of your 401(k) comes out this year: 4% until 73, then more each year, like the IRS required-distribution table.`;
+  if (/^Paycheck/.test(l) && j) return `${j.title}: ${wk(payNow(j))}${f.payMult ? `, plus ${Math.round((f.payMult - 1) * 100)}% for working extra hours` : ''}${plantOT(j) > 1 ? `, plus ${PLANT_OT * 100}% harvest overtime (August to October)` : ''}${S.raise > 1.005 ? `, with ${Math.round((S.raise - 1) * 100)}% in raises` : ''}. Pay grows about 2.5% a year.`;
   if (l === 'Mortgage') return `Your ${home.name.toLowerCase()}: the payment was locked in when you bought (or refinanced).`;
   if (l === 'Rent') return `Rent on the ${home.name.replace(/^Rented /, '').toLowerCase()}. Rents rise with prices, about 3% a year.`;
-  if (/^Food & utilities/.test(l)) return `Groceries, power and water${/stocked/.test(l) ? `, with groceries ${STOCK_OFF*100}% off from a stock-up run` : ''}${skillLv('cook') ? `, ${skillLv('cook') * 4}% less because you cook` : ''}.`;
+  if (/^Food & utilities/.test(l)) return `Groceries, power, water, sewer, trash and internet${/stocked/.test(l) ? `, with groceries ${STOCK_OFF*100}% off from a stock-up run` : ''}${skillLv('cook') ? `, ${skillLv('cook') * 4}% less because you cook` : ''}.`;
   if (l === 'Insurance & phone') return 'Your insurance (set on the insurance sheet) and your phone plan.';
   if (/^Higher living costs/.test(l)) return 'Hard mode: rent, food and insurance cost 10% more.';
   if (/^Vehicle tabs/.test(l)) return 'Every January: about 1% of what your vehicle is worth, at least $60.';
@@ -242,7 +267,7 @@ function lineWhy(l, f, j){
   if (l === 'Date nights') return 'Time out with your partner.';
   if (/^Partner's paycheck/.test(l)) return 'Your partner works part-time until 65.';
   if (/^Kids? ?/.test(l) && /^Kid/.test(l)) return `About ${fmtc(KID_COST)} a month for each kid at home${commuteOneWay() >= 20 ? `, plus ${fmtc(KID_CARE_COMMUTE)} of childcare because you commute 20+ miles` : ''}.`;
-  if (l === 'Health care') return age() >= 65 ? 'Health care costs more from 65.' : 'Health care costs start at 50.';
+  if (l === 'Health care') return age() >= 65 ? 'Health care costs more from 65.' : age() >= 50 ? 'Health care costs more from 50.' : `Your share of the health plan at work. With no job, or pay under ${fmtc(APPLE_HEALTH_PAY)} a month, Apple Health covers you for $0.`;
   if (l === 'Long-term care insurance') return 'A monthly premium so care late in life is covered.';
   if (l === (FOCUS[S.focus] || {}).name) return `Your focus this week, ${l}, costs a little.`;
   return '';
@@ -256,22 +281,21 @@ function weekTick(auto){
   if (syncCarpool()) log('Your carpool ended with the job change: you drive alone now.');
 
   // ---- money (constants are monthly; m converts to one week) ----
-  let gross = 0;
-  if (S.retired) {
-    gross = ssPay()*m; lines.push(['Social Security', gross]);
-    if (pensionVested()) { const p = pensionPay()*m; gross += p; lines.push(['Pension', p]); }
-    if (S.k401 > 0) { const w = Math.min(S.k401, S.k401 * 0.04 * m / 12); S.k401 -= w; gross += w; lines.push(['401(k) withdrawal', w]); }
-  }
-  else if (j) gross = jobPay(j, payNow(j) * m * (f.payMult||1) * wxPayF(j), lines, f);   // i75-a29: a short pack season in a dry year   // i3: strikes, furloughs, clearances, union dues
-  gross += furloughBackPay(lines);
+  let gross = 0, k401 = 0;
+  if (S.retired) gross = retireeIncome(lines, m);   // i75-b13/b14: draws that rise with age, and retiree taxes
+  else if (j) gross = jobPay(j, payNow(j) * m * (f.payMult||1) * plantOT(j) * wxPayF(j), lines, f);   // i75-a29: a short pack season in a dry year; i3: strikes, furloughs, clearances, union dues
+  if (!S.retired) gross += furloughBackPay(lines);
   if (j) workYear(j, m);                           // i3-a24/a25: years worked count toward Social Security and a public pension
-  let k401 = 0;
   if (j && !S.retired && S.k401rate) {           // pre-tax contribution, with a 3% employer match at 5% or more
-    k401 = gross * K401[S.k401rate]; lines.push(['401(k) contribution', -k401, `You save ${K401[S.k401rate]*100}% of your pay before taxes, and your employer adds 3% more. It's still yours: it counts in your net worth.`]);
-    S.k401 += k401 + gross * 0.03;
+    k401 = gross * K401[S.k401rate]; const match = gross * K401_MATCH;
+    lines.push(['401(k) contribution', -k401, `You save ${K401[S.k401rate]*100}% of your pay before taxes, and your employer adds ${K401_MATCH * 100}% more. Your savings are always yours; the match is yours after ${K401_VEST_MONTHS / 12} years at the job.`]);
+    S.k401 += k401 + match;
+    if ((S.tenure || 0) < K401_VEST_MONTHS) S.k401match = (S.k401match || 0) + match;   // i75-b12: not yours until it vests
   }
-  if (gross) lines.push(['Taxes', -(gross - k401) * (S.retired ? 0.05 : 0.15), S.retired ? 'About 5% of retirement income.' : `About 15% of your pay${k401 ? ' after your 401(k) savings' : ''}.`]);
-  if (!S.retired && !j && S.ui > 0) { const n = Math.min(m, S.ui); lines.push(['Unemployment benefits', 1100*S.wage*n, 'Benefits for up to 6 months after a layoff.']); S.ui -= n; }
+  if ((S.k401match || 0) > 0 && j && (S.tenure || 0) >= K401_VEST_MONTHS) { S.k401match = 0; log(`Your 401(k) match vested: after ${K401_VEST_MONTHS / 12} years at the job it's all yours.`, 'money'); }
+  if (gross && !S.retired) { const r = taxRate(j ? payNow(j) * (f.payMult || 1) * plantOT(j) : gross / m);   // i75-b03: by bracket
+    lines.push(['Taxes', -(gross - k401) * r, `About ${Math.round(r * 100)}% of your pay${k401 ? ' after your 401(k) savings' : ''}: federal income tax, Social Security and Medicare. Washington has no income tax.`]); }
+  if (!S.retired && !j && S.ui > 0) { const n = Math.min(m, S.ui); lines.push(['Unemployment benefits', uiMonthly()*n, `${Math.round(UI_SHARE * 100)}% of your last job's pay, for up to 6 months after a layoff.`]); S.ui -= n; }
   let gig = null;
   const truckTime = S.biz && S.biz.type === 'truck' && [3,4,5,6,7,8,9].includes(curMonth());
   if (f.hustle && !truckTime) { gig = currentGig(); lines.push([`Side hustle: ${gig.name}`, hustlePay(gig, Math.random()), `Gigs follow the seasons. ${S.hustleWeeks ? `${S.hustleWeeks} weeks of experience add ${Math.round((hustleXp() - 1) * 100)}% to your pay.` : 'Pay grows as you get good at it.'}`]); S.hustleWeeks = (S.hustleWeeks || 0) + 1; S.hustleLast = S.turn; }
@@ -310,7 +334,7 @@ function weekTick(auto){
   S.homeIdx = (S.homeIdx || 1) * Math.pow(1 + (S.homeGrow ?? 0.025), 1/52);
   if (home.own) S.equity = S.equity * Math.pow(1 + (S.homeGrow ?? 0.025), 1/52) + home.equityPer * m;
   S.carValue = Math.max(500, S.carValue * Math.pow(0.99, m));
-  S.k401 *= Math.pow(1.06, 1/52);
+  S.k401 *= Math.pow(1.06, 1/52); if (S.k401match) S.k401match = Math.min(S.k401, S.k401match * Math.pow(1.06, 1/52));
   S.col *= Math.pow(1 + COL_RATE, 1/52); S.wage *= Math.pow(1 + WAGE_RATE, 1/52);
 
   // ---- stats drift for the week ----
