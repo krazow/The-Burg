@@ -533,6 +533,44 @@ await t.check('H2: Replace on a full board asks first, and Back changes nothing'
   await page.evaluate(() => { closeSheet(); localStorage.clear(); S = null; renderTitle(); });
 });
 
+// ---- Retirement and planning (ideas round 3) ----
+await t.check('i3-a33/a28: the Life tab writes a will, opens the 13-week money outlook, and the legacy sheet reads the will', async () => {
+  await life({ jobId: 'farmhand', money: 3000, ageMonths: 30 * 12 }, 'life', 'life');
+  assert((await page.textContent('#main')).includes('Planning ahead'), 'no planning card');
+  await page.click('#will');
+  let s = await S();
+  assert(s.will && s.out.will && near(s.money, 2700), JSON.stringify({ will: s.will, money: s.money }));
+  assert((await page.textContent('#main')).includes('On file') && !(await page.$('#will')), 'will not shown as on file');
+  await page.click('#outlook');
+  const txt = await page.textContent('#sheet');
+  assert(/next 13 weeks/.test(txt) && /On track|dips below zero/.test(txt) && (await page.$$('#sheet tbody tr')).length === 13, txt.slice(0, 200));
+  await page.keyboard.press('Escape');
+  assert(!(await page.$(open)), 'Escape closes the outlook');
+  await setup(() => { S.kids = [S.ageMonths - 240]; S.money = 300000; finish('done'); });
+  await page.click('#legacy');
+  assert((await page.textContent('#sheet')).includes('left a will'), 'legacy sheet should say a will was left');
+  await page.click(`${open} #heirgo`);
+  s = await S();
+  assert(s.gen === 2 && s.money > 100000 && !s.probate, JSON.stringify({ gen: s.gen, money: s.money, probate: s.probate }));
+});
+await t.check('i3-a34/a32: owners can list the spare room, and the rich can endow a scholarship from the Life tab', async () => {
+  await life({ jobId: 'farmhand', money: 200000, home: 'farm', mortgage: 1650, equity: 40000 }, 'life');
+  await page.click('#host');
+  assert((await S()).roomHost === true && (await page.getAttribute('#host', 'aria-pressed')) === 'true', 'hosting not on');
+  await page.click('#scholar'); await page.click(`${open} #y`);
+  const s = await S();
+  assert(s.scholar && s.money === 160000, JSON.stringify({ scholar: s.scholar, money: s.money }));
+  assert((await page.textContent('#main')).includes('Flow Scholarship'), 'scholarship row missing');
+});
+await t.check('i3-a24: the retire button counts a vested pension', async () => {
+  await life({ ageMonths: 63 * 12, jobId: 'para', pensionYears: 20, pensionPay: 2900 }, 'jobs', 'life');
+  const label = await page.textContent('#retire');
+  assert(/pension/.test(label), label);
+  await page.click('#retire'); await page.click('[data-tab=home]'); await page.click('#end'); await clearSheets();
+  const l = Object.fromEntries((await S()).last.lines);
+  assert(l['Pension'] > 0 && l['Social Security'] > 0, JSON.stringify(l));
+});
+
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });
 
 await browser.close();
