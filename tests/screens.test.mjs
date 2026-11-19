@@ -2,14 +2,19 @@
 // Fails on: content wider than the screen, bars that overlap or fall off-screen, less than 45% of the screen left
 // for content, buttons without a name, tap targets under 44 × 44 px (WCAG 2.5.5), text under 11 px, and text
 // contrast below WCAG AA (4.5:1, or 3:1 for large text). Then checks keyboard and screen-reader use.
+// i2-a03/a06/a07: a second pass runs every screen with the night theme and the Larger text size on, at the
+// smallest phone, sideways and on a tablet, with the same checks (contrast in both themes, overflow at 320 px).
 // Screenshots go to test-results/screens/. Run with: npm run test:screens
 import fs from 'node:fs';
 import { serve, launch, runner, seedScript, assert } from './helpers.mjs';
 
 const SIZES = [
   ['small-phone', 320, 568], ['phone', 375, 667], ['big-phone', 430, 932], ['tall-phone', 390, 844],
-  ['landscape', 844, 390], ['tablet', 768, 1024], ['desktop', 1280, 800]
+  ['landscape', 844, 390], ['tablet', 768, 1024], ['desktop', 1280, 800],
+  ['night-xl-small-phone', 320, 568, true], ['night-xl-landscape', 844, 390, true], ['night-xl-tablet', 768, 1024, true], ['night-xl-desktop', 1280, 800, true]
 ];
+// for a quick look at some sizes: SCREENS_ONLY=night-xl npm run test:screens (matches the size labels)
+if (process.env.SCREENS_ONLY) SIZES.splice(0, SIZES.length, ...SIZES.filter(x => x[0].includes(process.env.SCREENS_ONLY)));
 const srv = await serve();
 const browser = await launch();
 const t = runner();
@@ -70,9 +75,10 @@ const audit = () => {
 };
 
 const problems = { overflow: [], unnamed: [], tiny: [], smallText: [], contrast: [], bars: [], room: [], leftover: [] };
-for (const [label, w, h] of SIZES) {
+for (const [label, w, h, nightXL] of SIZES) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, serviceWorkers: 'block', hasTouch: w < 900, isMobile: w < 900 });
   await ctx.addInitScript(seedScript(77));
+  if (nightXL) await ctx.addInitScript(() => { window.__NIGHTXL = true; localStorage.setItem('theburg.prefs', JSON.stringify({ theme: 'night', textSize: 'xl' })); });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push(String(e)));
@@ -80,7 +86,7 @@ for (const [label, w, h] of SIZES) {
   const screens = [
     ['title', async () => {}],
     ['help', async () => { await page.click('#how'); }],
-    ['home', async () => { await page.evaluate(() => { closeHelp(); localStorage.clear(); setPref('tips', ['focus','strip','tabs']); newGame('Screens', 'two', 0); S.noEvents = true; S.jobId = 'farmhand'; tab = 'home'; render(); }); await page.click('#end'); await page.waitForTimeout(300);
+    ['home', async () => { await page.evaluate(() => { closeHelp(); localStorage.clear(); setPref('tips', ['focus','strip','tabs']); if (window.__NIGHTXL) { setPref('theme', 'night'); setPref('textSize', 'xl'); } applyPrefs(); newGame('Screens', 'two', 0); S.noEvents = true; S.jobId = 'farmhand'; tab = 'home'; render(); }); await page.click('#end'); await page.waitForTimeout(300);
       if (await page.$('#modal:not(.hidden) #ok')) await page.click('#modal:not(.hidden) #ok'); }],   // i2-a10: the First paycheck badge card
     ['jobs', async () => { await page.click('[data-tab=jobs]'); }],
     ['life', async () => { await page.click('[data-tab=life]'); }],
@@ -99,7 +105,9 @@ for (const [label, w, h] of SIZES) {
     ['business-card', async () => { await page.evaluate(() => { S.ageMonths = 25 * 12; bizSheet('pasta'); }); }],
     ['region-map', async () => { await page.evaluate(() => { closeSheet(); S.evPins = [{ t: 'Wine country weekend', ic: '🍷', m: 'R', k: 'wallawalla', turn: S.turn, r: 'A sunny afternoon.' }]; }); await page.click('.maptabs button:nth-child(2)'); await page.click('.mpin[aria-label="Walla Walla"]'); }],
     ['trip', async () => { await page.evaluate(() => { S.date = new Date(2027, 5, 7).getTime(); tripSheet('wallawalla'); }); await page.click('#modal [data-stop="market"]'); }],
+    ['event', async () => { await page.evaluate(() => { closeSheet(); showEvent(EVENTS.find(e => e.title === 'Celebration Days')); }); }],
     ['menu', async () => { await page.evaluate(() => closeSheet()); await page.click('#main .maptog button:nth-child(1)'); await page.click('[data-tab=menu]'); await page.waitForTimeout(300); }],
+    ['settings', async () => { await page.click('#sheet #settings'); await page.waitForTimeout(200); }],
     // i2 clarity: the badge card, why lines, the recap, a big choice and an open word meaning
     ['celebrate', async () => { await page.evaluate(() => { closeSheet(); celebrate(['🐕 Badge earned: Good dog', '🍳 Cook skill: level 1']); }); }],
     ['why', async () => { await page.evaluate(() => { closeSheet(); showRunDetails(); }); await page.click('#modal .whyrow'); }],
@@ -190,8 +198,10 @@ await t.check('text contrast meets WCAG AA (4.5:1, or 3:1 for large text)', asyn
     await page.focus('[data-tab=menu]');
     await page.keyboard.press('Enter');
     await page.waitForSelector('#modal:not(.hidden)');
-    await page.waitForTimeout(80);
-    assert(await page.evaluate(() => document.querySelector('#sheet').contains(document.activeElement)), 'focus did not move into the Menu');
+    // the sheet moves focus on a short timer; wait for it (up to 2 s) instead of a fixed pause, which raced on a busy machine
+    const moved = await page.waitForFunction(() => document.querySelector('#sheet').contains(document.activeElement), null, { timeout: 2000 }).then(() => true, () => false);
+    if (!moved) await page.keyboard.press('Escape');              // don't leave the Menu open over the next checks
+    assert(moved, 'focus did not move into the Menu');
     assert((await page.getAttribute('#sheet', 'role')) === 'dialog' && (await page.getAttribute('#sheet', 'aria-modal')) === 'true', 'sheet is not a modal dialog');
     for (let i = 0; i < 12; i++) { await page.keyboard.press('Tab'); assert(await page.evaluate(() => document.querySelector('#sheet').contains(document.activeElement)), 'Tab left the Menu'); }
     await page.keyboard.press('Escape');
@@ -211,7 +221,7 @@ await t.check('text contrast meets WCAG AA (4.5:1, or 3:1 for large text)', asyn
     await page.focus('#helpbtn');
     await page.keyboard.press('Enter');
     await page.waitForSelector('#helpview:not(.hidden)');
-    await page.waitForTimeout(80);
+    await page.waitForFunction(() => document.activeElement && document.activeElement.id === 'helpclose', null, { timeout: 2000 }).catch(() => {});
     assert((await active()) === 'helpclose', `focus on ${await active()}`);
     await page.keyboard.press('Escape');
     await page.waitForTimeout(100);

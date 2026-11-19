@@ -21,8 +21,8 @@ function playWeeks(n){
       else if (res.review) showReview(res.review);
     };
     // i2-a10: badges and skill levels get one celebration card after the week, then the week goes on
-    if (S.newBadges && S.newBadges.length) { const won = S.newBadges; S.newBadges = []; save(); celebrate(won, next); }
-    else next();
+    if (S.newBadges && S.newBadges.length) { const won = S.newBadges; S.newBadges = []; save(); sfx('badge'); buzz('badge'); celebrate(won, next); }
+    else { if (!res.ev) { if (n === 1) sfx('week'); buzz('week'); } next(); }   // i2-a04/a05: one small tick per press
     const r = S.run, dm = S.money - r.money, ch = (n, v) => Math.abs(v) < 0.5 ? `${n} unchanged` : `${n} ${v > 0 ? 'up' : 'down'} ${Math.abs(Math.round(v))}`;
     announce(`${r.weeks > 1 ? r.weeks + ' weeks' : 'Week'} done. Cash ${dm >= 0 ? 'up' : 'down'} ${fmt(Math.abs(dm))}, now ${fmt(S.money)}. ${ch('Happiness', S.happy - r.happy)}, ${ch('health', S.health - r.health)}, ${ch('community', S.community - r.community)}. ${dateLabel()}.`);
   };
@@ -47,11 +47,11 @@ function showRunDetails(){
   const dm = S.money - r.money;
   sheet(`<h2>${r.weeks > 1 ? `The last ${r.weeks} weeks` : 'This week'}</h2>
     <p>${runChips()}</p>
-    ${S.last ? `<h3 style="margin-top:12px">${r.weeks > 1 ? 'The last week' : 'Money'}</h3>${S.last.lines.some(x => x[2]) ? '<p class="muted" style="margin:0 0 4px;font-size:13px">Tap a line to see why.</p>' : ''}${S.last.lines.map(([l,v,why], i) => why
-      ? `<button class="kv whyrow" aria-expanded="false" aria-controls="why${i}" data-why="${i}"><span>${l} <span class="info" aria-hidden="true">ⓘ</span></span><span style="color:${v<0?'var(--barn)':'var(--sage)'}">${v>0?'+':''}${fmt(v)}</span></button><div class="whytext hidden" id="why${i}">${why}</div>`
-      : `<div class="kv"><span>${l}</span><span style="color:${v<0?'var(--barn)':'var(--sage)'}">${v>0?'+':''}${fmt(v)}</span></div>`).join('')}
+    ${S.last ? `<h3 style="margin-top:12px">${r.weeks > 1 ? 'The last week' : 'Money'}</h3>${S.last.lines.some(x => x[2]) ? '<p class="muted" style="margin:0 0 4px;font-size:0.8125rem">Tap a line to see why.</p>' : ''}${S.last.lines.map(([l,v,why], i) => why
+      ? `<button class="kv whyrow" aria-expanded="false" aria-controls="why${i}" data-why="${i}"><span>${l} <span class="info" aria-hidden="true">ⓘ</span></span><span style="color:${v<0?'var(--down)':'var(--up)'}">${v>0?'+':''}${fmt(v)}</span></button><div class="whytext hidden" id="why${i}">${why}</div>`
+      : `<div class="kv"><span>${l}</span><span style="color:${v<0?'var(--down)':'var(--up)'}">${v>0?'+':''}${fmt(v)}</span></div>`).join('')}
       <div class="kv"><span><b>Paychecks and bills</b></span><span><b>${S.last.net>=0?'+':''}${fmt(S.last.net)}</b></span></div>` : ''}
-    ${r.happened.length ? `<h3 style="margin-top:12px">What happened</h3>${r.happened.map(h => `<div class="kv"><span>${h.ic} ${esc(h.title)}</span><span style="color:${h.money<0?'var(--barn)':'var(--sage)'}">${h.money ? (h.money>0?'+':'') + fmt(h.money) : ''}</span></div>`).join('')}` : ''}
+    ${r.happened.length ? `<h3 style="margin-top:12px">What happened</h3>${r.happened.map(h => `<div class="kv"><span>${h.ic} ${esc(h.title)}</span><span style="color:${h.money<0?'var(--down)':'var(--up)'}">${h.money ? (h.money>0?'+':'') + fmt(h.money) : ''}</span></div>`).join('')}` : ''}
     <div class="kv"><span><b>Total change in cash</b></span><span><b>${dm>=0?'+':''}${fmt(dm)}</b></span></div>${tattlerLine()}
     ${S.last && S.last.why && S.last.why.length ? `<h3 style="margin-top:12px">Why your stats moved${r.weeks > 1 ? ' last week' : ''}</h3>${S.last.why.map(w => `<div class="logitem">${w}</div>`).join('')}` : ''}
     ${S.practice ? '' : '<button class="btn ghost" id="outlook">📅 Money outlook: next 13 weeks</button>'}
@@ -69,7 +69,7 @@ function celebrate(list, then){
   const items = list.map(x => String(x).replace(/^(\S+) Badge earned: /, '$1 '));
   sheet(`<div class="celebrate${calmMotion() ? ' calm' : ''}" aria-hidden="true">${'<i></i>'.repeat(calmMotion() ? 0 : 14)}</div>
     <div class="big">🏅</div><h2 style="text-align:center">${list.length > 1 ? `${list.length} new milestones!` : 'A new milestone!'}</h2>
-    ${items.map(t => `<div class="logitem" style="text-align:center;font-size:16px"><b>${t}</b></div>`).join('')}
+    ${items.map(t => `<div class="logitem" style="text-align:center;font-size:1rem"><b>${t}</b></div>`).join('')}
     <p class="muted" style="text-align:center">Badges stay in your collection across all your lives.</p>
     <button class="btn primary" id="ok">Continue</button>`);
   announce(`New: ${items.join('. ')}`);
