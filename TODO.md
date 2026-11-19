@@ -4603,6 +4603,156 @@ old ones.
 
 </details>
 
+## Ideas round 55 (pick on the build board)
+
+61 ideas. Details: [docs/ideas/round-55.md](docs/ideas/round-55.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 55: Bundles part 7 and v1.1</b> (31 ideas)</summary>
+
+- [ ] 🔴 **i55-a01** Bundle: Bug-fix sweep: double taps, money and saving (M)
+- [ ] 🔴 **i55-a02** Bundle: Bug-fix sweep: keyboard focus after sheets (M)
+- [ ] 🔴 **i55-a03** Bundle: Bug-fix sweep: loading, backups and offline (M)
+- [ ] 🔴 **i55-a04** Bundle: Bug-fix sweep: the first hour (M)
+- [ ] 🔴 **i55-a05** Bundle: Round 50 cuts (M)
+- [ ] 🔴 **i55-a06** Bundle: One place for each thing (M)
+- [ ] 🟠 **i55-a07** Bundle: Plainer rules, shorter Help (M)
+- [ ] 🟠 **i55-a08** Bundle: Idea board prune (S)
+- [ ] 🔴 **i55-a09** Bundle: Golden path for a first life (L)
+- [ ] 🔴 **i55-a10** Bundle: Five moments every life has (M)
+- [ ] 🔴 **i55-a11** Bundle: Signature five and one word per thing (M)
+- [ ] 🟠 **i55-a12** Bundle: Numbers that read at a glance (M)
+- [ ] 🔴 **i55-a13** Bundle: Quality bar checks (M)
+- [ ] 🟠 **i55-a14** Bundle: First hour: jobs, rejections and early bills (M)
+- [ ] 🟠 **i55-a15** Bundle: First hour: a kinder first year (M)
+- [ ] 🟠 **i55-a16** Bundle: First-life check-ins (M)
+- [ ] 🔴 **i55-a17** Bundle: Ten-minute session: fewer taps per week (M)
+- [ ] 🟠 **i55-a18** Bundle: Ten-minute session: stop and pick up (M)
+- [ ] 🔴 **i55-a19** Bundle: Small towns: pins, via-stops and the rules (L)
+- [ ] 🔴 **i55-a20** Bundle: Friction threads that end in peace (L)
+- [ ] 🔴 **i55-a21** Bundle: Evenings: the night shift and the drive home (L)
+- [ ] 🟠 **i55-a22** Bundle: Evenings: daylight, Main Street at night and the sky (L)
+- [ ] 🔴 **i55-a23** Bundle: Clubs: join up and show up (L)
+- [ ] 🟠 **i55-a24** Bundle: Clubs: big events, doors and limits (L)
+- [ ] 🔴 **i55-a25** Bundle: Money as story: firsts and lean weeks (M)
+- [ ] 🟠 **i55-a26** Bundle: Money with neighbors: gifts, IOUs and tabs (M)
+- [ ] 🔴 **i55-a27** Bundle: Decade grades (M)
+- [ ] 🔴 **i55-a28** Bundle: Decade turns: the pressure points (M)
+- [ ] 🔴 **i55-a29** Bundle: Mentors: the old-timer who shows you the ropes (M)
+- [ ] 🔴 **i55-a30** Bundle: Mentors: passing it on (L)
+- [ ] 🔴 **i55-a31** Release plan: v1.1 — Easy to start, easy to come back to (L)
+
+</details>
+
+<details><summary><b>Ideas 55: The valley's changing work</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i55-b01** Jobs open and close with the game year (M)
+- [ ] 🔴 **i55-b02** 'New this year' tag on the job board (S)
+- [ ] 🔴 **i55-b03** A shrinking job warns you three years out (M)
+- [ ] 🟠 **i55-b04** Each field's pay grows at its own pace (M)
+- [ ] 🔴 **i55-b05** Solar installer crews in the wheat hills (M)
+- [ ] 🟠 **i55-b06** Drone spray pilot for the spring fields (M)
+- [ ] 🟠 **i55-b07** EV and hybrid tech in Walla Walla (S)
+- [ ] 🟠 **i55-b08** Battery yard technician by the substation (M)
+- [ ] 🔴 **i55-b09** Hanford winds down over the decades (M)
+- [ ] 🟠 **i55-b10** The last shift at Hanford (S)
+- [ ] 🔴 **i55-b11** Care work grows as the valley ages (M)
+- [ ] 🟠 **i55-b12** Home health aide on the farm roads (S)
+- [ ] 🟠 **i55-b13** Sorting robots come to the packing shed (M)
+- [ ] 🟠 **i55-b14** Office remote days grow with the years (S)
+- [ ] 🟠 **i55-b15** A coworking room above Main Street (M)
+- [ ] 🔴 **i55-b16** Evening bridge course before your job fades (M)
+- [ ] 🟠 **i55-b17** Boom jobs with an end date: the power line crew (M)
+- [ ] 🟠 **i55-b18** A new inn on Main Street hires a front desk (S)
+- [ ] 🟠 **i55-b19** Short-stay turnover: a tourism side gig (S)
+- [ ] 🟠 **i55-b20** Help lists when each job opened and when it fades (S)
+- [ ] 🔴 **i55-b21** Year in review: a 'Work in the valley' line (S)
+- [ ] 🟠 **i55-b22** The paper prints next year's hiring a year early (M)
+- [ ] 🟠 **i55-b23** A solar lease offer on your wheat ground (M)
+- [ ] 🟡 **i55-b24** Gone from the valley: jobs you outlived (S)
+- [ ] 🟡 **i55-b25** Farm equipment tech at the implement dealer (M)
+- [ ] 🟠 **i55-b26** Mentor pay: train the new trade late in your career (S)
+- [ ] 🟡 **i55-b27** Main Street jobs that thin out (S)
+- [ ] 🟡 **i55-b28** Vineyard irrigation tech as water gets tight (S)
+- [ ] 🟡 **i55-b29** Your kid's first job didn't exist when you were 18 (S)
+- [ ] 🔴 **i55-b30** Sim check: sixty years of the job board (M)
+
+</details>
+
+## Ideas round 56 (pick on the build board)
+
+61 ideas. Details: [docs/ideas/round-56.md](docs/ideas/round-56.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 56: Signature moments</b> (28 ideas)</summary>
+
+- [ ] 🔴 **i56-a01** Signature scenes: a full-page sheet, a gold edge and a pacing rule (M)
+- [ ] 🔴 **i56-a02** Directions that use your place as the landmark (S)
+- [ ] 🔴 **i56-a03** Sandbags at the Preston Avenue bridge at 2 a.m. (M)
+- [ ] 🔴 **i56-a04** Your kid's name read out in the gym (M)
+- [ ] 🔴 **i56-a05** The last tune you call at the jam (M)
+- [ ] 🔴 **i56-a06** The car in the ditch on 12, and who it turns out to be (M)
+- [ ] 🟠 **i56-a07** CPR in the bleachers (M)
+- [ ] 🟠 **i56-a08** Fish of a lifetime on the Touchet (S)
+- [ ] 🟠 **i56-a09** Your initials on the repainted welcome sign (S)
+- [ ] 🔴 **i56-a10** Sunrise from Lewis Peak after the worst year (S)
+- [ ] 🟠 **i56-a11** The boss who let you go applies to work for you (M)
+- [ ] 🟠 **i56-a12** Asked to carry the casket for the old-timer who taught you (M)
+- [ ] 🟠 **i56-a13** Last night at the tavern before your best friend moves (S)
+- [ ] 🟠 **i56-a14** The town picks you to flip on the Main Street lights (S)
+- [ ] 🔴 **i56-a15** Your folks sign the farm over at the kitchen table (L)
+- [ ] 🟠 **i56-a16** The kid you coached comes back grown (S)
+- [ ] 🟠 **i56-a17** Somebody in Richland has heard of you (S)
+- [ ] 🔴 **i56-a18** Your grown kid buys a house two streets over (M)
+- [ ] 🟡 **i56-a19** The first snow with nowhere to be (S)
+- [ ] 🔴 **i56-a20** Your last day: the crew lines the hallway (M)
+- [ ] 🔴 **i56-a21** The 3 a.m. drive to the Walla Walla hospital (M)
+- [ ] 🟠 **i56-a22** Your kid's last-second shot and the gym goes up (S)
+- [ ] 🟠 **i56-a23** Buy back the house you grew up in (M)
+- [ ] 🟡 **i56-a24** Your kid out-fishes you for the first time (S)
+- [ ] 🟠 **i56-a25** Two people at the old bachelor's funeral (S)
+- [ ] 🟠 **i56-a26** The first year Thanksgiving is at your house (S)
+- [ ] 🟠 **i56-a27** The pass closes and strangers sleep in the school gym (M)
+- [ ] 🔴 **i56-a28** Guard test: signature moments can't be farmed (S)
+
+</details>
+
+<details><summary><b>Ideas 56: Test coverage gaps</b> (33 ideas)</summary>
+
+- [ ] 🔴 **i56-b01** A broken save never locks you out of the title screen (S)
+- [ ] 🔴 **i56-b02** A player name with HTML in it shows as plain text everywhere (S)
+- [ ] 🔴 **i56-b03** Open-bug repros that stay quiet until the fix lands (S)
+- [ ] 🔴 **i56-b04** Repro: reloading during an event shows the same event again (i22-a01) (S)
+- [ ] 🟠 **i56-b05** Repro: an ending behind a notes sheet survives a reload (i22-a02) (S)
+- [ ] 🟠 **i56-b06** Repro: the wheat lease pays only for seasons it farmed (i22-a04–a06) (S)
+- [ ] 🟠 **i56-b07** Repro: a new job ends benefits; a raise keeps job time (i22-a03, a11) (S)
+- [ ] 🟠 **i56-b08** Repro: a new car or house drops the old one's extras (i22-a08, a26) (S)
+- [ ] 🟠 **i56-b09** Repro: helping with college never ends the game by itself (i22-a16) (S)
+- [ ] 🟠 **i56-b10** Repro: old saves and Hard mode price the mortgage right (i22-a18, a20) (S)
+- [ ] 🔴 **i56-b11** Repro: backups with odd parts restore safely (i22-a21, i54-a11, a12) (S)
+- [ ] 🟠 **i56-b12** Repro: a trip keeps 1 stop if you fall into debt (i22-a25) (S)
+- [ ] 🟡 **i56-b13** Repro: jam on jam weeks; gas spike uses real drive (i22-a13, a14) (S)
+- [ ] 🟠 **i56-b14** Repro: tutorial look-only step and Help close cleanly (i54-a10, a17) (S)
+- [ ] 🟡 **i56-b15** Repro: same backup file twice; focus after full slots (i54-a21, a22) (S)
+- [ ] 🔴 **i56-b16** Every event has a way to happen: a reach table (M)
+- [ ] 🔴 **i56-b17** Every job gets worked in the sim (M)
+- [ ] 🟠 **i56-b18** A worn-out bot that hits the hospital and the clinic (S)
+- [ ] 🟠 **i56-b19** A big-spender bot that reaches the debt ending (S)
+- [ ] 🔴 **i56-b20** The screen audit covers events, notes and the year in review (S)
+- [ ] 🟠 **i56-b21** Every event choice works for a broke 19-year-old too (S)
+- [ ] 🟠 **i56-b22** Debt and the last week: which ending wins, at the exact line (S)
+- [ ] 🔴 **i56-b23** Real saves from every tagged version, kept as fixtures (M)
+- [ ] 🟠 **i56-b24** Backup codes made by older versions still restore (S)
+- [ ] 🟠 **i56-b25** Story chains: every branch to its end (M)
+- [ ] 🟡 **i56-b26** A 4-week skip and four single weeks end the same (S)
+- [ ] 🟡 **i56-b27** Event perks last their window and no longer (S)
+- [ ] 🟡 **i56-b28** Long lives keep their lists short (S)
+- [ ] 🟡 **i56-b29** A practice life leaves no records behind (S)
+- [ ] 🟡 **i56-b30** Heir names at the edges (S)
+- [ ] 🟡 **i56-b31** Business rules past the happy path (S)
+- [ ] 🟡 **i56-b32** Same game in any time zone (S)
+- [ ] 🟡 **i56-b33** Reduce Motion stops the game's animations (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
