@@ -370,7 +370,7 @@ await t.check('pick life goals on the Life tab, and start a challenge from the t
 });
 
 await t.check('start and sell a business on the Life tab; skills show there too', async () => {
-  await life({ jobId: 'farmhand', money: 8000 }, 'life');
+  await life({ jobId: 'farmhand', money: 8000 }, 'life');   // i75-b15: the shop costs $6,000
   assert(/Skills/.test(await page.textContent('#main')), 'skills card missing');
   await page.click('[data-biz="shop"]');
   assert((await S()).biz.type === 'shop', 'business not started');
@@ -1030,7 +1030,7 @@ await t.check('i3-a19: the insurance sheet changes coverage and the weekly bill'
   const s = await S();
   assert(s.ins.auto === 'liab' && s.ins.renters === false, JSON.stringify(s.ins));
   await page.click('[data-tab=home]'); await page.click('#end'); await clearSheets();
-  assert(near((await S()).last.lines.find(l => l[0] === 'Insurance & phone')[1], -(160 - 35 - 15) * 12 / 52), 'the bill should drop by $50 a month');
+  assert(near((await S()).last.lines.find(l => l[0] === 'Insurance & phone')[1], -(220 - 75 - 15) * 12 / 52), 'the bill should drop by $90 a month');
 });
 
 await t.check('i3-a21/a22/a23: the home card shows the market and rates; refinancing and borrowing against the house work', async () => {
@@ -1080,7 +1080,7 @@ await t.check('i3-a15/a16: the harvest asks sell or store; stored wheat sells fr
 });
 
 await t.check('i3-a18: a cattle herd shows on the Life tab and warns when nobody has checked it', async () => {
-  await life({ jobId: 'farmhand', money: 10000 }, 'life');
+  await life({ jobId: 'farmhand', money: 20000 }, 'life');
   await page.evaluate(() => { startBiz('cattle'); S.biz.check = S.turn - 10; render(); });
   const txt = await page.textContent('#main');
   assert(/6 cows/.test(txt) && /Get outside/.test(txt), txt.slice(0, 200));

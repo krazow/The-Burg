@@ -55,8 +55,15 @@ const BIZ_DEP = 0.05;                     // businesses lose 5% of their value a
 // vehicle tabs: about 1% of what the vehicle is worth, at least $60 in 2027 dollars (R14)
 const vehicleTabs = () => Math.max(cost(60), (S.carValue || 0) * 0.01);
 // kids: $650 a month each, plus $200 of childcare when you commute 20+ miles; they lift you most in weeks at home (B4)
-const KID_COST = 650, KID_CARE_COMMUTE = 200;
-const kidCost = () => cost(KID_COST + (commuteOneWay() >= 20 ? KID_CARE_COMMUTE : 0));
+// i75-b28: a kid costs about $950 a month (2027 dollars), $400 of it childcare. Under about 60% of the state's median
+// income, Working Connections childcare caps what you pay for childcare at $115 a month (commute childcare included).
+const KID_COST = 950, KID_CARE = 400, KID_CARE_COMMUTE = 200, WCCC_LINE = 5000, WCCC_CAP = 115;
+const householdPay = () => { const j = !S.retired && S.jobId ? JOBS.find(x => x.id === S.jobId) : null;
+  return (j ? payNow(j) / (S.wage || 1) : 0) + (S.partner && S.ageMonths < 65 * 12 ? 1400 : 0); };   // monthly, in 2027 dollars
+const childcareHelp = () => householdPay() < WCCC_LINE;
+const kidMonthly = () => { const care = KID_CARE + (commuteOneWay() >= 20 ? KID_CARE_COMMUTE : 0);
+  return KID_COST - KID_CARE + (childcareHelp() ? Math.min(care, WCCC_CAP) : care); };
+const kidCost = () => cost(kidMonthly());
 const HALF_START_DIP = 5;                 // B2: a 6-month life starts with a little less happiness and health
 const studyDone = () => Math.floor(S.studyProg);   // weeks of classes done (a trip week counts 3/4, R11)
 const kidJoy = () => ['rest', 'community'].includes(S.focus) ? 0.6 : 0.1;
@@ -160,7 +167,20 @@ const jobById = id => JOBS.find(j => j.id === id);
 
 const EDU = ['High school diploma','Trade certificate','Associate degree',"Bachelor's degree"];
 const STUDY_NEED = [16, 40, 72];         // weeks of classes to reach the next level
-const TUITION   = [300, 350, 650];        // per month while studying
+const TUITION   = [520, 520, 1100];       // per month while studying (i75-b29: Walla Walla's community college, the Tri-Cities university campus)
+// i75-b29: the Washington College Grant pays all of it under $4,000 a month in pay (2027 dollars), none from $6,500
+const GRANT_FULL = 4000, GRANT_NONE = 6500;
+const grantShare = () => { const j = S && !S.retired && S.jobId ? JOBS.find(x => x.id === S.jobId) : null, p = j ? payNow(j) / (S.wage || 1) : 0;
+  return Math.max(0, Math.min(1, (GRANT_NONE - p) / (GRANT_NONE - GRANT_FULL))); };
+const tuitionNow = (lvl = S.edu) => cost(TUITION[lvl]) * (1 - grantShare());
+const tuitionWords = () => { const g = grantShare(); return g >= 0.995 ? `free with the Washington College Grant (${wk(cost(TUITION[S.edu]))} without it)` : `${wk(tuitionNow())}${g > 0.005 ? ` after a ${Math.round(g * 100)}% Washington College Grant` : ''}${S.money < 0 ? ', on your student loan while you\'re below $0' : ''}`; };
+// i75-b23: tuition in a week you're below $0 goes on a federal student loan (about 6.5%, 10 years) instead of the card
+const SLOAN_RATE = 0.065, SLOAN_MONTHS = 120;
+const sloanPerDollar = () => { const r = SLOAN_RATE / 12; return r / (1 - Math.pow(1 + r, -SLOAN_MONTHS)); };
+function tuitionOnLoan(amt){
+  const owed = (S.sloanLeft > 0 ? S.sloanLeft * S.sloanPay : 0) + amt * sloanPerDollar() * SLOAN_MONTHS;
+  S.sloanLeft = Math.max(S.sloanLeft || 0, SLOAN_MONTHS); S.sloanPay = owed / S.sloanLeft;
+}
 const SCHOOL    = ['a trade program in Walla Walla','community college classes','a university program in the Tri-Cities'];
 // i3-a02: a program to study in. Finishing a diploma in one makes it your major: +10% pay and better odds at matching jobs
 const PROGRAMS = {
@@ -196,7 +216,7 @@ const CARS = {
 };
 
 const FOCUS = {
-  work:     {ic:'💼', name:'Work extra hours', desc:'+20% pay, but it wears on you.', fx:{happy:-2, health:-1.5}, payMult:1.2, needsJob:true},
+  work:     {ic:'💼', name:'Work extra hours', desc:'Overtime at time and a half: +35% pay, but it wears on you.', fx:{happy:-2.5, health:-2}, payMult:1.35, needsJob:true},
   rest:     {ic:'🛋️', name:'Rest & recharge',  desc:'Sleep in, take it easy.',         fx:{happy:4, health:4}},
   community:{ic:'🤝', name:'Show up for town', desc:'Volunteer, potlucks, ballgames.',   fx:{community:4, happy:2}, cost:50},
   study:    {ic:'📚', name:'Take classes',     desc:'Work toward the next diploma.',    fx:{happy:-2}, study:true},

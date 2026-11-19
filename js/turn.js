@@ -156,9 +156,9 @@ function focusPreview(fk){
   const rut = fk !== 'study' && n > RUT_WEEKS;
   if (rut) fx.happy = (fx.happy || 0) - 1.2;
   if (f.payMult && j) cash.push(['overtime after taxes', payNow(j) * W * (f.payMult - 1) * (1 - K401[S.k401rate || 0]) * 0.85]);
-  if (f.hustle) { if (truckSeason()) cash.push(['a food-truck weekend', cost(1400) * (1 + skillLv('cook') * 0.15) * W]); else { const g = currentGig(); cash.push([g.name, hustlePay(g, 0.5)]); } }
+  if (f.hustle) { if (truckSeason()) cash.push(['a food-truck weekend', truckPay()]); else { const g = currentGig(); cash.push([g.name, hustlePay(g, 0.5)]); } }
   if (f.cost) cash.push([f.name.toLowerCase(), -cost(f.cost) * W]);
-  if (f.study && !S.certStudy && S.edu < 3) cash.push(['tuition', -cost(TUITION[S.edu]) * W]);
+  if (f.study && !S.certStudy && S.edu < 3 && tuitionNow() > 0.005) cash.push([S.money < 0 ? 'tuition (on your student loan)' : 'tuition', S.money < 0 ? 0 : -tuitionNow() * W]);
   return { fx, cash, money: cash.reduce((a, [, v]) => a + v, 0), eff, n, rut, away };
 }
 function previewLine(fk){
@@ -185,7 +185,7 @@ function billLines(off = 0){
   const rentV = -(home.own && S.mortgage ? S.mortgage : c(home.cost))*m;
   out.push([home.own ? 'Mortgage' : 'Rent', rentV]);
   const stocked = S.turn + off < S.stockUntil;
-  const foodV = -c(520 - (stocked ? GROCERY_SHARE * STOCK_OFF : 0))*(1 - skillLv('cook') * 0.04)*m, insV = -c(insMonthly())*m;   // i3-a19: what you picked on the insurance sheet ($160 by default)
+  const foodV = -c(520 - (stocked ? GROCERY_SHARE * STOCK_OFF : 0))*(1 - skillLv('cook') * 0.04)*m, insV = -c(insMonthly())*m;   // i3-a19: what you picked on the insurance sheet ($220 by default)
   out.push([stocked ? 'Food & utilities (stocked up)' : 'Food & utilities', foodV]);
   out.push(['Insurance & phone', insV]);
   if (mode() === 'hard') out.push(['Higher living costs (Hard, +10%)', (rentV + foodV + insV) * HARD_LIVING]);   // R15: 10% of rent, food and insurance
@@ -221,7 +221,7 @@ function lineWhy(l, f, j){
   if (l === 'Social Security') return 'Your Social Security check, paid weekly. It grows with the years you worked and rises with prices.';
   if (l === 'Pension') return 'Your public pension: you vested by working enough years in a public job.';
   if (l === '401(k) withdrawal') return 'In retirement about 4% of your 401(k) comes out each year.';
-  if (/^Paycheck/.test(l) && j) return `${j.title}: ${wk(payNow(j))}${f.payMult ? ', plus 20% for working extra hours' : ''}${S.raise > 1.005 ? `, with ${Math.round((S.raise - 1) * 100)}% in raises` : ''}. Pay grows about 2.5% a year.`;
+  if (/^Paycheck/.test(l) && j) return `${j.title}: ${wk(payNow(j))}${f.payMult ? `, plus ${Math.round((f.payMult - 1) * 100)}% for overtime at time and a half` : ''}${S.raise > 1.005 ? `, with ${Math.round((S.raise - 1) * 100)}% in raises` : ''}. Pay grows about 2.5% a year.`;
   if (l === 'Mortgage') return `Your ${home.name.toLowerCase()}: the payment was locked in when you bought (or refinanced).`;
   if (l === 'Rent') return `Rent on the ${home.name.replace(/^Rented /, '').toLowerCase()}. Rents rise with prices, about 3% a year.`;
   if (/^Food & utilities/.test(l)) return `Groceries, power and water${/stocked/.test(l) ? `, with groceries ${STOCK_OFF*100}% off from a stock-up run` : ''}${skillLv('cook') ? `, ${skillLv('cook') * 4}% less because you cook` : ''}.`;
@@ -232,7 +232,7 @@ function lineWhy(l, f, j){
   if (l === 'Dog food & vet') return 'Food and the vet for your dog.';
   if (l === 'Date nights') return 'Time out with your partner.';
   if (/^Partner's paycheck/.test(l)) return 'Your partner works part-time until 65.';
-  if (/^Kids? ?/.test(l) && /^Kid/.test(l)) return `About ${fmtc(KID_COST)} a month for each kid at home${commuteOneWay() >= 20 ? `, plus ${fmtc(KID_CARE_COMMUTE)} of childcare because you commute 20+ miles` : ''}.`;
+  if (/^Kids? ?/.test(l) && /^Kid/.test(l)) return `About ${fmtc(KID_COST)} a month for each kid at home, ${fmtc(KID_CARE)} of it childcare${commuteOneWay() >= 20 ? `, plus ${fmtc(KID_CARE_COMMUTE)} more childcare because you commute 20+ miles` : ''}${childcareHelp() ? `. Your income qualifies for Working Connections childcare, so you pay only ${fmtc(WCCC_CAP)} of the childcare` : ''}.`;
   if (l === 'Health care') return age() >= 65 ? 'Health care costs more from 65.' : 'Health care costs start at 50.';
   if (l === 'Long-term care insurance') return 'A monthly premium so care late in life is covered.';
   if (l === (FOCUS[S.focus] || {}).name) return `Your focus this week, ${l}, costs a little.`;
@@ -287,7 +287,12 @@ function weekTick(auto){
   planWeek(lines, notes);                          // i3-a30/a31/a33/a34: winters south, late-life care, probate and spare-room guests
   // i3-a03: a certificate course takes the week's classes first (its fee was paid up front)
   if (f.study && !certWeek(trip && trip.away ? TRIP_TIME : 1, notes) && S.edu < 3) {
-    lines.push(['Tuition', -cost(TUITION[S.edu])*m, `Classes at ${SCHOOL[S.edu]}, charged in weeks you Take classes.`]);
+    const tu = tuitionNow() * m, gr = grantShare();
+    const why = `Classes at ${SCHOOL[S.edu]}, charged in weeks you Take classes${gr > 0.005 ? `, with ${Math.round(gr * 100)}% paid by the Washington College Grant` : ''}.`;
+    if (tu > 0.005 && S.money < 0) {               // i75-b23: below $0, tuition goes on the student loan at about 6.5%
+      if (!(S.sloanLeft > 0)) notes.push(`🎓 You're below $0, so this week's tuition went on a federal student loan (about ${SLOAN_RATE * 100}%) instead of your card.`);
+      tuitionOnLoan(tu); lines.push(['Tuition (on your student loan)', 0]);
+    } else if (tu > 0.005) lines.push(['Tuition', -tu, why]);
     S.studyProg += trip && trip.away ? TRIP_TIME : 1;     // R11: a trip week is 3/4 of a week of classes
     if (S.studyProg >= STUDY_NEED[S.edu]) { graduate(); notes.push(`🎓 You earned your ${EDU[S.edu]}${S.major && S.major === S.program ? ` in ${PROGRAMS[S.major].name.toLowerCase()}` : ''}! New jobs unlocked.`); }
   }
