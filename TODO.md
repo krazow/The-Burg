@@ -2700,6 +2700,79 @@ old ones.
 
 </details>
 
+## Ideas round 30 (pick on the build board)
+
+59 ideas. Details: [docs/ideas/round-30.md](docs/ideas/round-30.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 30: Bundles and release plans</b> (33 ideas)</summary>
+
+- [ ] 🔴 **i30-a01** Bundle: Bug-fix sweep: the Out and about playtest (M)
+- [ ] 🔴 **i30-a02** Bundle: Cozy mode (L)
+- [ ] 🟠 **i30-a03** Bundle: Kind words and small kindnesses (M)
+- [ ] 🟠 **i30-a04** Bundle: Calm moments through the year (M)
+- [ ] 🔴 **i30-a05** Bundle: A valley culture calendar (M)
+- [ ] 🔴 **i30-a06** Bundle: Day trips to learn the valley's history (M)
+- [ ] 🟠 **i30-a07** Bundle: Ana, the crew and two languages (M)
+- [ ] 🟠 **i30-a08** Bundle: Visits that pull their weight (M)
+- [ ] 🟠 **i30-a09** Bundle: Working in town (M)
+- [ ] 🔴 **i30-a10** Bundle: Dev panel: odds, previews and diffs (M)
+- [ ] 🔴 **i30-a11** Bundle: Content lints (M)
+- [ ] 🔴 **i30-a12** Bundle: Balance dashboard and sim bots (L)
+- [ ] 🟠 **i30-a13** Bundle: Tuning in one file and a faster sim (L)
+- [ ] 🔴 **i30-a14** Bundle: Roadmap and the Seasons calendar (M)
+- [ ] 🟠 **i30-a15** Bundle: One town file (L)
+- [ ] 🟠 **i30-a16** Bundle: Written with the community (M)
+- [ ] 🔴 **i30-a17** Bundle: One Activities card for leagues (L)
+- [ ] 🔴 **i30-a18** Bundle: Kids in sports (M)
+- [ ] 🟠 **i30-a19** Bundle: Game days and the outdoors (M)
+- [ ] 🔴 **i30-a20** Bundle: Home internet and online classes (M)
+- [ ] 🔴 **i30-a21** Bundle: The town page (L)
+- [ ] 🔴 **i30-a22** Bundle: Screens at home (M)
+- [ ] 🟡 **i30-a23** Bundle: Shopping, mail and the monthly bills (M)
+- [ ] 🔴 **i30-a24** Bundle: Back on your feet after a layoff (M)
+- [ ] 🔴 **i30-a25** Bundle: Helping a neighbor through it (M)
+- [ ] 🟠 **i30-a26** Bundle: Food bank, Grange and giving back (L)
+- [ ] 🔴 **i30-a27** Bundle: Music: from a used fiddle to a band (M)
+- [ ] 🔴 **i30-a28** Bundle: Quilting and woodworking (M)
+- [ ] 🟠 **i30-a29** Bundle: Paint, photograph and write (M)
+- [ ] 🟠 **i30-a30** Bundle: On stage and at the bazaar (L)
+- [ ] 🔴 **i30-a31** Release plan: v0.3 — Solid ground (L)
+- [ ] 🔴 **i30-a32** Release plan: v0.4 — People (L)
+- [ ] 🔴 **i30-a33** Release plan: v0.5 — Seasons (L)
+
+</details>
+
+<details><summary><b>Ideas 30: Lifetime playtest</b> (26 ideas)</summary>
+
+- [ ] 🔴 **i30-b01** Bug: the grandkid's pickup is worth an eighth of a starter truck (S)
+- [ ] 🔴 **i30-b02** Bug: a ride's value never drops below 2027's $500 (S)
+- [ ] 🔴 **i30-b03** You're healthiest at 80: health's ceiling comes down with age (M)
+- [ ] 🔴 **i30-b04** Home comforts hold happiness in the 80s, not at 100 (M)
+- [ ] 🔴 **i30-b05** Retirement years can't drag the net-worth part down (S)
+- [ ] 🔴 **i30-b06** Downsize with the sale money: buy the smaller place outright (M)
+- [ ] 🟠 **i30-b07** Raises take 20 years to reach the cap, not 9 (S)
+- [ ] 🟠 **i30-b08** People skill slows the fade only up to 75 (S)
+- [ ] 🟠 **i30-b09** Retirees keep the same pace of events (S)
+- [ ] 🟠 **i30-b10** Family money arrives as a trust, not a lump (M)
+- [ ] 🟠 **i30-b11** The grandkid can take the family home instead of cash (M)
+- [ ] 🟠 **i30-b12** Money past the hand-down cap goes to the town (S)
+- [ ] 🟠 **i30-b13** Half your raise follows you to a job in the same field (S)
+- [ ] 🟠 **i30-b14** Badges and goals for the second half of life (M)
+- [ ] 🟠 **i30-b15** Turning down a council run twice puts it away for five years (S)
+- [ ] 🟡 **i30-b16** A council seat needs ten years in town (S)
+- [ ] 🟡 **i30-b17** Side hustles ease off after 70 (S)
+- [ ] 🟡 **i30-b18** Rides show their model year and wear with age (M)
+- [ ] 🟡 **i30-b19** Snowbird winters for retirees (M)
+- [ ] 🟡 **i30-b20** Classes after retirement are cheap and just for fun (S)
+- [ ] 🟡 **i30-b21** Quiet years count the small things in the year in review (S)
+- [ ] 🟡 **i30-b22** A finished town goal stops a long skip only the first time (S)
+- [ ] 🟡 **i30-b23** Report cards go yearly after 65, and skip "+0" (S)
+- [ ] 🟡 **i30-b24** At the top of the pay scale, the Jobs tab says so (S)
+- [ ] 🟡 **i30-b25** A Lifetime decade table in the sim report (S)
+- [ ] 🟠 **i30-b26** Life stages: one table drives drift, caps and event pools (L)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
