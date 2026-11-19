@@ -261,9 +261,11 @@ wxWrap('Windstorm', () => { S.outage = S.turn; });
 wxWrap('The Touchet is running high', (i, r, c) => { if (/sandbag/i.test(c.label)) helpOut(); });
 wxWrap('Water in the basements', (i, r, c) => { if (/muck/i.test(c.label)) helpOut(); return r + startDryOut(); });
 
-/* ---- round 75 part 2 hooks (events.js has the rest): the ice storm gets the outage choices (a19, a26, a33),
+/* ---- round 75 part 2 hooks (events.js has the rest): the ice storms get the outage choices (a19, a26, a33),
    and a block captain's plan already has June Harlow on it (a33) ---- */
 { const e = EVENTS.find(x => x.title === 'An ice storm'); if (e) { const orig = e.choices; e.choices = () => { const [b] = orig(); return outageChoices(b.label, b.go, 'the ice storm'); }; } }
+{ const e = EVENTS.find(x => x.title === 'Ice storm knocks out power'); if (e) { const orig = e.choices; e.choices = () => { const ch = orig(), i = ch.findIndex(c => /wait/i.test(c.label));
+  return i < 0 ? ch : [...ch.slice(0, i), ...outageChoices(ch[i].label, ch[i].go, 'the ice storm'), ...ch.slice(i + 1)]; }; } }
 { const e = EVENTS.find(x => x.title === 'The neighbor on oxygen'); if (e) { const orig = e.choices; e.choices = () => [
   ...(isCaptain() ? [{label:'She\'s on the storm plan: hook her up to the block\'s generator', go:() => { adj({ community:3 }); helpOut(); S.neighbors = { ...S.neighbors, june:'plan' };
     return 'June was first on your list. The generator was running at her place before her backup tank got low.'; }}] : []), ...orig()]; } }

@@ -204,6 +204,7 @@ function billLines(off = 0){
   { const j = S.retired ? null : job();                                 // i3-a10: union dues, not while on strike or gone
     if (j && j.union && !(S.strike && S.turn + off < S.strike.until) && !(S.notice != null && S.turn + off >= S.notice) && !(j.season && !jobInSeason(j, new Date(S.date + off * 7 * 864e5).getMonth()))) out.push(['Union dues', -payNow(j) * Math.pow(1 + WAGE_RATE, off / 52) * UNION_DUES * m]); }
   if (S.dog) out.push(['Dog food & vet', -c(45)*m]);
+  if (S.cat) out.push(['Cat food', -c(CAT_MONTHLY)*m]);              // W14: the barn cat
   if (S.partner) out.push(['Date nights', -c(120)*m]);
   const kidsHome = kidsAtHome();
   if (kidsHome) out.push([kidsHome > 1 ? `Kids (${kidsHome})` : 'Kid', -kidCost()*kidsHome*m]);
@@ -350,7 +351,7 @@ function weekTick(auto){
   if (smokeRuleWeek()) why.push(pushingSmoke() ? '😷 Pushing through full shifts in the smoke: full pay, full wear, and a chance of a sick week.' : '😷 The smoke rule at work: shorter days, 10% less pay, half the wear on your body.');
   if (commuteOneWay() >= 20) why.push(`🛣️ ${commuteOneWay()} miles each way${carpooling() ? ' (the carpool helps)' : ''}: ▼ happiness.`);
   if (S.money < 0) why.push('💳 Being in debt: ▼ happiness.');
-  if (S.partner || S.dog || kidsAtHome()) why.push(`🏡 ${[S.partner ? 'your partner' : '', S.dog ? 'your dog' : '', kidsAtHome() ? 'kids at home' : ''].filter(Boolean).join(', ').replace(/^./, c => c.toUpperCase())}: ▲ happiness.`);
+  if (S.partner || S.dog || S.cat || kidsAtHome()) why.push(`🏡 ${[S.partner ? 'your partner' : '', S.dog ? 'your dog' : '', S.cat ? 'your cat' : '', kidsAtHome() ? 'kids at home' : ''].filter(Boolean).join(', ').replace(/^./, c => c.toUpperCase())}: ▲ happiness.`);
   if (S.health < 35 && (S.focus === 'work' || S.focus === 'hustle')) why.push('😮‍💨 Pushing through low health with extra work: ▼▼ health.');
   if (S.focus !== 'study' && S.streakF === S.focus && S.streakN + 1 > RUT_WEEKS) why.push(`🔁 In a rut (${S.streakN + 1} weeks of the same thing): ▼ happiness.`);
   why.push(`⚖️ Stats drift toward the middle: high ones slip, low ones recover a little${a >= 50 ? ', and health drifts lower with age' : ''}.`);
@@ -363,7 +364,7 @@ function weekTick(auto){
   dh -= commuteOneWay() / 40 * driveDays() * (carpooling() ? 0.6 : 1);
   if (carpooling()) dc += 0.3;                    // riding with neighbors keeps you in the loop
   if (onBus()) dh -= 0.3;                          // i3-a14: longer days on the bus
-  dh += home.happy * 0.4 + (S.partner ? 0.6 : 0) + (S.dog ? 0.4 : 0) + kidsHome * kidJoy() - (S.money < 0 ? 2 : 0);
+  dh += home.happy * 0.4 + (S.partner ? 0.6 : 0) + (S.dog ? 0.4 : 0) + (S.cat ? 0.2 : 0) + kidsHome * kidJoy() - (S.money < 0 ? 2 : 0);
   dc += kidsHome * 0.2;
   if (S.council) dc += 0.8;
   if (awaySouth()) { dh = Math.max(dh, 0.5); dH = Math.max(dH, 0.3); dc -= 1.2; }   // i3-a30: sun holds you up, but town forgets you a little

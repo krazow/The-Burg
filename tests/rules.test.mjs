@@ -1658,19 +1658,20 @@ await t.check('i75-a14: after the flood, a raised furnace cuts later flood clean
 
 await t.check('i75-a19/a26: no power: remote workers choose the library, a vacation day or the lost day; cards by lantern need people', async () => {
   const r = await ev(() => {
-    const ev = EVENTS.find(e => e.title === 'The power is out');
-    fresh('two', { money: 3000, jobId: 'farmhand', community: 20, date: new Date(2027, 11, 6).getTime(), wxW: { y: 2027, kind: 'normal' } }); const plain = ev.choices().map(c => c.label);
-    S.partner = true; const withPartner = ev.choices().map(c => c.label); const h = S.happy, cm = S.community; ev.choices().find(c => /lantern/.test(c.label)).go();
+    const ev = EVENTS.find(e => e.title === 'Ice storm knocks out power'), open = () => ev.choices().filter(c => !c.if || c.if()).map(c => c.label);
+    fresh('two', { money: 3000, jobId: 'farmhand', community: 20, date: new Date(2027, 11, 6).getTime() }); const plain = open();
+    S.partner = true; const withPartner = open(); const h = S.happy, cm = S.community; ev.choices().find(c => /lantern/.test(c.label)).go();
     const lantern = [S.happy - h, S.community - cm];
-    fresh('two', { money: 3000, jobId: 'remote', edu: 3, community: 20, date: new Date(2027, 11, 6).getTime(), wxW: { y: 2027, kind: 'normal' } }); const remote = ev.choices().map(c => c.label);
-    ev.choices().find(c => /vacation/.test(c.label)).go(); const vacAgain = ev.choices().some(c => /vacation/.test(c.label));
+    fresh('two', { money: 3000, jobId: 'remote', edu: 3, community: 20, date: new Date(2027, 11, 6).getTime() }); const remote = open();
+    ev.choices().find(c => /vacation/.test(c.label)).go(); const vacAgain = open().some(l => /vacation/.test(l));
     const m = S.money; ev.choices().find(c => /Miss/.test(c.label)).go(); const miss = m - S.money;
-    const winter = ev.when(0); S.wxW.kind = 'hard'; const hard = ev.when(0); return { plain, withPartner, lantern, remote, vacAgain, miss, day: dayPay() + cr(60), summer: ev.when(6), winter, hard };
+    const ice = EVENTS.find(e => e.title === 'An ice storm'); const iceRemote = ice.choices().map(c => c.label);
+    return { plain, withPartner, lantern, remote, vacAgain, miss, day: dayPay(), iceRemote };
   });
-  assert(r.plain.length === 1 && /Wait it out/.test(r.plain[0]) && r.withPartner.some(l => /lantern/.test(l)), JSON.stringify(r));
-  assert(r.lantern[0] === 2 && r.lantern[1] === 1, `lantern (the outage's -1, then +3) ${r.lantern}`);
-  assert(r.remote.some(l => /library/.test(l)) && r.remote.some(l => /vacation/.test(l)) && r.remote.some(l => /Miss/.test(l)) && !r.vacAgain, JSON.stringify(r.remote));
-  assert(near(r.miss, r.day, 0.01) && !r.summer && r.winter && !r.hard, JSON.stringify(r));
+  assert(r.plain.some(l => /Wait it out/.test(l)) && !r.plain.some(l => /lantern|library/.test(l)) && r.withPartner.some(l => /lantern/.test(l)), JSON.stringify(r));
+  assert(r.lantern[0] === 1 && r.lantern[1] === 1, `lantern (waiting it out -2, then +3) ${r.lantern}`);
+  assert(r.remote.some(l => /library/.test(l)) && r.remote.some(l => /vacation/.test(l)) && r.remote.some(l => /Miss/.test(l)) && !r.remote.some(l => /Wait it out/.test(l)) && !r.vacAgain, JSON.stringify(r.remote));
+  assert(near(r.miss, r.day, 0.01) && r.iceRemote.some(l => /library/.test(l)), JSON.stringify(r));
 });
 
 await t.check('i75-a21: clearing the neighbor\'s walk costs a little health each snow and earns a pie after three winters', async () => {
@@ -1708,9 +1709,9 @@ await t.check('i75-a33: a block captain runs the storm plan: an evening, more co
   const r = await ev(() => {
     fresh('two', { community: 35 }); tab = 'life'; render(); const locked = !document.querySelector('#capton');
     S.community = 45; render(); document.querySelector('#capton').click(); const cap = !!S.captain;
-    const ws = EVENTS.find(e => e.title === 'Windstorm'), po = EVENTS.find(e => e.title === 'The power is out');
+    const ws = EVENTS.find(e => e.title === 'Windstorm'), po = EVENTS.find(e => e.title === 'Ice storm knocks out power'), plan = () => po.choices().find(c => /storm plan/.test(c.label));
     const first = ws.choices()[0].label; const c0 = S.community; ws.choices()[0].go(); const gain = S.community - c0;
-    po.choices()[0].go(); po.choices()[0].go(); render(); const list = [...document.querySelectorAll('#main ul[aria-label] li')].map(li => li.textContent);
+    plan().go(); plan().go(); render(); const list = [...document.querySelectorAll('#main ul[aria-label] li')].map(li => li.textContent);
     document.querySelector('#captoff').click(); const off = S.captain;
     return { locked, cap, first, gain, runs: 3, list, off };
   });
@@ -1722,6 +1723,40 @@ await t.check('i75: older saves load with the new weather fields', async () => {
   const r = await ev(() => { const s = migrate({ name: 'Old', len: 'two', turn: 40, date: new Date(2027, 9, 1).getTime(), ins: { auto: 'full', renters: true, ded: 1000 } });
     S = s; S.noEvents = true; const c = weatherCard(); weeks(2); return { walk: s.walk, captain: s.captain, roof: s.roofWait, ok: /Ready for weather/.test(c), wind: youPay('home', 3000, 'wind') }; });
   assert(r.walk === false && r.captain === null && r.roof === null && r.ok && r.wind === 0, JSON.stringify(r));
+});
+
+await t.check('Waitsburg pack A, part 1 (W1–W15): months, who sees what, town goals, prices that rise, and the barn cat', async () => {
+  const r = await ev(() => {
+    const E = t => EVENTS.find(e => e.title === t), open = e => e.choices().filter(c => !c.if || c.if()).map(c => c.label);
+    fresh('two', { community: 20 });
+    const all = TOWN_EVENTS_A1.every(e => evCat(e) === 'town' && EVENT_PLACE[e.title] && EVENT_PLACE[e.title][0] === 'T');
+    const months = { 'Preston Park cleanup day': [3], 'Museum open house': [5], 'Fourth of July parade': [6], 'Trout opener on Coppei Creek': [3], 'Library book sale': [9],
+      'Ice storm knocks out power': [11, 0, 1], 'Frozen pipes': [11, 0, 1], 'Citywide yard sale': [5], 'School fundraiser auction': [2], 'Fire district pancake breakfast': [4],
+      'Smoke from a wheat-field fire': [7], 'Mice in the walls': [9], "Neighbor's chickens loose in your yard": [2, 3, 4, 5, 6, 7] };
+    const badMonth = Object.entries(months).filter(([t, ms]) => [...Array(12).keys()].some(m => E(t).when(m) !== ms.includes(m))).map(([t]) => t);
+    const lowFloat = open(E('Fourth of July parade')).length, lowFlip = open(E('Fire district pancake breakfast')).length;
+    S.community = 45; const hiFloat = open(E('Fourth of July parade')).length, hiFlip = open(E('Fire district pancake breakfast')).length;
+    const renterPipes = open(E('Frozen pipes')).length; S.home = 'fixer'; const ownerPipes = open(E('Frozen pipes')).length;
+    S.skills = { handy: 8 }; const handyPipes = open(E('Frozen pipes')).length;
+    const once = !!E('An old friend moves back').once, yearly = ['Preston Park cleanup day', 'Mice in the walls', 'Ice storm knocks out power'].every(t => E(t).yr) && !E('FFA bake sale').yr;
+    // helping in the April cleanup counts as a week toward the spring town goal
+    S.date = new Date(2027, 3, 10).getTime(); S.sgoal = null; const h0 = S.community; E('Preston Park cleanup day').choices()[0].go(); const goal1 = S.sgoal && S.sgoal.prog;
+    S.sgoal.prog = SEASON_GOALS[0].need - 1; const wins = S.seasonWins || 0; const msg = E('Preston Park cleanup day').choices()[0].go(); const done = S.sgoal.done && S.seasonWins === wins + 1 && /town goal/.test(msg);
+    // prices rise with the cost of living
+    S.col = 1.5; const m0 = S.money; E('Trout opener on Coppei Creek').choices()[0].go(); const paid = m0 - S.money; const label = open(E('Trout opener on Coppei Creek'))[0];
+    // the barn cat: half a dog's cheer, about $20 a month, and it can't be adopted twice
+    fresh('two', { focus: 'rest' }); const b0 = week().lines; const happy0 = S.happy;
+    fresh('two', { focus: 'rest', cat: true }); const b1 = week().lines; const noSecond = !open(E('Mice in the walls')).some(l => /cat/.test(l));
+    return { all, badMonth, lowFloat, hiFloat, lowFlip, hiFlip, renterPipes, ownerPipes, handyPipes, once, yearly, goal1, done, paid, label, catBill: b1['Cat food'], noCatBill: b0['Cat food'], noSecond, h0 };
+  });
+  assert(r.all, 'every pack event is a town event with a Waitsburg map place');
+  assert(!r.badMonth.length, `wrong months: ${r.badMonth}`);
+  assert(r.lowFloat === 1 && r.hiFloat === 2 && r.lowFlip === 1 && r.hiFlip === 2, `community-gated choices ${JSON.stringify(r)}`);
+  assert(r.renterPipes === 1 && r.ownerPipes === 1 && r.handyPipes === 2, `frozen pipes choices ${JSON.stringify(r)}`);
+  assert(r.once && r.yearly, 'repeat rules are off');
+  assert(r.goal1 === 1 && r.done, `town goal ${JSON.stringify(r)}`);
+  assert(near(r.paid, 45) && r.label.includes('$45'), `the license should cost $45 at +50% prices: ${r.paid} / ${r.label}`);
+  assert(near(r.catBill, -20 * W) && r.noCatBill === undefined && r.noSecond, `cat ${JSON.stringify(r)}`);
 });
 
 // ---- ideas round 75, economy balance (i75-b01 … b14) ----

@@ -325,7 +325,7 @@ const EVENTS = [
    ============================================================ */
 // small state these events keep (new lives get it in newGame, older saves in migrate)
 const EVENT_STATE = () => ({ roadTo:null, healthPlan:null, skiPass:null, snowChains:null, gasFriend:false, applyBoost:0, hireBy:-1,
-  tradeBy:-1, raiseBoost:0, promoBoost:0, promo:null, danceBoost:false,   // danceBoost: W27
+  tradeBy:-1, raiseBoost:0, promoBoost:0, promo:null, danceBoost:false, ...townStateA(),   // danceBoost: W27
   // round 75 weather, part 2: the smoke rule at work, the air filter, a roof on the waiting list, the raised furnace,
   // a vacation day spent on an outage, the neighbor's walk, and the block captain's storm plan
   smokeRule:null, airFilter:null, roofWait:null, floodAsk:null, vacDay:null, walk:false, walkWinter:null, walkWinters:0, walkPie:false, captain:null });
@@ -929,7 +929,7 @@ function windChoices(){
   const own = !!HOMES[S.home].own;
   const plan = isCaptain() ? [{label:own ? 'Run the block\'s storm plan, and get on a roofer\'s list' : 'Run the block\'s storm plan (an evening)',
     go:() => runPlan('the windstorm') + (own ? ' ' + roofWaitList(roofCost()) : '')}] : [];
-  if (!own) return outageChoices('Check the damage', () => { adj({money:-cost(60), happy:-1}); return 'Power was out a day and the fridge food spoiled.'; }, 'the windstorm');
+  if (!own) return outageChoices('Check the damage', () => { if (S.generator) return 'Power was out a day, but your generator kept the fridge cold.'; adj({money:-cost(60), happy:-1}); return 'Power was out a day and the fridge food spoiled.'; }, 'the windstorm');
   const c = roofCost(), p = youPay('home', c, 'wind'), rush = Math.round(c * ROOF_RUSH), diy = Math.round(c * 0.5);
   return [...plan,
     {label:`Get on a roofer's list (you pay ${fmt(p)} when they come)`, go:() => { adj({happy:-1}); return roofWaitList(c); }},
@@ -985,10 +985,6 @@ const WX2_EVENTS = [
       {label:`Raise them up (-${fmt(cost(HOMES[S.home].cost))})`, go:() => { S.floodAsk = S.home; adj({money:-Math.round(cost(HOMES[S.home].cost))}); S.floodProof = S.home; practice('handy', 1); return `A plumber and a pallet of blocks. If the Touchet gets in again, the cleanup will cost about ${FLOOD_PROOF_OFF * 100}% less.`; }},
       {label:'Leave them where they are', go:() => { S.floodAsk = S.home; return 'The furnace stays on the floor. Here\'s hoping the levee holds.'; }}
     ] : [{label:'Mention it to your landlord', go:() => { S.floodAsk = S.home; adj({community:1}); return 'Your landlord said they\'d look into it. It\'s their furnace, after all.'; }}]},
-  // i75-a19/a26/a33: the power goes out (in a hard winter, weather.js's ice storm does it instead)
-  { ic:'🕯️', title:'The power is out', wx:1, w:2, when:m => inM(m,10,11,0,1,2) && !wxHard(),
-    text:() => `${inM(curMonth(),11,0,1) ? 'Wet snow on the lines' : 'A storm'} took the power out across town, and the power company says it could be a day or more.`,
-    choices:() => outageChoices(`Wait it out (-${fmtc(60)} of spoiled food)`, () => { S.outage = S.turn; adj({money:-cr(60), happy:-1}); return 'A cold, dark day, and the fridge food spoiled.'; }, 'the outage') },
   // i75-a25: high wind closes Highway 12 to trucks
   { ic:'🚛', title:'High wind closes Highway 12 to trucks', wx:1, cat:'road', yr:1, w:2, when:m => inM(m,2,3,4,9,10),
     text:() => S.jobId === 'trucker' && working() ? 'Gusts over 50 near Wallula. The state closed US-12 to high-profile trucks, and your load is due today.'
@@ -1020,7 +1016,7 @@ const WX2_EVENTS = [
 ];
 EVENTS.push(...WX2_EVENTS);
 Object.assign(EVENT_PLACE, { 'The smoke rule at work':'work', 'A cough in a smoke week':['T','home'], 'After the flood: the furnace':['T','home'],
-  'The power is out':['T','home'], 'High wind closes Highway 12 to trucks':'road', 'De-icing planes at 5 a.m.':'work', 'Heat limits in the suit at Hanford':'work' });
+'High wind closes Highway 12 to trucks':'road', 'De-icing planes at 5 a.m.':'work', 'Heat limits in the suit at Hanford':'work' });
 
 // each week (turn.js): the smoke rule's sick days, the roof on the waiting list, the raised furnace and the neighbor's walk
 function weatherLines(lines, notes){
