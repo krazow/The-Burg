@@ -190,8 +190,10 @@ await t.check('text contrast meets WCAG AA (4.5:1, or 3:1 for large text)', asyn
     await page.focus('[data-tab=menu]');
     await page.keyboard.press('Enter');
     await page.waitForSelector('#modal:not(.hidden)');
-    await page.waitForTimeout(80);
-    assert(await page.evaluate(() => document.querySelector('#sheet').contains(document.activeElement)), 'focus did not move into the Menu');
+    // the sheet moves focus on a short timer; wait for it (up to 2 s) instead of a fixed pause, which raced on a busy machine
+    const moved = await page.waitForFunction(() => document.querySelector('#sheet').contains(document.activeElement), null, { timeout: 2000 }).then(() => true, () => false);
+    if (!moved) await page.keyboard.press('Escape');              // don't leave the Menu open over the next checks
+    assert(moved, 'focus did not move into the Menu');
     assert((await page.getAttribute('#sheet', 'role')) === 'dialog' && (await page.getAttribute('#sheet', 'aria-modal')) === 'true', 'sheet is not a modal dialog');
     for (let i = 0; i < 12; i++) { await page.keyboard.press('Tab'); assert(await page.evaluate(() => document.querySelector('#sheet').contains(document.activeElement)), 'Tab left the Menu'); }
     await page.keyboard.press('Escape');
@@ -211,7 +213,7 @@ await t.check('text contrast meets WCAG AA (4.5:1, or 3:1 for large text)', asyn
     await page.focus('#helpbtn');
     await page.keyboard.press('Enter');
     await page.waitForSelector('#helpview:not(.hidden)');
-    await page.waitForTimeout(80);
+    await page.waitForFunction(() => document.activeElement && document.activeElement.id === 'helpclose', null, { timeout: 2000 }).catch(() => {});
     assert((await active()) === 'helpclose', `focus on ${await active()}`);
     await page.keyboard.press('Escape');
     await page.waitForTimeout(100);
