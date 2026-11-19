@@ -3316,6 +3316,76 @@ old ones.
 
 </details>
 
+## Ideas round 38 (pick on the build board)
+
+56 ideas. Details: [docs/ideas/round-38.md](docs/ideas/round-38.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 38: Balance — careless play</b> (26 ideas)</summary>
+
+- [ ] 🔴 **i38-a01** Hiring cheer once every 26 weeks (S)
+- [ ] 🟡 **i38-a02** Hiring cheer only for a better-paying job (S)
+- [ ] 🟠 **i38-a03** Quitting inside 13 weeks costs a little standing (S)
+- [ ] 🟡 **i38-a04** Three jobs in a year makes the next interview harder (S)
+- [ ] 🟠 **i38-a05** Summer town goal: drop 'Work extra hours' (S)
+- [ ] 🔴 **i38-a06** Town goals need 3 more weeks each (S)
+- [ ] 🟡 **i38-a07** Off-focus weeks set the town goal back a week (S)
+- [ ] 🔴 **i38-a08** Community pulls back harder above 60 (S)
+- [ ] 🟠 **i38-a09** Happiness pulls back harder above 70 (S)
+- [ ] 🟠 **i38-a10** Health score starts at 55, not 40 (S)
+- [ ] 🔴 **i38-a11** Out and about health only when health is under 70 (S)
+- [ ] 🟠 **i38-a12** Out and about adds at most 1 point per stat a week (S)
+- [ ] 🟡 **i38-a13** Visits lose their sparkle after 3 weeks in a row (M)
+- [ ] 🟠 **i38-a14** Events: a careless answer should average zero (M)
+- [ ] 🟠 **i38-a15** A rented room past 30 wears on you (S)
+- [ ] 🟠 **i38-a16** Lifetime: piles of cash count less than invested money (M)
+- [ ] 🟡 **i38-a17** Overtime weeks leave room for one visit (S)
+- [ ] 🔴 **i38-a18** Balance sim: careless ceilings per game length (S)
+- [ ] 🔴 **i38-a19** Balance sim: a job-hopping careless bot (S)
+- [ ] 🔴 **i38-a20** Balance sim: an Out-and-about careless bot (S)
+- [ ] 🟠 **i38-a21** Balance sim: 10 careless 5-year games, not 2 (S)
+- [ ] 🟠 **i38-a22** Balance sim: 5-year careless for every start (S)
+- [ ] 🟠 **i38-a23** Balance sim: score parts in the report (S)
+- [ ] 🟡 **i38-a24** Balance sim: how much events are worth (M)
+- [ ] 🟡 **i38-a25** Balance sim: try a rule change without editing the game (S)
+- [ ] 🟡 **i38-a26** Balance sim: careless 401(k) and carpool at random (S)
+
+</details>
+
+<details><summary><b>Ideas 38: Farther afield</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i38-b01** Far trips: a fourth kind of trip that takes the whole week (L)
+- [ ] 🔴 **i38-b02** A trip jar on Home: save toward a named trip (S)
+- [ ] 🔴 **i38-b03** Who watches the house and the dog while you're gone (S)
+- [ ] 🔴 **i38-b04** While you were gone: a short catch-up card (S)
+- [ ] 🟠 **i38-b05** The train out of Pasco to Portland or Seattle (M)
+- [ ] 🟠 **i38-b06** Season windows for the big places (S)
+- [ ] 🟡 **i38-b07** Wildflowers at Paradise: Mount Rainier in late July (S)
+- [ ] 🟠 **i38-b08** The long drive to Yellowstone needs a car that can make it (M)
+- [ ] 🟡 **i38-b09** Gorge wind and I-84 closures on the way to Portland (S)
+- [ ] 🟠 **i38-b10** A cousin's wedding in Boise: RSVP weeks ahead (S)
+- [ ] 🟠 **i38-b11** Whose family this Christmas? (M)
+- [ ] 🟠 **i38-b12** A specialist only in Spokane or Seattle (M)
+- [ ] 🟡 **i38-b13** Flown to a Spokane trauma center (M)
+- [ ] 🟠 **i38-b14** Get a passport first (S)
+- [ ] 🟠 **i38-b15** A friend's hometown in Mexico (M)
+- [ ] 🟡 **i38-b16** Jet lag: the week after a big trip abroad (S)
+- [ ] 🟡 **i38-b17** Bring something home for the neighbors (S)
+- [ ] 🟡 **i38-b18** Homesick on long trips (S)
+- [ ] 🟠 **i38-b19** The Northwest map: far places on a zoomed-out view (M)
+- [ ] 🟡 **i38-b20** Seattle rent shock (S)
+- [ ] 🟠 **i38-b21** An offer to leave town (M)
+- [ ] 🟠 **i38-b22** Your grown kid moves to Seattle (M)
+- [ ] 🟠 **i38-b23** Friends who moved away keep a couch for you (M)
+- [ ] 🟡 **i38-b24** A classmate moves back with a plan (M)
+- [ ] 🟡 **i38-b25** The class reunion brings everyone home (S)
+- [ ] 🟠 **i38-b26** Snowbird winters in Arizona (M)
+- [ ] 🟡 **i38-b27** Spokane's big spring run (S)
+- [ ] 🟡 **i38-b28** The 5 a.m. run to the Pasco airport (S)
+- [ ] 🟡 **i38-b29** Delayed in Seattle: the missed connection (S)
+- [ ] 🟡 **i38-b30** Postcards on the fridge from far places (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
