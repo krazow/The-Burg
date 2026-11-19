@@ -4978,9 +4978,9 @@ old ones.
 
 <details><summary><b>Ideas 60: 0.2.1 patch plan</b> (28 ideas)</summary>
 
-- [ ] 🔴 **i60-a01** H1 · A damaged save or thin backup never blanks the game (S)
-- [ ] 🔴 **i60-a02** H2 · One tap can no longer delete a life (S)
-- [ ] 🔴 **i60-a03** H3 · Beta lives live under their own keys (S)
+- [x] 🔴 **i60-a01** H1 · A damaged save or thin backup never blanks the game (S)
+- [x] 🔴 **i60-a02** H2 · One tap can no longer delete a life (S)
+- [x] 🔴 **i60-a03** H3 · Beta lives live under their own keys (S)
 - [ ] 🔴 **i60-a04** 01 · Double-tap on End Week plays one week (S)
 - [ ] 🔴 **i60-a05** 02 · Reloading during an event shows it again (S)
 - [ ] 🔴 **i60-a06** 03 · An ending sticks even if you close the app (S)
@@ -5189,6 +5189,83 @@ old ones.
 - [ ] 🔴 **i62-b30** This week in 1952: the crosswalk debate (S)
 - [ ] 🟠 **i62-b31** Each focus gets its own funny result lines (M)
 - [ ] 🟠 **i62-b32** The old-timer's one joke at the hardware counter (S)
+
+</details>
+
+## Ideas round 63 (pick on the build board)
+
+63 ideas. Details: [docs/ideas/round-63.md](docs/ideas/round-63.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 63: Debt and recovery in the score</b> (31 ideas)</summary>
+
+- [ ] 🔴 **i63-a01** Debt is scored against $90,000 in every game length (S)
+- [ ] 🔴 **i63-a02** Relaxed floors the debt part at −20, Normal and Hard at −33 (S)
+- [ ] 🔴 **i63-a03** Weeks spent deep in debt cost up to 6 points (M)
+- [ ] 🔴 **i63-a04** Climb out and the debt drag shrinks to a third (S)
+- [ ] 🟠 **i63-a05** "Climbed out" adds 2 points after a real hard stretch (S)
+- [ ] 🔴 **i63-a06** Sim bots for a no-job life, a comeback and an early truck buyer (M)
+- [ ] 🟠 **i63-a07** Guard test: more debt never raises the score (S)
+- [ ] 🟠 **i63-a08** A fresh 18-year-old gets 8 weeks of grace while job hunting (S)
+- [ ] 🟠 **i63-a09** Bad-luck debt drags at half (M)
+- [ ] 🔴 **i63-a10** The score sheet shows what debt costs and what climbing out wins back (S)
+- [ ] 🟡 **i63-a11** The score arrow says when debt moved it (S)
+- [ ] 🟠 **i63-a12** The week results warn when debt starts costing points (S)
+- [ ] 🔴 **i63-a13** The money talk: three ways out when you first go under (M)
+- [ ] 🟠 **i63-a14** A day-labor shift when you are broke and between jobs (M)
+- [ ] 🟠 **i63-a15** Trade the pickup down to a beater to climb out (S)
+- [ ] 🟡 **i63-a16** Relaxed: the debt counselor pays it down from your paycheck (M)
+- [ ] 🟡 **i63-a17** Hard counts debt weeks one and a half times (S)
+- [ ] 🟠 **i63-a18** Bankruptcy has a clear score rule (S)
+- [ ] 🟠 **i63-a19** Leaving town in debt shows how far you got (S)
+- [ ] 🔴 **i63-a20** A line under the title tells the comeback (S)
+- [ ] 🟠 **i63-a21** Hard times on the end sheet: the low point and the way back (S)
+- [ ] 🟡 **i63-a22** The share card shows the climb (S)
+- [ ] 🟠 **i63-a23** Back in the black: a badge for climbing out (S)
+- [ ] 🟡 **i63-a24** The Journal marks the week you got back above zero (S)
+- [ ] 🟡 **i63-a25** Report cards count the weeks in debt (S)
+- [ ] 🟡 **i63-a26** A climbed-out life never ends as Tumbleweed (S)
+- [ ] 🟠 **i63-a27** The −$15,000 warning says how many weeks you have left (S)
+- [ ] 🟠 **i63-a28** Help explains how debt affects the Life Score (S)
+- [ ] 🟡 **i63-a29** Young adults drag at half until 21 (S)
+- [ ] 🟠 **i63-a30** The balance report adds debt columns (S)
+- [ ] 🟡 **i63-a31** Debt-free challenge scores the climb, not just the finish (S)
+
+</details>
+
+<details><summary><b>Ideas 63: Backups and moving devices</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i63-b01** Backup code checks itself and names the broken part (S)
+- [ ] 🔴 **i63-b02** Backups say which format they are, and newer ones ask you to update (S)
+- [ ] 🟠 **i63-b03** One migrate table for saves and backups, with a step per format (M)
+- [ ] 🔴 **i63-b04** Safari tab to home-screen app: bring your lives along (S)
+- [ ] 🔴 **i63-b05** "Your lives were cleared" note when the browser wiped them (M)
+- [ ] 🟠 **i63-b06** A second copy of each life in IndexedDB (M)
+- [ ] 🟠 **i63-b07** Help: what wipes your lives, browser by browser (S)
+- [ ] 🔴 **i63-b08** Back up before the last month of a set-length life (S)
+- [ ] 🟠 **i63-b09** The year in review has a Back up button (S)
+- [ ] 🟠 **i63-b10** Each life knows when it was last backed up (S)
+- [ ] 🟡 **i63-b11** Backup reminder setting: every season, every year, or never (S)
+- [ ] 🔴 **i63-b12** Animated QR to move every life, not just one (L)
+- [ ] 🟠 **i63-b13** Scan a QR inside the game with the camera (M)
+- [ ] 🟠 **i63-b14** A QR the phone's own camera can open (M)
+- [ ] 🔴 **i63-b15** Moving to a new phone: a two-screen guide (M)
+- [ ] 🟡 **i63-b16** The new phone shows a short 'got it' code back (S)
+- [ ] 🟠 **i63-b17** Email the backup code to yourself (S)
+- [ ] 🟡 **i63-b18** Split a long code into numbered parts for texting (S)
+- [ ] 🟡 **i63-b19** A printable paper backup (M)
+- [ ] 🟠 **i63-b20** A one-life code that's short enough to read aloud (M)
+- [ ] 🟡 **i63-b21** Codes start with a readable label (S)
+- [ ] 🔴 **i63-b22** Restoring an older copy of a life is marked 'rewound' (M)
+- [ ] 🟡 **i63-b23** Pick which lives to bring in (S)
+- [ ] 🟠 **i63-b24** Each life gets a lasting id (S)
+- [ ] 🟡 **i63-b25** Name this device (S)
+- [ ] 🟡 **i63-b26** Check an old backup file without restoring (S)
+- [ ] 🟡 **i63-b27** A backup file you can read (S)
+- [ ] 🟠 **i63-b28** Weekly challenge lives travel, but keep their week (S)
+- [ ] 🟡 **i63-b29** Restore on a phone that is nearly full (S)
+- [ ] 🟠 **i63-b30** Two-phone QR test (S)
+- [ ] 🟠 **i63-b31** Format fixtures for every backup version (S)
+- [ ] 🔴 **i63-b32** Bundle: Moving phones without a server (L)
 
 </details>
 
