@@ -158,8 +158,16 @@ function guideHTML(){
       <li>Show up for town. Community counts for the score, helps you get hired, and unlocks the council.</li>
       <li>Watch the week strip. If a stat keeps going ▼, change your focus before it turns red.</li>
       <li>Before a risky choice, save a copy (Menu → 💾 Save game) so you can come back.</li></ul>`],
+    ['settings', '⚙️ Settings: night theme, text size, sounds', `
+      <p>Open <b>Menu → ⚙️ Settings</b> (or Settings on the title screen). Settings are saved on this device for every life and never change the game's numbers.</p>
+      <ul><li><b>Theme:</b> Day, Night, or Match phone (the default), which follows your phone's dark mode.</li>
+      <li><b>Text size:</b> Normal, Large or Larger.</li>
+      <li><b>Sounds:</b> off at first. Soft or Normal plays small sounds made by the game itself (nothing to download, so they work offline): a tick for each week, a chime for events, a fanfare for badges. ⏩ and Auto stay quiet until something happens.</li>
+      <li><b>Vibration:</b> a short buzz for events and badges on phones that can (iPhones can't).</li>
+      <li><b>Swipes:</b> swipe left or right on the page to move between Home, Jobs, Life and the Journal. Pull the little handle at the top of a pop-up down to close it. Events that ask you to choose can't be swiped away.</li></ul>
+      <p>On a tablet, a computer or a phone held sideways, Home shows two columns, with your job, home, ride and recent journal entries at the side.</p>`],
     ['install', '📱 Installing and playing offline', `
-      <p>The Burg is a web app you can install. On iPhone, open it in Safari, tap Share, then <b>Add to Home Screen</b>. On Android, open it in Chrome and tap <b>Install app</b> (or ⋮ → Add to Home screen). After the first visit it works offline.</p>
+      <p>The Burg is a web app you can install. On iPhone, open it in Safari, tap Share, then <b>Add to Home Screen</b>. On Android, open it in Chrome and tap <b>Install app</b> (or ⋮ → Add to Home screen). After the first visit it works offline. After you've played a couple of months, Home may offer an <b>Install</b> button where your browser supports it; <b>Not now</b> hides it for two weeks.</p>
       <p>There's also an <b>Android app (APK)</b> and a <b>Windows installer</b> on the game's GitHub releases page: github.com/krazow/The-Burg/releases.</p>
       <p>Version ${APP_VERSION}.</p>`]
   ];

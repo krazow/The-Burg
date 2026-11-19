@@ -68,8 +68,9 @@ function renderTitle(){
     ${hasRecords() ? '<button class="btn ghost" id="records">🏆 Your records</button>' : ''}
     <button class="btn ghost" id="how">❓ Help & tutorial</button>
     <button class="btn ghost" id="restore">📥 Restore from a backup</button>
-    ${Object.keys(store.get(BADGE_KEY) || {}).length ? `<div class="muted" style="margin-top:10px;font-size:13px">🏅 Badges collected across your lives: ${BADGES.filter(b => (store.get(BADGE_KEY) || {})[b.id]).map(b => b.ic).join(' ')} (${Object.keys(store.get(BADGE_KEY) || {}).length}/${BADGES.length})</div>` : ''}
-    <div class="muted" style="margin-top:14px;font-size:12px">v${APP_VERSION}</div>
+    <button class="btn ghost" id="settings">⚙️ Settings</button>
+    ${Object.keys(store.get(BADGE_KEY) || {}).length ? `<div class="muted" style="margin-top:10px;font-size:0.8125rem">🏅 Badges collected across your lives: ${BADGES.filter(b => (store.get(BADGE_KEY) || {})[b.id]).map(b => b.ic).join(' ')} (${Object.keys(store.get(BADGE_KEY) || {}).length}/${BADGES.length})</div>` : ''}
+    <div class="muted" style="margin-top:14px;font-size:0.75rem">v${APP_VERSION}</div>
   </div>`;
   let bg = 'fresh', md = 'normal';
   const moreSum = () => { $('#moresum').textContent = `${BACKGROUNDS[bg].ic} ${BACKGROUNDS[bg].name} · ${MODES[md].ic} ${MODES[md].name}`; };
@@ -103,6 +104,7 @@ function renderTitle(){
     $('#n').onclick = closeSheet;
   };
   $('#restore').onclick = restoreSheet;
+  $('#settings').onclick = () => settingsSheet(false);
   if ($('#records')) $('#records').onclick = recordsSheet;
 }
 /* ---------- 🏆 Your records (G7, R7): best scores by length × mode, challenges, and this week's weekly challenge ---------- */
@@ -479,13 +481,14 @@ function renderHome(){
     : `<div class="card warn">${why} <button class="sm" data-sugg="${fk}">${FOCUS[fk].ic} ${FOCUS[fk].name} this week</button></div>`;
   const streak = S.streakF === S.focus && S.focus !== 'study' && S.streakN >= 4
     ? `<div class="s">🔁 ${S.streakN} weeks in a row: next week it works at ${Math.round(focusEffect(S.focus, S.streakN + 1) * 100)}%${S.streakN >= RUT_WEEKS ? ', and you\'re in a rut (−happiness)' : ''}.</div>` : '';
-  $('#main').innerHTML = `
+  $('#main').innerHTML = `<div class="homegrid"><div class="hmain">
   <div class="card"><div class="stats">
     ${statBtn('happy','Happiness', S.happy)}${statBtn('health','Health', S.health)}
     ${statBtn('community','Community', S.community)}
-    <button class="stat statbtn" data-stat="net" aria-label="Net worth: what counts"><label><span>Net worth <span class="info">ⓘ</span></span></label><div style="font-weight:800;font-size:18px;margin-top:2px">${fmt(netWorth())}</div></button>
+    <button class="stat statbtn" data-stat="net" aria-label="Net worth: what counts"><label><span>Net worth <span class="info">ⓘ</span></span></label><div style="font-weight:800;font-size:1.125rem;margin-top:2px">${fmt(netWorth())}</div></button>
   </div>${scoreButton()}</div>
   ${tip ? `<div class="card tip"><div>${tip.text}</div><button class="sm alt" data-tip="${tip.id}">Got it</button></div>` : ''}
+  ${installReady() ? `<div class="card tip installcard"><div>📲 <b>Enjoying the Burg?</b> Install it: it opens from your home screen like an app and plays offline.</div><div class="slotbtns"><button class="sm" id="install">Install</button><button class="sm alt" id="installno">Not now</button></div></div>` : ''}
   ${!j && !S.retired ? `<div class="card warn">💼 No paycheck coming in. <button class="sm" data-go="jobs">Find a job</button></div>` : ''}
   ${S.happy < 30 ? sugg('happy', 'outdoors', `😟 Happiness is low (${Math.round(S.happy)}).`) : ''}
   ${S.health < 30 ? sugg('health', 'rest', `🤒 Health is low (${Math.round(S.health)}).`) : ''}
@@ -499,14 +502,17 @@ function renderHome(){
     <div class="fdesc"><b>${f.ic} ${f.name}:</b> ${f.study && S.edu < 3 ? `work toward a ${EDU[S.edu+1].toLowerCase()} (${studyDone()}/${STUDY_NEED[S.edu]} weeks).` : f.desc}${f.study && S.edu < 3 ? ` ${wk(cost(TUITION[S.edu]))}.` : f.cost ? ` ${wk(cost(f.cost))}.` : ''}${streak}</div>`}
     ${planLine()}
     ${outButton()}
-  </div>
+  </div></div>
+  <aside class="hside" aria-label="At a glance">
   <div class="card sumrow">
     <button class="sumchip" data-go="jobs">${work}</button>
     <button class="sumchip" data-go="life">🏠 ${HOMES[S.home].name.replace(/^Rented /,'')}</button>
     <button class="sumchip" data-go="life">🛻 ${CARS[S.car].name}</button>
     <button class="sumchip" data-go="life">🎓 ${EDU[S.edu].replace(' diploma','')}</button>
     <button class="sumchip${S.trip ? ' on' : ''}" id="tripchip">${tripChip()}</button>
-  </div>`;
+  </div>
+  ${S.log.length ? `<div class="card wideonly"><h3>📜 Lately</h3>${S.log.slice(0, 6).map(e => `<div class="logitem"><em>${e.d}</em>${e.m}</div>`).join('')}<button class="sm alt" data-go="log" style="margin-top:8px">Open the Journal</button></div>` : ''}
+  </aside></div>`;
   $('#tripchip').onclick = () => S.trip ? tripSheet(S.trip.city) : tripPicker();
   $('#outbtn').onclick = outSheet;
   document.querySelectorAll('.fbtn').forEach(b => b.onclick = () => handFocus(b.dataset.f));
@@ -516,6 +522,26 @@ function renderHome(){
   document.querySelectorAll('[data-sugg]').forEach(b => b.onclick = () => handFocus(b.dataset.sugg, true));
   document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { tab = b.dataset.go; render(); window.scrollTo(0,0); });
   document.querySelectorAll('[data-tip]').forEach(b => b.onclick = () => { setPref('tips', [...(prefs().tips || []), b.dataset.tip]); renderHome(); });
+  if ($('#install')) $('#install').onclick = installNow;
+  if ($('#installno')) $('#installno').onclick = () => { setPref('installNo', Date.now()); renderHome(); announce('OK. Help has the install steps any time.'); };
+}
+// i2-a30: offer to install at a good moment: after a couple of months of play, when no other tip is showing,
+// and never when it's already installed (home-screen app or the Android app) or the browser can't install it
+const INSTALL_AFTER = 8, INSTALL_SNOOZE = 14 * 864e5;
+const isInstalled = () => (typeof matchMedia === 'function' && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true || String(document.referrer || '').startsWith('android-app://');
+function installReady(){
+  const p = prefs();
+  return !!(typeof INSTALL_EVT !== 'undefined' && INSTALL_EVT) && !S.practice && !isInstalled() && !p.installed
+    && !(p.installNo && Date.now() - p.installNo < INSTALL_SNOOZE) && S.turn >= INSTALL_AFTER && !currentTip();
+}
+function installNow(){
+  const e = INSTALL_EVT; if (!e) return;
+  INSTALL_EVT = null;
+  try {
+    e.prompt();
+    Promise.resolve(e.userChoice).then(c => { if (c && c.outcome === 'accepted') { setPref('installed', true); toast('📲 Installed: find the Burg on your home screen.'); } else setPref('installNo', Date.now()); if (S && tab === 'home') renderHome(); }).catch(() => {});
+  } catch(err){}
+  if (S && tab === 'home') renderHome();
 }
 // i2-a12: picking a focus by hand; with a plan on, it pauses the plan for this week only
 function handFocus(k, say){
@@ -628,7 +654,7 @@ function renderJobs(){
   ${jobCity!=='all' ? `<div class="card muted">${CITIES[jobCity].blurb}</div>` : ''}
   <div class="card">
     <h3>Job board <span class="tag">${S.applied ? 'Applied this week' : '1 application per week'}</span></h3>
-    <p class="muted" style="margin:0 0 4px;font-size:13px">Take-home is pay after taxes and gas${job() && !S.retired ? ', with ▲▼ against your current job' : ''}.</p>
+    <p class="muted" style="margin:0 0 4px;font-size:0.8125rem">Take-home is pay after taxes and gas${job() && !S.retired ? ', with ▲▼ against your current job' : ''}.</p>
     ${list.map(jobRow).join('') || '<p class="muted">No jobs match.</p>'}
   </div>`}
   ${j && !S.retired && commuteOneWay() >= 20 ? `<div class="card"><h3>🚙 Carpool</h3>
@@ -845,6 +871,7 @@ function showMenu(){
     <button class="btn primary" id="load">📂 Load game</button>
     <button class="btn ghost" id="backup">📤 Back up or restore</button>
     <p class="muted" style="margin-top:12px">${esc(S.name)}'s life is in slot ${S.slot+1} and also saves itself after every week.</p>
+    <button class="btn ghost" id="settings">⚙️ Settings</button>
     <button class="btn ghost" id="skipopts">⏩ Skip and Auto options</button>
     <button class="btn ghost" id="help">❓ Help & tutorial</button>
     <button class="btn ghost" id="title">Back to title screen</button>
@@ -853,11 +880,40 @@ function showMenu(){
   $('#save').onclick = saveCopySheet;
   $('#load').onclick = loadSheet;
   $('#backup').onclick = backupSheet;
+  $('#settings').onclick = () => settingsSheet(true);
   $('#skipopts').onclick = skipSheet;
   $('#help').onclick = showHelp;
   $('#title').onclick = () => { save(); closeSheet(); S = null; renderTitle(); };
   $('#retireNow').onclick = confirmRetire;
   $('#close').onclick = closeSheet;
+}
+
+/* ---------- ⚙️ Settings (i2-a03): comfort options in one place; none of them changes the game ---------- */
+const SETTING_ROWS = [
+  ['theme', '🌗 Theme', 'Night is easier on the eyes in the dark. Match phone follows your phone\'s dark mode.'],
+  ['textSize', '🔠 Text size', 'Makes all the writing bigger.'],
+  ['sound', '🎵 Sounds', 'Small sounds for a new week, events and badges. Quiet while ⏩ and Auto play.'],
+  ['vibrate', '📳 Vibration', 'A short buzz for events and badges, on phones that can (not iPhones).'],
+  ['swipe', '👆 Swipes', 'Swipe left or right to change tabs, and swipe a pop-up\'s handle down to close it.']
+];
+function settingsSheet(fromMenu = false, keep = null){
+  const canBuzz = typeof navigator !== 'undefined' && 'vibrate' in navigator;
+  sheet(`<h2>⚙️ Settings</h2><p class="muted">These are saved on this device for every life. They don't change the game.</p>
+    ${SETTING_ROWS.filter(([k]) => k !== 'vibrate' || canBuzz).map(([k, label, desc]) => `<div class="setrow" role="group" aria-labelledby="set-${k}">
+      <div class="setl" id="set-${k}">${label}</div>
+      <div class="seg">${SETTINGS[k].opts.map(([v, l]) => `<button data-set="${k}" data-v="${v}" class="${setting(k) === v ? 'on' : ''}" aria-pressed="${setting(k) === v}">${l}</button>`).join('')}</div>
+      <div class="s">${desc}</div></div>`).join('')}
+    <button class="btn ghost" id="back">${fromMenu ? '← Back to Menu' : 'Done'}</button>`);
+  document.querySelectorAll('#sheet [data-set]').forEach(b => b.onclick = () => {
+    const k = b.dataset.set, v = b.dataset.v;
+    setPref(k, v); applyPrefs();
+    if (k === 'sound') sfx('tap');
+    if (k === 'vibrate') buzz('week');
+    settingsSheet(fromMenu, { k, v, top: $('#sheet').scrollTop });
+    announce(`${SETTING_ROWS.find(r => r[0] === k)[1].replace(/^\S+ /, '')}: ${b.textContent.replace(/^[^\w]+/u, '')}`);
+  });
+  $('#back').onclick = () => fromMenu ? showMenu() : closeSheet();
+  if (keep) { const b = $(`#sheet [data-set="${keep.k}"][data-v="${keep.v}"]`); $('#sheet').scrollTop = keep.top; setTimeout(() => { if (b) b.focus({ preventScroll: true }); }, 40); }
 }
 
 // H2: ending a life early asks first, with the score so far and 'Keep playing' as the safe choice (Escape = keep playing)
@@ -875,7 +931,8 @@ let lastFocus = null;
 function sheet(html){
   const wasOpen = !$('#modal').classList.contains('hidden');
   if (!wasOpen) lastFocus = document.activeElement && document.activeElement.id ? document.activeElement.id : null;
-  const sh = $('#sheet'); sh.innerHTML = html; $('#modal').classList.remove('hidden'); sh.scrollTop = 0;
+  const sh = $('#sheet'); sh.className = 'sheet'; sh.style.transform = ''; sh.innerHTML = html; $('#modal').classList.remove('hidden'); sh.scrollTop = 0;
+  if (sheetCloser(sh)) sh.insertAdjacentHTML('afterbegin', '<div class="grab" aria-hidden="true"><i></i></div>');   // i2-a22: a handle to swipe it away
   const h = sh.querySelector('h2'); sh.setAttribute('aria-label', h ? h.textContent : 'Message');
   const first = sh.querySelector('[data-i], button.primary, button');
   if (first && !(typeof TUT !== 'undefined' && TUT)) setTimeout(() => first.focus({ preventScroll: true }), 30);   // the tutorial places focus itself
@@ -886,6 +943,9 @@ function closeSheet(){
   $('#modal').classList.add('hidden');
   if (wasOpen) setTimeout(() => { const el = lastFocus && document.getElementById(lastFocus); if (el && !TUT) el.focus({ preventScroll: true }); }, 30);
 }
+// the button that closes the open sheet the safe way (Escape and a swipe down both use it); sheets that ask
+// for a choice (events with data-i buttons) have none, so they can't be swiped or escaped away
+const sheetCloser = (sh = $('#sheet')) => sh.querySelector('[data-i]') ? null : ['#no', '#close', '#back', '#ok'].map(q => sh.querySelector(q)).find(Boolean) || null;
 const focusables = root => [...root.querySelectorAll('button:not([disabled]), [tabindex="0"], input, a[href]')].filter(e => e.offsetParent !== null || e.closest('svg'));
 // say something to screen readers without showing it
 function announce(msg){ const r = $('#sr'); if (!r) return; r.textContent = ''; setTimeout(() => { r.textContent = msg; }, 60); }
@@ -904,4 +964,45 @@ document.addEventListener('keydown', e => {
     if (e.shiftKey && (i <= 0)) { e.preventDefault(); f[f.length - 1].focus(); }
     else if (!e.shiftKey && (i === -1 || i === f.length - 1)) { e.preventDefault(); f[0].focus(); }
   }
+});
+
+/* ---------- 👆 swipes (i2-a22): left/right on the page changes tabs; the handle on a pop-up swipes it closed ---------- */
+const SWIPE_TABS = [['home', 'Home'], ['jobs', 'Jobs'], ['life', 'Life'], ['log', 'Journal']];
+const SWIPE_MIN = 70;                 // px sideways before a swipe counts, and it must be mostly sideways, so scrolling never triggers it
+let swipeAt = null;
+const swipeOK = () => setting('swipe') !== 'off' && !(typeof TUT !== 'undefined' && TUT);
+function swipeTab(dir){
+  if (!S || !swipeOK()) return false;
+  const i = SWIPE_TABS.findIndex(t => t[0] === tab), n = i + dir;
+  if (i < 0 || n < 0 || n >= SWIPE_TABS.length) return false;
+  tab = SWIPE_TABS[n][0]; MAPSIDE = null; MAPSEL = null; render(); window.scrollTo(0, 0);
+  const m = $('#main'); if (m) m.classList.add(dir > 0 ? 'slide-l' : 'slide-r');
+  announce(`${SWIPE_TABS[n][1]} tab`);
+  return true;
+}
+document.addEventListener('pointerdown', e => {
+  swipeAt = null;
+  if (e.pointerType === 'mouse' || !e.isPrimary || !swipeOK()) return;
+  const t = e.target;
+  if (t.closest && t.closest('.grab')) { swipeAt = { kind: 'sheet', x: e.clientX, y: e.clientY, t: Date.now(), id: e.pointerId }; try { t.closest('.grab').setPointerCapture(e.pointerId); } catch(_){} return; }
+  if (!t.closest || !t.closest('#main') || t.closest('.chips, .mapsvg, input, textarea, .seg')) return;
+  if (!$('#modal').classList.contains('hidden') || !$('#helpview').classList.contains('hidden')) return;
+  swipeAt = { kind: 'tab', x: e.clientX, y: e.clientY, t: Date.now(), id: e.pointerId };
+});
+document.addEventListener('pointermove', e => {
+  if (!swipeAt || swipeAt.kind !== 'sheet' || e.pointerId !== swipeAt.id) return;
+  const dy = Math.max(0, e.clientY - swipeAt.y); $('#sheet').style.transform = dy ? `translateY(${dy}px)` : '';
+});
+document.addEventListener('pointercancel', () => { if (swipeAt && swipeAt.kind === 'sheet') $('#sheet').style.transform = ''; swipeAt = null; });
+document.addEventListener('pointerup', e => {
+  const s0 = swipeAt; swipeAt = null;
+  if (!s0 || e.pointerId !== s0.id) return;
+  const dx = e.clientX - s0.x, dy = e.clientY - s0.y, quick = Date.now() - s0.t < 900;
+  if (s0.kind === 'sheet') {
+    $('#sheet').style.transform = '';
+    const b = sheetCloser();
+    if (dy >= SWIPE_MIN && Math.abs(dy) > Math.abs(dx) && b) b.click();
+    return;
+  }
+  if (quick && Math.abs(dx) >= SWIPE_MIN && Math.abs(dx) > 2 * Math.abs(dy)) swipeTab(dx < 0 ? 1 : -1);
 });

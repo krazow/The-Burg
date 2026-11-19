@@ -286,6 +286,67 @@ function slotCard(g, i, buttons){
       <div class="s">${slotLine(g)}</div><div class="s">Slot ${i+1} · ${savedAgo(g.savedAt)}</div></div>${buttons}</div>`
     : `<div class="slot empty"><div class="slotinfo"><b>Empty slot</b><div class="s">Slot ${i+1}</div></div>${buttons}</div>`;
 }
+/* ---------- device-wide settings (i2-a03): kept apart from saved lives, the same in every slot ---------- */
+const PREF_KEY = KEY_PREFIX + 'prefs';
+const prefs = () => store.get(PREF_KEY) || {};
+const setPref = (k, v) => { const p = prefs(); p[k] = v; store.set(PREF_KEY, p); };
+// the comfort settings and their defaults; none of them touches the game's numbers
+const SETTINGS = {
+  theme:    { def:'auto',   opts:[['auto','📱 Match phone'], ['day','☀️ Day'], ['night','🌙 Night']] },
+  textSize: { def:'normal', opts:[['normal','Normal'], ['l','Large'], ['xl','Larger']] },
+  sound:    { def:'off',    opts:[['off','🔇 Off'], ['soft','🔈 Soft'], ['normal','🔊 Normal']] },
+  vibrate:  { def:'on',     opts:[['on','On'], ['off','Off']] },
+  swipe:    { def:'on',     opts:[['on','On'], ['off','Off']] }
+};
+const setting = k => { const v = prefs()[k]; return SETTINGS[k].opts.some(o => o[0] === v) ? v : SETTINGS[k].def; };
+const darkQuery = typeof matchMedia === 'function' ? matchMedia('(prefers-color-scheme: dark)') : null;
+const isNight = () => setting('theme') === 'night' || (setting('theme') === 'auto' && !!(darkQuery && darkQuery.matches));
+// i2-a06 / i2-a07: text size and theme are classes on <html>
+function applyPrefs(){
+  const h = document.documentElement, ts = setting('textSize');
+  h.classList.toggle('ts-l', ts === 'l'); h.classList.toggle('ts-xl', ts === 'xl');
+  h.classList.toggle('night', isNight());
+  const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = isNight() ? '#5a170e' : '#9b2f1f';
+}
+if (darkQuery && darkQuery.addEventListener) darkQuery.addEventListener('change', applyPrefs);
+// sounds and buzzes wait for the player's first tap or key, so the browser allows them (and the sim stays silent)
+let TAPPED = false;
+if (typeof document !== 'undefined') ['pointerdown', 'keydown'].forEach(t => document.addEventListener(t, () => { TAPPED = true; }, { capture: true, passive: true }));
+// i2-a04: a short buzz on phones that support it (iPhones ignore it quietly)
+const BUZZ = { week:8, event:[25, 40, 25], badge:[30, 50, 30, 50, 70] };
+function buzz(kind){
+  if (setting('vibrate') === 'off' || !TAPPED || !BUZZ[kind]) return;
+  buzz.last = kind;
+  try { if (navigator.vibrate) navigator.vibrate(BUZZ[kind]); } catch(e){}
+}
+// i2-a05: small sounds made in code (nothing to download, so they work offline). Off unless turned on in Settings.
+// each note: [frequency Hz, start s, length s, wave]
+const SFX = {
+  tap:   [[880, 0, .05, 'sine']],
+  week:  [[587, 0, .07, 'sine'], [784, .06, .09, 'sine']],
+  event: [[659, 0, .14], [880, .11, .22]],
+  good:  [[523, 0, .1], [659, .08, .1], [784, .16, .18]],
+  bad:   [[392, 0, .14], [311, .12, .24]],
+  badge: [[523, 0, .09], [659, .08, .09], [784, .16, .09], [1047, .24, .3]]
+};
+const SFX_VOL = { off:0, soft:.08, normal:.22 };
+let AUDIO = null;
+function sfx(name){
+  const vol = SFX_VOL[setting('sound')];
+  if (!vol || !TAPPED || sfx.mute || !SFX[name]) return;
+  sfx.last = name;
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext; if (!Ctx) return;
+    AUDIO = AUDIO || new Ctx(); if (AUDIO.state === 'suspended') AUDIO.resume();
+    const t0 = AUDIO.currentTime + .01;
+    for (const [f, at, len, wave = 'triangle'] of SFX[name]) {
+      const o = AUDIO.createOscillator(), g = AUDIO.createGain();
+      o.type = wave; o.frequency.value = f;
+      g.gain.setValueAtTime(.0001, t0 + at); g.gain.exponentialRampToValueAtTime(vol, t0 + at + .012); g.gain.exponentialRampToValueAtTime(.0001, t0 + at + len);
+      o.connect(g); g.connect(AUDIO.destination); o.start(t0 + at); o.stop(t0 + at + len + .03);
+    }
+  } catch(e){}
+}
 function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.remove('hidden'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.add('hidden'), 2200); }
 
 /* ============================================================
