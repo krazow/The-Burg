@@ -26,7 +26,9 @@ const W = 12/52;                 // months in one week (all money constants belo
 const SS_PAY = 1900;
 const COL_RATE = 0.03, WAGE_RATE = 0.025;          // yearly growth of prices and of pay
 const cost = v => v * (S ? S.col : 1);              // today's price of something listed in 2027 dollars
-const payNow = (j, withRaise = true) => j.pay * (S ? S.wage : 1) * (withRaise && S && S.jobId === j.id ? S.raise : 1);
+// i3: pay also carries your program (+10% at matching jobs), certificate perks, and for your own job its ladder rung,
+// apprenticeship step and clearance wait (payPerks lives in features.js)
+const payNow = (j, withRaise = true) => j.pay * (S ? S.wage : 1) * (S && typeof payPerks === 'function' ? payPerks(j, withRaise && S.jobId === j.id) : (withRaise && S && S.jobId === j.id ? S.raise : 1));
 // i3-a25: Social Security grows with your working years (35 is a full career) and your average pay, 60% to 140% of SS_PAY
 const SS_FULL_YEARS = 35, SS_LOW_PAY = 2000, SS_HIGH_PAY = 6000;
 const avgEarn = () => (S && S.earnYears > 0) ? S.earnSum / S.earnYears : 0;     // average monthly pay in 2027 dollars
@@ -43,7 +45,8 @@ const pensionPay = () => pensionVested() ? cost(S.pensionYears * PENSION_RATE * 
 // layoff risk by job: 1 = shaky (retail, seasonal), 0.2 = steady (public sector, licensed work)
 const LAYOFF_RISK = { diner:1, hardware:1, lift:1, cellar:1, onion:1, retail:1, foodplant:1, airport:1,
   elevator:.5, cna:.5, mech:.5, imaging:.5, loan:.5, hanford:.5, labadmin:.5, trucker:.5, rail:.5,
-  para:.2, insure:.2, clerk:.2, co:.2, rn:.2, prof:.2, scientist:.2, farmhand:0 };
+  para:.2, insure:.2, clerk:.2, co:.2, rn:.2, prof:.2, scientist:.2, farmhand:0,
+  windtech:.5, damop:.2, forest:1, teacher:.2, vaclerk:.2, nukeop:.2, harvtruck:1, electrician:.5, plumber:.5, lineman:.2, welder:.5, phleb:.5, remote:.8 };
 const K401 = [0, 0.05, 0.10];
 const HARD_LIVING = 0.1;                  // Hard mode: rent, food and insurance cost 10% more (R15)
 const HUSTLE_FADE_AFTER = 26, HUSTLE_FADE = 0.5;   // side-hustle experience fades after 6 months off, half a week per week (B9)
@@ -111,14 +114,74 @@ const JOBS = [
   {id:'foodplant',city:'pasco',     title:'Food processing line worker',pay:3000, edu:0, stress:.6, wear:.9},
   {id:'airport',  city:'pasco',     title:'Airport ground crew',        pay:3700, edu:0, stress:.5, wear:.7},
   {id:'trucker',  city:'pasco',     title:'Truck driver (CDL)',         pay:5500, edu:1, stress:.9, wear:.8},
-  {id:'rail',     city:'pasco',     title:'Rail yard conductor',        pay:6100, edu:1, stress:.8, wear:.8}
+  {id:'rail',     city:'pasco',     title:'Rail yard conductor',        pay:6100, edu:1, stress:.8, wear:.8, union:true},
+  // i3-a05: more valley jobs. Pay sits inside each school level's range, so none is a new best job (a rules test checks)
+  {id:'windtech', city:'dayton',    title:'Wind turbine technician',    pay:5200, edu:2, stress:.5, wear:.7, where:'Wind farm in the Dayton hills', needMajor:'wind'},
+  {id:'damop',    city:'pasco',     title:'Dam operator on the Snake',  pay:5000, edu:1, stress:.4, wear:.3, federal:true},
+  {id:'forest',   city:'dayton',    title:'Forest Service crew',        pay:3000, edu:0, stress:.3, wear:1.0, where:'Blue Mountains', season:[5,6,7,8], federal:true},
+  {id:'teacher',  city:'waitsburg', title:'School teacher',             pay:5000, edu:3, stress:.7, wear:.1, where:'Waitsburg schools', needMajor:'teaching', union:true, pension:true},
+  {id:'vaclerk',  city:'wallawalla',title:'VA hospital clerk',          pay:3600, edu:1, stress:.3, wear:0, federal:true},
+  {id:'nukeop',   city:'richland',  title:'Nuclear plant operator',     pay:7000, edu:2, stress:.7, wear:.3},
+  // i3-a06: seasonal work (the Bluewood lift below runs December to March)
+  {id:'harvtruck',city:'waitsburg', title:'Harvest truck driver',       pay:3600, edu:1, stress:.5, wear:.6, season:[6,7], needCert:'cdl'},
+  // i3-a04: apprenticeships start at 60% of a journeyman's pay and step up every year
+  {id:'electrician',city:'wallawalla',title:'Electrician',              pay:5900, edu:1, stress:.4, wear:.6, union:true, apprentice:{weeks:208, startMult:.6}},
+  {id:'plumber',  city:'dayton',    title:'Plumber',                    pay:5400, edu:1, stress:.4, wear:.6, apprentice:{weeks:104, startMult:.6}},
+  {id:'lineman',  city:'pasco',     title:'Power lineman',              pay:6300, edu:1, stress:.6, wear:.9, union:true, apprentice:{weeks:156, startMult:.6}},
+  // i3-a03: narrow doors from short certificates
+  {id:'welder',   city:'pasco',     title:'Welder (fab shop)',          pay:3600, edu:0, stress:.4, wear:.8, needCert:'welding'},
+  {id:'phleb',    city:'wallawalla',title:'Hospital phlebotomist',      pay:3200, edu:0, stress:.5, wear:.2, needCert:'phlebotomy'},
+  // i3-a13: city pay from home, but no coworkers
+  {id:'remote',   city:'waitsburg', title:'Remote analyst',             pay:7800, edu:3, stress:.6, wear:0, remote:5, where:'a Seattle company, from home'}
 ];
+// i3-a05/a06/a10/a03: what existing jobs gained
+Object.assign(JOBS.find(j => j.id === 'lift'), { season:[11,0,1,2] });
+Object.assign(JOBS.find(j => j.id === 'trucker'), { needCert:'cdl' });
+for (const id of ['hanford', 'rn', 'para', 'co']) JOBS.find(j => j.id === id).union = true;
+for (const id of ['hanford', 'scientist', 'labadmin']) JOBS.find(j => j.id === id).federal = true;
+// i3-a01: two named steps up from each job's starting title (others get a generic senior and lead step)
+const LADDER_TITLES = {
+  farmhand:['Lead hand','Farm manager'], diner:['Lead line cook','Kitchen manager'], para:['Lead paraeducator','Special-ed paraeducator'],
+  elevator:['Lead operator','Elevator manager'], insure:['Senior agent','Agency manager'], hardware:['Department lead','Store manager'],
+  lift:['Lift supervisor','Mountain operations lead'], clerk:['Senior clerk','Chief deputy clerk'], cna:['Charge aide','Nursing unit coordinator'],
+  cellar:['Cellar master','Assistant winemaker'], onion:['Line lead','Shed supervisor'], co:['Corrections sergeant','Corrections lieutenant'],
+  rn:['Charge nurse','Nurse manager'], prof:['Associate professor','Full professor'], retail:['Key holder','Store manager'],
+  mech:['Lead technician','Service manager'], imaging:['Senior imaging tech','Imaging supervisor'], loan:['Senior loan officer','Branch manager'],
+  hanford:['Senior technician','Field work supervisor'], labadmin:['Senior administrator','Operations manager'], scientist:['Senior scientist','Group leader'],
+  foodplant:['Line lead','Shift supervisor'], airport:['Ramp lead','Station supervisor'], trucker:['Lead driver','Dispatcher'], rail:['Engineer','Yardmaster'],
+  windtech:['Lead technician','Site manager'], damop:['Senior operator','Chief operator'], forest:['Squad boss','Crew boss'], teacher:['Department head','Assistant principal'],
+  vaclerk:['Senior clerk','Office supervisor'], nukeop:['Senior reactor operator','Shift supervisor'], harvtruck:['Lead driver','Harvest dispatcher'],
+  electrician:['Foreman','Master electrician'], plumber:['Foreman','Master plumber'], lineman:['Foreman','General foreman'],
+  welder:['Lead welder','Shop foreman'], phleb:['Lead phlebotomist','Lab supervisor'], remote:['Senior analyst','Team lead'],
+  barista:['Shift lead','Café manager'], grocer:['Head clerk','Store manager'], reporter:['Senior reporter','Editor'], teller:['Head teller','Branch manager'],
+  apprentice:['Carpenter','Site foreman'], medasst:['Lead medical assistant','Clinic office manager'], agtech:['Senior ag technician','Agronomist']
+};
 const jobById = id => JOBS.find(j => j.id === id);
 
 const EDU = ['High school diploma','Trade certificate','Associate degree',"Bachelor's degree"];
 const STUDY_NEED = [16, 40, 72];         // weeks of classes to reach the next level
 const TUITION   = [300, 350, 650];        // per month while studying
 const SCHOOL    = ['a trade program in Walla Walla','community college classes','a university program in the Tri-Cities'];
+// i3-a02: a program to study in. Finishing a diploma in one makes it your major: +10% pay and better odds at matching jobs
+const PROGRAMS = {
+  nursing:   { ic:'🩺', name:'Nursing',              jobs:['cna','rn','imaging','medasst','phleb','vaclerk'] },
+  wine:      { ic:'🍷', name:'Wine making',          jobs:['cellar'] },
+  equipment: { ic:'🚜', name:'Farm equipment tech',  jobs:['mech','elevator','agtech','farmhand','harvtruck'] },
+  wind:      { ic:'🌬️', name:'Wind energy tech',     jobs:['windtech','lineman','damop','nukeop'] },
+  business:  { ic:'📊', name:'Business',             jobs:['insure','loan','clerk','labadmin','teller','remote'] },
+  teaching:  { ic:'🍎', name:'Teaching',             jobs:['para','teacher','prof'] }
+};
+const MAJOR_PAY = 0.10, MAJOR_ODDS = 0.08;
+// i3-a03: short certificates, taken with Take classes weeks and a one-time fee (2027 dollars)
+const CERTS = {
+  cdl:        { ic:'🚛', name:'CDL (commercial driver\'s license)', weeks:6, fee:1800, what:'Needed to drive truck: truck driver and harvest trucking.' },
+  welding:    { ic:'🔥', name:'Welding',                weeks:8, fee:1200, what:'Opens the fab shop welder job, and helps you get on at Hanford.' },
+  phlebotomy: { ic:'💉', name:'Phlebotomy',             weeks:5, fee:700,  what:'Opens the hospital phlebotomist job in Walla Walla.' },
+  pesticide:  { ic:'🌱', name:'Pesticide license',      weeks:4, fee:150,  what:'+6% pay on the farm, at the elevator and as an ag technician.' },
+  notary:     { ic:'🖋️', name:'Notary public',          weeks:4, fee:120,  what:'+4% pay in office jobs (insurance, courthouse, bank, loans, lab office).' }
+};
+const CERT_PERK = { pesticide:{ jobs:['farmhand','elevator','agtech'], mult:1.06 }, notary:{ jobs:['insure','clerk','loan','teller','labadmin'], mult:1.04 } };
+const CLEAR_WEEKS = 12, CLEAR_PAY = 0.8, FIBER_COST = 900, BUS_PASS = 50, UNION_DUES = 0.015;
 
 const HOMES = {
   room:  {name:'Rented room above Main Street', cost:550,  happy:0},
@@ -163,6 +226,10 @@ function blankLife(name, len, slot = 0){
     badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false,
     earnYears:0, earnSum:0, pensionYears:0, pensionPay:0, ltc:null, care:null, snowbird:null, scholar:null, will:false, probate:null, roomHost:false, hostLast:-99,
     skills:{}, biz:null, weekly:null, rng:null, rngEv:null, gen:1, goalAt:{}, carpoolJob:null, hustleLast:0, highWater:null, recentF:[], out:outDefault(), years:[],
+    // jobs and school (round 3): ladder rung, months in this job, program and major, certificates, seasonal recall,
+    // a pending interview, your reference, notice, sign-on bonus, union contract, strike, furlough, clearance, fiber, bus
+    rung:0, tenure:0, program:null, major:null, certs:{}, certStudy:null, recall:null, interview:null, ref:null, notice:null, bonus:null,
+    contractAt:-1, strike:null, furlough:null, clearAt:-1, fiber:false, bus:false, appWeeks:0, seasonGrace:null,
     ...EVENT_STATE(), ...MONEY_STATE() };
 }
 // H1: put back anything a damaged save is missing or has a bad value for, so rendering never throws
@@ -196,6 +263,12 @@ function migrate(s){
   const d = { slot:0, evPins:[], streakF:null, streakN:0, run:null, yearEvents:0, yearStart:null, evCd:{}, evDone:{}, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, mortgage:null, loanPay:0 };
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
   // Around the region (0.3.0): older lives count as just serviced and checked, with this year's tabs paid
+  if (s.tenure === undefined) s.tenure = s.jobMonths || 0;          // i3-a01: older lives count the months since the last raise
+  if (s.certs === undefined) {                                       // lives from before certificates and seasons (0.2.0)
+    s.certs = s.jobId === 'trucker' ? { cdl:1 } : {};                // i3-a03: a working trucker already holds a CDL
+    const jb = s.jobId ? JOBS.find(j => j.id === s.jobId) : null;      // i3-a06: no surprise layoff on load; the season runs its course first
+    s.seasonGrace = jb && jb.season && !s.retired && !jb.season.includes(new Date(s.date || Date.now()).getMonth()) ? jb.id : null;
+  }
   if (s.goals && !s.goalAt) s.goalAt = Object.fromEntries(s.goals.map(id => [id, 0]));
   const r = { goalAt:{}, skills:{}, biz:null, weekly:null, rng:null, rngEv:null, carpoolJob:s.jobId ?? null, hustleLast:s.turn || 0, highWater:null, recentF:[], gen:1, badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false, bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0, carpool:false, hustleWeeks:0, scoreQ:null, trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, dentist:s.turn || 0, stopLast:{}, out:null, tabsYear:new Date(s.date || Date.now()).getFullYear() };
   for (const k in r) if (s[k] === undefined) s[k] = r[k];
@@ -232,7 +305,10 @@ const canCarpool = () => commuteOneWay() >= 20 && S.community >= 30;
 const carpooling = () => !!S.carpool && commuteOneWay() >= 20;
 // a carpool belongs to the job you joined it for: a new job (or none) starts out driving alone (R12)
 function syncCarpool(){ if (S && S.carpool && S.carpoolJob !== S.jobId) { S.carpool = false; S.carpoolJob = null; return true; } return false; }
-const commuteGasFactor = (j = job()) => driveDays(j) * (S && S.carpool && j && CITIES[j.city].miles >= 20 ? 0.5 : 1);
+// i3-a14: the county bus runs to Dayton and Walla Walla
+const busOK = (j = job()) => !!j && ['dayton', 'wallawalla'].includes(j.city);
+const onBus = () => !!(S && S.bus) && busOK() && !S.retired;
+const commuteGasFactor = (j = job()) => S && S.bus && j && S.jobId === j.id && busOK(j) ? 0.1 : driveDays(j) * (S && S.carpool && j && CITIES[j.city].miles >= 20 ? 0.5 : 1);
 const netWorth = () => {
   const loan = S.loanLeft > 0 ? S.loanLeft * (S.loanPay || CARS.truck.pay) * 0.85 : 0;
   const sloan = S.sloanLeft > 0 ? S.sloanLeft * S.sloanPay * 0.85 : 0;

@@ -996,6 +996,319 @@ function finish(reason){
 }
 
 /* ============================================================
+   💼 JOBS AND SCHOOL (ideas round 3, i3-a01 … i3-a14): job ladders, programs, short certificates,
+   apprenticeships, seasonal work, interviews, offers, references, unions, furloughs, clearances,
+   a remote job and the county bus. Data (JOBS, PROGRAMS, CERTS) is in state.js.
+   ============================================================ */
+// i3-a01: each job's ladder. Rung 0 is the job as hired; the top rung needs 3 years in the job
+// plus more school than the job asks for, or People skill level 2
+function ladderOf(j){
+  if (j.ladder) return j.ladder;
+  const t = LADDER_TITLES[j.id] || [`Senior ${j.title.toLowerCase()}`, `Lead ${j.title.toLowerCase()}`];
+  return (j.ladder = [
+    { title:j.title, payMult:1, stress:0, needMonths:0 },
+    { title:t[0], payMult:1.12, stress:.3, needMonths:12 },
+    { title:t[1], payMult:1.25, stress:.6, needMonths:36, needEdu:Math.min(3, j.edu + 1), needSkill:['people', 2] }
+  ]);
+}
+const rungOf = (j = job()) => j ? ladderOf(j)[Math.min(S.rung || 0, 2)] : null;
+const nextRung = () => working() ? ladderOf(job())[(S.rung || 0) + 1] || null : null;
+// i3-a04: apprentices earn startMult of full pay, stepping up each year until they're journeymen
+const apprenticing = (j = job()) => !!(j && j.apprentice && S.jobId === j.id && (S.appWeeks || 0) < j.apprentice.weeks);
+function appMult(j, cur){
+  const a = j.apprentice; if (!a) return 1;
+  if (!cur) return a.startMult;
+  if ((S.appWeeks || 0) >= a.weeks) return 1;
+  return a.startMult + (1 - a.startMult) * Math.floor((S.appWeeks || 0) / 52) / (a.weeks / 52);
+}
+// what still stands between you and a rung ('' when nothing does)
+function rungNeeds(r){
+  const out = [];
+  if ((S.tenure || 0) < r.needMonths) out.push(`${r.needMonths} months in this job (you have ${Math.floor(S.tenure || 0)})`);
+  if (r.needEdu != null && S.edu < r.needEdu && !(r.needSkill && skillLv(r.needSkill[0]) >= r.needSkill[1]))
+    out.push(`a ${EDU[r.needEdu].toLowerCase()} or ${SKILLS[r.needSkill[0]].name} skill level ${r.needSkill[1]}`);
+  if (apprenticing()) out.push('finishing your apprenticeship');
+  return out.join(' and ');
+}
+const canPromote = () => { const r = nextRung(); return !!r && !rungNeeds(r) && !S.strike; };
+const jobTitle = (j = job()) => !j ? '' : S.jobId === j.id && !S.retired ? (apprenticing(j) ? `Apprentice ${j.title.toLowerCase()}` : rungOf(j).title) : j.title;
+// i3-a12: badged-out pay until the clearance comes through
+const CLEARANCE = ['hanford', 'scientist', 'labadmin'];
+const clearing = () => (S.clearAt ?? -1) > S.turn && working() && CLEARANCE.includes(S.jobId);
+// i3-a02 / a03: a major or a certificate changes pay at the jobs it fits
+const majorFits = x => !!(S.major && PROGRAMS[S.major] && PROGRAMS[S.major].jobs.includes(x.id));
+function payPerks(j, cur){
+  let m = majorFits(j) ? 1 + MAJOR_PAY : 1;
+  for (const [c, p] of Object.entries(CERT_PERK)) if ((S.certs || {})[c] && p.jobs.includes(j.id)) m *= p.mult;
+  m *= appMult(j, cur);
+  if (cur) { m *= S.raise * rungOf(j).payMult; if (clearing()) m *= CLEAR_PAY; }
+  return m;
+}
+// what a job needs beyond schooling: a certificate or a program ('' when nothing)
+function extraLock(x){
+  if (x.needCert && !(S.certs || {})[x.needCert]) return CERTS[x.needCert].name.replace(/ \(.*/, '');
+  if (x.needMajor && S.major !== x.needMajor) return `${PROGRAMS[x.needMajor].name} program`;
+  return '';
+}
+// i3-a06: seasonal jobs
+const jobInSeason = (x, m = curMonth()) => !x.season || x.season.includes(m);
+const seasonWords = x => `${MONTHS[x.season[0]]} to ${MONTHS[x.season[x.season.length - 1]]}`;
+// i3-a09: a reference from your last job
+const refNow = () => S.ref && S.turn < S.ref.until ? S.ref.k : null;
+const refBonus = () => ({ good: 0.06, bad: -0.12 })[refNow()] || 0;
+// i3-a08: jobs that are hard to fill, where you can ask for more
+const HARD_TO_FILL = ['rn', 'cna', 'imaging', 'trucker', 'scientist', 'labadmin', 'lineman', 'windtech', 'nukeop', 'teacher', 'phleb'];
+const SIGN_ON = 3000, ASK_LOSE = 0.10;
+
+// leaving a job, however it happens: 'notice', 'walk', 'new' (another job), 'laid', 'fired', 'season', 'retire'
+function leaveJob(how){
+  if (!S.jobId) return;
+  const months = S.tenure || 0;
+  if (how === 'walk' || how === 'fired') S.ref = { k:'bad', until:S.turn + 52 };
+  else if (months >= 6 && how !== 'retire') S.ref = { k:'good', until:S.turn + 104 };
+  else if (how === 'notice' || how === 'new') S.ref = refNow() === 'bad' ? S.ref : null;   // too short to vouch for you
+  if (S.bonus && S.bonus.job === S.jobId && S.turn < S.bonus.until && ['notice', 'walk', 'new', 'fired'].includes(how)) {
+    S.money -= S.bonus.amt; log(`Paid back the ${fmt(S.bonus.amt)} sign-on bonus for leaving inside a year.`, 'money');
+  }
+  S.bonus = null; S.notice = null; S.strike = null; S.clearAt = -1; S.rung = 0; S.appWeeks = 0;
+  S.jobId = null; if (S.focus === 'work') S.focus = 'rest';
+}
+// starting a job; back = what a seasonal recall keeps (raise, rung and months on the job)
+function startJob(id, back = null){
+  const x = jobById(id); if (!x) return;
+  if (S.jobId && S.jobId !== id) leaveJob('new');
+  Object.assign(S, { jobId:id, jobMonths:0, raise:1, rung:0, tenure:0, appWeeks:0, notice:null, strike:null, retired:false });
+  if (back) Object.assign(S, { raise:back.raise || 1, rung:back.rung || 0, tenure:back.tenure || 0 });
+  if (S.recall && S.recall.job === id) S.recall = null;
+  S.clearAt = CLEARANCE.includes(id) && !back ? S.turn + CLEAR_WEEKS : -1;
+  if (x.union) S.contractAt = S.turn + ri(78, 156);
+  if (x.remote === 5 && !S.fiber) { const c = Math.round(cost(FIBER_COST)); S.money -= c; S.fiber = true; log(`Had fiber internet put in at home for the remote job (${fmt(c)}).`, 'money'); }
+  if (!busOK(x)) S.bus = false;
+}
+
+// i3-a07: the interview. Each answer moves the odds a little; not answering keeps the usual odds.
+function hireOdds(x){
+  let p = 0.5 + S.community * 0.004 + (S.edu > x.edu ? 0.12 : 0) + (x.city === 'waitsburg' ? 0.1 : 0) + skillLv('people') * 0.04 + outLookBonus();
+  if (!S.jobId) p += 0.08;
+  p += S.applyBoost || 0;                          // new work clothes from a clearance sale (event)
+  if (majorFits(x)) p += MAJOR_ODDS;               // i3-a02: the right program
+  if (x.id === 'hanford' && (S.certs || {}).welding) p += 0.1;   // i3-a03: Hanford hires welders
+  if (inCollections()) p -= 0.1;                   // i3-a26: a collections account shows up on background checks
+  if (bkActive() && x.pay >= 4800) p -= 0.15;      // i3-a27: the better-paying jobs look hard at a bankruptcy
+  return p + refBonus();                           // i3-a09
+}
+const INTERVIEW = [
+  { k:'honest', label:'Be straight about what you can and can\'t do yet', d:() => 0.05,
+    hint:'A safe answer: a little better odds.' },
+  { k:'bold', label:'Sell yourself hard', d:() => skillLv('people') >= 1 ? 0.1 : -0.05,
+    hint:'Works if you have People skill; falls flat if you don\'t.' },
+  { k:'pay', label:'Ask about the pay and the hours', d:x => HARD_TO_FILL.includes(x.id) ? 0.06 : -0.03,
+    hint:'Hard-to-fill jobs like it. Others think you only care about money.' }
+];
+function resolveInterview(k){
+  const iv = S.interview; S.interview = null;
+  const x = iv && jobById(iv.id); if (!x) return null;
+  const a = INTERVIEW.find(q => q.k === k), p = iv.p + (a ? a.d(x) : 0);
+  return { x, ok: chance(Math.min(0.92, p)) };
+}
+function interviewSheet(x){
+  const r = refNow(), notes = [skillLv('people') ? `🗣️ People skill ${skillLv('people')}` : '', outLookBonus() ? '💇 a fresh haircut' : '',
+    r ? (r === 'good' ? '📄 a good reference' : '📄 a bad reference from your last job') : '', majorFits(x) ? `🎓 your ${PROGRAMS[S.major].name.toLowerCase()} major` : ''].filter(Boolean);
+  sheet(`<div class="big">🤝</div><h2 style="text-align:center">Interview: ${esc(x.title)}</h2>
+    <p class="evplace">📍 ${esc(x.where || CITIES[x.city].name)}</p>
+    <p>The manager looks over your application and asks: <i>"So why should we hire you?"</i></p>
+    ${notes.length ? `<p class="muted">Going for you: ${notes.join(', ')}.</p>` : ''}
+    ${INTERVIEW.map((q, i) => `<button class="btn ${i === 0 ? 'primary' : 'ghost'}" data-i="${i}">${q.label}<small style="display:block;font-weight:400">${q.hint}</small></button>`).join('')}
+    <button class="btn ghost" id="no">Decide later (they'll call by the end of the week)</button>`);
+  document.querySelectorAll('#sheet [data-i]').forEach(b => b.onclick = () => { const res = resolveInterview(INTERVIEW[+b.dataset.i].k); if (res) hireResult(res.x, res.ok); });
+  $('#no').onclick = () => { closeSheet(); render(); toast('They\'ll call by the end of the week'); };
+}
+// the end of an application, from the interview sheet
+function hireResult(x, ok){
+  if (!ok) {
+    log(`Applied for ${x.title} in ${CITIES[x.city].name}. They went with someone else.`); adj({happy:-2});
+    sheet(`<div class="big">📭</div><h2 style="text-align:center">Not this time</h2>
+      <p style="text-align:center">The ${x.title} job went to someone else. You can apply again next ${turnWord().toLowerCase()}.</p>
+      <p class="muted" style="text-align:center">Tip: higher Community standing, more schooling, the right program and a good reference help.</p><button class="btn primary" id="ok">OK</button>`);
+    $('#ok').onclick = () => { closeSheet(); tab = 'home'; render(); };
+    save(); return;
+  }
+  hired(x);
+}
+function hired(x){
+  const before = { jobId:S.jobId, jobMonths:S.jobMonths, raise:S.raise, rung:S.rung, tenure:S.tenure, appWeeks:S.appWeeks, ref:S.ref, bonus:S.bonus,
+    notice:S.notice, strike:S.strike, clearAt:S.clearAt, contractAt:S.contractAt, focus:S.focus, bus:S.bus, money:S.money, fiber:S.fiber };
+  startJob(x.id);
+  log(`Hired as ${x.title} in ${CITIES[x.city].name}!`); adj({happy:5});
+  const extra = [x.apprentice ? `You start as an apprentice at ${Math.round(x.apprentice.startMult * 100)}% pay, stepping up every year for ${x.apprentice.weeks / 52} years.` : '',
+    clearing() ? `Your security clearance takes about ${CLEAR_WEEKS} weeks. Until then you're badged out, at ${Math.round(CLEAR_PAY * 100)}% pay. Keep your money in order: heavy debt can sink the check.` : '',
+    x.union ? 'It\'s a union job: monthly dues, steadier raises and more protection from layoffs.' : '',
+    x.season ? `It's seasonal work, ${seasonWords(x)}. You're laid off between seasons and called back after.` : ''].filter(Boolean);
+  const ask = HARD_TO_FILL.includes(x.id) && !S.practice;
+  sheet(`<div class="big">🎉</div><h2 style="text-align:center">You're hired!</h2>
+    <p style="text-align:center">${x.title} in ${CITIES[x.city].name} at ${wk(payNow(x))}.</p>
+    ${extra.map(t => `<p class="muted">${t}</p>`).join('')}
+    ${ask ? `<p>They need people for this job, so you could ask for more. Ask too hard and they may pull the offer (1 in 10).</p>
+      <button class="btn primary" data-i="0">Take it as it is</button>
+      <button class="btn ghost" data-i="1">Ask for 5% more${skillLv('people') ? ' (your People skill helps)' : ''}</button>
+      <button class="btn ghost" data-i="2">Ask for a ${fmtc(SIGN_ON)} sign-on bonus (paid back if you leave inside a year)</button>`
+      : '<button class="btn primary" id="ok">Let\'s go</button>'}`);
+  const done = msg => { if (msg) { log(`Job offer: ${msg}`); sheet(`<div class="big">🤝</div><p>${msg}</p><button class="btn primary" id="ok">Let's go</button>`); $('#ok').onclick = go; } else go(); };
+  const go = () => { closeSheet(); tab = 'home'; render(); };
+  if ($('#ok')) $('#ok').onclick = go;
+  document.querySelectorAll('#sheet [data-i]').forEach(b => b.onclick = () => done(negotiate(+b.dataset.i, before)));
+  save();
+}
+// i3-a08: 0 take it, 1 ask for 5% more, 2 ask for a sign-on bonus. Returns what happened ('' for take it).
+function negotiate(k, before){
+  if (!k) return '';
+  const x = job();
+  if (chance(ASK_LOSE)) {
+    Object.assign(S, before); S.money = before.money;
+    log(`The ${x.title} offer was pulled after you asked for more.`); adj({happy:-6});
+    return `They thought it over and pulled the offer. ${before.jobId ? `You still have your job as ${jobById(before.jobId).title.toLowerCase()}.` : 'Back to the job board.'}`;
+  }
+  if (k === 1) {
+    if (chance(0.5 + skillLv('people') * 0.1)) { S.raise *= 1.05; return `They agreed to 5% more. You start at ${wk(payNow(x))}.`; }
+    return `They held firm at ${wk(payNow(x))}, but the offer stands.`;
+  }
+  if (chance(0.75)) { const amt = Math.round(cost(SIGN_ON)); S.money += amt; S.bonus = { amt, until:S.turn + 52, job:x.id }; return `A ${fmt(amt)} sign-on bonus, paid now. Stay a year or you pay it back.`; }
+  return 'No bonus, but the offer stands.';
+}
+// the week's job upkeep, at the start of each week (turn.js): a pending interview, notice, seasons and recalls
+function jobWeekStart(notes){
+  if (S.interview) {
+    const r = resolveInterview(null);
+    if (r && r.ok) { startJob(r.x.id); log(`Hired as ${r.x.title} in ${CITIES[r.x.city].name}!`); adj({happy:5}); notes.push(`📞 The ${r.x.title.toLowerCase()} job called back: you're hired!`); }
+    else if (r) { log(`Applied for ${r.x.title} in ${CITIES[r.x.city].name}. They went with someone else.`); adj({happy:-2}); }
+  }
+  if (S.notice != null && S.turn >= S.notice && working()) {
+    const t = job().title; leaveJob('notice'); log(`Quit the job as ${t} after two weeks' notice.`);
+    notes.push(`👋 Your last day as ${t.toLowerCase()}. You left on good terms${refNow() === 'good' ? ', and the boss will give you a good reference' : ''}.`);
+  }
+  const j = S.retired ? null : job();
+  if (S.seasonGrace && (!j || j.id !== S.seasonGrace || jobInSeason(j))) S.seasonGrace = null;   // an old save's grace ends when its season comes round
+  if (j && j.season && !jobInSeason(j) && S.seasonGrace !== j.id) {
+    S.recall = { job:j.id, raise:S.raise, rung:S.rung, tenure:S.tenure, until:S.turn + 52 };
+    leaveJob('season'); S.ui = Math.max(S.ui || 0, Math.min(4, 12 - j.season.length));
+    log(`Laid off for the season as ${j.title}. Called back in ${MONTHS[j.season[0]]}.`);
+    notes.push(`🍂 The ${j.title.toLowerCase()} season is over. You're laid off until ${MONTHS[j.season[0]]}, when they call you back. Unemployment covers some of the gap, or find something for the off-season.`);
+  } else if (S.recall) {
+    const x = jobById(S.recall.job);
+    if (!x || S.turn > S.recall.until) S.recall = null;
+    else if (jobInSeason(x) && !job() && !S.retired) {
+      startJob(x.id, S.recall); log(`Called back as ${x.title} for the season.`);
+      notes.push(`📞 The ${x.title.toLowerCase()} season is starting, and they called you back. No application needed.`);
+    }
+  }
+}
+// the week's job upkeep after pay (turn.js): apprenticeships, the clearance check, strikes and furloughs ending
+function jobWeekEnd(notes){
+  const j = S.retired ? null : job();
+  if (j) S.tenure = (S.tenure || 0) + W;
+  if (apprenticing(j)) {
+    S.appWeeks = (S.appWeeks || 0) + 1;
+    if (S.appWeeks >= j.apprentice.weeks) { log(`Became a journeyman ${j.title.toLowerCase()}.`, 'mile'); notes.push(`🧰 Your apprenticeship is done: you're a journeyman ${j.title.toLowerCase()} now, at full pay (${wk(payNow(j))}).`); adj({happy:6}); }
+    else if (S.appWeeks % 52 === 0) notes.push(`🧰 Another year of your apprenticeship done: your pay steps up to ${wk(payNow(j))}.`);
+  }
+  if (j && CLEARANCE.includes(j.id) && S.clearAt >= 0 && S.turn >= S.clearAt) {
+    S.clearAt = -1;
+    if (S.money < -cost(5000) && chance(0.5)) {
+      const t = j.title; leaveJob('laid'); S.ref = null; log(`The security clearance for ${t} was denied.`);
+      notes.push(`🪪 Your security clearance was denied: the background check flagged your debts. You lose the ${t.toLowerCase()} job.`);
+    } else { log(`Security clearance came through for ${j.title}.`); notes.push(`🪪 Your security clearance came through. You're on full pay now: ${wk(payNow(j))}.`); }
+  }
+  if (S.strike && S.turn >= S.strike.until) {
+    S.strike = null;
+    const big = chance(0.75); if (working()) bumpPay(big ? 1.06 : 1.02);
+    notes.push(big ? `✊ The strike is over and the union won a better contract: a 6% raise.` : '✊ The strike is over. The new contract is only a little better than the old offer: 2%.');
+  }
+}
+// the money side of all this, inside the week's paycheck (turn.js); returns the paycheck that week
+function jobPay(j, base, lines, f){
+  if (S.strike) { const v = base * 0.4; lines.push(['Strike pay from the union', v]); return v; }
+  if (S.furlough && S.turn < S.furlough.until) { S.furlough.owed += base; return 0; }
+  lines.push([`Paycheck${f.payMult ? ' + overtime' : ''}${clearing() ? ' (badged out until your clearance)' : apprenticing(j) ? ' (apprentice)' : ''}`, base]);
+  return base;
+}
+function furloughBackPay(lines){
+  if (!S.furlough || S.turn < S.furlough.until) return 0;
+  const v = S.furlough.owed; S.furlough = null;
+  if (v > 0) { lines.push(['Back pay from the furlough', v]); log(`The furlough ended: ${fmt(v)} of back pay came through.`, 'money'); }
+  return v;
+}
+
+// i3-a28 outlook: the job's money in week i from now (pay, strike, furlough, clearance, apprenticeship steps,
+// seasons, call-backs, notice and unemployment). Returns { gross, lines, big } before taxes; read-only.
+function jobOutlook(i, d, f){
+  const lines = [], big = [], mo = d.getMonth(), wage = Math.pow(1 + WAGE_RATE, i / 52);
+  let j = S.retired ? null : job(), gross = 0;
+  if (j && S.notice != null && S.turn + i >= S.notice) j = null;                  // gave notice
+  if (j && j.season && !jobInSeason(j, mo)) j = null;                             // the season ends
+  let recalled = false;
+  if (!j && !S.retired && S.recall && S.turn + i <= S.recall.until) {             // a call-back when the season returns
+    const x = jobById(S.recall.job); if (x && jobInSeason(x, mo) && !(job() && job().id !== x.id && S.notice == null)) { j = x; recalled = true; }
+  }
+  if (j) {
+    let pay = (recalled && S.jobId !== j.id ? j.pay * S.wage * (S.recall.raise || 1) * ladderOf(j)[S.recall.rung || 0].payMult : payNow(j)) * wage * W * (f.payMult || 1);
+    if (!recalled && clearing() && S.turn + i >= S.clearAt) pay /= CLEAR_PAY;        // the clearance comes through
+    if (!recalled && apprenticing(j)) { const w0 = S.appWeeks; S.appWeeks = w0 + i; const m1 = appMult(j, true); S.appWeeks = w0; pay *= m1 / appMult(j, true); }
+    if (S.strike && S.turn + i < S.strike.until) { gross = pay * 0.4; lines.push(['Strike pay', gross]); }
+    else if (S.furlough && S.turn + i < S.furlough.until) { lines.push(['Furloughed', 0]); }
+    else { gross = pay; lines.push(['Paycheck', gross]); }
+    if (S.furlough && S.turn + i === S.furlough.until) {                            // back pay: what's owed plus the weeks still to come
+      const owed = S.furlough.owed + payNow(j) * W * Math.max(0, S.furlough.until - S.turn); gross += owed; big.push(['Back pay from the furlough', owed]);
+    }
+  } else if (!S.retired) {
+    const left = (S.ui || 0) - i * W + (job() && job().season && !jobInSeason(job(), mo) ? Math.min(4, 12 - job().season.length) : 0);
+    if (left > 0) lines.push(['Unemployment benefits', 1100 * S.wage * wage * Math.min(W, left)]);
+  }
+  return { gross, lines, big };
+}
+// i3-a03: short certificates
+function startCert(id){
+  const c = CERTS[id]; if (!c || (S.certs || {})[id] || S.certStudy) return false;
+  const fee = Math.round(cost(c.fee)); S.money -= fee; S.certStudy = { id, prog:0 };
+  log(`Signed up for a ${c.name} course (${fmt(fee)}).`, 'money');
+  return true;
+}
+const canStudy = () => S.edu < 3 || !!S.certStudy;
+// a week of classes (turn.js): a certificate course comes first, then the next diploma
+function certWeek(n, notes){
+  const cs = S.certStudy; if (!cs) return false;
+  cs.prog += n;
+  if (cs.prog >= CERTS[cs.id].weeks) {
+    S.certs = { ...(S.certs || {}), [cs.id]: 1 }; S.certStudy = null;
+    log(`Earned a ${CERTS[cs.id].name} certificate.`, 'mile'); notes.push(`📜 You earned your ${CERTS[cs.id].name} certificate! ${CERTS[cs.id].what}`); adj({happy:4});
+  }
+  return true;
+}
+// i3-a02: finishing a diploma; the program you studied becomes your major
+function graduate(){
+  S.studyProg = 0; S.edu++;
+  if (S.program && PROGRAMS[S.program]) { S.major = S.program; log(`Graduated with a ${EDU[S.edu]} in ${PROGRAMS[S.program].name.toLowerCase()}.`); }
+  else log(`Graduated with a ${EDU[S.edu]}.`);
+  adj({happy:8});
+}
+
+// i3-a10 contract votes and i3-a11 federal shutdowns
+Object.assign(EVENT_PLACE, { 'Contract vote':'work', 'Federal shutdown':'work' });
+const JOB_EVENTS = [
+  { ic:'✊', title:'Contract vote', cat:'work', w:6, when:() => working() && job().union && !S.strike && (S.contractAt ?? -1) >= 0 && S.turn >= S.contractAt,
+    text:() => `The union contract at your ${job().title.toLowerCase()} job is up. Management offers 2%. The union hall votes this week: take the deal, or strike for more?`,
+    choices:() => [
+      {label:'Take the deal (+2%)', go:() => { bumpPay(1.02); S.contractAt = S.turn + 156; return `The deal passed. A 2% raise: you now make ${wk(payNow(job()))}.`; }},
+      {label:'Vote to strike (strike pay for a few weeks, then likely a better raise)', go:() => { const n = ri(2, 5); S.strike = { until:S.turn + n }; S.contractAt = S.turn + 156; adj({community:2, happy:-2});
+        return `The strike vote passed. You're on the picket line for about ${n} weeks on 40% strike pay.`; }}
+    ]},
+  { ic:'🏛️', title:'Federal shutdown', cat:'work', yr:1, w:.6, when:() => working() && job().federal && !S.furlough && !clearing(),
+    text:'Congress missed the budget deadline and the federal government shut down. You\'re furloughed: no paychecks until it\'s over, then back pay.',
+    choices:() => [{label:'Tighten your belt', go:() => { const n = ri(2, 5); S.furlough = { until:S.turn + n, owed:0 };
+      return `Furloughed for about ${n} weeks. The bills don't wait, so savings matter.`; }}]}
+];
+EVENTS.push(...JOB_EVENTS);
+
+/* ============================================================
    🧓 RETIREMENT AND PLANNING (ideas round 3: i3-a24 to i3-a34)
    Pensions and Social Security live in state.js (pensionPay, ssPay); this part has the late-life choices,
    the will, the scholarship, the spare room and the 13-week money outlook. Amounts are monthly 2027 dollars.
@@ -1127,12 +1440,12 @@ function moneyOutlook(n = 13){
     const d = new Date(d0.getTime() + i * 7 * 864e5), lines = [], big = [], grow = Math.pow(1 + COL_RATE, i / 52);
     let gross = 0;
     if (S.retired) { gross = ssPay() * W + pensionPay() * W; lines.push(['Social Security and pension', gross]); }
-    else if (j) { gross = payNow(j) * W * (f.payMult || 1) * (1 - (S.k401rate ? K401[S.k401rate] : 0)); lines.push(['Paycheck', gross]); }
+    else { const jo = jobOutlook(i, d, f); gross = jo.gross * (1 - (S.k401rate ? K401[S.k401rate] : 0)); lines.push(...jo.lines.filter(l => l[0] !== 'Paycheck' && l[0] !== 'Strike pay'), [jo.lines.some(l => l[0] === 'Strike pay') ? 'Strike pay' : 'Paycheck', gross]); big.push(...jo.big); }   // i3: the job's own ups and downs
     if (gross) lines.push(['Taxes', -gross * (S.retired ? 0.05 : 0.15)]);
     if (S.partner && age() < 65) lines.push(["Partner's paycheck", 1400 * S.wage * W]);
     lines.push(...billLines(i));
     if (f.cost) lines.push([f.name, -cost(f.cost) * grow * W]);
-    if (f.study && S.edu < 3) big.push(['Tuition', -cost(TUITION[S.edu]) * grow * W]);
+    if (f.study && S.edu < 3 && !(S.certStudy && i < CERTS[S.certStudy.id].weeks - S.certStudy.prog)) big.push(['Tuition', -cost(TUITION[S.edu]) * grow * W]);   // i3-a03: a paid-up certificate comes first
     if (S.loanLeft > i * W) lines.push(['Truck payment', -(S.loanPay || CARS.truck.pay) * Math.min(W, S.loanLeft - i * W)]);
     if (S.sloanLeft > i * W) lines.push(['Student loan', -S.sloanPay * Math.min(W, S.sloanLeft - i * W)]);
     if (S.heLeft > i * W) lines.push(['Home equity loan', -S.hePay * Math.min(W, S.heLeft - i * W)]);   // round 3 money
