@@ -2316,6 +2316,82 @@ old ones.
 
 </details>
 
+## Ideas round 25 (pick on the build board)
+
+62 ideas. Details: [docs/ideas/round-25.md](docs/ideas/round-25.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 25: More build bundles</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i25-a01** Bundle: Bug-fix sweep: saves, endings and the grandkid (M)
+- [ ] 🔴 **i25-a02** Bundle: Bug-fix sweep: jobs and pay (M)
+- [ ] 🔴 **i25-a03** Bundle: Bug-fix sweep: money, farm and business (M)
+- [ ] 🔴 **i25-a04** Bundle: Bug-fix sweep: score, clock and goals (M)
+- [ ] 🔴 **i25-a05** Bundle: Bug-fix sweep: events and the calendar (S)
+- [ ] 🔴 **i25-a06** Bundle: Bug-fix sweep: Home screen and toasts (S)
+- [ ] 🔴 **i25-a07** Bundle: Bug-fix sweep: lists and long sheets (S)
+- [ ] 🔴 **i25-a08** Bundle: One rules sheet for custom games (M)
+- [ ] 🟠 **i25-a09** Bundle: Custom knobs: length, money and events (L)
+- [ ] 🟠 **i25-a10** Bundle: Assists for a gentler game (S)
+- [ ] 🟠 **i25-a11** Bundle: Presets, seeds and sharing rules (M)
+- [ ] 🔴 **i25-a12** Bundle: Pick a life aim (L)
+- [ ] 🔴 **i25-a13** Bundle: A fairer Life Score (M)
+- [ ] 🟠 **i25-a14** Bundle: End-screen verdicts and titles (M)
+- [ ] 🔴 **i25-a15** Bundle: A say() helper and text that knows you (M)
+- [ ] 🟠 **i25-a16** Bundle: Valley detail and a bigger Tattler (M)
+- [ ] 🔴 **i25-a17** Bundle: Home prices, mortgages and equity (M)
+- [ ] 🔴 **i25-a18** Bundle: A valley business cycle (M)
+- [ ] 🔴 **i25-a19** Bundle: Prices and pay over the decades (M)
+- [ ] 🟠 **i25-a20** Bundle: Will retirement cover the bills? (M)
+- [ ] 🟠 **i25-a21** Bundle: Economy and long-game sim tests (M)
+- [ ] 🔴 **i25-a22** Bundle: Day notes and Tonight (M)
+- [ ] 🟠 **i25-a23** Bundle: A week recap that tells a story (M)
+- [ ] 🟠 **i25-a24** Bundle: Faster quiet weeks (M)
+- [ ] 🔴 **i25-a25** Bundle: Open a shop on Main Street (L)
+- [ ] 🔴 **i25-a26** Bundle: Running the shop week to week (M)
+- [ ] 🟠 **i25-a27** Bundle: Shop customers, rivals and selling out (M)
+- [ ] 🔴 **i25-a28** Bundle: A quiet values profile (M)
+- [ ] 🟠 **i25-a29** Bundle: Small dilemmas, well paced (M)
+- [ ] 🔴 **i25-a30** Bundle: Memories that last a lifetime (M)
+
+</details>
+
+<details><summary><b>Ideas 25: Cozy and calm</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i25-b01** Cozy mode: normal pace, softer landings (L)
+- [ ] 🔴 **i25-b02** Cozy: big bills split into four weekly pieces (S)
+- [ ] 🟠 **i25-b03** Cozy: a neighbor shows up in bad moments (S)
+- [ ] 🟠 **i25-b04** Cozy: never two rough weeks in a row (S)
+- [ ] 🟠 **i25-b05** Cozy: a month's notice before a layoff (S)
+- [ ] 🟠 **i25-b06** Cozy: health scares stay scares (S)
+- [ ] 🟠 **i25-b07** Cozy score: contentment counts more than net worth (M)
+- [ ] 🟡 **i25-b08** Cozy wording for setbacks (S)
+- [ ] 🔴 **i25-b09** A quiet week, said kindly (M)
+- [ ] 🟠 **i25-b10** Three small good things (S)
+- [ ] 🔴 **i25-b11** Sit on the porch: see who walks by (M)
+- [ ] 🟠 **i25-b12** The creek at dusk (M)
+- [ ] 🟠 **i25-b13** Snow falling on Main Street (M)
+- [ ] 🟠 **i25-b14** Calm moments through the year (L)
+- [ ] 🟡 **i25-b15** A quiet moments album (M)
+- [ ] 🔴 **i25-b16** A Gentle pace setting (M)
+- [ ] 🟠 **i25-b17** A small-gift shelf (M)
+- [ ] 🟠 **i25-b18** The casserole dish that goes back and forth (S)
+- [ ] 🟠 **i25-b19** Too much zucchini (S)
+- [ ] 🟠 **i25-b20** A comfort routine you pick (M)
+- [ ] 🟡 **i25-b21** A bird feeder by the kitchen window (S)
+- [ ] 🟡 **i25-b22** A stray cat that chooses you (M)
+- [ ] 🟠 **i25-b23** Rain on the roof (S)
+- [ ] 🟠 **i25-b24** Soup weather: the first cold week (S)
+- [ ] 🟡 **i25-b25** Calm weeks on the end screen (S)
+- [ ] 🟠 **i25-b26** Swap books with a neighbor (S)
+- [ ] 🟡 **i25-b27** Calm sounds while you plan (M)
+- [ ] 🟡 **i25-b28** Hunker down: a winter focus (S)
+- [ ] 🟠 **i25-b29** Holiday baking for the street (S)
+- [ ] 🟡 **i25-b30** Write a thank-you note (S)
+- [ ] 🔴 **i25-b31** Cozy explained next to Relaxed on the start sheet (S)
+- [ ] 🔴 **i25-b32** The balance sim plays Cozy too (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
