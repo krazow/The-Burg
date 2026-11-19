@@ -3920,6 +3920,80 @@ old ones.
 
 </details>
 
+## Ideas round 46 (pick on the build board)
+
+60 ideas. Details: [docs/ideas/round-46.md](docs/ideas/round-46.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 46: Playtest as a parent</b> (28 ideas)</summary>
+
+- [ ] 🔴 **i46-a01** Bug: a 17-year-old still needs $200 of commute childcare (S)
+- [ ] 🔴 **i46-a02** Bug: a kid can turn 18 with no send-off at all (S)
+- [ ] 🔴 **i46-a03** Bug: "your oldest" is every kid (S)
+- [ ] 🔴 **i46-a04** Kids leaving home reach the Journal and the year in review (S)
+- [ ] 🔴 **i46-a05** The Jobs list shows the childcare cost of a long commute (S)
+- [ ] 🟠 **i46-a06** The "Have a baby" button quotes the real monthly cost (S)
+- [ ] 🟠 **i46-a07** Tell your partner you're done having kids (S)
+- [ ] 🟠 **i46-a08** Bug: the Young parent earns the Family badge in week one (S)
+- [ ] 🟠 **i46-a09** Single parent challenge: no dating in the first year (S)
+- [ ] 🟠 **i46-a10** Get outside counts as family time (S)
+- [ ] 🟠 **i46-a11** A family line on Home (M)
+- [ ] 🟠 **i46-a12** The first year is sleepless (M)
+- [ ] 🟠 **i46-a13** Out and about: bring the kids (M)
+- [ ] 🟠 **i46-a14** A home too small for the family (M)
+- [ ] 🔴 **i46-a15** A one-line kid moment in the week recap (M)
+- [ ] 🟡 **i46-a16** A kid's birthday each year (M)
+- [ ] 🟠 **i46-a17** Your grown kid is the heir's parent, and drops by (M)
+- [ ] 🟠 **i46-a18** The end screen remembers what each kid did at 18 (S)
+- [ ] 🟡 **i46-a19** Kid joy changes with age (S)
+- [ ] 🟠 **i46-a20** Kid milestones stop a skip (M)
+- [ ] 🟡 **i46-a21** A breakup says the kids stay with you (S)
+- [ ] 🟡 **i46-a22** Help explains how kids really work (S)
+- [ ] 🟠 **i46-a23** Everyday events notice your kids (M)
+- [ ] 🟡 **i46-a24** Household lists grown kids' ages (S)
+- [ ] 🟡 **i46-a25** The end screen shows what kids did to the score (M)
+- [ ] 🟡 **i46-a26** The happiness ⓘ shows what your kids gave this week (S)
+- [ ] 🟡 **i46-a27** A partner at home halves commute childcare (S)
+- [ ] 🟡 **i46-a28** Road trips cost more with kids in the back seat (M)
+
+</details>
+
+<details><summary><b>Ideas 46: The Touchet Tattler</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i46-b01** The Tattler page: a real front page you open (M)
+- [ ] 🔴 **i46-b02** One story queue for the whole paper (L)
+- [ ] 🟡 **i46-b03** Masthead, volume and issue number (S)
+- [ ] 🔴 **i46-b04** Back issues: the Tattler archive (M)
+- [ ] 🟡 **i46-b05** Search the back issues (S)
+- [ ] 🟠 **i46-b06** Clip it: stories on the fridge (S)
+- [ ] 🟠 **i46-b07** Subscribe, or buy it at the rack (S)
+- [ ] 🔴 **i46-b08** The classifieds page: For sale, For rent, Gigs (M)
+- [ ] 🟠 **i46-b09** Sell your own stuff in the classifieds (S)
+- [ ] 🟠 **i46-b10** Rentals you only find in the paper (S)
+- [ ] 🟡 **i46-b11** Free to a good home (S)
+- [ ] 🟠 **i46-b12** Births and new arrivals (S)
+- [ ] 🟠 **i46-b13** Townsfolk obituaries you can act on (M)
+- [ ] 🟡 **i46-b14** Weddings, anniversaries and big birthdays (S)
+- [ ] 🟠 **i46-b15** The blotter needs you (S)
+- [ ] 🟡 **i46-b16** Your name in the blotter, gently (S)
+- [ ] 🟠 **i46-b17** Cardinals season on the sports page (M)
+- [ ] 🟠 **i46-b18** Your kid in the box score (S)
+- [ ] 🟡 **i46-b19** The café football pick'em (S)
+- [ ] 🔴 **i46-b20** The editor knows your name (M)
+- [ ] 🔴 **i46-b21** Your byline on the front page (S)
+- [ ] 🟠 **i46-b22** Pitch your own story (M)
+- [ ] 🟠 **i46-b23** Compose a letter: topic and tone (S)
+- [ ] 🟡 **i46-b24** The letters page regular (M)
+- [ ] 🟡 **i46-b25** Call in a tip (S)
+- [ ] 🟡 **i46-b26** Corrections and clarifications (S)
+- [ ] 🟠 **i46-b27** Public notices worth reading (S)
+- [ ] 🟡 **i46-b28** The grocery insert (S)
+- [ ] 🟡 **i46-b29** The council endorsement (S)
+- [ ] 🟡 **i46-b30** Graduation special section (S)
+- [ ] 🟠 **i46-b31** The year in front pages (S)
+- [ ] 🟠 **i46-b32** Save the Tattler (L)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
