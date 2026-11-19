@@ -25,8 +25,8 @@ added, finished or re-prioritized, both change in the same session.
 | 2 | **Try it, then promote** (`/release promote`) | The Android app is signed with The Burg's key since beta 4, so updates install over each other. | — |
 | 3 | **Pick from the review and the 90 events** (below) | The three 🔴 review bugs are fixed; the rest is yours to pick. | [#90](https://github.com/krazow/The-Burg/issues/90) |
 
-- [x] Cut a new beta with everything on `main` (0.2.0-beta.5)
-- [ ] Try it on your phone, then `/release promote`
+- [x] Cut a new beta with everything on `main` (0.2.0-beta.6)
+- [x] Try it on your phone, then `/release promote` (0.2.0-beta.6 promoted: [v0.2.0](https://github.com/krazow/The-Burg/releases/tag/v0.2.0))
 - [x] Pick review items and events to build (104 picked on the build board; all built)
 
 ## Soon: P2
@@ -4753,6 +4753,154 @@ old ones.
 
 </details>
 
+## Ideas round 57 (pick on the build board)
+
+63 ideas. Details: [docs/ideas/round-57.md](docs/ideas/round-57.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 57: Data safety and privacy</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i57-a01** Beta lives live under their own keys, apart from the real game (S)
+- [ ] 🔴 **i57-a02** A backup life is checked field by field before it is kept (M)
+- [ ] 🟠 **i57-a03** Restored lives keep only fields the game knows (S)
+- [ ] 🟠 **i57-a04** A huge backup file is turned away before it is read (S)
+- [ ] 🟠 **i57-a05** A compressed backup code can only unpack to a set size (S)
+- [ ] 🔴 **i57-a06** Every Journal line shows as plain text, whatever its source (S)
+- [ ] 🟠 **i57-a07** The "Last report card" line can't carry markup (S)
+- [ ] 🟡 **i57-a08** esc() also covers the single quote (S)
+- [ ] 🟠 **i57-a09** Map pins lose their inline onclick handlers (M)
+- [ ] 🔴 **i57-a10** A content security policy for the page (S)
+- [ ] 🟠 **i57-a11** A test that a fresh game only talks to itself (S)
+- [ ] 🟡 **i57-a12** No referrer leaves the game (S)
+- [ ] 🔴 **i57-a13** A hotel Wi-Fi login page is never saved as the game (S)
+- [ ] 🟡 **i57-a14** Offline files are checked against the release's fingerprints (M)
+- [ ] 🔴 **i57-a15** A broken save is kept aside, not overwritten (S)
+- [ ] 🟠 **i57-a16** Each life saves under its own key (M)
+- [ ] 🟠 **i57-a17** The last good save is kept one step back (S)
+- [ ] 🔴 **i57-a18** Restore says "restored" only when the lives really landed (S)
+- [ ] 🟠 **i57-a19** Undo for "Replace all my lives" (S)
+- [ ] 🟡 **i57-a20** Best scores from a backup must be real scores (S)
+- [ ] 🟡 **i57-a21** A test that a backup can't touch shared object shapes (S)
+- [ ] 🟠 **i57-a22** Ask the browser to keep the lives (persistent storage) (S)
+- [ ] 🔴 **i57-a23** Help: "What this game keeps on your device" (S)
+- [ ] 🟡 **i57-a24** Names lose invisible and direction-flipping characters (S)
+- [ ] 🟡 **i57-a25** The backup code box is filled as text (S)
+- [ ] 🟠 **i57-a26** Event text escapes the values put into it (M)
+- [ ] 🟡 **i57-a27** A test that flags raw text in page templates (M)
+- [ ] 🔴 **i57-a28** NPC text from players is shown only as plain text (S)
+- [ ] 🟠 **i57-a29** The NPC draft stays on the device and goes away when sent (S)
+- [ ] 🟠 **i57-a30** NPC sends carry only the answers (S)
+- [ ] 🟠 **i57-a31** "Report this character" on every NPC card (S)
+- [ ] 🟡 **i57-a32** The 18+ gate for NPC submissions is remembered (S)
+
+</details>
+
+<details><summary><b>Ideas 57: Growing up in Waitsburg</b> (31 ideas)</summary>
+
+- [ ] 🔴 **i57-b01** Five quick scenes before 18: the Growing up prologue (L)
+- [ ] 🔴 **i57-b02** A tight budget for the past, checked by the sim (S)
+- [ ] 🔴 **i57-b03** Age 5: first day at the K–12, who you sit with (M)
+- [ ] 🟠 **i57-b04** Age 9: swim team, snack bar or the high dive (M)
+- [ ] 🔴 **i57-b05** Age 11: a summer on Grandpa's wheat place (M)
+- [ ] 🔴 **i57-b06** Age 12: your best friend's family moves to Spokane (M)
+- [ ] 🟠 **i57-b07** Age 15: your first job, picked from four (M)
+- [ ] 🟠 **i57-b08** The first paycheck: save it or spend it (S)
+- [ ] 🟡 **i57-b09** Fourth-grade field trip to the state park by the river (S)
+- [ ] 🟠 **i57-b10** Age 8: Celebration Days from a float or the curb (S)
+- [ ] 🟠 **i57-b11** Age 16: the night on the grain elevator (M)
+- [ ] 🟡 **i57-b12** The dog you grew up with (S)
+- [ ] 🟠 **i57-b13** Freshman fall: football, FFA or band (M)
+- [ ] 🔴 **i57-b14** Skipped scenes come back as Rest-week flashbacks (M)
+- [ ] 🟠 **i57-b15** Start at 18, or 'Surprise me' with a balanced childhood (S)
+- [ ] 🔴 **i57-b16** 'Who you were at 18': a summary card on day one (S)
+- [ ] 🟠 **i57-b17** Childhood lines in the Journal, dated from 2014 (S)
+- [ ] 🟠 **i57-b18** Each starting background gets its own scenes (M)
+- [ ] 🟠 **i57-b19** Age 13: you laughed along when they teased Sam (M)
+- [ ] 🟡 **i57-b20** Your first crush is still in town (S)
+- [ ] 🟠 **i57-b21** Summer reading at the library: a head start on classes (S)
+- [ ] 🟠 **i57-b22** Age 16: the year your dad got laid off (M)
+- [ ] 🟠 **i57-b23** Learning to drive in Grandpa's 1998 pickup (S)
+- [ ] 🟡 **i57-b24** Your class of 2027: a roster other features can use (S)
+- [ ] 🟠 **i57-b25** Full circle: one late-life echo per scene (M)
+- [ ] 🟡 **i57-b26** The owner who gave you your first job (S)
+- [ ] 🟡 **i57-b27** Replay a childhood from the title screen (L)
+- [ ] 🟡 **i57-b28** Who raised you: a flavor choice with no score effect (S)
+- [ ] 🟡 **i57-b29** The broken arm from the monkey bars (S)
+- [ ] 🟡 **i57-b30** Eighth-grade trip over the mountains (S)
+- [ ] 🟠 **i57-b31** Your heir's childhood is the one you gave them (M)
+
+</details>
+
+## Ideas round 58 (pick on the build board)
+
+57 ideas. Details: [docs/ideas/round-58.md](docs/ideas/round-58.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 58: Your own goals and plans</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i58-a01** The five-year plan: three lines you write at the start (M)
+- [ ] 🔴 **i58-a02** Plan lines check themselves: on track, behind, done (S)
+- [ ] 🔴 **i58-a03** The first-of-the-month check-in (S)
+- [ ] 🔴 **i58-a04** Let a goal go, on purpose (S)
+- [ ] 🟠 **i58-a05** A hard year pauses the plan (S)
+- [ ] 🟠 **i58-a06** Why it matters: one reason on each goal (S)
+- [ ] 🟠 **i58-a07** A realistic check when you write a goal (S)
+- [ ] 🔴 **i58-a08** The Waitsburg bucket list: pick five from the valley (M)
+- [ ] 🟠 **i58-a09** Bucket list items wave at you when they're in reach (S)
+- [ ] 🟠 **i58-a10** A bucket list for the second half (S)
+- [ ] 🟡 **i58-a11** Unfinished bucket items pass down (S)
+- [ ] 🔴 **i58-a12** Promise the kids something, out loud (M)
+- [ ] 🟠 **i58-a13** Promises to your partner: a joint plan (M)
+- [ ] 🟠 **i58-a14** A promise to Mom you inherit (M)
+- [ ] 🟠 **i58-a15** Kept promises outweigh kept goals (S)
+- [ ] 🟠 **i58-a16** Say it out loud: tell someone your goal (M)
+- [ ] 🟡 **i58-a17** A resolution buddy at the morning walking group (S)
+- [ ] 🟡 **i58-a18** Quitter's Day: the second Friday in January (S)
+- [ ] 🟠 **i58-a19** Career target with a date and a boss who knows (M)
+- [ ] 🔴 **i58-a20** The game notices when you drift (S)
+- [ ] 🟡 **i58-a21** Small steps: a Journal line at a quarter, half and three-quarters (S)
+- [ ] 🟡 **i58-a22** A Goals filter in the Journal (S)
+- [ ] 🟠 **i58-a23** Plans in the year in review (S)
+- [ ] 🟠 **i58-a24** Goals sized to the game length (S)
+- [ ] 🟡 **i58-a25** Life-stage suggestions on the plan sheet (S)
+- [ ] 🟡 **i58-a26** When two plans pull against each other (M)
+- [ ] 🟠 **i58-a27** Help your kid toward their goal (M)
+- [ ] 🔴 **i58-a28** Plan vs. what happened: the end-screen page (M)
+- [ ] 🟠 **i58-a29** What you didn't plan that mattered most (S)
+- [ ] 🟡 **i58-a30** Plans in the Tattler obituary and the shelf (S)
+- [ ] 🔴 **i58-a31** Guard test: goals never move the score (S)
+- [ ] 🟠 **i58-a32** A goal bot in the balance sim (M)
+
+</details>
+
+<details><summary><b>Ideas 58: Playtest as three people</b> (25 ideas)</summary>
+
+- [ ] 🔴 **i58-b01** [Retiree] Phone Back closes the open sheet, not the game (S)
+- [ ] 🔴 **i58-b02** [Strategist] Multi-week event money pays out week by week (S)
+- [ ] 🔴 **i58-b03** [Strategist] A trip every week stops beating a balanced life (M)
+- [ ] 🟠 **i58-b04** [Retiree] Stat bars stay in sight after you scroll (S)
+- [ ] 🟠 **i58-b05** [Retiree] The event's 📍 line opens that spot on the map (S)
+- [ ] 🟠 **i58-b06** [Retiree] Coming home at 55: an older start for Lifetime (M)
+- [ ] 🟠 **i58-b07** [Parent] The big red button isn't always the one that costs money (S)
+- [ ] 🟠 **i58-b08** [Parent] End Week shows how many weeks in a row (S)
+- [ ] 🟠 **i58-b09** [Strategist] The score-so-far sheet shows each part's scale (S)
+- [ ] 🟠 **i58-b10** [Strategist] What a change is worth, on the score sheet (M)
+- [ ] 🟠 **i58-b11** [Strategist] Sort the job board by "best for your life" (S)
+- [ ] 🟠 **i58-b12** [Parent] Auto answers small events the way you did last time (M)
+- [ ] 🟠 **i58-b13** [Retiree] A first life's job board opens on Waitsburg and Dayton (S)
+- [ ] 🟠 **i58-b14** [Strategist] Side hustle stops being a trap build (M)
+- [ ] 🟡 **i58-b15** [Retiree] Week one says "Just moved in", not "Tumbleweed" (S)
+- [ ] 🟡 **i58-b16** [Retiree] Choices without a price say what they cost you (S)
+- [ ] 🟡 **i58-b17** [Retiree] Result chips read as words for screen readers (S)
+- [ ] 🟡 **i58-b18** [Parent] Fun events ask who watches the kid (S)
+- [ ] 🟡 **i58-b19** [Parent] A quiet "Saved" mark after every week (S)
+- [ ] 🟡 **i58-b20** [Parent] Small event results show as a toast, not a second sheet (S)
+- [ ] 🟡 **i58-b21** [Parent] A standing visit that rides along on skips (M)
+- [ ] 🟡 **i58-b22** [Strategist] Your health plan shows on the Life tab (S)
+- [ ] 🟡 **i58-b23** [Strategist] The recruiter says "next 4 weeks" and which jobs (S)
+- [ ] 🟡 **i58-b24** [Strategist] A build card on the end screen (M)
+- [ ] 🟡 **i58-b25** [Retiree] A simple screen: stats, focus and End Week (L)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
@@ -4811,6 +4959,7 @@ that careless play stays at or below 60 and good play at or above 70.
 
 | Date | What | Where |
 |---|---|---|
+| Nov 19, 2026 | **Released 0.2.0 to production** (beta 6 promoted): Out and about, 60 road and work events, the review and balance fixes, records, What's new and Journal filters. | [v0.2.0](https://github.com/krazow/The-Burg/releases/tag/v0.2.0) |
 | Nov 18, 2026 | **Build board picks, all 104 built:** the review gotchas, balance and testing fixes, title screen with More options, Your records, What's new, Journal filters, event pacing by category, 30 road and 30 work events, and **Out and about** (20 Waitsburg businesses under stand-in names, Main Street map, visits, 7 local jobs, business events). | PRs [#97](https://github.com/krazow/The-Burg/pull/97), [#98](https://github.com/krazow/The-Burg/pull/98), [#99](https://github.com/krazow/The-Burg/pull/99), [#100](https://github.com/krazow/The-Burg/pull/100), [#101](https://github.com/krazow/The-Burg/pull/101) |
 | Nov 16, 2026 | Built **The Burg**: a turn-based life sim set in Waitsburg with 25 jobs across Waitsburg, Dayton, Walla Walla, Kennewick, Richland and Pasco; housing, vehicles, schooling, about 27 seasonal local events, Life Score, auto-save, installable with offline play. | `main` |
 | Nov 16, 2026 | Balance fixes from simulated games: raises capped at +50%, 6 months of unemployment benefits after a layoff, debt warnings. | `main` |
