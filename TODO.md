@@ -3920,6 +3920,156 @@ old ones.
 
 </details>
 
+## Ideas round 46 (pick on the build board)
+
+60 ideas. Details: [docs/ideas/round-46.md](docs/ideas/round-46.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 46: Playtest as a parent</b> (28 ideas)</summary>
+
+- [ ] 🔴 **i46-a01** Bug: a 17-year-old still needs $200 of commute childcare (S)
+- [ ] 🔴 **i46-a02** Bug: a kid can turn 18 with no send-off at all (S)
+- [ ] 🔴 **i46-a03** Bug: "your oldest" is every kid (S)
+- [ ] 🔴 **i46-a04** Kids leaving home reach the Journal and the year in review (S)
+- [ ] 🔴 **i46-a05** The Jobs list shows the childcare cost of a long commute (S)
+- [ ] 🟠 **i46-a06** The "Have a baby" button quotes the real monthly cost (S)
+- [ ] 🟠 **i46-a07** Tell your partner you're done having kids (S)
+- [ ] 🟠 **i46-a08** Bug: the Young parent earns the Family badge in week one (S)
+- [ ] 🟠 **i46-a09** Single parent challenge: no dating in the first year (S)
+- [ ] 🟠 **i46-a10** Get outside counts as family time (S)
+- [ ] 🟠 **i46-a11** A family line on Home (M)
+- [ ] 🟠 **i46-a12** The first year is sleepless (M)
+- [ ] 🟠 **i46-a13** Out and about: bring the kids (M)
+- [ ] 🟠 **i46-a14** A home too small for the family (M)
+- [ ] 🔴 **i46-a15** A one-line kid moment in the week recap (M)
+- [ ] 🟡 **i46-a16** A kid's birthday each year (M)
+- [ ] 🟠 **i46-a17** Your grown kid is the heir's parent, and drops by (M)
+- [ ] 🟠 **i46-a18** The end screen remembers what each kid did at 18 (S)
+- [ ] 🟡 **i46-a19** Kid joy changes with age (S)
+- [ ] 🟠 **i46-a20** Kid milestones stop a skip (M)
+- [ ] 🟡 **i46-a21** A breakup says the kids stay with you (S)
+- [ ] 🟡 **i46-a22** Help explains how kids really work (S)
+- [ ] 🟠 **i46-a23** Everyday events notice your kids (M)
+- [ ] 🟡 **i46-a24** Household lists grown kids' ages (S)
+- [ ] 🟡 **i46-a25** The end screen shows what kids did to the score (M)
+- [ ] 🟡 **i46-a26** The happiness ⓘ shows what your kids gave this week (S)
+- [ ] 🟡 **i46-a27** A partner at home halves commute childcare (S)
+- [ ] 🟡 **i46-a28** Road trips cost more with kids in the back seat (M)
+
+</details>
+
+<details><summary><b>Ideas 46: The Touchet Tattler</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i46-b01** The Tattler page: a real front page you open (M)
+- [ ] 🔴 **i46-b02** One story queue for the whole paper (L)
+- [ ] 🟡 **i46-b03** Masthead, volume and issue number (S)
+- [ ] 🔴 **i46-b04** Back issues: the Tattler archive (M)
+- [ ] 🟡 **i46-b05** Search the back issues (S)
+- [ ] 🟠 **i46-b06** Clip it: stories on the fridge (S)
+- [ ] 🟠 **i46-b07** Subscribe, or buy it at the rack (S)
+- [ ] 🔴 **i46-b08** The classifieds page: For sale, For rent, Gigs (M)
+- [ ] 🟠 **i46-b09** Sell your own stuff in the classifieds (S)
+- [ ] 🟠 **i46-b10** Rentals you only find in the paper (S)
+- [ ] 🟡 **i46-b11** Free to a good home (S)
+- [ ] 🟠 **i46-b12** Births and new arrivals (S)
+- [ ] 🟠 **i46-b13** Townsfolk obituaries you can act on (M)
+- [ ] 🟡 **i46-b14** Weddings, anniversaries and big birthdays (S)
+- [ ] 🟠 **i46-b15** The blotter needs you (S)
+- [ ] 🟡 **i46-b16** Your name in the blotter, gently (S)
+- [ ] 🟠 **i46-b17** Cardinals season on the sports page (M)
+- [ ] 🟠 **i46-b18** Your kid in the box score (S)
+- [ ] 🟡 **i46-b19** The café football pick'em (S)
+- [ ] 🔴 **i46-b20** The editor knows your name (M)
+- [ ] 🔴 **i46-b21** Your byline on the front page (S)
+- [ ] 🟠 **i46-b22** Pitch your own story (M)
+- [ ] 🟠 **i46-b23** Compose a letter: topic and tone (S)
+- [ ] 🟡 **i46-b24** The letters page regular (M)
+- [ ] 🟡 **i46-b25** Call in a tip (S)
+- [ ] 🟡 **i46-b26** Corrections and clarifications (S)
+- [ ] 🟠 **i46-b27** Public notices worth reading (S)
+- [ ] 🟡 **i46-b28** The grocery insert (S)
+- [ ] 🟡 **i46-b29** The council endorsement (S)
+- [ ] 🟡 **i46-b30** Graduation special section (S)
+- [ ] 🟠 **i46-b31** The year in front pages (S)
+- [ ] 🟠 **i46-b32** Save the Tattler (L)
+
+</details>
+
+## Ideas round 47 (pick on the build board)
+
+62 ideas. Details: [docs/ideas/round-47.md](docs/ideas/round-47.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 47: Bundles and release plans 3</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i47-a01** Bundle: Bug-fix sweep: kids, trips and commutes (M)
+- [ ] 🔴 **i47-a02** Bundle: Bug-fix sweep: screen readers, focus and zoom (M)
+- [ ] 🔴 **i47-a03** Bundle: Performance sweep: a fast launch and a small save (M)
+- [ ] 🟠 **i47-a04** Bundle: Performance sweep: Help, the Journal and End Week (M)
+- [ ] 🔴 **i47-a05** Bundle: Sim checks for trips, traits and event links (M)
+- [ ] 🟠 **i47-a06** Bundle: Accessibility: names, labels and keys (M)
+- [ ] 🟠 **i47-a07** Bundle: Trip rules that add up (M)
+- [ ] 🟠 **i47-a08** Bundle: Carpools, vanpools and remote days (M)
+- [ ] 🟡 **i47-a09** Bundle: A region map that plans the trip (M)
+- [ ] 🔴 **i47-a10** Bundle: A shorter tutorial that shows how you win (M)
+- [ ] 🟠 **i47-a11** Bundle: Tips at the right moment (S)
+- [ ] 🔴 **i47-a12** Bundle: Help you can search and skim (M)
+- [ ] 🔴 **i47-a13** Bundle: Traits with two sides (M)
+- [ ] 🟠 **i47-a14** Bundle: Interests and a motto (M)
+- [ ] 🟠 **i47-a15** Bundle: The character card (M)
+- [ ] 🟡 **i47-a16** Bundle: Highway 12 road events (S)
+- [ ] 🟠 **i47-a17** Bundle: Shifts that cost you later (M)
+- [ ] 🔴 **i47-a18** Bundle: Work events that test your job (M)
+- [ ] 🔴 **i47-a19** Bundle: Faces behind the counter (S)
+- [ ] 🟠 **i47-a20** Bundle: Apprentice to your own crew (L)
+- [ ] 🔴 **i47-a21** Bundle: Event threads: links as data (L)
+- [ ] 🟠 **i47-a22** Bundle: People who come back (M)
+- [ ] 🔴 **i47-a23** Bundle: A town crisis engine and your role (L)
+- [ ] 🟠 **i47-a24** Bundle: Crises: fire, ice and high water (L)
+- [ ] 🔴 **i47-a25** Bundle: Kids show up in the week (M)
+- [ ] 🟠 **i47-a26** Bundle: The cost of kids, made plain (M)
+- [ ] 🟠 **i47-a27** Bundle: The Tattler you open (L)
+- [ ] 🟠 **i47-a28** Bundle: The valley ledger (L)
+- [ ] 🔴 **i47-a29** Release plan: v0.8 — Fast, clear and easy to learn (L)
+- [ ] 🔴 **i47-a30** Release plan: v0.9 — A town that remembers (L)
+
+</details>
+
+<details><summary><b>Ideas 47: Holidays and traditions</b> (32 ideas)</summary>
+
+- [ ] 🟠 **i47-b01** New Year's Day: first hike of the year, year after year (S)
+- [ ] 🟡 **i47-b02** New Year's Eve: midnight at nine for the little ones (S)
+- [ ] 🟡 **i47-b03** Valentine's: classroom valentines, handmade or a box (S)
+- [ ] 🟡 **i47-b04** Valentine's: carnations to the senior center (S)
+- [ ] 🟠 **i47-b05** St. Patrick's Day: plant peas, the old gardener's rule (S)
+- [ ] 🟡 **i47-b06** St. Patrick's Day: cook at the lodge hall corned beef feed (S)
+- [ ] 🟡 **i47-b07** Easter: sunrise service on the cemetery hill (S)
+- [ ] 🟠 **i47-b08** Mother's Day when Mom is gone (S)
+- [ ] 🔴 **i47-b09** Father's Day: pass on what Dad taught you (M)
+- [ ] 🟠 **i47-b10** Memorial Day: read the names at the roll call (S)
+- [ ] 🟠 **i47-b11** Memorial weekend camp spot: book it in January (M)
+- [ ] 🟡 **i47-b12** Graduation: chaperone the all-night safe party (S)
+- [ ] 🟡 **i47-b13** Fourth of July: the family's spot on the levee (S)
+- [ ] 🟠 **i47-b14** Fourth of July: the dog and the fireworks (S)
+- [ ] 🟡 **i47-b15** Labor Day: dog swim on the pool's last day (S)
+- [ ] 🟠 **i47-b16** First day of school: the porch photo every year (M)
+- [ ] 🟡 **i47-b17** Halloween: trunk-or-treat in the church lot (S)
+- [ ] 🟠 **i47-b18** Halloween: the full-size candy bar house (S)
+- [ ] 🟡 **i47-b19** Halloween: homemade costume or store-bought (S)
+- [ ] 🟠 **i47-b20** Veterans Day: the kid interviews Grandpa (S)
+- [ ] 🟠 **i47-b21** Thanksgiving: the Turkey Bowl in the yard (S)
+- [ ] 🟡 **i47-b22** Fall: deer camp with the same crew (M)
+- [ ] 🔴 **i47-b23** Lighting of Main Street: Santa rides the fire engine (M)
+- [ ] 🟠 **i47-b24** Christmas: one new ornament every year (M)
+- [ ] 🟠 **i47-b25** Christmas morning: one big gift or a pile (S)
+- [ ] 🟡 **i47-b26** Christmas: twelve nights of porch gifts for a neighbor (S)
+- [ ] 🟠 **i47-b27** Celebration Days royalty: your teen runs for court (M)
+- [ ] 🔴 **i47-b28** Christmas club savings at the bank (M)
+- [ ] 🔴 **i47-b29** Traditions ledger: years in a row for every holiday (L)
+- [ ] 🟠 **i47-b30** The first holiday with an empty chair (M)
+- [ ] 🟠 **i47-b31** Teen opts out: keep it, change it, or let it go (M)
+- [ ] 🟡 **i47-b32** Pass the hosting to the next generation (M)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
