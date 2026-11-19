@@ -2092,6 +2092,76 @@ old ones.
 
 </details>
 
+## Ideas round 22 (pick on the build board)
+
+56 ideas. Details: [docs/ideas/round-22.md](docs/ideas/round-22.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 22: Bug hunt</b> (26 ideas)</summary>
+
+- [ ] 🔴 **i22-a01** Closing the app mid-event no longer dodges it (M)
+- [ ] 🔴 **i22-a02** An ending sticks even if you close the app (M)
+- [ ] 🔴 **i22-a03** A new job clears leftover unemployment (S)
+- [ ] 🔴 **i22-a04** No harvest check the week you lease the ground (S)
+- [ ] 🟠 **i22-a05** No harvest check after the lease is up (S)
+- [ ] 🔴 **i22-a06** Renewing the lease can't be flipped for profit (S)
+- [ ] 🔴 **i22-a07** A goal you already meet when you pin it doesn't count (S)
+- [ ] 🔴 **i22-a08** Old winter tires don't come back with a new car (S)
+- [ ] 🔴 **i22-a09** The friend's job tip shows today's pay (S)
+- [ ] 🔴 **i22-a10** Raise and promotion text tell the truth at the cap (S)
+- [ ] 🟠 **i22-a11** A raise doesn't reset your time on the job (S)
+- [ ] 🔴 **i22-a12** The food truck counts as hustling (S)
+- [ ] 🔴 **i22-a13** The bluegrass jam event comes on a jam week (S)
+- [ ] 🔴 **i22-a14** The gas-spike event counts remote days and carpools (S)
+- [ ] 🔴 **i22-a15** Extra class weeks carry over when you graduate (S)
+- [ ] 🔴 **i22-a16** Helping with college checks your cash first (S)
+- [ ] 🟠 **i22-a17** Your partner gets Social Security too (S)
+- [ ] 🟠 **i22-a18** Hard mode's +10% leaves the mortgage alone (S)
+- [ ] 🔴 **i22-a19** The Lifetime progress bar and the score agree (S)
+- [ ] 🟠 **i22-a20** Older saves get a mortgage in today's dollars (S)
+- [ ] 🟠 **i22-a21** A restored backup checks home, car and job ids (S)
+- [ ] 🟠 **i22-a22** Sim bots skip weeks too (M)
+- [ ] 🟠 **i22-a23** Sim bots buy homes and cars and start the next generation (M)
+- [ ] 🟠 **i22-a24** The sim checks every number, not just five (S)
+- [ ] 🟠 **i22-a25** Trip stops get checked again if you go into debt (S)
+- [ ] 🟠 **i22-a26** Moving away from the fixer-upper ends its story (S)
+
+</details>
+
+<details><summary><b>Ideas 22: Inside a week</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i22-b01** Day notes: five weekday lines in the week summary (S)
+- [ ] 🔴 **i22-b02** Tonight: one evening tap a week (M)
+- [ ] 🔴 **i22-b03** A week recap that tells a tiny story (M)
+- [ ] 🔴 **i22-b04** Keep a turn under 20 seconds: a turn-budget test (S)
+- [ ] 🔴 **i22-b05** A midweek tap, inline in the recap (M)
+- [ ] 🟠 **i22-b06** Moment pack: 90 small daily lines (M)
+- [ ] 🟠 **i22-b07** Jobs set which days are your weekend (M)
+- [ ] 🟠 **i22-b08** Overtime and hustle eat your weekend (S)
+- [ ] 🟠 **i22-b09** The weekend writes itself (S)
+- [ ] 🟠 **i22-b10** Sunday night feeling: a one-word read (S)
+- [ ] 🟠 **i22-b11** Quick reactions to the week's result (S)
+- [ ] 🟠 **i22-b12** The week's best moment chip (S)
+- [ ] 🟠 **i22-b13** Money in day order (S)
+- [ ] 🟠 **i22-b14** Fewer sheets: small notes go to the strip (S)
+- [ ] 🟠 **i22-b15** Quiet weeks play faster (S)
+- [ ] 🟠 **i22-b16** Household evenings (S)
+- [ ] 🟡 **i22-b17** Evening habits form on their own (M)
+- [ ] 🟡 **i22-b18** Day notes that hint at next week (M)
+- [ ] 🟡 **i22-b19** Name every week (S)
+- [ ] 🟡 **i22-b20** A snapshot of the week (M)
+- [ ] 🟡 **i22-b21** The year in review picks its best weeks (S)
+- [ ] 🟡 **i22-b22** Skip digest: one line per week (S)
+- [ ] 🟡 **i22-b23** A text after a rough week (S)
+- [ ] 🟡 **i22-b24** One-thumb turn layout (S)
+- [ ] 🟡 **i22-b25** Sunday supper line (S)
+- [ ] 🟡 **i22-b26** Weather by day in the recap (S)
+- [ ] 🟡 **i22-b27** Commute shows up in the day notes (S)
+- [ ] 🟡 **i22-b28** One plain tweak after a hard week (S)
+- [ ] 🟡 **i22-b29** Stack the week's sheets with a counter (S)
+- [ ] 🟡 **i22-b30** Evening options follow the town calendar (M)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
