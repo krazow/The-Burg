@@ -1008,6 +1008,82 @@ old ones.
 
 </details>
 
+## Ideas round 8 (pick on the build board)
+
+62 ideas. Details: [docs/ideas/round-8.md](docs/ideas/round-8.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 8: Playtest of modes</b> (28 ideas)</summary>
+
+- [ ] 🔴 **i8-a01** Grandkid only after a life that ran its course (S)
+- [ ] 🔴 **i8-a02** "Not now" keeps the grandkid waiting (S)
+- [ ] 🔴 **i8-a03** Retirees can't be "hired" into a job that never pays (M)
+- [ ] 🔴 **i8-a04** Retiring asks first and marks the day (M)
+- [ ] 🔴 **i8-a05** Live challenge progress with a deadline (M)
+- [ ] 🔴 **i8-a06** Job openings change week to week (M)
+- [ ] 🟠 **i8-a07** Lifetime "score so far" counts net worth against "by now" (S)
+- [ ] 🟠 **i8-a08** Retirement happiness needs a reason after the first years (S)
+- [ ] 🟠 **i8-a09** Events you've seen a lot come up less (M)
+- [ ] 🟠 **i8-a10** A long marriage doesn't end on one coin flip (S)
+- [ ] 🟡 **i8-a11** The trip of a lifetime happens once (S)
+- [ ] 🟠 **i8-a12** Farm kid lives at the family place at first (S)
+- [ ] 🟠 **i8-a13** Work events that fit a farm or a small shop (M)
+- [ ] 🟡 **i8-a14** Fix the raise wording (S)
+- [ ] 🟠 **i8-a15** Farm kid can take over the family farm (L)
+- [ ] 🟠 **i8-a16** Relaxed says so when the debt floor catches you (S)
+- [ ] 🟠 **i8-a17** Hard makes the first job harder to land (S)
+- [ ] 🟠 **i8-a18** Challenge results and records judge the challenge (S)
+- [ ] 🟠 **i8-a19** Early win, then a stretch goal (S)
+- [ ] 🟡 **i8-a20** Save the family farm gets a story (M)
+- [ ] 🟡 **i8-a21** A briefing when a challenge starts (S)
+- [ ] 🟡 **i8-a22** Take a challenge on Hard (S)
+- [ ] 🟠 **i8-a23** A weekly finished after Monday still counts (S)
+- [ ] 🟠 **i8-a24** Your first weekly finish is the official one (S)
+- [ ] 🟡 **i8-a25** Weekly challenge starts in this real month (S)
+- [ ] 🟠 **i8-a26** Town goals with a new twist each year (S)
+- [ ] 🟡 **i8-a27** Road events match the road you drive (S)
+- [ ] 🟡 **i8-a28** The grandkid sheet shows what comes down (S)
+
+</details>
+
+<details><summary><b>Ideas 8: Work life up close</b> (34 ideas)</summary>
+
+- [ ] 🔴 **i8-b01** A named boss at every job (M)
+- [ ] 🟠 **i8-b02** Two regular coworkers who keep turning up (M)
+- [ ] 🔴 **i8-b03** A week in the life: a card for each job (S)
+- [ ] 🔴 **i8-b04** Pick your shift: days, swing or nights (M)
+- [ ] 🟠 **i8-b05** Hospital rhythm: three 12-hour shifts a week (S)
+- [ ] 🟡 **i8-b06** On-call weeks for nurses, mechanics and trades (S)
+- [ ] 🔴 **i8-b07** Your work week on Home: a shift strip (S)
+- [ ] 🟡 **i8-b08** The schedule goes up late: service-job weekends (S)
+- [ ] 🟠 **i8-b09** Tips at the bar, the café and the diner (S)
+- [ ] 🟡 **i8-b10** Rush weeks: Black Friday, Celebration Days, the holidays (S)
+- [ ] 🔴 **i8-b11** Paid time off you can actually use (M)
+- [ ] 🟠 **i8-b12** Sick week: call in or push through (S)
+- [ ] 🟠 **i8-b13** Benefits at a glance on every job (S)
+- [ ] 🔴 **i8-b14** Quit well: give notice or walk out (S)
+- [ ] 🟠 **i8-b15** Old bosses can hire you back (S)
+- [ ] 🟡 **i8-b16** A send-off on your last day (S)
+- [ ] 🟠 **i8-b17** Starting over: the first-year dip in a new field (M)
+- [ ] 🟡 **i8-b18** A late-start career: become a nurse at 40 (L)
+- [ ] 🟠 **i8-b19** Burnout and a leave of absence (M)
+- [ ] 🔴 **i8-b20** School-hours jobs (M)
+- [ ] 🟠 **i8-b21** Part-time hours (M)
+- [ ] 🟠 **i8-b22** Summer break with kids at home (S)
+- [ ] 🟡 **i8-b23** Snow day scramble (S)
+- [ ] 🟠 **i8-b24** Go solo in your trade (M)
+- [ ] 🟡 **i8-b25** Quarterly taxes when you work for yourself (S)
+- [ ] 🟠 **i8-b26** The farm year for farm hands (S)
+- [ ] 🟠 **i8-b27** Wine crush as a season with a finish line (S)
+- [ ] 🟡 **i8-b28** Road weeks for truck drivers (S)
+- [ ] 🟠 **i8-b29** A signature week for each Main Street job (M)
+- [ ] 🟡 **i8-b30** Pick a beat at the Tattler (S)
+- [ ] 🟠 **i8-b31** Main Street jobs know everybody (S)
+- [ ] 🟡 **i8-b32** Talk of a union in the break room (M)
+- [ ] 🟡 **i8-b33** Laid off? Retraining money for a new field (S)
+- [ ] 🔴 **i8-b34** Job group tags for every work rule (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
