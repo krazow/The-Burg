@@ -232,7 +232,7 @@ await t.check('W8 and W14 keep what you chose: a generator stops later outages, 
     const lab = EVENTS.find(e => e.title === 'Ice storm knocks out power').choices().filter(c => !c.if || c.if()).map(c => c.label);
     return { gen: S.generator, cat: S.cat, res, kept: S.money === m && S.happy === h, lab, bill: billLines().some(([l]) => l === 'Cat food') }; });
   assert(r.gen && r.cat && r.kept && /generator/.test(r.res), JSON.stringify(r));
-  assert(r.lab.length === 2 && /generator/.test(r.lab[1]), `the ice storm still offers a generator: ${r.lab}`);
+  assert(/generator/.test(r.lab[1]) && !r.lab.some(l => /Buy a generator/.test(l)), `the ice storm runs the generator instead of offering one: ${r.lab}`);
   assert(r.bill, 'no cat food on the weekly bills');
   await page.click('[data-tab=life]');
   const txt = await page.textContent('#main');

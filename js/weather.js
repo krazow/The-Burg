@@ -265,7 +265,9 @@ wxWrap('Water in the basements', (i, r, c) => { if (/muck/i.test(c.label)) helpO
    and a block captain's plan already has June Harlow on it (a33) ---- */
 { const e = EVENTS.find(x => x.title === 'An ice storm'); if (e) { const orig = e.choices; e.choices = () => { const [b] = orig(); return outageChoices(b.label, b.go, 'the ice storm'); }; } }
 { const e = EVENTS.find(x => x.title === 'Ice storm knocks out power'); if (e) { const orig = e.choices; e.choices = () => { const ch = orig(), i = ch.findIndex(c => /wait/i.test(c.label));
-  return i < 0 ? ch : [...ch.slice(0, i), ...outageChoices(ch[i].label, ch[i].go, 'the ice storm'), ...ch.slice(i + 1)]; }; } }
+  if (i < 0) return ch;   // the town pack's own choices keep their places; remote work replaces waiting, the captain and the lantern come last
+  const oc = outageChoices(ch[i].label, ch[i].go, 'the ice storm'), own = oc.filter(c => c.go === ch[i].go || /library|vacation|Miss the work/.test(c.label));
+  return [...ch.slice(0, i), ...own, ...ch.slice(i + 1), ...oc.filter(c => !own.includes(c))]; }; } }
 { const e = EVENTS.find(x => x.title === 'The neighbor on oxygen'); if (e) { const orig = e.choices; e.choices = () => [
   ...(isCaptain() ? [{label:'She\'s on the storm plan: hook her up to the block\'s generator', go:() => { adj({ community:3 }); helpOut(); S.neighbors = { ...S.neighbors, june:'plan' };
     return 'June was first on your list. The generator was running at her place before her backup tank got low.'; }}] : []), ...orig()]; } }

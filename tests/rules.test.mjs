@@ -570,7 +570,8 @@ await t.check('i75-b15–b17: the shop costs $6,000, cattle $16,000 with a vet l
 // over the side hustle those weeks would have paid. Time spent is ignored, so the 30% ceiling is high on purpose.
 await t.check('i75-b18: every business returns between 0% and 30% a year (index funds: about 6%)', async () => {
   const r = await ev(() => {
-    const rnd = Math.random, wy = wheatYield; let ey = 0; for (let i = 0; i < 20000; i++) ey += wy(); ey /= 20000;
+    const rnd = Math.random, wy = wheatYield; let ey = 0;   // i75-a01: the year's weather decides a dry year, so roll one for each sample
+    for (let i = 0; i < 20000; i++) { S.wx = { ...wxYear(), dry: Math.random() < WX_DRY, rain: false }; ey += wy(); } ey /= 20000;
     const own = { shop: 'rest', truck: 'hustle', cattle: 'outdoors', wheat: 'work' }, out = {};
     try {
       wheatYield = () => ey;
