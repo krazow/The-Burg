@@ -403,7 +403,12 @@ const BIZ = {
 const WHEAT_BASE = 7.5, WHEAT_STORE_FEE = 0.01, CROP_INS = 540, CROP_INS_YIELD = 0.9;
 const wheatPriceF = () => (S.wheatPrice || WHEAT_BASE) / WHEAT_BASE;
 // a bad year (15%) brings in 30% of a normal crop, or 90% with crop insurance (i3-a16); otherwise 90–170%
-function wheatYield(){ if (chance(0.15)) return S.biz && S.biz.ins ? CROP_INS_YIELD : 0.3; return 0.9 + Math.random() * 0.8; }
+// i75-a01: the year's weather decides it (a dry year, 15%, is the bad one); a20 hail takes a stripe, mostly covered by crop insurance
+function wheatYield(){
+  const w = wxYear(), hail = S.biz && S.biz.hail && S.biz.hail.y === w.y ? S.biz.hail.cut * (S.biz.ins ? 0.2 : 1) : 0;
+  if (w.dry) return S.biz && S.biz.ins ? CROP_INS_YIELD : 0.3;
+  return Math.max(w.rain ? 1.1 : 0.9, 0.9 + Math.random() * 0.8) * (1 - hail);   // a02: a May rain raises the floor
+}
 const wheatPriceLabel = () => `$${(S.wheatPrice * S.col).toFixed(2)}/bushel`;
 const storedWheatValue = () => S.biz && S.biz.stored ? S.biz.stored * wheatPriceF() : 0;
 function sellStoredWheat(why = ''){
@@ -453,7 +458,7 @@ function cattleWeek(lines, notes){
   const hard = B.hard === (mo >= 10 ? y : y - 1);
   lines.push(['🐄 Pasture rent', -cost(PASTURE) * W]);
   if ([10, 11, 0, 1, 2].includes(mo)) lines.push([hard ? '🐄 Hay (hard winter)' : '🐄 Hay', -cost(HAY) * B.cows * (hard ? 1.5 : 1) * W]);
-  if (mo === 10 && B.hardRoll !== y) { B.hardRoll = y; if (chance(0.25)) { B.hard = y; notes.push('🐄 The almanac and the old-timers agree: a hard winter is coming. Hay will cost more.'); } }
+  if (mo === 10 && B.hardRoll !== y) { B.hardRoll = y; if (wxHard()) { B.hard = y; notes.push('🐄 The almanac and the old-timers agree: a hard winter is coming. Hay will cost more.'); } }
   if ([1, 2, 3].includes(mo) && !herdChecked(3)) B.miss = (B.miss || 0) + 1;     // calving season without checks
   if (mo === 4 && B.calvedYear !== y) {
     B.calvedYear = y;
@@ -467,7 +472,7 @@ function cattleWeek(lines, notes){
     B.cows--; notes.push(`🐄 Nobody had checked the herd in weeks, and a cow went missing in the foothills. ${B.cows} left.`); log('Lost a cow in the foothills.');
   }
   if (mo === 9 && B.soldYear !== y && B.calves) {
-    B.soldYear = y; const price = 0.75 + Math.random() * 0.5, v = cost(CALF_PRICE) * B.calves * price;
+    B.soldYear = y; const price = 0.75 + Math.random() * 0.5, v = cost(CALF_PRICE) * B.calves * price * (B.thin === y ? 0.9 : 1);   // i75-a16: thin calves after an ice storm
     lines.push([`🐄 ${B.calves} calves sold at auction`, v]); B.earned += v; B.calves = 0;
     notes.push(`🐄 Sale day at the livestock auction: calves went ${price >= 1.1 ? 'high' : price <= 0.9 ? 'cheap' : 'about average'} and you brought home ${fmt(v)}.`);
   }
@@ -626,7 +631,7 @@ const wineOpen = () => [8, 9, 10].includes(curMonth()) && !(S.wine || []).some(l
 function buyWine(){
   if (!wineOpen()) return false;
   const c = cost(WINE_COST); if (S.money < c) { toast(`You need ${fmt(c)} on hand.`); return false; }
-  S.money -= c; S.wine.push({ y: wineYear(), paid: c, at: S.turn + WINE_WEEKS, smoke: S.smoke === wineYear() });
+  S.money -= c; S.wine.push({ y: wineYear(), paid: c, at: S.turn + WINE_WEEKS, smoke: S.smoke === wineYear(), dry: !!(S.wx && S.wx.y === wineYear() && S.wx.dry && S.smoke !== wineYear()) });
   log(`Bought into the ${wineYear()} vintage at ${WINERY} for ${fmt(c)}. It pays out when the wine is released in ${wineYear() + 3}.`, 'money');
   return true;
 }
@@ -654,6 +659,7 @@ function investCard(){
 // the first week of each month: a new year's market, wheat prices, and the summer's smoke
 function moneyMonth(notes){
   const d = new Date(S.date), y = d.getFullYear(), mo = d.getMonth(), key = y * 12 + mo;
+  wxEnsure();
   if (S.monKey === key) return; S.monKey = key;
   if (!S.mkt || S.mkt.y !== y) {                                   // New Year: home prices, mortgage rates and the stock market
     S.homeGrow = HOME_GROW + (Math.random() - 0.5) * 0.12;
@@ -664,7 +670,7 @@ function moneyMonth(notes){
   if (mo === 6) {                                                   // July: the new crop's price, and the old crop has to go
     if (wheat && S.biz.stored) { const v = sellStoredWheat(' when the new crop came in'); notes.push(`🌾 The new crop is coming, so the elevator sold your stored wheat: ${fmt(v)}.`); }
     S.wheatPrice = WHEAT_BASE * (0.8 + Math.random() * 0.4);
-    if (chance(0.25)) S.smoke = y;
+    if (wxSmoke()) S.smoke = y;                                    // i75-a01: the year's weather
   } else if (wheat && S.biz.stored) S.wheatPrice *= 1 + 0.012 + (Math.random() - 0.5) * 0.1;
 }
 function moneyWeek(lines, notes){
@@ -681,7 +687,7 @@ function moneyWeek(lines, notes){
     if (S.stocks > 0) { S.mkt.lost = S.stocks * MKT.drop; S.stocks -= S.mkt.lost; if (S.noEvents) notes.push(`📉 The market dropped: your index funds lost ${fmt(S.mkt.lost)}.`); else dueEvent('Market drop'); }
   }
   for (const l of (S.wine || []).filter(l => S.turn >= l.at)) {
-    const r = Math.random(), q = l.smoke ? (r < 0.1 ? 'great' : r < 0.5 ? 'good' : 'smoke') : (r < 0.25 ? 'great' : r < 0.8 ? 'good' : 'smoke');
+    const r = Math.random(), q = l.smoke ? (r < 0.1 ? 'great' : r < 0.5 ? 'good' : 'smoke') : l.dry ? (r < 0.4 ? 'great' : r < 0.9 ? 'good' : 'smoke') : (r < 0.25 ? 'great' : r < 0.8 ? 'good' : 'smoke');   // i75-a01: a hot, dry, clean summer makes big wine
     const v = l.paid * WINE_Q[q].x; lines.push([`🍷 ${l.y} vintage released`, v]);
     notes.push(`🍷 ${WINERY} released the ${l.y} vintage: ${WINE_Q[q].t}. Your share paid ${fmt(v)} on the ${fmt(l.paid)} you put in.`);
     log(`The ${l.y} vintage at ${WINERY} paid ${fmt(v)}.`, 'money');

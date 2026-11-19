@@ -75,6 +75,7 @@ for (const { len, strat, g, opts, label } of JOBS_LIST) {
           if (!['careless', 'idle'].includes(strat) && canCarpool()) { S.carpool = true; S.carpoolJob = S.jobId; }   // sensible players share the drive
           if (!S.biz && strat === 'planner' && S.money > 40000) startBiz('wheat');            // businesses: a planner leases wheat ground (and renews it),
           if (strat === 'planner' && leaseDue()) renewLease();
+          if (strat === 'planner' && S.biz && S.biz.type === 'wheat') S.biz.ins = true;          // i75-a31: the planner gets ready for weather (crop insurance; prep choices come first in weather cards)
           if (!S.biz && strat === 'homebody' && S.money > 8000) startBiz('shop');             // a homebody opens a woodshop
           // trips around the region: the planner shops and keeps up car care monthly; the tripper goes out every week
           if (strat === 'planner' && weeks % 4 === 0 && S.money > 300) {
@@ -102,7 +103,7 @@ for (const { len, strat, g, opts, label } of JOBS_LIST) {
         }
         const sc = lifeScore();
         return { weeks, ending, bad, events, score: sc.score, parts: sc.parts, nw: Math.round(sc.real), age: age(), edu: S.edu, kids: S.kids.length,
-                 debt: /debt/.test(ending || ''), endedOk: !!ending };
+                 debt: /debt/.test(ending || ''), endedOk: !!ending, wxCost: Math.round((S.wxLife || {}).cost || 0), wxSaved: Math.round((S.wxLife || {}).saved || 0), yrs: Math.max(0.5, S.turn / 52) };
       }, [len, strat, opts]);
       r.len = len; r.strat = strat; r.errors = errors; r.label = label;
       results.push(r);
@@ -153,6 +154,9 @@ const ev = {}; let weeks = 0;
 for (const r of results) { weeks += r.weeks; for (const [k, v] of Object.entries(r.events)) ev[k] = (ev[k] || 0) + v; }
 md += `\n**Events per 100 weeks played** (${weeks.toLocaleString()} weeks in total):\n\n` +
   Object.entries(ev).sort((a, b) => b[1] - a[1]).map(([k, v]) => `- ${k}: ${(v / weeks * 100).toFixed(1)}`).join('\n') + '\n';
+// i75-a31: what the weather cost each kind of player a year, and what getting ready saved (information only)
+md += `\n**Weather per year played** (median, 2027 $):\n\n| Strategy | Weather cost | Saved by getting ready |\n|---|---|---|\n` +
+  STRATEGIES.map(st => { const rs = results.filter(r => r.label === 'normal' && r.strat === st); return rs.length ? `| ${st} | ${money(med(rs.map(r => Math.round(r.wxCost / r.yrs))))} | ${money(med(rs.map(r => Math.round(r.wxSaved / r.yrs))))} |` : ''; }).filter(Boolean).join('\n') + '\n';
 const careless = med(results.filter(r => r.label === 'normal' && r.strat === 'careless').map(r => r.score));
 const idle = med(results.filter(r => r.label === 'normal' && r.strat === 'idle').map(r => r.score));
 const planner = med(results.filter(r => r.label === 'normal' && r.strat === 'planner' && (r.len === 'five' || r.len === 'life')).map(r => r.score));

@@ -88,6 +88,14 @@ function runChips(){
   return `<span class="delta ${dm>=0?'up':'down'}">${dm>=0?'+':''}${fmt(dm)}</span>` +
     d.map(([ic,v]) => `<span class="delta ${Math.abs(v) < 0.5 ? 'flat' : v>0?'up':'down'}">${ic} ${Math.abs(v) < 0.5 ? '±0' : (v>0?'▲':'▼') + Math.abs(Math.round(v))}</span>`).join('');
 }
+// i75-a22: weather events sit together on one storm card, with what the weather cost in one number
+function happenedRows(list){
+  const row = h => `<div class="kv"><span>${h.ic} ${esc(h.title)}</span><span style="color:${h.money<0?'var(--down)':'var(--up)'}">${h.money ? (h.money>0?'+':'') + fmt(h.money) : ''}</span></div>`;
+  const wx = list.filter(h => h.wx), rest = list.filter(h => !h.wx);
+  if (!wx.length) return rest.map(row).join('');
+  const sum = wx.reduce((a, h) => a + (h.money || 0), 0);
+  return `<div class="card wxcard" role="group" aria-label="Weather: ${wx.length} event${wx.length > 1 ? 's' : ''}${sum ? `, ${sum < 0 ? 'cost' : 'brought in'} ${fmt(Math.abs(sum))}` : ''}"><div class="kv"><span><b>🌦️ Weather</b></span><span style="color:${sum<0?'var(--down)':'var(--up)'}"><b>${sum ? (sum>0?'+':'') + fmt(sum) : '±$0'}</b></span></div>${wx.map(row).join('')}</div>${rest.map(row).join('')}`;
+}
 function showRunDetails(){
   const r = S.run; if (!r) return;
   const dm = S.money - r.money;
@@ -97,7 +105,7 @@ function showRunDetails(){
       ? `<button class="kv whyrow" aria-expanded="false" aria-controls="why${i}" data-why="${i}"><span>${l} <span class="info" aria-hidden="true">ⓘ</span></span><span style="color:${v<0?'var(--down)':'var(--up)'}">${v>0?'+':''}${fmt(v)}</span></button><div class="whytext hidden" id="why${i}">${why}</div>`
       : `<div class="kv"><span>${l}</span><span style="color:${v<0?'var(--down)':'var(--up)'}">${v>0?'+':''}${fmt(v)}</span></div>`).join('')}
       <div class="kv"><span><b>Paychecks and bills</b></span><span><b>${S.last.net>=0?'+':''}${fmt(S.last.net)}</b></span></div>` : ''}
-    ${r.happened.length ? `<h3 style="margin-top:12px">What happened</h3>${r.happened.map(h => `<div class="kv"><span>${h.ic} ${esc(h.title)}</span><span style="color:${h.money<0?'var(--down)':'var(--up)'}">${h.money ? (h.money>0?'+':'') + fmt(h.money) : ''}</span></div>`).join('')}` : ''}
+    ${r.happened.length ? `<h3 style="margin-top:12px">What happened</h3>${happenedRows(r.happened)}` : ''}
     <div class="kv"><span><b>Total change in cash</b></span><span><b>${dm>=0?'+':''}${fmt(dm)}</b></span></div>${tattlerLine()}
     ${S.last && S.last.why && S.last.why.length ? `<h3 style="margin-top:12px">Why your stats moved${r.weeks > 1 ? ' last week' : ''}</h3>${S.last.why.map(w => `<div class="logitem">${w}</div>`).join('')}` : ''}
     ${S.practice ? '' : '<button class="btn ghost" id="outlook">📅 Money outlook: next 13 weeks</button>'}
@@ -174,6 +182,7 @@ function showReview(rv){
     <p class="muted" style="text-align:center">${esc(S.name)} is ${age()} now.</p>
     ${row('Net worth', rv.start.nw, rv.end.nw, true)}${row('Happiness', rv.start.happy, rv.end.happy)}${row('Health', rv.start.health, rv.end.health)}${row('Community', rv.start.community, rv.end.community)}
     ${rv.milestones.length ? `<h3 style="margin-top:12px">Milestones</h3>${rv.milestones.map(m => `<div class="logitem">${esc(m)}</div>`).join('')}` : '<p class="muted">A quiet year.</p>'}
+    ${rv.wx && (rv.wx.cost >= 1 || rv.wx.saved >= 1) ? `<h3 style="margin-top:12px">🌦️ What the weather cost you</h3><div class="kv"><span>Storms, floods, heat and hard winters</span><span style="color:var(--down)">${fmt(rv.wx.cost)}</span></div>${rv.wx.saved >= 1 ? `<div class="kv"><span>What getting ready saved you</span><span style="color:var(--up)">${fmt(rv.wx.saved)}</span></div>` : ''}` : ''}
     <p class="muted">${rv.events} event${rv.events===1?'':'s'} this year.</p>
     <button class="btn primary" id="ok">On to ${rv.year + 1}</button>`);
   $('#ok').onclick = () => { closeSheet(); render(); };
@@ -275,7 +284,7 @@ function weekTick(auto){
   let gross = 0, k401 = 0;
   if (S.retired) gross = retireeIncome(lines, m);   // i75-b13/b14: draws that rise with age, and retiree taxes
   else if (j && onLeave()) gross = leavePay(j, lines);   // i74-a14: paid family leave
-  else if (j) gross = jobPay(j, payNow(j) * m * (f.payMult||1) * plantOT(j) * smokePayMult(), lines, f);   // i75-a07 the smoke rule's shorter days; i3: strikes, furloughs, clearances, union dues
+  else if (j) gross = jobPay(j, payNow(j) * m * (f.payMult||1) * plantOT(j) * wxPayF(j) * smokePayMult(), lines, f);   // i75-a29 a short pack season; i75-a07 the smoke rule's shorter days; i3: strikes, furloughs, clearances, union dues
   if (!S.retired) gross += furloughBackPay(lines);
   if (j) workYear(j, m);                           // i3-a24/a25: years worked count toward Social Security and a public pension
   if (j && !S.retired && S.k401rate) {           // pre-tax contribution, with a 3% employer match at 5% or more
@@ -293,6 +302,7 @@ function weekTick(auto){
   if (f.hustle && !truckTime) { gig = currentGig(); lines.push([`Side hustle: ${gig.name}`, hustlePay(gig, Math.random()), `Gigs follow the seasons. ${S.hustleWeeks ? `${S.hustleWeeks} weeks of experience add ${Math.round((hustleXp() - 1) * 100)}% to your pay.` : 'Pay grows as you get good at it.'}`]); S.hustleWeeks = (S.hustleWeeks || 0) + 1; S.hustleLast = S.turn; }
   else if (S.hustleWeeks > 0 && S.turn - (S.hustleLast ?? S.turn) > HUSTLE_FADE_AFTER) S.hustleWeeks = Math.max(0, S.hustleWeeks - HUSTLE_FADE);   // B9: rusty after 6 months off
   const home = HOMES[S.home];
+  wxWeek(lines, notes);                            // i75: this year's weather, gray weeks and the weather bill
   bizWeek(lines, notes);
   moneyWeek(lines, notes);                         // round 3: property tax, home equity loan, index funds, wine futures
   weatherLines(lines, notes);                      // i75: smoke sick days, the roof on the waiting list, the neighbor's walk
@@ -386,6 +396,7 @@ function weekTick(auto){
   { const due = S.noEvents ? null : takeDue(); if (due) ev = due; }   // a harvest choice or a market drop comes first
   if (ev) {
     S.evCd[ev.title] = S.turn + (ev.yr ? 40 : 8);
+    if (ev.big) wxHit();                           // i75-a23: a big weather hit counts toward the year's cap
     { const pl = eventPlace(ev); S.evPins = [{ t: ev.title, ic: ev.ic, m: pl[0], k: pl[1], turn: S.turn + 1, r: '' }, ...(S.evPins || [])].slice(0, 12); }
     if (ev.once) S.evDone[ev.title] = 1;
     S.evLabel = dateLabel();
@@ -394,8 +405,9 @@ function weekTick(auto){
       const ch = ev.choices().filter(c => !c.if || c.if());
       if (ch.length === 1) {
         const m0 = S.money, r = ch[0].go();
+        wxTrack(ev, S.money - m0);
         if (r) log(`${ev.title}: ${r}`);
-        if (S.run) S.run.happened.push({ ic: ev.ic, title: ev.title, money: S.money - m0, auto: 1 });
+        if (S.run) S.run.happened.push({ ic: ev.ic, title: ev.title, money: S.money - m0, auto: 1, wx: !!ev.wx });
         if (S.evPins && S.evPins[0] && S.evPins[0].t === ev.title) S.evPins[0].r = r || '';
         ev = null;
       }
@@ -420,7 +432,7 @@ function weekTick(auto){
   const newYear = new Date(S.date).getFullYear();
   if (newYear > oldYear) {
     const snap = { nw: netWorth(), happy: S.happy, health: S.health, community: S.community };
-    if (S.yearStart && LENGTHS[S.len].turns > 26) review = { year: oldYear, start: S.yearStart, end: snap, events: S.yearEvents || 0,
+    if (S.yearStart && LENGTHS[S.len].turns > 26) review = { year: oldYear, start: S.yearStart, end: snap, events: S.yearEvents || 0, wx: wxYearEnd(oldYear),
       milestones: S.log.filter(e => e.d.endsWith(String(oldYear)) && !e.m.includes(': ')).map(e => e.m).reverse().slice(0, 8) };
     if (S.yearStart) S.years = [...(S.years || []), { year: oldYear, age: age(), start: S.yearStart, end: snap, m: yearMilestones(oldYear) }].slice(-120);   // i2-a29: for the life story
     S.yearStart = snap; S.yearEvents = 0;
