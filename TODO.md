@@ -5120,6 +5120,78 @@ old ones.
 
 </details>
 
+## Ideas round 62 (pick on the build board)
+
+58 ideas. Details: [docs/ideas/round-62.md](docs/ideas/round-62.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 62: Playtest of live 0.2.0</b> (26 ideas)</summary>
+
+- [ ] 🔴 **i62-a01** Broken backup codes say plain words, not "Failed to fetch" (S)
+- [ ] 🔴 **i62-a02** Restoring the same backup twice makes twin lives (S)
+- [ ] 🔴 **i62-a03** Back up from the title screen, records and badges included (S)
+- [ ] 🔴 **i62-a04** A life that never worked scores 57: debt should cost points (M)
+- [ ] 🟠 **i62-a05** The year in review comes back after closing the app (S)
+- [ ] 🟠 **i62-a06** A pasted code with words or quotes around it still restores (S)
+- [ ] 🟠 **i62-a07** The restore preview lists records and badges, not just lives (S)
+- [ ] 🟡 **i62-a08** After a restore, open the life you brought back (S)
+- [ ] 🟡 **i62-a09** The restore preview says which slot each life will land in (S)
+- [ ] 🟡 **i62-a10** Backups carry your settings and the tips you have seen (S)
+- [ ] 🟡 **i62-a11** Backup file names say who is inside and use your local date (S)
+- [ ] 🟡 **i62-a12** Enter in the name box starts the life (S)
+- [ ] 🟡 **i62-a13** Finishing the tutorial marks its matching tips as seen (S)
+- [ ] 🟡 **i62-a14** The tutorial ring stays inside the screen on tab steps (S)
+- [ ] 🟡 **i62-a15** Long names fit on the score card (S)
+- [ ] 🟠 **i62-a16** The long-shot horse loses money on average (S)
+- [ ] 🟠 **i62-a17** Hunting fills the freezer, not your wallet (S)
+- [ ] 🟠 **i62-a18** Snapping back at a rude customer costs something (S)
+- [ ] 🟠 **i62-a19** Mandatory overtime means it: refusing has a real cost (S)
+- [ ] 🟡 **i62-a20** Snow day: the unpaid day shouldn't win every way (S)
+- [ ] 🟠 **i62-a21** A test that flags event choices that beat the others on everything (M)
+- [ ] 🟠 **i62-a22** A broken-backup test: damaged codes all get plain messages (S)
+- [ ] 🟡 **i62-a23** A two-phone test: finish, reload, back up, restore in a clean browser (M)
+- [ ] 🟠 **i62-a24** The end screen offers to back up your records (S)
+- [ ] 🔴 **i62-a25** Bundle: Backups that forgive mistakes (M)
+- [ ] 🟠 **i62-a26** Bundle: Event choices with honest odds (M)
+
+</details>
+
+<details><summary><b>Ideas 62: Humor and charm</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i62-b01** Vern's '79 Ford tries to start (a running gag) (M)
+- [ ] 🔴 **i62-b02** Gerald the rooster weighs in on big choices (S)
+- [ ] 🔴 **i62-b03** The Tattler's correction that needs its own correction (S)
+- [ ] 🔴 **i62-b04** Callbacks: the third time, the game notices (M)
+- [ ] 🟠 **i62-b05** Your phone number used to be the feed store's (M)
+- [ ] 🟠 **i62-b06** Earl's knee forecast in the Tattler (S)
+- [ ] 🔴 **i62-b07** Funny result lines for Out and about visits (M)
+- [ ] 🟠 **i62-b08** Norman the garden gnome is on tour (M)
+- [ ] 🟡 **i62-b09** The lost and found box at City Hall (S)
+- [ ] 🟠 **i62-b10** Dueling church reader boards (S)
+- [ ] 🔴 **i62-b11** Silly numbers in the year in review (S)
+- [ ] 🟠 **i62-b12** The fish that grows every time you tell it (M)
+- [ ] 🟠 **i62-b13** The fruitcake that will not die (S)
+- [ ] 🟠 **i62-b14** New folks say "Touch-et" (S)
+- [ ] 🟡 **i62-b15** Doris the deer eats only your tulips (M)
+- [ ] 🟠 **i62-b16** Stand-in business names with gentle wordplay (S)
+- [ ] 🟡 **i62-b17** The council cat abstains (S)
+- [ ] 🟡 **i62-b18** Loading lines when a new life starts (S)
+- [ ] 🟠 **i62-b19** The BUMP sign on Highway 12 (S)
+- [ ] 🟠 **i62-b20** The concrete goose on 3rd Street dresses for the season (S)
+- [ ] 🟡 **i62-b21** Rare: the great tumbleweed drift (S)
+- [ ] 🟡 **i62-b22** Rare: the parade goes the wrong way (S)
+- [ ] 🟡 **i62-b23** Rare: onions on Highway 12 (S)
+- [ ] 🟠 **i62-b24** The harvest pageant: your kid is Potato #2 (S)
+- [ ] 🔴 **i62-b25** Classified ads that make you smile (S)
+- [ ] 🟠 **i62-b26** The check-engine light you've learned to ignore (S)
+- [ ] 🟠 **i62-b27** The long goodbye (S)
+- [ ] 🔴 **i62-b28** A gag tracker so running jokes pace and land (M)
+- [ ] 🟡 **i62-b29** The dog's monthly crimes report (S)
+- [ ] 🔴 **i62-b30** This week in 1952: the crosswalk debate (S)
+- [ ] 🟠 **i62-b31** Each focus gets its own funny result lines (M)
+- [ ] 🟠 **i62-b32** The old-timer's one joke at the hardware counter (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
