@@ -3760,6 +3760,84 @@ old ones.
 
 </details>
 
+## Ideas round 44 (pick on the build board)
+
+64 ideas. Details: [docs/ideas/round-44.md](docs/ideas/round-44.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 44: When the town pulls together</b> (31 ideas)</summary>
+
+- [ ] 🔴 **i44-a01** A town crisis engine: multi-week arcs with phases (L)
+- [ ] 🔴 **i44-a02** Pick your role when the town calls (M)
+- [ ] 🔴 **i44-a03** The Town Book: crises you lived through (M)
+- [ ] 🔴 **i44-a04** Fire in the wheat on the ridge (L)
+- [ ] 🔴 **i44-a05** Ice storm: five days without power (L)
+- [ ] 🟠 **i44-a06** Missing hiker in the Blues (L)
+- [ ] 🟠 **i44-a07** The levee gets tested (M)
+- [ ] 🔴 **i44-a08** The grocery store says it's closing (L)
+- [ ] 🟠 **i44-a09** The clinic loses its doctor (M)
+- [ ] 🟠 **i44-a10** The Preston Avenue bridge washes out (M)
+- [ ] 🟠 **i44-a11** The heat dome: ten days over 105 (M)
+- [ ] 🟠 **i44-a12** The school roof fails: class in the church hall (M)
+- [ ] 🟡 **i44-a13** No one to run Celebration Days (M)
+- [ ] 🟡 **i44-a14** Fire district levy fails: nights go dark (M)
+- [ ] 🟡 **i44-a15** The packing plant fire: 80 jobs on hold (M)
+- [ ] 🟡 **i44-a16** The big drift: farm roads shut for ten days (M)
+- [ ] 🟠 **i44-a17** Take in a family for a month (M)
+- [ ] 🟡 **i44-a18** Meal train sign-up sheet (S)
+- [ ] 🟡 **i44-a19** The town phone tree (M)
+- [ ] 🟠 **i44-a20** The boss and your missed shifts (M)
+- [ ] 🟠 **i44-a21** Too much at once: a step-back choice (S)
+- [ ] 🟡 **i44-a22** Crisis week on the map (M)
+- [ ] 🟡 **i44-a23** The Tattler special edition (S)
+- [ ] 🟡 **i44-a24** One year later: the town remembers (S)
+- [ ] 🟡 **i44-a25** Who's to blame: the argument after (M)
+- [ ] 🟡 **i44-a26** Kids help too: sandwiches and sandbags (S)
+- [ ] 🟡 **i44-a27** Spaghetti feed at the Legion hall (S)
+- [ ] 🟡 **i44-a28** Hard mode: crises run longer (S)
+- [ ] 🟡 **i44-a29** The livestock truck rollover on Highway 12 (S)
+- [ ] 🟠 **i44-a30** Your own house is the one in trouble (M)
+- [ ] 🟡 **i44-a31** Help explains town crises (S)
+
+</details>
+
+<details><summary><b>Ideas 44: Tutorial and Help rewrite</b> (33 ideas)</summary>
+
+- [ ] 🔴 **i44-b01** Tutorial: cut 26 steps to 14 by dropping tap-here-to-navigate steps (S)
+- [ ] 🟠 **i44-b02** Tutorial opens on Home with 'No paycheck', not on the Jobs list (S)
+- [ ] 🔴 **i44-b03** Tutorial: one Out and about visit, showing it doesn't use your week (S)
+- [ ] 🟠 **i44-b04** Tutorial: plan one trip to Walla Walla with a grocery stock-up (M)
+- [ ] 🔴 **i44-b05** Tutorial shows how you win: tap 'Life Score so far' (S)
+- [ ] 🟡 **i44-b06** Tutorial event shows its kind and its 📍 place (S)
+- [ ] 🟡 **i44-b07** Tutorial's last card links to four Help sections (S)
+- [ ] 🟡 **i44-b08** Skip the tutorial now, pick up where you left off later (S)
+- [ ] 🟡 **i44-b09** Progress shows chapter names, not 'Step 13 of 26' (S)
+- [ ] 🔴 **i44-b10** A test fails if a tutorial step is skipped silently (S)
+- [ ] 🔴 **i44-b11** Every tip card gets 'More in Help →' to the right section (S)
+- [ ] 🟠 **i44-b12** Carpool tip the first week you could join one (S)
+- [ ] 🟠 **i44-b13** Car-care tip when an oil change is overdue (S)
+- [ ] 🟠 **i44-b14** First time in debt: a tip on what it costs (S)
+- [ ] 🟡 **i44-b15** A road or work event's result says why it happened (S)
+- [ ] 🟠 **i44-b16** At most one tip a week, and a Tips on/off setting (S)
+- [ ] 🔴 **i44-b17** Search box at the top of Help (M)
+- [ ] 🟡 **i44-b18** Help search knows everyday words (S)
+- [ ] 🔴 **i44-b19** ? opens Help at the part you're looking at (S)
+- [ ] 🔴 **i44-b20** Help sections fold up with a one-line summary each (M)
+- [ ] 🟠 **i44-b21** Big tables hide behind 'Show all' (S)
+- [ ] 🟠 **i44-b22** Each Help section opens with a bold 'In short' line (S)
+- [ ] 🟡 **i44-b23** Reorder Help by when you need it; Score goes second (S)
+- [ ] 🟠 **i44-b24** Getting started rewrite: 'Your first four weeks' (S)
+- [ ] 🟠 **i44-b25** Out and about rewrite: rules first, place details on the cards (S)
+- [ ] 🟠 **i44-b26** Events rewrite: lead with the three-kinds table and 📍 (S)
+- [ ] 🟡 **i44-b27** Jobs rewrite: 'Commuting' and 'Side hustles' get their own subheads (S)
+- [ ] 🟡 **i44-b28** Trips rewrite: a 'Why take a trip?' table (S)
+- [ ] 🟡 **i44-b29** Split 'Skills and your own business'; move challenges out (S)
+- [ ] 🟡 **i44-b30** Merge 'Saving and loading' and 'Installing' into 'Your device' (S)
+- [ ] 🟠 **i44-b31** Short looping clips for five key moves (L)
+- [ ] 🟠 **i44-b32** 'Watch it' replays a live demo instead of a video (M)
+- [ ] 🟠 **i44-b33** 401(k) leaves the tutorial and becomes a first-paycheck tip (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
