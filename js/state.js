@@ -2,8 +2,10 @@
 /* ============================================================
    THE BURG — a life sim in Waitsburg, WA
    ============================================================ */
-const APP_VERSION = '0.2.0';   // the release kit stamps the exact version (with -beta.N) into every release
-const SAVE_KEY = 'theburg.save.v2', BEST_KEY = 'theburg.best.v2';
+const APP_VERSION = '0.2.1';   // the release kit stamps the exact version (with -beta.N) into every release
+// every storage key starts with KEY_PREFIX: the beta (served under /beta/) keeps its lives apart from the live game's (H3)
+const KEY_PREFIX = (typeof location !== 'undefined' && String(location.pathname).includes('/beta/')) ? 'theburgbeta.' : 'theburg.';
+const SAVE_KEY = KEY_PREFIX + 'save.v2', BEST_KEY = KEY_PREFIX + 'best.v2';
 const store = {
   get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } },
   set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} },
@@ -134,7 +136,50 @@ let tab = 'home', jobCity = 'all';
 const age = () => Math.floor(S.ageMonths/12);
 const kidsAtHome = () => (S.kids || []).filter(b => S.ageMonths - b < 18*12).length;
 // fill in fields that older saves don't have
+// H1: a fresh life's fields, used by newGame and to repair damaged saves
+function blankLife(name, len, slot = 0){
+  return { v:3, slot, name, len, turn:0, date: new Date(2027,0,4).getTime(), ageMonths:18*12, evCd:{}, evDone:{}, last:null, ui:0,
+    col:1, wage:1, kids:[], k401:0, k401rate:0, mortgage:null, loanPay:0,
+    money:1500, health:78, happy:60, community:30,
+    edu:0, studyProg:0, jobId:null, jobMonths:0, raise:1, retired:false,
+    home:'room', equity:0, car:'beater', carValue:2500, loanLeft:0,
+    dog:false, partner:false, council:false,
+    focus:'rest', applied:false, happySum:0, healthSum:0, monthsPlayed:0,
+    log:[], over:false, cause:null, streakF:null, streakN:0, run:null, yearEvents:0,
+    trip:null, svc:0, tires:null, stockUntil:-1, dentist:0, stopLast:{}, tabsYear:2027, carpool:false, hustleWeeks:0, scoreQ:null,
+    bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0,
+    badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false,
+    skills:{}, biz:null, weekly:null, rng:null, rngEv:null, gen:1, goalAt:{}, carpoolJob:null, hustleLast:0, highWater:null, recentF:[], out:outDefault(),
+    ...EVENT_STATE() };
+}
+// H1: put back anything a damaged save is missing or has a bad value for, so rendering never throws
+function repairLife(s){
+  const okNum = v => typeof v === 'number' && Number.isFinite(v), isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
+  if (typeof s.name !== 'string' || !s.name) s.name = 'Someone';
+  if (!LENGTHS[s.len]) s.len = 'two';
+  if (!okNum(s.date) || isNaN(new Date(s.date))) s.date = new Date(2027,0,4).getTime() + (okNum(s.turn) ? s.turn : 0) * 7 * 864e5;
+  if (!HOMES[s.home]) s.home = 'room';
+  if (!CARS[s.car]) s.car = 'beater';
+  if (s.jobId != null && !jobById(s.jobId)) s.jobId = null;
+  if (s.mode !== undefined && !MODES[s.mode]) s.mode = 'normal';
+  if (s.bg !== undefined && !BACKGROUNDS[s.bg]) s.bg = 'fresh';
+  if (!FOCUS[s.focus]) s.focus = 'rest';
+  if (s.scenario != null && !(typeof SCENARIOS !== 'undefined' && SCENARIOS[s.scenario])) s.scenario = null;
+  if (s.biz != null && !(isObj(s.biz) && typeof BIZ !== 'undefined' && BIZ[s.biz.type])) s.biz = null;
+  const b = blankLife(s.name, s.len, 0);
+  for (const [k, v] of Object.entries(b)) {
+    if (s[k] === undefined) continue;                                      // migrate's own defaults fill these
+    if (typeof v === 'number' && !okNum(s[k])) s[k] = v;
+    else if (Array.isArray(v) && !Array.isArray(s[k])) s[k] = v;
+    else if (isObj(v) && !isObj(s[k])) s[k] = v;
+  }
+  if (Array.isArray(s.log)) s.log = s.log.filter(isObj);
+  if (Array.isArray(s.kids)) s.kids = s.kids.filter(okNum);
+  if (Array.isArray(s.goals)) s.goals = s.goals.filter(x => typeof x === 'string');
+  return s;
+}
 function migrate(s){
+  repairLife(s);
   const d = { slot:0, evPins:[], streakF:null, streakN:0, run:null, yearEvents:0, yearStart:null, evCd:{}, evDone:{}, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, mortgage:null, loanPay:0 };
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
   // Around the region (0.3.0): older lives count as just serviced and checked, with this year's tabs paid
@@ -148,6 +193,7 @@ function migrate(s){
   if (s.rng != null && s.rngEv == null && s.weekly) s.rngEv = weekSeed(`${s.weekly}:events`);
   // businesses from before depreciation and lease renewals (R13): full value, and a wheat lease gets at least a season's notice
   if (s.biz) { if (s.biz.dep == null) s.biz.dep = 1; if (s.biz.type === 'wheat' && s.biz.lease == null) s.biz.lease = Math.max(LEASE_WEEKS, (s.biz.weeks || 0) + 13); }
+  for (const [k, v] of Object.entries(blankLife(s.name, s.len, s.slot))) if (s[k] === undefined) s[k] = v;   // H1: half a life gets the rest of a fresh one
   return s;
 }
 const job = () => S.jobId ? jobById(S.jobId) : null;
@@ -183,17 +229,18 @@ function logKind(m){
 }
 function log(msg, k){ S.log.unshift({d: dateLabel(), m: msg, k: k || logKind(msg)}); if (S.log.length > 120) S.log.length = 120; }
 /* ---------- save slots: up to 5 lives, each auto-saving to its own slot ---------- */
-const SLOTS_KEY = 'theburg.slots.v1', SLOT_COUNT = 5;
+const SLOTS_KEY = KEY_PREFIX + 'slots.v1', SLOT_COUNT = 5;
 function slots(){
-  const a = store.get(SLOTS_KEY), out = Array.isArray(a) ? a.slice(0, SLOT_COUNT) : [];
+  const a = store.get(SLOTS_KEY), out = Array.isArray(a) ? a.slice(0, SLOT_COUNT).map(g => isLife(g) ? g : null) : [];   // H1: drop damaged slots
   while (out.length < SLOT_COUNT) out.push(null);
   const old = store.get(SAVE_KEY);                 // the single save from before slots: move it into a free slot
-  if (old && !old.over) {
+  if (isLife(old) && !old.over) {
     const i = out.indexOf(null);
     if (i >= 0) { old.slot = i; out[i] = old; store.set(SLOTS_KEY, out); store.del(SAVE_KEY); }
   } else if (old) store.del(SAVE_KEY);
   return out;
 }
+const isLife = g => !!g && typeof g === 'object' && !Array.isArray(g) && typeof g.name === 'string';
 function writeSlot(i, game){ const a = slots(); a[i] = game; store.set(SLOTS_KEY, a); }
 function save(){ if (S && !S.over && !S.practice) { S.savedAt = Date.now(); writeSlot(S.slot ?? 0, S); } }
 const clone = o => JSON.parse(JSON.stringify(o));
@@ -203,8 +250,9 @@ function savedAgo(t){
   return m < 1 ? 'saved just now' : m < 60 ? `saved ${m} min ago` : m < 1440 ? `saved ${Math.round(m/60)} h ago` : `saved ${new Date(t).toLocaleDateString()}`;
 }
 function slotLine(g){
-  const d = new Date(g.date);
-  return `${LENGTHS[g.len] ? LENGTHS[g.len].label : ''} · age ${Math.floor(g.ageMonths/12)} · ${MONTHS[d.getMonth()].slice(0,3)} ${d.getFullYear()} · ${fmt(g.money)}`;
+  const d = new Date(g.date), ok = Number.isFinite(g.date) && !isNaN(d);   // H1: a damaged life shows what it can
+  return [LENGTHS[g.len] ? LENGTHS[g.len].label : '', Number.isFinite(g.ageMonths) ? `age ${Math.floor(g.ageMonths/12)}` : '',
+    ok ? `${MONTHS[d.getMonth()].slice(0,3)} ${d.getFullYear()}` : '', Number.isFinite(g.money) ? fmt(g.money) : ''].filter(Boolean).join(' · ');
 }
 function slotCard(g, i, buttons){
   return g ? `<div class="slot"><div class="slotinfo"><b>${esc(g.name)}</b>${g.copyNote ? ` <span class="tag">${esc(g.copyNote)}</span>` : ''}

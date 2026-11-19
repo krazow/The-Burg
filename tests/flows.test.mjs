@@ -500,6 +500,39 @@ await t.check('the Main Street close-up opens from the town map, and its pins op
   await page.click('#main .maptog button:nth-child(1)');
 });
 
+await t.check('H2: End this life now asks first, and Escape keeps playing', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => { S.turn = 5; save(); });
+  await page.click('[data-tab="menu"]');
+  await page.click(`${open} #retireNow`);
+  await page.waitForSelector(`${open} #yes`);
+  const txt = await page.textContent('#sheet');
+  assert(/Life Score so far: \d+/.test(txt) && /Keep playing/.test(txt), `confirm sheet: ${txt}`);
+  assert(await page.evaluate(() => document.activeElement && document.activeElement.id === 'no' || document.querySelector('#sheet button').id === 'no'), 'Keep playing should be the default');
+  await page.keyboard.press('Escape');
+  const r = await page.evaluate(() => ({ open: !document.querySelector('#modal').classList.contains('hidden'), slot: slots()[0] && slots()[0].name, over: S.over }));
+  assert(!r.open && r.slot === 'Flow' && !r.over, JSON.stringify(r));
+  await page.click('[data-tab="menu"]'); await page.click(`${open} #retireNow`); await page.click(`${open} #yes`);   // and ending it still works
+  assert(await page.evaluate(() => S.over && !slots()[0]), 'End this life did not end it');
+  await clearSheets();
+});
+
+await t.check('H2: Replace on a full board asks first, and Back changes nothing', async () => {
+  await page.evaluate(() => { closeSheet(); localStorage.clear(); for (let i = 0; i < 5; i++) { newGame('Life' + (i+1), 'half', i); save(); } S = null; renderTitle(); });
+  const before = await page.evaluate(() => JSON.stringify(slots()));
+  await page.fill('#nm', 'Sixth'); await page.click('#start');
+  await page.click(`${open} [data-over="1"]`);
+  await page.waitForSelector(`${open} #back`);
+  assert((await page.textContent('#sheet')).includes("Replace Life2's life? ") || (await page.textContent('#sheet h2')) === "Replace Life2's life?", 'no replace warning');
+  assert((await page.textContent('#sheet')).includes("This can't be undone"), 'no undo warning');
+  await page.click(`${open} #back`);
+  await page.waitForSelector(`${open} [data-over]`);
+  await page.keyboard.press('Escape');
+  const after = await page.evaluate(() => JSON.stringify(slots()));
+  assert(after === before, 'slots changed after Back');
+  await page.evaluate(() => { closeSheet(); localStorage.clear(); S = null; renderTitle(); });
+});
+
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });
 
 await browser.close();

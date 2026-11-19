@@ -3,6 +3,13 @@
 Release notes for The Burg. `/release now` turns the Unreleased section into a dated `## X.Y.Z (YYYY-MM-DD)`
 entry for every release, and the GitHub release notes are taken from it.
 
+## 0.2.1 (2026-11-19)
+
+### Fixed
+- A damaged save or a thin backup no longer leaves you with a blank screen: broken slots are skipped, missing or unknown details (home, car, job, length, mode, date) are filled with safe defaults, and a backup's date is only shown when it makes sense.
+- One tap can no longer delete a life: "End this life now" shows your score so far and asks first, with "Keep playing" as the safe choice (Escape keeps playing), and replacing a life on a full board asks "Replace …'s life? This can't be undone" first.
+- Lives, best scores, badges and settings in the beta are now saved separately from the live game, so trying the beta never touches your live saves.
+
 ## 0.2.0 (2026-11-18)
 
 ### Added
