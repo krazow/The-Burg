@@ -2931,6 +2931,84 @@ old ones.
 
 </details>
 
+## Ideas round 33 (pick on the build board)
+
+64 ideas. Details: [docs/ideas/round-33.md](docs/ideas/round-33.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 33: The Tri-Cities up close</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i33-a01** Tri-Cities close-up map (L)
+- [ ] 🔴 **i33-a02** Every Tri-Cities stop and your workplace get a pin (S)
+- [ ] 🔴 **i33-a03** One trip, three cities: hop the bridges (M)
+- [ ] 🟠 **i33-a04** A bridge closed for deck work (S)
+- [ ] 🔴 **i33-a05** Badger Mountain sunrise hike (S)
+- [ ] 🟠 **i33-a06** Bike the river loop through all three cities (S)
+- [ ] 🟡 **i33-a07** Rent a paddleboard at the Columbia Park marina (S)
+- [ ] 🟠 **i33-a08** Fall chinook on the Hanford Reach (M)
+- [ ] 🟡 **i33-a09** Jet-boat tour to the White Bluffs (S)
+- [ ] 🟠 **i33-a10** Junior hockey nights at the arena (S)
+- [ ] 🟡 **i33-a11** A ticket pack for the ballpark or the rink (M)
+- [ ] 🟡 **i33-a12** Kids run the bases after the Sunday ballgame (S)
+- [ ] 🟠 **i33-a13** Hydro race week jams up the whole Tri-Cities (S)
+- [ ] 🔴 **i33-a14** Shopping the downtown Pasco market blocks (S)
+- [ ] 🟠 **i33-a15** Pick up family at the Pasco airport (S)
+- [ ] 🟡 **i33-a16** De-icing nights for the airport ground crew (S)
+- [ ] 🟠 **i33-a17** Potato season at the food plant (S)
+- [ ] 🟠 **i33-a18** Hanford's first week: badging, training and a dosimeter (S)
+- [ ] 🟠 **i33-a19** A yearly site physical for Hanford workers (S)
+- [ ] 🟠 **i33-a20** Hanford's budget year: news every fall (M)
+- [ ] 🔴 **i33-a21** Four tens: a long-day schedule with Fridays off (M)
+- [ ] 🟡 **i33-a22** A sour smell near the tank farms (S)
+- [ ] 🟠 **i33-a23** Proposal season at the national lab (S)
+- [ ] 🟠 **i33-a24** A summer internship at the national lab (M)
+- [ ] 🟡 **i33-a25** Judge the regional science fair (S)
+- [ ] 🟠 **i33-a26** The Wallula Gap pullout on the long drive (S)
+- [ ] 🟠 **i33-a27** Winter fog along the Wallula stretch (S)
+- [ ] 🟡 **i33-a28** Spring tumbleweeds on the highway (S)
+- [ ] 🟠 **i33-a29** A warehouse club card (M)
+- [ ] 🟡 **i33-a30** Your doctor sends you to a specialist in Kennewick (M)
+- [ ] 🟡 **i33-a31** The big wooden playground in Columbia Park (S)
+- [ ] 🟡 **i33-a32** The pickup's air quits in July (S)
+
+</details>
+
+<details><summary><b>Ideas 33: Waitsburg street by street</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i33-b01** Streets as living data: S.streets (L)
+- [ ] 🔴 **i33-b02** Your address: every home sits on a real street (S)
+- [ ] 🔴 **i33-b03** The Home pin sits where you actually live (S)
+- [ ] 🔴 **i33-b04** Neighborhood areas you can tap on the town map (M)
+- [ ] 🟠 **i33-b05** Pick the street when you move (M)
+- [ ] 🟠 **i33-b06** Street traits that touch your week (M)
+- [ ] 🟡 **i33-b07** Preston Avenue: living on the highway (S)
+- [ ] 🟡 **i33-b08** Coppei Avenue: the walk to school (S)
+- [ ] 🟡 **i33-b09** East end or west end: which side you're from (S)
+- [ ] 🟠 **i33-b10** The river side: high water nights (M)
+- [ ] 🟠 **i33-b11** A house up on the hill (M)
+- [ ] 🟠 **i33-b12** Farm roads: which road you live out (M)
+- [ ] 🟡 **i33-b13** Gravel roads are plowed last (S)
+- [ ] 🟡 **i33-b14** Directions by landmark (S)
+- [ ] 🟡 **i33-b15** A lost driver at the corner (S)
+- [ ] 🔴 **i33-b16** Walking loops drawn on the map (M)
+- [ ] 🟡 **i33-b17** The shortcut through the alley (S)
+- [ ] 🟠 **i33-b18** The houses on your street change (M)
+- [ ] 🟠 **i33-b19** Buy the empty lot next door (M)
+- [ ] 🟠 **i33-b20** Your street's fix-it list (M)
+- [ ] 🟡 **i33-b21** A street tree in front of your house (S)
+- [ ] 🟡 **i33-b22** Spring yard-sale Saturday (S)
+- [ ] 🟡 **i33-b23** The corner dog on your walk (S)
+- [ ] 🟡 **i33-b24** The dead end by the river (S)
+- [ ] 🟡 **i33-b25** Christmas lights tour by street (S)
+- [ ] 🟠 **i33-b26** A paper route that teaches you the streets (M)
+- [ ] 🟠 **i33-b27** Street names fill in as you get to know town (S)
+- [ ] 🟡 **i33-b28** What people call your house (S)
+- [ ] 🟠 **i33-b29** New houses go up on the west end (M)
+- [ ] 🟡 **i33-b30** The edges of town change with the seasons (S)
+- [ ] 🟡 **i33-b31** Your street on the end screen (S)
+- [ ] 🟡 **i33-b32** A Waitsburg street guide in Help (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
