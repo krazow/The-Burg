@@ -2162,6 +2162,84 @@ old ones.
 
 </details>
 
+## Ideas round 23 (pick on the build board)
+
+64 ideas. Details: [docs/ideas/round-23.md](docs/ideas/round-23.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 23: First-time player</b> (31 ideas)</summary>
+
+- [ ] 🔴 **i23-a01** Offer the practice life on a brand-new start (S)
+- [ ] 🔴 **i23-a02** Badge toasts stop replaying after you reopen the app (S)
+- [ ] 🔴 **i23-a03** '1 weeks left' reads 'Last week!' (S)
+- [ ] 🔴 **i23-a04** End Week shows a planned trip (S)
+- [ ] 🔴 **i23-a05** Town goal box says the reward and the time left (S)
+- [ ] 🟠 **i23-a06** A missed town goal says so (S)
+- [ ] 🟠 **i23-a07** Focus buttons that count for the town goal wear its icon (S)
+- [ ] 🟠 **i23-a08** One name for each focus everywhere (S)
+- [ ] 🟠 **i23-a09** A Classes week shows school progress (S)
+- [ ] 🟠 **i23-a10** Tapping a grayed-out focus says why (S)
+- [ ] 🟠 **i23-a11** Switching jobs asks first (S)
+- [ ] 🟠 **i23-a12** 'You're hired' shows take-home, like the board (S)
+- [ ] 🟠 **i23-a13** The recruiter's sure thing shows on the Jobs tab (S)
+- [ ] 🟡 **i23-a14** Work events happen at your workplace (S)
+- [ ] 🟠 **i23-a15** Home chips open the right part of Life (S)
+- [ ] 🟠 **i23-a16** Out and about suggests one visit right on Home (M)
+- [ ] 🟠 **i23-a17** A visit's result shows under the button, without a toast (S)
+- [ ] 🟡 **i23-a18** 'Work here' on a place sheet can take you to the job (S)
+- [ ] 🟠 **i23-a19** Household rows say how things happen (S)
+- [ ] 🟠 **i23-a20** Reopening the app goes back to your life (S)
+- [ ] 🟡 **i23-a21** Menu says your life is already saved (S)
+- [ ] 🟠 **i23-a22** Hint cards sit under the focus grid (S)
+- [ ] 🟠 **i23-a23** Jobs welcome stays until the first application (S)
+- [ ] 🟠 **i23-a24** Practice life ends with 'Start a real life' (S)
+- [ ] 🟠 **i23-a25** Tutorial bubble moves up when the target is in a sheet (S)
+- [ ] 🟡 **i23-a26** Selected trip stops show a check and a running total (S)
+- [ ] 🟡 **i23-a27** Score words without '2027 dollars' (S)
+- [ ] 🟡 **i23-a28** Your first score says 'First score', not 'New best!' (S)
+- [ ] 🟡 **i23-a29** The life you just finished stays on the title screen (M)
+- [ ] 🟡 **i23-a30** Journal puts same-week entries under one date (S)
+- [ ] 🟡 **i23-a31** Life goals get a nudge in the first month (S)
+
+</details>
+
+<details><summary><b>Ideas 23: Owning a Main Street business</b> (33 ideas)</summary>
+
+- [ ] 🔴 **i23-b01** A storefront on Main Street: a fourth kind of business (L)
+- [ ] 🔴 **i23-b02** Pick a kind of shop: bakery, hardware and feed, gift, bike and outdoor (M)
+- [ ] 🟠 **i23-b03** The permit run before you open (S)
+- [ ] 🔴 **i23-b04** A business loan from the bank (M)
+- [ ] 🟠 **i23-b05** Rent the space or buy the old brick building (M)
+- [ ] 🟠 **i23-b06** Opening day and the ribbon cutting (S)
+- [ ] 🔴 **i23-b07** Hire your first employee (M)
+- [ ] 🟠 **i23-b08** Employees are people: raises, sick days and quitting (M)
+- [ ] 🟠 **i23-b09** Payroll, the minimum wage and workers' comp (S)
+- [ ] 🔴 **i23-b10** Behind the counter: a new weekly focus for owners (M)
+- [ ] 🔴 **i23-b11** Stock the shelves: order before the busy weeks (M)
+- [ ] 🟡 **i23-b12** The distributor's truck comes on Tuesdays (S)
+- [ ] 🟠 **i23-b13** Seasonal customers: riders, hunters and wine weekends (S)
+- [ ] 🔴 **i23-b14** Festival weekends: stay open late and staff up (M)
+- [ ] 🟠 **i23-b15** The big store in Walla Walla (M)
+- [ ] 🟡 **i23-b16** Special orders: 'Can you get one in?' (S)
+- [ ] 🟠 **i23-b17** A Tattler ad plan for your shop (S)
+- [ ] 🟠 **i23-b18** Word of mouth: the shop's reputation (M)
+- [ ] 🟠 **i23-b19** Sales tax and the state excise return (S)
+- [ ] 🟡 **i23-b20** Bookkeeping night or hire a bookkeeper (S)
+- [ ] 🟠 **i23-b21** Pay yourself: owner's draw or put it back in (M)
+- [ ] 🔴 **i23-b22** A shop profit and loss on the business card (S)
+- [ ] 🟠 **i23-b23** Closed on Mondays: owner strain and time off (M)
+- [ ] 🟡 **i23-b24** Stay open in January or close for winter (S)
+- [ ] 🟡 **i23-b25** Join the Main Street merchants' group (S)
+- [ ] 🟠 **i23-b26** Shop owners are town fixtures (M)
+- [ ] 🟡 **i23-b27** Every team wants a sponsor (S)
+- [ ] 🟡 **i23-b28** Regulars at the counter (M)
+- [ ] 🟡 **i23-b29** Name your shop and put up the sign (S)
+- [ ] 🟠 **i23-b30** Sell the business through a broker (M)
+- [ ] 🟡 **i23-b31** Sell to your longtime employee (M)
+- [ ] 🟡 **i23-b32** The going-out-of-business sale (S)
+- [ ] 🔴 **i23-b33** A storefront bot in the balance sim (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
