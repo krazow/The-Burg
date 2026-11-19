@@ -4451,6 +4451,86 @@ old ones.
 
 </details>
 
+## Ideas round 53 (pick on the build board)
+
+66 ideas. Details: [docs/ideas/round-53.md](docs/ideas/round-53.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 53: Money as story</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i53-a01** The thing you've wanted since you were a kid (M)
+- [ ] 🔴 **i53-a02** Money milestones get a moment, once each (M)
+- [ ] 🟠 **i53-a03** Burn the payoff letter: a debt-free day (S)
+- [ ] 🔴 **i53-a04** A $20 gift from a lean week counts like $200 (M)
+- [ ] 🟠 **i53-a05** Passing the hat at the tavern after a house fire (S)
+- [ ] 🟠 **i53-a06** An IOU drawer on Home (M)
+- [ ] 🟠 **i53-a07** Pay Grandma back, with a pie on top (S)
+- [ ] 🟠 **i53-a08** Cosign for a cousin's truck (M)
+- [ ] 🟠 **i53-a09** Thanksgiving after the windfall (M)
+- [ ] 🟡 **i53-a10** The teller knows your balance (S)
+- [ ] 🟠 **i53-a11** Casseroles after the repo man (S)
+- [ ] 🔴 **i53-a12** From the food bank line to the donation table (S)
+- [ ] 🔴 **i53-a13** Kid asks why we can't afford it (S)
+- [ ] 🟠 **i53-a14** The thin Christmas the kids remember (S)
+- [ ] 🟠 **i53-a15** Take your folks to dinner on your dime (S)
+- [ ] 🟡 **i53-a16** A new truck on Main Street gets talked about (S)
+- [ ] 🟡 **i53-a17** Keep the old truck running: a mileage pride badge (S)
+- [ ] 🟡 **i53-a18** Hand-me-downs between Waitsburg families (S)
+- [ ] 🟠 **i53-a19** The splurge you don't regret (M)
+- [ ] 🟠 **i53-a20** Buyer's remorse when the cushion is gone (S)
+- [ ] 🔴 **i53-a21** Lean-week lines on the week strip (S)
+- [ ] 🟡 **i53-a22** Payday Friday (S)
+- [ ] 🟡 **i53-a23** $20 in last winter's coat (S)
+- [ ] 🟡 **i53-a24** The waitress remembers how you tip (M)
+- [ ] 🟡 **i53-a25** The candle party pitch (S)
+- [ ] 🟠 **i53-a26** Envy: the classmate's lake house (S)
+- [ ] 🟠 **i53-a27** A hidden purchase comes out (S)
+- [ ] 🟠 **i53-a28** Run a tab at the market (M)
+- [ ] 🟡 **i53-a29** What do you give at a Waitsburg wedding? (S)
+- [ ] 🟠 **i53-a30** Your money year as a short story (M)
+- [ ] 🟠 **i53-a31** The one with money in a small town (L)
+- [ ] 🟠 **i53-a32** Paycheck-to-paycheck weeks as a story chain (L)
+
+</details>
+
+<details><summary><b>Ideas 53: Decade by decade</b> (34 ideas)</summary>
+
+- [ ] 🟠 **i53-b01** [20s] Still "the Hendricks kid" until you earn your own name (S)
+- [ ] 🟠 **i53-b02** [20s] Quitting is cheap in your 20s (S)
+- [ ] 🟡 **i53-b03** [20s] Every summer, someone's getting married (S)
+- [ ] 🟡 **i53-b04** [20s] Big swings while you're young (S)
+- [ ] 🔴 **i53-b05** [20s] Decade grade: did you build a base? (M)
+- [ ] 🔴 **i53-b06** [30s] The squeeze: job, kids and house want the same week (M)
+- [ ] 🟠 **i53-b07** [30s] A big job offer that means leaving the valley (M)
+- [ ] 🟡 **i53-b08** [30s] Friends' marriages start coming apart (S)
+- [ ] 🟠 **i53-b09** [30s] The town starts asking you to run things (S)
+- [ ] 🔴 **i53-b10** [30s] Decade grade: did you put down roots? (S)
+- [ ] 🟠 **i53-b11** [40s] Peak-pay years and the nudge to save (S)
+- [ ] 🟡 **i53-b12** [40s] Start over at 45: one real career change (M)
+- [ ] 🔴 **i53-b13** [40s] The body sends its first bill (M)
+- [ ] 🟠 **i53-b14** [40s] A teenager in the house (M)
+- [ ] 🔴 **i53-b15** [40s] Decade grade: did you keep your balance? (S)
+- [ ] 🟠 **i53-b16** [50s] Harder to get hired after 55 (S)
+- [ ] 🟡 **i53-b17** [50s] 401(k) catch-up contributions at 50 (S)
+- [ ] 🟠 **i53-b18** [50s] Five-year countdown to the day you stop (M)
+- [ ] 🟡 **i53-b19** [50s] Your parents' house: the last clear-out (M)
+- [ ] 🔴 **i53-b20** [50s] Decade grade: are you ready? (S)
+- [ ] 🟠 **i53-b21** [60s] Phased retirement: three days a week at the old job (S)
+- [ ] 🟡 **i53-b22** [60s] The first time you're the oldest one at the jam (S)
+- [ ] 🟡 **i53-b23** [60s] Travel while your knees still work (M)
+- [ ] 🟡 **i53-b24** [60s] Grandkids on Sundays (S)
+- [ ] 🔴 **i53-b25** [60s] Decade grade: did you find a purpose? (S)
+- [ ] 🟠 **i53-b26** [70s] Grand marshal of the Days parade (S)
+- [ ] 🟠 **i53-b27** [70s] Your class gets smaller (M)
+- [ ] 🟡 **i53-b28** [70s] Fifty years in town: the Legion's pin (S)
+- [ ] 🟡 **i53-b29** [70s] Everything takes a little longer (S)
+- [ ] 🔴 **i53-b30** [70s] Decade grade: did you stay connected? (S)
+- [ ] 🔴 **i53-b31** [80s] Stay home or move to the care place in Walla Walla (M)
+- [ ] 🟠 **i53-b32** [80s] The porch-light check (S)
+- [ ] 🟡 **i53-b33** [80s] Oldest Waitsburger (S)
+- [ ] 🔴 **i53-b34** [80s] Decade grade: are you at peace? (M)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
