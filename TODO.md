@@ -4294,6 +4294,85 @@ old ones.
 
 </details>
 
+## Ideas round 51 (pick on the build board)
+
+65 ideas. Details: [docs/ideas/round-51.md](docs/ideas/round-51.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 51: A focused 1.0</b> (33 ideas)</summary>
+
+- [ ] 🔴 **i51-a01** A first life defaults to 2 Years, Fresh start, Normal (S)
+- [ ] 🔴 **i51-a02** Golden path, week 1: a paycheck before anything else (S)
+- [ ] 🔴 **i51-a03** Golden path, weeks 2–4: one focus, then try a second (M)
+- [ ] 🟠 **i51-a04** Golden path, month 2: the first place in town (S)
+- [ ] 🟠 **i51-a05** Golden path, month 3: the first town goal finishes on screen (S)
+- [ ] 🟠 **i51-a06** Golden path, the halfway check-in (S)
+- [ ] 🟠 **i51-a07** Golden path ends with 'try a different start' (S)
+- [ ] 🔴 **i51-a08** Five moments every life has: a shared checklist (M)
+- [ ] 🔴 **i51-a09** Moment 1: the first paycheck gets a real beat (S)
+- [ ] 🟠 **i51-a10** Moment 2: your own place, with a key (S)
+- [ ] 🟠 **i51-a11** Moment 3: someone in town knows your name (S)
+- [ ] 🟠 **i51-a12** Moment 4: the hard week you got through (S)
+- [ ] 🔴 **i51-a13** Moment 5: every ending gets a goodbye line (S)
+- [ ] 🔴 **i51-a14** Signature five: name them and show them on the title screen (S)
+- [ ] 🔴 **i51-a15** Every signature feature appears in the first 13 weeks (M)
+- [ ] 🟠 **i51-a16** The map is one tap from Home, every week (S)
+- [ ] 🟠 **i51-a17** Year in review becomes the 1.0 showcase screen (M)
+- [ ] 🔴 **i51-a18** A word list: one name per thing, checked by a test (M)
+- [ ] 🔴 **i51-a19** 'Standing' and 'belonging' become 'Community' everywhere (S)
+- [ ] 🟡 **i51-a20** Score titles show on the stats, the end screen and records alike (S)
+- [ ] 🟠 **i51-a21** Places and towns: same spelling, same icon on every screen (S)
+- [ ] 🔴 **i51-a22** Stats on Home show whole numbers with a word (S)
+- [ ] 🟠 **i51-a23** Money under $10,000 shows dollars; above, shows $12.4k (S)
+- [ ] 🟠 **i51-a24** Net worth on Home shows the change since last week (S)
+- [ ] 🟠 **i51-a25** Every percent the player sees is a whole number (S)
+- [ ] 🟡 **i51-a26** '2027 dollars' shows once per screen, as a footnote (S)
+- [ ] 🔴 **i51-a27** 1.0 quality bar: a checklist file the release kit reads (M)
+- [ ] 🔴 **i51-a28** Quality bar: the sim targets hold across 500 lives (S)
+- [ ] 🟠 **i51-a29** Quality bar: a cold start under two seconds on a mid phone (S)
+- [ ] 🔴 **i51-a30** Quality bar: a 10-year save from 0.2 loads and plays (M)
+- [ ] 🟠 **i51-a31** Quality bar: no text cut off at 320 px or 200% zoom (M)
+- [ ] 🔴 **i51-a32** Quality bar: three new players finish a first life without help (S)
+- [ ] 🟠 **i51-a33** Quality bar: zero console errors in a 260-week bot run (S)
+
+</details>
+
+<details><summary><b>Ideas 51: Evenings and weekends</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i51-b01** Night owl sleep bank: what the night shift really costs (L)
+- [ ] 🔴 **i51-b02** Night pay differential on the job board (S)
+- [ ] 🟠 **i51-b03** Blackout curtains and a box fan (S)
+- [ ] 🟠 **i51-b04** Days off: flip back or stay a night owl (S)
+- [ ] 🟡 **i51-b05** The 10 a.m. mower: day sleeper versus the neighbors (S)
+- [ ] 🟡 **i51-b06** Breakfast at 2 a.m. at the all-night truck stop (S)
+- [ ] 🟡 **i51-b07** Vending machine dinners or a packed lunch bag (S)
+- [ ] 🔴 **i51-b08** Deer at dusk on Highway 12 (M)
+- [ ] 🟠 **i51-b09** Rumble strips: drowsy on the drive home (S)
+- [ ] 🟠 **i51-b10** Call an old friend on the long drive home (S)
+- [ ] 🟡 **i51-b11** The 10 p.m. call: a friend needs a ride home (S)
+- [ ] 🔴 **i51-b12** Daylight by month: what fits after work (M)
+- [ ] 🟠 **i51-b13** Moon phase on the date line (S)
+- [ ] 🟠 **i51-b14** The dark-sky pullout on the ridge road (M)
+- [ ] 🟡 **i51-b15** Borrow the library telescope and keep a sky log (M)
+- [ ] 🟡 **i51-b16** The space station flies over tonight (S)
+- [ ] 🟡 **i51-b17** Star party with the valley astronomy club (S)
+- [ ] 🟡 **i51-b18** Ask a neighbor to shield the new yard light (S)
+- [ ] 🟠 **i51-b19** Movie on the lawn at Preston Park (S)
+- [ ] 🟡 **i51-b20** Heat-wave evenings: the town comes out after eight (S)
+- [ ] 🟠 **i51-b21** Friday night on Main: what is lit tonight (M)
+- [ ] 🔴 **i51-b22** The walk home from the ale house: where you live matters (M)
+- [ ] 🟡 **i51-b23** The after-jam in the back room (S)
+- [ ] 🟡 **i51-b24** Pint night for the boosters (S)
+- [ ] 🟠 **i51-b25** A teen sitter for Saturday date night (S)
+- [ ] 🟡 **i51-b26** Saturday at the county transfer station (S)
+- [ ] 🟡 **i51-b27** Coffee pot Saturdays at the hardware counter (S)
+- [ ] 🟠 **i51-b28** Sunday-night meal prep for the week (S)
+- [ ] 🟡 **i51-b29** Your teen's curfew and the Main Street loop (M)
+- [ ] 🟡 **i51-b30** Night fishing for catfish on the Snake (S)
+- [ ] 🟡 **i51-b31** Backyard fire pit nights, when there is no burn ban (S)
+- [ ] 🟠 **i51-b32** The sky calendar: one data table for moon, showers and flyovers (L)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
