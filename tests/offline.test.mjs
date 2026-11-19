@@ -91,6 +91,26 @@ await t.check('the new version also works offline', async () => {
   } finally { await ctx.setOffline(false); }
 });
 
+await t.check('H3: the beta keeps its lives under its own keys, apart from the live game', async () => {
+  const both = fs.mkdtempSync(path.join(os.tmpdir(), 'theburg-beta-'));
+  fs.symlinkSync(SITE_DIR, path.join(both, 'beta')); fs.symlinkSync(SITE_DIR, path.join(both, 'live'));
+  const s2 = await serve(both), c2 = await browser.newContext({ serviceWorkers: 'block' }), p2 = await c2.newPage();
+  p2.on('pageerror', e => errors.push(String(e)));
+  try {
+    const base = s2.url.replace(/\/$/, '');
+    const play = async (where, name) => { await p2.goto(`${base}/${where}/`, { waitUntil: 'load' });
+      return p2.evaluate(n => { newGame(n, 'two', 0); save(); setPref('x', n); return { prefix: KEY_PREFIX, slots: SLOTS_KEY, names: slots().map(g => g && g.name) }; }, name); };
+    const live = await play('live', 'LiveLife'), beta = await play('beta', 'BetaLife');
+    assert(live.prefix === 'theburg.' && live.slots === 'theburg.slots.v1', `live keys changed: ${JSON.stringify(live)}`);
+    assert(beta.prefix === 'theburgbeta.' && beta.slots === 'theburgbeta.slots.v1', `beta keys: ${JSON.stringify(beta)}`);
+    assert(beta.names.join() === 'BetaLife,,,,', `beta sees: ${beta.names}`);
+    await p2.goto(`${base}/live/`, { waitUntil: 'load' });
+    const back = await p2.evaluate(() => ({ names: slots().map(g => g && g.name).join(), pref: prefs().x, keys: Object.keys(localStorage).sort() }));
+    assert(back.names === 'LiveLife,,,,' && back.pref === 'LiveLife', `live sees: ${JSON.stringify(back)}`);
+    assert(back.keys.every(k => k.startsWith('theburg.') || k.startsWith('theburgbeta.')), `stray keys: ${back.keys}`);
+  } finally { await c2.close(); s2.close(); fs.rmSync(both, { recursive: true, force: true }); }
+});
+
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });
 
 await browser.close();

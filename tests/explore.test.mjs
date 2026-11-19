@@ -84,6 +84,60 @@ await t.check('monkey: 600 random taps across every screen cause no errors', asy
   assert(!errors.length, errors.slice(0, 3).join(' | '));
 });
 
+await t.check('H1: damaged saves and thin backups never blank the game', async () => {
+  const base = await ev(() => { closeSheet(); localStorage.clear(); newGame('Base', 'two', 0); S.jobId = 'farmhand'; S.turn = 4; const g = JSON.parse(JSON.stringify(S)); S = null; localStorage.clear(); return g; });
+  const life = (o, drop = []) => { const g = { ...base, ...o }; for (const k of drop) delete g[k]; return g; };
+  const half = Object.fromEntries(Object.entries(base).filter((_, i) => i % 2 === 0));
+  const cases = {
+    'a number slot': [5, life({ name: 'Num' })],
+    'a null slot and a string slot': [null, 'hello', life({ name: 'Ok' })],
+    'slots is not a list': 'oops',
+    'half a life': [{ ...half, name: 'Half' }],
+    'just a name': [{ name: 'Bare' }],
+    'unknown home': [life({ home: 'castle' })],
+    'unknown car': [life({ car: 'spaceship' })],
+    'unknown job': [life({ jobId: 'astronaut' })],
+    'mode nope': [life({ mode: 'nope', bg: 'nope', focus: 'nope', scenario: 'nope' })],
+    'bad date and length': [life({ date: 'yesterday', len: 'forever', ageMonths: null })],
+    'bad lists and numbers': [life({ log: 'x', kids: null, skills: 5, goals: 7, money: 'lots', health: null, out: 3, biz: { type: 'moon' } })],
+    'an old single save that is a number': null
+  };
+  const bad = [];
+  for (const [name, slotsVal] of Object.entries(cases)) {
+    const before = errors.length;
+    await ev(([v, old]) => { localStorage.clear(); if (v !== null) localStorage.setItem(SLOTS_KEY, JSON.stringify(v)); if (old) localStorage.setItem(SAVE_KEY, '42'); }, [slotsVal, name.includes('old single')]);
+    await page.reload({ waitUntil: 'load' });
+    await ev(() => closeSheet());
+    if (!(await page.$('#start'))) { bad.push(`${name}: no title screen`); continue; }
+    for (const b of await page.$$eval('[data-cont]', els => els.map(e => e.dataset.cont))) {
+      await page.click(`[data-cont="${b}"]`);
+      if (!(await page.$('#end'))) { bad.push(`${name}: Continue did not open the life`); continue; }
+      for (const tb of ['jobs', 'life', 'log', 'home']) await page.click(`nav [data-tab="${tb}"]`);
+      await page.click('nav [data-tab="menu"]'); await page.click('#sheet #title');
+    }
+    if (errors.length > before) bad.push(`${name}: ${errors.slice(before).join(' | ')}`);
+  }
+  // a thin backup: lives missing fields and an export date that doesn't parse
+  const before = errors.length;
+  await ev(() => { localStorage.clear(); closeSheet(); S = null; renderTitle(); });
+  await page.click('#restore');
+  await page.fill('#rscode', JSON.stringify({ app: 'theburg', slots: [{ name: 'Thin' }, 3, { name: 'Thinner', len: 'half', home: 'igloo' }], exported: 'not a date' }));
+  await page.click('#rscheck');
+  await page.waitForSelector('#rsadd');
+  const shown = await page.textContent('#rsout');
+  if (/Invalid Date|NaN|undefined/.test(shown)) bad.push(`backup sheet shows: ${shown.slice(0, 120)}`);
+  await page.click('#rsadd');
+  await ev(() => { closeSheet(); S = null; renderTitle(); });
+  for (const b of await page.$$eval('[data-cont]', els => els.map(e => e.dataset.cont))) {
+    await page.click(`[data-cont="${b}"]`);
+    for (const tb of ['jobs', 'life', 'log', 'home']) await page.click(`nav [data-tab="${tb}"]`);
+    await page.click('#end'); await ev(() => { closeSheet(); S = null; renderTitle(); });
+  }
+  if ((await page.$$('[data-cont]')).length !== 2) bad.push('the thin backup did not restore 2 lives');
+  if (errors.length > before) bad.push(`backup: ${errors.slice(before).join(' | ')}`);
+  assert(!bad.length, bad.slice(0, 4).join('; '));
+});
+
 await t.check('no page errors overall', async () => { assert(!errors.length, errors.slice(0, 3).join(' | ')); });
 await browser.close(); srv.close();
 if (t.failed) { console.log(`${t.failed} exploratory check(s) failed`); process.exit(1); }

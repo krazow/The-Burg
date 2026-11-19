@@ -332,6 +332,9 @@ await t.check('with all 5 slots full, a new life asks which one to replace', asy
   await page.click('#start');
   await page.waitForSelector(`${open} [data-over]`);
   await page.click(`${open} [data-over="2"]`);
+  await page.waitForSelector(`${open} #yes`);                   // H2: replacing a life asks first
+  assert((await page.textContent('#sheet h2')).includes("Replace Life3's life?"), 'no replace warning');
+  await page.click(`${open} #yes`);
   const s = await S(), all = await page.evaluate(() => slots());
   assert(s.name === 'Sixth' && s.slot === 2 && all[2].name === 'Sixth' && all[1].name === 'Life2' && all[3].name === 'Life4', 'replace went to the wrong slot');
 });

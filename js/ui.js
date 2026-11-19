@@ -111,7 +111,7 @@ function recordsSheet(){
   $('#ok').onclick = closeSheet;
 }
 /* ---------- ✨ What's new (G6): a one-time card after an update, once per version ---------- */
-const SEEN_KEY = 'theburg.seenVersion';
+const SEEN_KEY = KEY_PREFIX + 'seenVersion';
 const WHATS_NEW = {
   '0.2.0': [
     ['🚗', 'Trips around the region', 'plan a trip to Dayton, Walla Walla or the Tri-Cities with up to 3 stops.'],
@@ -169,7 +169,14 @@ function askReplace(name, len, opts = {}){
   sheet(`<h2>All ${SLOT_COUNT} slots are full</h2><p>Pick a life to replace with ${esc(name)}'s new one. The old one is deleted.</p>
     <div class="slots">${slots().map((g,i) => slotCard(g, i, `<button class="sm" data-over="${i}">Replace</button>`)).join('')}</div>
     <button class="btn ghost" id="no">Cancel</button>`);
-  document.querySelectorAll('[data-over]').forEach(b => b.onclick = () => { closeSheet(); newGame(name, len, +b.dataset.over, opts); });
+  document.querySelectorAll('[data-over]').forEach(b => b.onclick = () => {   // H2: one tap never deletes a life
+    const i = +b.dataset.over, old = slots()[i];
+    if (!old) { closeSheet(); return newGame(name, len, i, opts); }
+    sheet(`<h2>Replace ${esc(old.name)}'s life?</h2><p>${slotLine(old)}</p><p>Slot ${i+1} will hold ${esc(name)}'s new life instead. This can't be undone.</p>
+      <button class="btn ghost" id="back">Back</button><button class="btn primary" id="yes">Replace it</button>`);
+    $('#yes').onclick = () => { closeSheet(); newGame(name, len, i, opts); };
+    $('#back').onclick = () => askReplace(name, len, opts);
+  });
   $('#no').onclick = closeSheet;
 }
 // Menu: save a copy of this life to another slot (a checkpoint you can go back to)
@@ -222,11 +229,12 @@ async function readBackup(text){
     else throw new Error('');
   } catch (e) { throw new Error(e.message || 'That doesn\'t look like a backup from The Burg.'); }
   if (!d || d.app !== 'theburg' || !Array.isArray(d.slots)) throw new Error('That doesn\'t look like a backup from The Burg.');
-  const ok = g => g && typeof g === 'object' && typeof g.name === 'string' && LENGTHS[g.len] && Number.isFinite(g.money) && Number.isFinite(g.date) && Number.isFinite(g.ageMonths);
+  const ok = isLife;   // H1: anything else a thin backup is missing, migrate() fills in
   const lives = d.slots.slice(0, SLOT_COUNT).map(g => ok(g) ? migrate(g) : null);
   if (!lives.some(Boolean)) throw new Error('That backup has no saved lives in it.');
   const obj = x => x && typeof x === 'object' && !Array.isArray(x) ? x : {};
-  return { lives, best: obj(d.best), badges: obj(d.badges), challenges: obj(d.challenges), exported: d.exported };
+  const when = typeof d.exported === 'string' || Number.isFinite(d.exported) ? new Date(d.exported) : null;   // H1: a date is shown only if it parses
+  return { lives, best: obj(d.best), badges: obj(d.badges), challenges: obj(d.challenges), exported: when && !isNaN(when) ? when.toISOString() : null };
 }
 // put a backup's lives in: 'add' fills empty slots (returns how many didn't fit), 'replace' swaps all slots
 function restoreBackup(b, mode){
@@ -330,19 +338,7 @@ function loadSheet(){
   $('#no').onclick = closeSheet;
 }
 function newGame(name, len, slot = 0, opts = {}){
-  S = { v:3, slot, name, len, turn:0, date: new Date(2027,0,4).getTime(), ageMonths:18*12, evCd:{}, evDone:{}, last:null, ui:0,
-    col:1, wage:1, kids:[], k401:0, k401rate:0, mortgage:null, loanPay:0,
-    money:1500, health:78, happy:60, community:30,
-    edu:0, studyProg:0, jobId:null, jobMonths:0, raise:1, retired:false,
-    home:'room', equity:0, car:'beater', carValue:2500, loanLeft:0,
-    dog:false, partner:false, council:false,
-    focus:'rest', applied:false, happySum:0, healthSum:0, monthsPlayed:0,
-    log:[], over:false, cause:null, streakF:null, streakN:0, run:null, yearEvents:0,
-    trip:null, svc:0, tires:null, stockUntil:-1, dentist:0, stopLast:{}, tabsYear:2027, carpool:false, hustleWeeks:0, scoreQ:null,
-    bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0,
-    badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false,
-    skills:{}, biz:null, weekly:null, rng:null, rngEv:null, gen:1, goalAt:{}, carpoolJob:null, hustleLast:0, highWater:null, recentF:[], out:outDefault() };
-  Object.assign(S, EVENT_STATE());                 // road and work events: health plan, ski pass, job-hunt help and more
+  S = blankLife(name, len, slot);                 // road and work events (health plan, ski pass, job-hunt help and more) included
   S.bg = BACKGROUNDS[opts.bg] ? opts.bg : 'fresh'; S.mode = MODES[opts.mode] ? opts.mode : 'normal';
   if (BACKGROUNDS[S.bg].set) BACKGROUNDS[S.bg].set(S);
   S.weekly = opts.weekly || null; S.rng = opts.weekly ? weekSeed(opts.weekly) : null; S.rngEv = opts.weekly ? weekSeed(`${opts.weekly}:events`) : null; useDice();
@@ -694,10 +690,20 @@ function showMenu(){
   $('#backup').onclick = backupSheet;
   $('#help').onclick = showHelp;
   $('#title').onclick = () => { save(); closeSheet(); S = null; renderTitle(); };
-  $('#retireNow').onclick = () => { closeSheet(); finish('You chose to wrap things up.'); };
+  $('#retireNow').onclick = confirmRetire;
   $('#close').onclick = closeSheet;
 }
 
+// H2: ending a life early asks first, with the score so far and 'Keep playing' as the safe choice (Escape = keep playing)
+function confirmRetire(){
+  const { score, title } = lifeScore();
+  sheet(`<h2>End ${esc(S.name)}'s life now?</h2>
+    <p>Life Score so far: <b>${score}</b> (${title}).</p><p>The game ends here and this slot is cleared. This can't be undone.</p>
+    <button class="btn primary" id="no">Keep playing</button>
+    <button class="btn ghost" id="yes">End this life</button>`);
+  $('#no').onclick = closeSheet;
+  $('#yes').onclick = () => { closeSheet(); finish('You chose to wrap things up.'); };
+}
 /* ---------- modal ---------- */
 let lastFocus = null;
 function sheet(html){

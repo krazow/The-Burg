@@ -7,7 +7,7 @@
    - 'R' The region: the six towns on real coordinates, with the rivers and US-12.
      Tap a town for its drive, gas and jobs. Your truck drives the commute after each week.
    ============================================================ */
-const PREF_KEY = 'theburg.prefs';
+const PREF_KEY = KEY_PREFIX + 'prefs';
 const prefs = () => store.get(PREF_KEY) || {};
 const setPref = (k, v) => { const p = prefs(); p[k] = v; store.set(PREF_KEY, p); };
 let MAPSIDE = null, MAPSEL = null, MAPANIM = -1;

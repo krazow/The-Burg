@@ -185,7 +185,7 @@ const BADGES = [
   { id:'helper', ic:'🌸', name:'Town helper', desc:'Finish 4 town goals.', test:() => (S.seasonWins || 0) >= 4 },
   { id:'retired', ic:'🎉', name:'Retired', desc:'Retire (Lifetime games).', test:() => !!S.retired }
 ];
-const BADGE_KEY = 'theburg.badges.v1', GOAL_MAX = 3, GOAL_POINTS = 2;
+const BADGE_KEY = KEY_PREFIX + 'badges.v1', GOAL_MAX = 3, GOAL_POINTS = 2;
 const badgeById = id => BADGES.find(b => b.id === id);
 // check for new badges; returns notes for any just earned
 function badgeWeek(notes){
@@ -320,7 +320,7 @@ const SCENARIOS = {
   lab: { ic:'🔬', name:'From the wheat to the lab', len:'five', bg:'fresh',
     desc:'Become a national lab scientist in Richland within five years.', win:() => S.jobId === 'scientist' }
 };
-const CHALLENGE_KEY = 'theburg.challenges.v1';
+const CHALLENGE_KEY = KEY_PREFIX + 'challenges.v1';
 function scenarioWeek(notes){
   const sc = SCENARIOS[S.scenario]; if (!sc || sc.endOnly || S.scWon) return;
   if (sc.win()) { S.scWon = true; notes.push(`🏁 Challenge complete: <b>${sc.name}</b>! Play on as long as you like.`); log(`Completed the challenge: ${sc.name}.`, 'mile'); markChallenge(S.scenario); }
