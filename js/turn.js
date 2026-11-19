@@ -253,7 +253,7 @@ function weekTick(auto){
     if (pensionVested()) { const p = pensionPay()*m; gross += p; lines.push(['Pension', p]); }
     if (S.k401 > 0) { const w = Math.min(S.k401, S.k401 * 0.04 * m / 12); S.k401 -= w; gross += w; lines.push(['401(k) withdrawal', w]); }
   }
-  else if (j) gross = jobPay(j, payNow(j) * m * (f.payMult||1), lines, f);   // i3: strikes, furloughs, clearances, union dues
+  else if (j) gross = jobPay(j, payNow(j) * m * (f.payMult||1) * smokePayMult(), lines, f);   // i75-a07: the smoke rule's shorter days   // i3: strikes, furloughs, clearances, union dues
   gross += furloughBackPay(lines);
   if (j) workYear(j, m);                           // i3-a24/a25: years worked count toward Social Security and a public pension
   let k401 = 0;
@@ -270,6 +270,7 @@ function weekTick(auto){
   const home = HOMES[S.home];
   bizWeek(lines, notes);
   moneyWeek(lines, notes);                         // round 3: property tax, home equity loan, index funds, wine futures
+  weatherLines(lines, notes);                      // i75: smoke sick days, the roof on the waiting list, the neighbor's walk
   const trip = tripWeek(lines);                    // this week's trip around the region, if one is planned
   lines.push(...billLines());                      // i3-a28: the regular bills, shared with the money outlook
   { const y = new Date(S.date).getFullYear(); if (curMonth() === 0 && S.tabsYear !== y) { lines.push(['Vehicle tabs (DMV)', -vehicleTabs()]); S.tabsYear = y; } }
@@ -310,6 +311,7 @@ function weekTick(auto){
   if (S.retired) why.push('🎉 Retirement: ▲ happiness every week.');
   else if (j) { if (j.stress >= 0.6) why.push(`💼 ${j.title} is stressful: ▼ happiness.`); if (j.wear >= 0.7) why.push(`💼 ${j.title} is hard on your body: ▼ health.`); if (j.city === 'waitsburg') why.push('🤝 Working in Waitsburg keeps you in the loop: ▲ community.'); }
   else why.push('💼 No job: ▼ happiness.');
+  if (smokeRuleWeek()) why.push(pushingSmoke() ? '😷 Pushing through full shifts in the smoke: full pay, full wear, and a chance of a sick week.' : '😷 The smoke rule at work: shorter days, 10% less pay, half the wear on your body.');
   if (commuteOneWay() >= 20) why.push(`🛣️ ${commuteOneWay()} miles each way${carpooling() ? ' (the carpool helps)' : ''}: ▼ happiness.`);
   if (S.money < 0) why.push('💳 Being in debt: ▼ happiness.');
   if (S.partner || S.dog || kidsAtHome()) why.push(`🏡 ${[S.partner ? 'your partner' : '', S.dog ? 'your dog' : '', kidsAtHome() ? 'kids at home' : ''].filter(Boolean).join(', ').replace(/^./, c => c.toUpperCase())}: ▲ happiness.`);
@@ -320,7 +322,7 @@ function weekTick(auto){
   let dH = ((a < 30 ? 85 : a < 50 ? 78 : a < 65 ? 68 : a < 80 ? 55 : 42) - S.health) * 0.025;
   let dc = (25 - S.community) * 0.05 * (S.community > 25 ? 1 - skillLv('people') * 0.15 : 1);   // people skill: community fades slower
   if (S.retired) dh += 1;
-  else if (j) { dh -= j.stress + rungOf(j).stress; dH -= j.wear; dc += j.remote === 5 ? -0.4 : j.city==='waitsburg' ? 0.6 : j.city==='dayton' ? 0.2 : 0; }   // i3-a01 rung stress; i3-a13 no coworkers
+  else if (j) { dh -= j.stress + rungOf(j).stress; dH -= j.wear * smokeWearMult(); dc += j.remote === 5 ? -0.4 : j.city==='waitsburg' ? 0.6 : j.city==='dayton' ? 0.2 : 0; }   // i3-a01 rung stress; i3-a13 no coworkers
   else dh -= 2;
   dh -= commuteOneWay() / 40 * driveDays() * (carpooling() ? 0.6 : 1);
   if (carpooling()) dc += 0.3;                    // riding with neighbors keeps you in the loop

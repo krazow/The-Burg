@@ -512,25 +512,33 @@ const MONEY_STATE = () => ({ ins:{ auto:'full', renters:true, ded:1000 }, homeId
 function insParts(){
   const i = S.ins || {}, own = !!HOMES[S.home].own, ded = INS_DED[i.ded] != null ? i.ded : 1000;
   return [['📱 Phone', INS_PHONE], [i.auto === 'liab' ? '🛻 Vehicle: liability only' : '🛻 Vehicle: full coverage', INS_AUTO[i.auto === 'liab' ? 'liab' : 'full']],
-    own ? [`🏡 Homeowners ($${ded.toLocaleString()} deductible)`, INS_HOME + INS_DED[ded]] : [i.renters === false ? '🏠 No renters insurance' : '🏠 Renters insurance', i.renters === false ? 0 : INS_RENTERS]];
+    own ? [`🏡 Homeowners ($${ded.toLocaleString()} deductible)`, INS_HOME + INS_DED[ded]] : [i.renters === false ? '🏠 No renters insurance' : '🏠 Renters insurance', i.renters === false ? 0 : INS_RENTERS],
+    ...(own && i.wind === 'pct' ? [[`🌬️ Wind and hail: ${WIND_PCT * 100}% deductible`, -windSave()]] : [])];
 }
+// i75-a13: a cheaper homeowners plan where wind and hail damage carries a deductible of 1% of the home's value
+const WIND_PCT = 0.01, WIND_SAVE = 0.0015;
+const windDed = () => Math.round(homeValue() * WIND_PCT);                       // today's dollars
+const windSave = () => Math.round((HOMES[S.home].value || 0) * WIND_SAVE / 12);  // 2027 dollars a month, like the rest of insParts
 const insMonthly = () => insParts().reduce((a, [, v]) => a + v, 0);
 // what a loss costs you after insurance: 'auto' (your vehicle), 'home' (an owned house; a landlord covers a rented one), 'stuff' (your belongings)
-function youPay(kind, c){
+function youPay(kind, c, cause){
   const i = S.ins || {}, own = !!HOMES[S.home].own, ded = cost(INS_DED[i.ded] != null ? i.ded : 1000);
   if (kind === 'auto') return i.auto === 'liab' ? c : Math.min(c, cost(AUTO_DED));
-  if (kind === 'home') return own ? Math.min(c, ded) : 0;
+  if (kind === 'home') return own ? Math.min(c, cause === 'wind' && i.wind === 'pct' ? Math.max(ded, windDed()) : ded) : 0;   // i75-a13
   return own ? Math.min(c, ded) : i.renters === false ? c : Math.min(c, cost(RENTERS_DED));
 }
 const covered = (c, paid) => paid < c - 0.5 ? ` Insurance covered ${fmt(c - paid)}.` : '';
 function insSheet(focusSel){
   const i = S.ins, own = !!HOMES[S.home].own;
-  const opt = (grp, val, label) => `<button class="${String(i[grp]) === String(val) ? 'on' : ''}" data-ins="${grp}" data-v="${val}" aria-pressed="${String(i[grp]) === String(val)}">${label}</button>`;
+  const cur = grp => grp === 'wind' ? i.wind || 'flat' : i[grp];
+  const opt = (grp, val, label) => `<button class="${String(cur(grp)) === String(val) ? 'on' : ''}" data-ins="${grp}" data-v="${val}" aria-pressed="${String(cur(grp)) === String(val)}">${label}</button>`;
   sheet(`<h2>🛡️ Insurance</h2><p class="muted">Through Wheatland Mutual on Main Street. Cheaper coverage saves a little every month, until something goes wrong.</p>
     <h3>🛻 Your vehicle</h3><div class="maptog" role="group" aria-label="Vehicle coverage">${opt('auto', 'full', `Full ${fmtc(INS_AUTO.full)}/mo`)}${opt('auto', 'liab', `Liability ${fmtc(INS_AUTO.liab)}/mo`)}</div>
     <p class="muted">Full coverage pays for crashes, deer, ditches and theft after a ${fmtc(AUTO_DED)} deductible. Liability only covers the other driver: your own repairs are on you.</p>
     ${own ? `<h3>🏡 Homeowners deductible</h3><div class="maptog" role="group" aria-label="Homeowners deductible">${[500, 1000, 2500].map(d => opt('ded', d, `$${d.toLocaleString()}`)).join('')}</div>
-      <p class="muted">Storms, fires and break-ins: you pay up to the deductible, insurance pays the rest. A $500 deductible costs ${fmtc(INS_DED[500])} more a month; $2,500 saves ${fmtc(-INS_DED[2500])}.</p>`
+      <p class="muted">Storms, fires and break-ins: you pay up to the deductible, insurance pays the rest. A $500 deductible costs ${fmtc(INS_DED[500])} more a month; $2,500 saves ${fmtc(-INS_DED[2500])}.</p>
+      <h3>🌬️ Wind and hail</h3><div class="maptog" role="group" aria-label="Wind and hail deductible">${opt('wind', 'flat', 'Same deductible')}${opt('wind', 'pct', `${WIND_PCT * 100}% of the home, ${fmtc(windSave())}/mo less`)}</div>
+      <p class="muted">On the cheaper plan, a windstorm or hail claim costs you up to ${WIND_PCT * 100}% of what the house is worth: <b>${fmt(windDed())}</b> today, instead of your regular deductible. Fires and break-ins keep the regular one.</p>`
       : `<h3>🏠 Renters insurance</h3><div class="maptog" role="group" aria-label="Renters insurance">${opt('renters', true, `Yes ${fmtc(INS_RENTERS)}/mo`)}${opt('renters', false, 'No')}</div>
       <p class="muted">Your landlord insures the building, not your things. Renters insurance pays for a break-in or a fire after a ${fmtc(RENTERS_DED)} deductible.</p>`}
     ${insParts().map(([l, v]) => `<div class="kv"><span>${l}</span><span>${fmtc(v)}/mo</span></div>`).join('')}
@@ -1511,4 +1519,53 @@ function planningWire(){
     $('#no').onclick = closeSheet;
   };
   if ($('#host')) $('#host').onclick = () => { S.roomHost = !S.roomHost; save(); render(); toast(S.roomHost ? '🛏️ The spare room is listed for wine weekends' : 'The spare room is yours again'); };
+}
+
+/* ============================================================
+   🌦️ i75: the Life tab's weather card: a box-fan air filter for smoke season (a08), the roof on the waiting list
+   (a12), the raised furnace (a14), and the block captain's storm plan (a33). The events are in events.js.
+   ============================================================ */
+const FAN_DIY = 45, FAN_BUY = 160, CAPTAIN_MIN = 40;
+const CAPTAIN_PLAN = [[0, 'A phone tree for the block'], [1, 'Who lives alone or needs power for medical equipment'], [3, 'Who has a generator, a chainsaw and shovels']];
+function buildFilter(diy){
+  if (airFilterOn() || (diy && skillLv('handy') < 1)) return false;
+  const c = cr(diy ? FAN_DIY : FAN_BUY);
+  S.money -= c; S.airFilter = thisYear();
+  if (diy) { adj({happy:1}); practice('handy', 1); }
+  log(diy ? `Built a box-fan air filter for smoke season (${fmt(c)} in parts).` : `Bought an air purifier for smoke season (${fmt(c)}).`);
+  return true;
+}
+function weatherCard(){
+  const m = curMonth(), own = !!HOMES[S.home].own, runs = S.captain ? S.captain.runs || 0 : 0;
+  const fanTime = inM(m, 3, 4, 5, 6, 7, 8);                     // April to September, before and during smoke season
+  return `<div class="card"><h3>🌦️ Ready for weather</h3>
+    <div class="kv"><span>😷 Air filter for smoke season<br><small class="muted">A box fan with a furnace filter strapped on keeps the air inside clean in a smoke week. Filters clog, so it's good for one summer.</small></span><span>${airFilterOn() ? `Ready for ${thisYear()} ✓` : fanTime ? '' : 'Spring'}</span></div>
+    ${!airFilterOn() && fanTime ? `<div class="slotbtns">${skillLv('handy') >= 1 ? `<button class="sm" id="fandiy">🔨 Build one (${fmtc(FAN_DIY)} in parts)</button>` : ''}<button class="sm alt" id="fanbuy">Buy an air purifier (${fmtc(FAN_BUY)})</button></div>
+      ${skillLv('handy') < 1 ? `<p class="muted" style="margin:4px 0 0">With the Handy skill you could build one for ${fmtc(FAN_DIY)}.</p>` : ''}` : ''}
+    ${S.roofWait ? `<div class="kv"><span>🏠 Roof: on the roofer's list, with a tarp on it for now</span><span>about ${Math.max(1, S.roofWait.at - S.turn)} wk</span></div>` : ''}
+    ${own && S.floodProof === S.home ? '<div class="kv"><span>🔧 Furnace and water heater raised off the basement floor</span><span>Flood cleanup −80%</span></div>' : ''}
+    <div class="kv"><span>🔦 Block captain${S.captain ? `<br><small class="muted">Your street's storm plan. Each storm you run it: an evening of your time, ▲ community. Storms so far: ${runs}.</small>` : `<br><small class="muted">Keep your street's storm plan: check on neighbors, share generators and shovels. It costs an evening every storm and pays in community, never cash.</small>`}</span>
+      <span>${S.captain ? '<span class="tag cur">Captain</span>' : ''}</span></div>
+    ${S.captain ? `<ul class="changes" aria-label="Your street's storm plan">${CAPTAIN_PLAN.map(([n, t]) => `<li>${runs >= n ? '✅' : '⬜'} ${t}${runs >= n ? '' : ` <small class="muted">(after ${n} storm${n > 1 ? 's' : ''})</small>`}</li>`).join('')}</ul>
+      <button class="sm alt" id="captoff">Step down as block captain</button>`
+      : S.community >= CAPTAIN_MIN ? '<button class="sm" id="capton">Be your block\'s storm captain</button>' : `<p class="muted" style="margin:4px 0 0">Neighbors pick someone they know: it opens at community ${CAPTAIN_MIN}.</p>`}
+  </div>`;
+}
+function weatherWire(){
+  const fan = diy => { if (!buildFilter(diy)) return; save(); render(); toast(diy ? '😷 Box-fan filter built' : '😷 Air purifier bought'); announce(`Air filter ready for ${thisYear()}. Cash ${fmt(S.money)}.`); };
+  if ($('#fandiy')) $('#fandiy').onclick = () => fan(true);
+  if ($('#fanbuy')) $('#fanbuy').onclick = () => fan(false);
+  if ($('#capton')) $('#capton').onclick = () => { S.captain = { since: S.turn, runs: 0 }; log('Became the block captain for the street\'s storm plan.'); save(); render(); toast('🔦 You\'re the block captain'); const b = $('#captoff'); if (b) b.focus({ preventScroll: true }); };
+  if ($('#captoff')) $('#captoff').onclick = () => { S.captain = null; log('Stepped down as block captain.'); save(); render(); toast('🔦 Someone else has the storm plan now'); const b = $('#capton'); if (b) b.focus({ preventScroll: true }); };
+}
+// i75-a21: the Home tab's winter toggle: clear the neighbor's walk every snow
+function walkCard(){
+  if (!inM(curMonth(), 10, 11, 0, 1, 2) || S.practice) return '';
+  return `<div class="card"><div class="kv"><span>❄️ Clear Edna's walk next door when it snows<br><small class="muted">She's 84. Each snowy week: ▼ a little health, ▲ community.${S.walkWinters ? ` Winters so far: ${S.walkWinters}.` : ''}</small></span>
+    <button class="sm${S.walk ? '' : ' alt'}" id="walk" aria-pressed="${!!S.walk}" aria-label="Clear the neighbor's walk when it snows">${S.walk ? 'On' : 'Off'}</button></div></div>`;
+}
+function walkWire(){
+  if (!$('#walk')) return;
+  $('#walk').onclick = () => { S.walk = !S.walk; save(); renderHome(); const b = $('#walk'); if (b) b.focus({ preventScroll: true });
+    announce(S.walk ? 'You\'ll clear the neighbor\'s walk every snow.' : 'You won\'t clear the neighbor\'s walk.'); };
 }

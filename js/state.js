@@ -90,10 +90,10 @@ const CITIES = {
 
 // stress = happiness drain per month, wear = health drain per month
 const JOBS = [
-  {id:'farmhand', city:'waitsburg', title:'Wheat farm hand',            pay:2500, edu:0, stress:.2, wear:1.0},
+  {id:'farmhand', city:'waitsburg', title:'Wheat farm hand',            pay:2500, edu:0, stress:.2, wear:1.0, outdoor:1},
   {id:'diner',    city:'waitsburg', title:'Main Street diner cook',     pay:2300, edu:0, stress:.5, wear:.5},
   {id:'para',     city:'waitsburg', title:'School paraeducator',        pay:2900, edu:1, stress:.4, wear:.1, pension:true},
-  {id:'elevator', city:'waitsburg', title:'Grain elevator operator',    pay:3800, edu:1, stress:.4, wear:.7},
+  {id:'elevator', city:'waitsburg', title:'Grain elevator operator',    pay:3800, edu:1, stress:.4, wear:.7, outdoor:1},
   {id:'insure',   city:'waitsburg', title:'Farm insurance agent',       pay:4900, edu:2, stress:.6, wear:0, remote:2},
   {id:'hardware', city:'dayton',    title:'Hardware store clerk',       pay:2600, edu:0, stress:.3, wear:.3},
   {id:'lift',     city:'dayton',    title:'Bluewood ski lift operator', pay:2400, edu:0, stress:.1, wear:.5},
@@ -112,13 +112,13 @@ const JOBS = [
   {id:'labadmin', city:'richland',  title:'Research lab administrator', pay:4800, edu:2, stress:.5, wear:0, remote:2},
   {id:'scientist',city:'richland',  title:'National lab scientist',     pay:9200, edu:3, stress:.8, wear:0, remote:2},
   {id:'foodplant',city:'pasco',     title:'Food processing line worker',pay:3000, edu:0, stress:.6, wear:.9},
-  {id:'airport',  city:'pasco',     title:'Airport ground crew',        pay:3700, edu:0, stress:.5, wear:.7},
+  {id:'airport',  city:'pasco',     title:'Airport ground crew',        pay:3700, edu:0, stress:.5, wear:.7, outdoor:1},
   {id:'trucker',  city:'pasco',     title:'Truck driver (CDL)',         pay:5500, edu:1, stress:.9, wear:.8},
-  {id:'rail',     city:'pasco',     title:'Rail yard conductor',        pay:6100, edu:1, stress:.8, wear:.8, union:true},
+  {id:'rail',     city:'pasco',     title:'Rail yard conductor',        pay:6100, edu:1, stress:.8, wear:.8, union:true, outdoor:1},
   // i3-a05: more valley jobs. Pay sits inside each school level's range, so none is a new best job (a rules test checks)
-  {id:'windtech', city:'dayton',    title:'Wind turbine technician',    pay:5200, edu:2, stress:.5, wear:.7, where:'Wind farm in the Dayton hills', needMajor:'wind'},
+  {id:'windtech', city:'dayton',    title:'Wind turbine technician',    pay:5200, edu:2, stress:.5, wear:.7, where:'Wind farm in the Dayton hills', needMajor:'wind', outdoor:1},
   {id:'damop',    city:'pasco',     title:'Dam operator on the Snake',  pay:5000, edu:1, stress:.4, wear:.3, federal:true},
-  {id:'forest',   city:'dayton',    title:'Forest Service crew',        pay:3000, edu:0, stress:.3, wear:1.0, where:'Blue Mountains', season:[5,6,7,8], federal:true},
+  {id:'forest',   city:'dayton',    title:'Forest Service crew',        pay:3000, edu:0, stress:.3, wear:1.0, where:'Blue Mountains', season:[5,6,7,8], federal:true, outdoor:1},
   {id:'teacher',  city:'waitsburg', title:'School teacher',             pay:5000, edu:3, stress:.7, wear:.1, where:'Waitsburg schools', needMajor:'teaching', union:true, pension:true},
   {id:'vaclerk',  city:'wallawalla',title:'VA hospital clerk',          pay:3600, edu:1, stress:.3, wear:0, federal:true},
   {id:'nukeop',   city:'richland',  title:'Nuclear plant operator',     pay:7000, edu:2, stress:.7, wear:.3},
@@ -127,7 +127,7 @@ const JOBS = [
   // i3-a04: apprenticeships start at 60% of a journeyman's pay and step up every year
   {id:'electrician',city:'wallawalla',title:'Electrician',              pay:5900, edu:1, stress:.4, wear:.6, union:true, apprentice:{weeks:208, startMult:.6}},
   {id:'plumber',  city:'dayton',    title:'Plumber',                    pay:5400, edu:1, stress:.4, wear:.6, apprentice:{weeks:104, startMult:.6}},
-  {id:'lineman',  city:'pasco',     title:'Power lineman',              pay:6300, edu:1, stress:.6, wear:.9, union:true, apprentice:{weeks:156, startMult:.6}},
+  {id:'lineman',  city:'pasco',     title:'Power lineman',              pay:6300, edu:1, stress:.6, wear:.9, union:true, apprentice:{weeks:156, startMult:.6}, outdoor:1},
   // i3-a03: narrow doors from short certificates
   {id:'welder',   city:'pasco',     title:'Welder (fab shop)',          pay:3600, edu:0, stress:.4, wear:.8, needCert:'welding'},
   {id:'phleb',    city:'wallawalla',title:'Hospital phlebotomist',      pay:3200, edu:0, stress:.5, wear:.2, needCert:'phlebotomy'},

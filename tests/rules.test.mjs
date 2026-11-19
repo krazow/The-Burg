@@ -573,7 +573,7 @@ await t.check('pinning a badge you already earned adds no points; pinning first 
 await t.check('event costs rise with prices, and the choices show today\'s price', async () => {
   const r = await ev(() => { fresh('two', { money: 5000 }); S.col = 2; const e = EVENTS.find(x => x.title === 'Feeling run down'); const ch = e.choices().find(c => /doctor/.test(c.label));
     const m = S.money; ch.go(); const doc = m - S.money;
-    const ws = EVENTS.find(x => x.title === 'Windstorm'); S.home = 'fixer'; const m2 = S.money; ws.choices()[0].go(); const roof = m2 - S.money;
+    const ws = EVENTS.find(x => x.title === 'Windstorm'); S.home = 'fixer'; ws.choices()[0].go(); S.turn = S.roofWait.at; const l = []; weatherLines(l, []); const roof = -l[0][1];
     return { label: ch.label, doc, roof }; });
   assert(near(r.doc, 700) && /\$700/.test(r.label), `doctor ${r.doc} "${r.label}"`);
   assert(near(r.roof, 2000), `roof ${r.roof} (a $2,400 roof, paid up to the $1,000 deductible at today's prices)`);
@@ -1558,6 +1558,168 @@ await t.check('old 0.2.0 saves: a seasonal worker loaded out of season keeps the
   });
   assert(r.grace === 'lift' && r.kept === 'lift' && r.cleared === null, `grace ${JSON.stringify(r)}`);
   assert(r.after === null && r.recall === 'lift', `laid off after the next season ${JSON.stringify(r)}`);
+});
+
+// ---- round 75: weather and hard years, part 2 ----
+await t.check('i75-a07: outdoor crews in a smoke summer get shorter days (pay ×0.9, half the wear) unless they push through', async () => {
+  const r = await ev(() => {
+    const run = (smoke, push, jobId = 'farmhand') => { fresh('two', { jobId, focus: 'rest', health: 60, date: new Date(2027, 6, 5).getTime(), smoke: smoke ? 2027 : null, monKey: 2027 * 12 + 6,
+      smokeRule: push ? { y: 2027, push: true } : null }); const h = S.health; const w = week(); return { pay: w.lines['Paycheck'], dH: S.health - h, why: S.last.why.join(' ') }; };
+    const ev = EVENTS.find(e => e.title === 'The smoke rule at work');
+    fresh('two', { jobId: 'farmhand', date: new Date(2027, 6, 5).getTime(), smoke: 2027 }); const due = ev.when(6); ev.choices()[1].go(); const after = ev.when(6), pushed = pushingSmoke();
+    fresh('two', { jobId: 'insure', date: new Date(2027, 6, 5).getTime(), smoke: 2027 }); const office = ev.when(6);
+    return { clear: run(false), rule: run(true), push: run(true, true), office, due, after, pushed, outdoor: JOBS.filter(j => j.outdoor).map(j => j.id) };
+  });
+  assert(near(r.rule.pay, r.clear.pay * 0.9) && near(r.push.pay, r.clear.pay), `pay ${r.clear.pay} / rule ${r.rule.pay} / push ${r.push.pay}`);
+  assert(near(r.rule.dH - r.clear.dH, 1.0 * 0.5 * W, 0.05), `half the wear: ${r.clear.dH} → ${r.rule.dH}`);
+  assert(/smoke rule/.test(r.rule.why) && /Pushing through/.test(r.push.why), 'the week\'s reasons name the smoke rule');
+  assert(r.due && !r.after && r.pushed && !r.office, `the card comes once a smoke summer, only for outdoor jobs ${JSON.stringify(r)}`);
+  assert(r.outdoor.includes('farmhand') && r.outdoor.includes('agtech') && !r.outdoor.includes('insure'), `outdoor jobs ${r.outdoor}`);
+});
+
+await t.check('i75-a08: a box-fan filter (Handy) or a purifier keeps the smoke week off your health at home, for one year', async () => {
+  const r = await ev(() => {
+    const ev = EVENTS.find(e => e.title === 'Wildfire smoke over the valley');
+    fresh('two', { money: 1000, date: new Date(2027, 7, 2).getTime(), smoke: 2027, health: 60 }); ev.choices()[0].go(); const without = S.health - 60;
+    const noDiy = buildFilter(true); const m = S.money; const bought = buildFilter(false); const paid = m - S.money; S.health = 60; ev.choices()[0].go(); const withF = S.health - 60;
+    const twice = buildFilter(false);
+    S.date = new Date(2028, 4, 1).getTime(); const nextYear = airFilterOn();
+    S.skills = { handy: 20 }; const m2 = S.money; buildFilter(true); const diy = m2 - S.money;
+    tab = 'life'; render(); const card = document.querySelector('#main').textContent;
+    return { without, withF, noDiy, bought, paid, twice, nextYear, diy, card };
+  });
+  assert(r.without === -2 && r.withF === 0, `health ${r.without} / ${r.withF}`);
+  assert(!r.noDiy && r.bought && near(r.paid, 160) && !r.twice && !r.nextYear && near(r.diy, 45), JSON.stringify(r));
+  assert(/Ready for 2028/.test(r.card), 'the Life tab shows the filter is ready');
+});
+
+await t.check('i75-a09: a cough in a smoke week: the clinic costs a little, camp anyway risks urgent care', async () => {
+  const r = await ev(() => {
+    const ev = EVENTS.find(e => e.title === 'A cough in a smoke week');
+    fresh('two', { money: 2000, jobId: 'farmhand', date: new Date(2027, 7, 2).getTime(), smoke: 2027 }); const noKids = ev.when(7);
+    S.kids = [S.ageMonths - 60]; const kids = ev.when(7); S.smoke = null; const clear = ev.when(7); S.smoke = 2027;
+    const ch = ev.choices(); const m = S.money; ch[0].go(); const clinic = m - S.money;
+    const h = S.happy; ch[1].go(); const inside = S.happy - h; S.airFilter = 2027; const h2 = S.happy; ev.choices()[1].go(); const insideF = S.happy - h2;
+    const orig = Math.random; Math.random = () => 0; const m3 = S.money; ev.choices()[2].go(); Math.random = orig; const camp = m3 - S.money;
+    return { noKids, kids, clear, clinic, want: medBill(120) + dayPay() / 2, inside, insideF, camp, n: ch.length };
+  });
+  assert(!r.noKids && r.kids && !r.clear && r.n === 3, JSON.stringify(r));
+  assert(near(r.clinic, r.want, 0.01) && r.inside === -1 && r.insideF === 0 && near(r.camp, 450, 0.01), JSON.stringify(r));
+});
+
+await t.check('i75-a12: after a windstorm owners wait for a roofer, pay 30% to rush, or fix it with the Handy skill', async () => {
+  const r = await ev(() => {
+    const ws = EVENTS.find(e => e.title === 'Windstorm');
+    fresh('two', { money: 9000, home: 'fixer', mortgage: 950, date: new Date(2027, 10, 1).getTime(), skills: {} });
+    const ch = ws.choices().filter(c => !c.if || c.if()); const labels = ch.map(c => c.label);
+    const m = S.money; ch[1].go(); const rush = m - S.money;
+    ws.choices()[0].go(); const wait = { ...S.roofWait }; const h = S.happy; const l = []; weatherLines(l, []); const waitHappy = S.happy - h;
+    S.turn = S.roofWait.at; const l2 = []; weatherLines(l2, []);
+    const noDiy = ws.choices().filter(c => !c.if || c.if()).length; S.skills = { handy: 20 }; const diy = ws.choices().filter(c => !c.if || c.if()).some(c => /yourself/.test(c.label)) && noDiy === 2;
+    fresh('two', { money: 9000 }); const renter = ws.choices().map(c => c.label);
+    return { labels, rush, wait, waitHappy, paid: l2.length ? -l2[0][1] : 0, cleared: S.roofWait, diy, renter };
+  });
+  assert(r.labels.length === 2 && /roofer's list/.test(r.labels[0]) && /now/.test(r.labels[1]), `owner choices ${r.labels}`);
+  assert(r.rush > 1000 + 300 - 1, `rushing costs the deductible plus 30% of the job: ${r.rush}`);
+  assert(r.wait.at >= 4 && r.wait.at <= 8 && r.wait.c >= 850 && r.waitHappy <= -1, JSON.stringify(r.wait) + ' ' + r.waitHappy);
+  assert(near(r.paid, 1000) && r.diy && r.renter.length === 1 && /damage/.test(r.renter[0]), JSON.stringify(r));
+});
+
+await t.check('i75-a13: a wind-and-hail plan saves a little a month; a wind claim then costs up to 1% of the home', async () => {
+  const r = await ev(() => {
+    fresh('two', { home: 'fixer', mortgage: 950 }); const flat = youPay('home', 3000, 'wind'), base = insMonthly();
+    S.ins.wind = 'pct'; const pct = youPay('home', 3000, 'wind'), fire = youPay('home', 3000), small = youPay('home', 1200, 'wind'), cheaper = insMonthly();
+    tab = 'life'; render(); insSheet(); const sheetTxt = document.querySelector('#sheet').textContent;
+    document.querySelector('#sheet [data-ins="wind"][data-v="flat"]').click(); const back = S.ins.wind; closeSheet();
+    fresh('two'); insSheet(); const renterSheet = !!document.querySelector('#sheet [data-ins="wind"]'); closeSheet();
+    return { flat, pct, fire, small, base, cheaper, sheetTxt, back, renterSheet, ded: windDed() };
+  });
+  assert(r.flat === 1000 && r.pct === 1600 && r.fire === 1000 && r.small === 1200, JSON.stringify(r));
+  assert(r.base - r.cheaper === 20, `saves ${r.base - r.cheaper} a month`);
+  assert(/\$1,600/.test(r.sheetTxt) && r.back === 'flat' && !r.renterSheet, 'the sheet shows the dollar amount, and only to owners');
+});
+
+await t.check('i75-a14: after the flood, a raised furnace cuts later flood cleanup 80%; renters tell the landlord', async () => {
+  const r = await ev(() => {
+    const ev = EVENTS.find(e => e.title === 'After the flood: the furnace'), hi = EVENTS.find(e => e.title === 'The Touchet is running high');
+    fresh('two', { money: 9000, home: 'fixer', mortgage: 950 }); const before = ev.when();
+    S.chains = { levee: { step: 2, at: 0, f: {} } }; const after = ev.when(); const m = S.money; ev.choices()[0].go(); const paid = m - S.money; const again = ev.when();
+    const orig = Math.random; Math.random = () => 0; const m2 = S.money; hi.choices()[1].go(); Math.random = orig; const flood = m2 - S.money;
+    S.home = 'house'; const l = []; weatherLines(l, []); const kept = S.floodProof; const renter = ev.when() && ev.choices().map(c => c.label);
+    S.home = 'farm'; S.floodAsk = null; const farm = ev.when();
+    return { before, after, paid, again, flood, kept, renter, farm };
+  });
+  assert(!r.before && r.after && near(r.paid, 950) && !r.again, JSON.stringify(r));
+  assert(near(r.flood, 500), `flood cleanup ${r.flood}`);
+  assert(r.kept === null && r.renter.length === 1 && /landlord/.test(r.renter[0]) && !r.farm, JSON.stringify(r));
+});
+
+await t.check('i75-a19/a26: no power: remote workers choose the library, a vacation day or the lost day; cards by lantern need people', async () => {
+  const r = await ev(() => {
+    const ev = EVENTS.find(e => e.title === 'The power is out');
+    fresh('two', { money: 3000, jobId: 'farmhand', community: 20, date: new Date(2027, 11, 6).getTime() }); const plain = ev.choices().map(c => c.label);
+    S.partner = true; const withPartner = ev.choices().map(c => c.label); const h = S.happy, cm = S.community; ev.choices().find(c => /lantern/.test(c.label)).go();
+    const lantern = [S.happy - h, S.community - cm];
+    fresh('two', { money: 3000, jobId: 'remote', edu: 3, community: 20, date: new Date(2027, 11, 6).getTime() }); const remote = ev.choices().map(c => c.label);
+    ev.choices().find(c => /vacation/.test(c.label)).go(); const vacAgain = ev.choices().some(c => /vacation/.test(c.label));
+    const m = S.money; ev.choices().find(c => /Miss/.test(c.label)).go(); const miss = m - S.money;
+    return { plain, withPartner, lantern, remote, vacAgain, miss, day: dayPay(), summer: ev.when(6), winter: ev.when(0) };
+  });
+  assert(r.plain.length === 1 && /Wait it out/.test(r.plain[0]) && r.withPartner.some(l => /lantern/.test(l)), JSON.stringify(r));
+  assert(r.lantern[0] === 3 && r.lantern[1] === 1, `lantern ${r.lantern}`);
+  assert(r.remote.some(l => /library/.test(l)) && r.remote.some(l => /vacation/.test(l)) && r.remote.some(l => /Miss/.test(l)) && !r.vacAgain, JSON.stringify(r.remote));
+  assert(near(r.miss, r.day, 0.01) && !r.summer && r.winter, JSON.stringify(r));
+});
+
+await t.check('i75-a21: clearing the neighbor\'s walk costs a little health each snow and earns a pie after three winters', async () => {
+  const r = await ev(() => {
+    fresh('two', { date: new Date(2027, 11, 6).getTime(), health: 70, community: 30 }); tab = 'home'; render();
+    const btn = document.querySelector('#walk'); const pressed0 = btn.getAttribute('aria-pressed'); btn.click(); const on = S.walk, pressed1 = document.querySelector('#walk').getAttribute('aria-pressed');
+    const orig = Math.random; Math.random = () => 0; const notes = [];
+    weatherLines([], notes); const d = [S.health - 70, S.community - 30, S.walkWinters];
+    for (const y of [2029, 2030]) { S.date = new Date(y, 0, 10).getTime(); weatherLines([], notes); }
+    Math.random = orig; const pie = S.walkPie;
+    S.date = new Date(2028, 6, 5).getTime(); render(); const summer = !!document.querySelector('#walk');
+    return { pressed0, pressed1, on, d, pie, winters: S.walkWinters, notes, summer };
+  });
+  assert(r.pressed0 === 'false' && r.on && r.pressed1 === 'true', 'the Home toggle switches and says so');
+  assert(r.d[0] === -1 && r.d[1] === 1 && r.d[2] === 1, `a snowy week ${r.d}`);
+  assert(r.pie && r.winters === 3 && r.notes.some(n => /pie/.test(n)) && !r.summer, JSON.stringify(r));
+});
+
+await t.check('i75-a25/a27/a28: wind on Highway 12, de-icing at the airport and heat limits at Hanford', async () => {
+  const r = await ev(() => {
+    const hw = EVENTS.find(e => e.title === 'High wind closes Highway 12 to trucks'), de = EVENTS.find(e => e.title === 'De-icing planes at 5 a.m.'), hf = EVENTS.find(e => e.title === 'Heat limits in the suit at Hanford');
+    fresh('two', { jobId: 'trucker', certs: { cdl: 1 }, edu: 1 }); const truck = hw.choices().map(c => c.label);
+    fresh('two', { jobId: 'cna', edu: 1 }); const comm = hw.choices().map(c => c.label);
+    const orig = Math.random; Math.random = () => 0; const m = S.money; hw.choices()[1].go(); Math.random = orig; const crash = m - S.money;
+    fresh('two', { jobId: 'airport' }); const deW = de.when(0), deS = de.when(6); const m2 = S.money, h = S.health; de.choices()[0].go(); const ot = [S.money - m2, S.health - h];
+    fresh('two', { jobId: 'hanford', edu: 1, date: new Date(2027, 6, 5).getTime() }); const hfClear = hf.when(6); S.smoke = 2027; const hfHot = hf.when(6);
+    return { truck, comm, crash, deW, deS, ot, hfClear, hfHot, cat: [hw.cat, de.cat, hf.cat] };
+  });
+  assert(/Park the rig/.test(r.truck[0]) && /long way/.test(r.truck[1]) && /Slow down/.test(r.comm[0]), JSON.stringify(r));
+  assert(near(r.crash, 500) && r.deW && !r.deS && r.ot[0] > 0 && r.ot[1] === -3 && !r.hfClear && r.hfHot, JSON.stringify(r));
+  assert(r.cat.join() === 'road,work,work', `paced by category ${r.cat}`);
+});
+
+await t.check('i75-a33: a block captain runs the storm plan: an evening, more community, and the plan list grows', async () => {
+  const r = await ev(() => {
+    fresh('two', { community: 35 }); tab = 'life'; render(); const locked = !document.querySelector('#capton');
+    S.community = 45; render(); document.querySelector('#capton').click(); const cap = !!S.captain;
+    const ws = EVENTS.find(e => e.title === 'Windstorm'), po = EVENTS.find(e => e.title === 'The power is out');
+    const first = ws.choices()[0].label; const c0 = S.community; ws.choices()[0].go(); const gain = S.community - c0;
+    po.choices()[0].go(); po.choices()[0].go(); render(); const list = [...document.querySelectorAll('#main ul[aria-label] li')].map(li => li.textContent);
+    document.querySelector('#captoff').click(); const off = S.captain;
+    return { locked, cap, first, gain, runs: 3, list, off };
+  });
+  assert(r.locked && r.cap && /storm plan/.test(r.first) && r.gain === 3, JSON.stringify(r));
+  assert(r.list.length === 3 && r.list.every(l => l.startsWith('✅')) && r.off === null, JSON.stringify(r.list));
+});
+
+await t.check('i75: older saves load with the new weather fields', async () => {
+  const r = await ev(() => { const s = migrate({ name: 'Old', len: 'two', turn: 40, date: new Date(2027, 9, 1).getTime(), ins: { auto: 'full', renters: true, ded: 1000 } });
+    S = s; S.noEvents = true; const c = weatherCard(); weeks(2); return { walk: s.walk, captain: s.captain, roof: s.roofWait, ok: /Ready for weather/.test(c), wind: youPay('home', 3000, 'wind') }; });
+  assert(r.walk === false && r.captain === null && r.roof === null && r.ok && r.wind === 0, JSON.stringify(r));
 });
 
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });
