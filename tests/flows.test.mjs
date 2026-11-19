@@ -40,7 +40,7 @@ await t.check('Life tab: moving to a rented house costs $300 and raises the rent
   const s = await S();
   assert(s.home === 'house' && s.money === 4700, `home ${s.home}, money ${s.money}`);
   await page.click('[data-tab=home]'); await page.click('#end'); await clearSheets();
-  assert(near((await S()).last.lines.find(l => l[0] === 'Rent')[1], -1150 * 12 / 52), 'rent not charged at the new rate');
+  assert(near((await S()).last.lines.find(l => l[0] === 'Rent')[1], -1250 * 12 / 52), 'rent not charged at the new rate');
 });
 
 await t.check('Life tab: buying the fixer-upper takes the down payment and starts a mortgage', async () => {
@@ -184,7 +184,7 @@ await t.check('every event\'s every choice works and shows a result', async () =
   }
   assert(tried >= titles.length, `only ${tried} choices across ${titles.length} events`);
   const cats = await page.evaluate(() => ['road', 'work'].map(c => EVENTS.filter(e => e.cat === c).length));
-  assert(cats[0] === 32 && cats[1] === 35, `expected 32 road and 35 work events (with the contract vote, the federal shutdown and round 75's wind on Highway 12, smoke rule, de-icing and Hanford heat), got ${cats}`);
+  assert(cats[0] === 32 && cats[1] === 37, `expected 32 road and 37 work events (with the contract vote, the federal shutdown, a personal day, desk stiffness and round 75's wind on Highway 12, smoke rule, de-icing and Hanford heat), got ${cats}`);
   console.log(`     (${tried} choices across ${titles.length} events)`);
 });
 
@@ -459,7 +459,7 @@ await t.check('Journal filter chips: Money, Events, Milestones and Trips, with o
 });
 
 await t.check('Out and about: visit every business from Home, with its card, limits and results', async () => {
-  const ids = await page.evaluate(() => PLACES.map(p => p.id));
+  const ids = await page.evaluate(() => PLACES.filter(p => !(p.hide && p.hide())).map(p => p.id));   // the senior center shows from 65 (health tests)
   for (const id of ids) {
     await life({ jobId: 'farmhand', money: 5000, ageMonths: 30 * 12, partner: false }, 'home');
     await setup(() => { S.date = new Date(2027, 4, 10).getTime(); S.turn = 4; render(); });
