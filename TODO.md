@@ -3164,6 +3164,83 @@ old ones.
 
 </details>
 
+## Ideas round 36 (pick on the build board)
+
+63 ideas. Details: [docs/ideas/round-36.md](docs/ideas/round-36.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 36: Love, conflict and family ties</b> (35 ideas)</summary>
+
+- [ ] 🔴 **i36-a01** A rough patch becomes a short story, not one card (M)
+- [ ] 🔴 **i36-a02** The money talk: one of you spends, one of you saves (S)
+- [ ] 🔴 **i36-a03** 'You're never home': the overtime argument (S)
+- [ ] 🟠 **i36-a04** Cool off before you answer (S)
+- [ ] 🟠 **i36-a05** Apologize first, with a small gesture (S)
+- [ ] 🔴 **i36-a06** Couples counseling in Walla Walla (M)
+- [ ] 🟡 **i36-a07** The chores fight: who does what at home (S)
+- [ ] 🟠 **i36-a08** A trial separation: eight weeks apart (M)
+- [ ] 🔴 **i36-a09** Divorce in Washington: the 90-day wait (M)
+- [ ] 🟠 **i36-a10** Split the savings, the house and the truck (M)
+- [ ] 🟡 **i36-a11** Who keeps the dog? (S)
+- [ ] 🔴 **i36-a12** Pick a parenting plan at the courthouse (M)
+- [ ] 🟠 **i36-a13** The ex moves to Walla Walla (S)
+- [ ] 🟠 **i36-a14** Child support on the monthly bills (S)
+- [ ] 🟠 **i36-a15** Holidays split: this year, next year (S)
+- [ ] 🟡 **i36-a16** Sit together at the graduation (S)
+- [ ] 🔴 **i36-a17** Back out there: dating again later in life (M)
+- [ ] 🟠 **i36-a18** Dating with kids at home (S)
+- [ ] 🟡 **i36-a19** Grange hall dance night for the over-50 crowd (S)
+- [ ] 🟠 **i36-a20** Moving in together: whose place? (M)
+- [ ] 🟡 **i36-a21** Joint account or keep it separate? (S)
+- [ ] 🟡 **i36-a22** A second marriage and a prenup (S)
+- [ ] 🟠 **i36-a23** Two sets of kids under one roof (M)
+- [ ] 🟠 **i36-a24** Your step-kid warms up slowly (M)
+- [ ] 🟡 **i36-a25** The other parent's weekend (S)
+- [ ] 🟠 **i36-a26** Your partner gets an offer in Spokane (M)
+- [ ] 🟡 **i36-a27** Long-distance family: a weekly call (S)
+- [ ] 🟠 **i36-a28** Fly home for a hard week (S)
+- [ ] 🟡 **i36-a29** Your grown kid's marriage hits a rough patch (S)
+- [ ] 🟠 **i36-a30** A sibling asks for a loan, and your partner says no (S)
+- [ ] 🟡 **i36-a31** Reach out to an estranged family member (M)
+- [ ] 🟡 **i36-a32** Empty nest: just the two of you again (S)
+- [ ] 🟡 **i36-a33** Retired together: too much time in the same kitchen (S)
+- [ ] 🔴 **i36-a34** A split isn't the end of a good life (S)
+- [ ] 🟠 **i36-a35** Help page: when things get hard at home (S)
+
+</details>
+
+<details><summary><b>Ideas 36: For veteran players</b> (28 ideas)</summary>
+
+- [ ] 🔴 **i36-b01** Lives-lived rank: Newcomer to Fixture of the Burg (M)
+- [ ] 🔴 **i36-b02** A hard goal for each background (M)
+- [ ] 🔴 **i36-b03** Rare combos open secret events (M)
+- [ ] 🟠 **i36-b04** Trade mastery across lives (M)
+- [ ] 🟠 **i36-b05** Banner year: a flawless year badge (S)
+- [ ] 🟠 **i36-b06** Lessons learned: a new choice for an event that burned you (M)
+- [ ] 🔴 **i36-b07** Deep-cut events after your 10th life (M)
+- [ ] 🟠 **i36-b08** Your old things turn up at the antique store (M)
+- [ ] 🟠 **i36-b09** A hall of fame wall at the museum (M)
+- [ ] 🟡 **i36-b10** Your past lives on the October cemetery walk (S)
+- [ ] 🟠 **i36-b11** Device milestones: weeks lived across every life (M)
+- [ ] 🟠 **i36-b12** How close you came: your best life part by part (S)
+- [ ] 🟠 **i36-b13** Race your best life: a ghost marker on the score bar (M)
+- [ ] 🟡 **i36-b14** Riddle of the week at the library (S)
+- [ ] 🟠 **i36-b15** Purist trophies: Local-only, Carless and Never-in-debt (M)
+- [ ] 🟡 **i36-b16** Old-hand mode: fewer first-life nudges after 3 lives (S)
+- [ ] 🟡 **i36-b17** Rare starts: 1 in 25 lives begins with a surprise (S)
+- [ ] 🟡 **i36-b18** A background and mode star grid (S)
+- [ ] 🟡 **i36-b19** A letter to your next life (S)
+- [ ] 🟡 **i36-b20** Every week by hand: a no-skip badge (S)
+- [ ] 🟡 **i36-b21** The fortune teller at the fair reads your past lives (S)
+- [ ] 🟠 **i36-b22** A cross-life story: the lost family Bible (L)
+- [ ] 🟡 **i36-b23** Open the books: exact odds after 10 lives (S)
+- [ ] 🟠 **i36-b24** Season pennants: a goal for all your lives this real season (M)
+- [ ] 🟡 **i36-b25** A secret job: grain elevator foreman (M)
+- [ ] 🟡 **i36-b26** Rare life stamp on the ending (S)
+- [ ] 🟡 **i36-b27** The café regulars use your rank (S)
+- [ ] 🟠 **i36-b28** Good-life streak on the title screen (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
