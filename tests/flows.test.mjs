@@ -188,6 +188,57 @@ await t.check('every event\'s every choice works and shows a result', async () =
   console.log(`     (${tried} choices across ${titles.length} events)`);
 });
 
+await t.check('Waitsburg pack A, part 1 (W1–W15): every choice works for owners and renters, shows a result, and labels its price', async () => {
+  const titles = await page.evaluate(() => TOWN_EVENTS_A1.map(e => e.title));
+  assert(titles.length === 15, `expected 15 events in the pack, got ${titles.length}`);
+  // an owner who is handy, well known, studying and pet-free; and a renter with a generator and a cat, new in town
+  const variants = [
+    { home: 'fixer', mortgage: 900, skills: { handy: 24, cook: 24 }, community: 50, focus: 'study', edu: 0, ageMonths: 30 * 12, money: 20000, cat: false, generator: false, dog: false },
+    { home: 'room', skills: {}, community: 10, focus: 'rest', ageMonths: 30 * 12, money: 20000, cat: true, generator: true, dog: false }];
+  let tried = 0;
+  for (const title of titles) {
+    const seen = new Set(), all = new Set();
+    for (const v of variants) {
+      await life(v, 'home', 'life');
+      const labels = await page.evaluate(t => { const e = EVENTS.find(x => x.title === t); return { open: e.choices().filter(c => !c.if || c.if()).map(c => c.label), all: e.choices().map(c => c.label) }; }, title);
+      labels.all.forEach(l => all.add(l.replace(/\$[\d,]+/g, '$')));
+      for (let i = 0; i < labels.open.length; i++) {
+        await life(v, 'home', 'life');
+        const before = await page.evaluate(() => S.money);
+        await page.evaluate(t => showEvent(EVENTS.find(e => e.title === t)), title);
+        assert(/📍 .+Waitsburg/.test(await page.textContent('#sheet .evplace')), `${title} has no place in Waitsburg`);
+        await page.click(`${open} [data-i="${i}"]`);
+        const ok = await page.$(`${open} #ok`);
+        const text = ok ? await page.textContent('#sheet') : await page.textContent('#toast');
+        assert(text && text.trim().length > 3, `${title} choice "${labels.open[i]}" showed no result`);
+        const after = await page.evaluate(() => S.money);
+        if (/\(-\$/.test(labels.open[i])) assert(after < before, `${title}: "${labels.open[i]}" should cost money`);
+        if (ok) await ok.click();
+        seen.add(labels.open[i].replace(/\$[\d,]+/g, '$')); tried++;
+      }
+    }
+    for (const l of all) assert(seen.has(l), `${title}: the choice "${l}" was never tried`);
+  }
+  console.log(`     (${tried} choices across ${titles.length} Waitsburg events)`);
+});
+
+await t.check('W8 and W14 keep what you chose: a generator stops later outages, and a barn cat shows on Life with its bill', async () => {
+  await life({ home: 'room', money: 5000, cat: false, generator: false }, 'home', 'life');
+  await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Ice storm knocks out power')));
+  await page.click(`${open} [data-i="2"]`); await clearSheets();
+  await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Mice in the walls')));
+  await page.click(`${open} [data-i="2"]`); await clearSheets();
+  const r = await page.evaluate(() => { const h = S.happy, m = S.money; const res = EVENTS.find(e => e.title === 'Windstorm').choices()[0].go();
+    const lab = EVENTS.find(e => e.title === 'Ice storm knocks out power').choices().filter(c => !c.if || c.if()).map(c => c.label);
+    return { gen: S.generator, cat: S.cat, res, kept: S.money === m && S.happy === h, lab, bill: billLines().some(([l]) => l === 'Cat food') }; });
+  assert(r.gen && r.cat && r.kept && /generator/.test(r.res), JSON.stringify(r));
+  assert(r.lab.length === 2 && /generator/.test(r.lab[1]), `the ice storm still offers a generator: ${r.lab}`);
+  assert(r.bill, 'no cat food on the weekly bills');
+  await page.click('[data-tab=life]');
+  const txt = await page.textContent('#main');
+  assert(txt.includes('A barn cat') && txt.includes('Ready for outages'), 'the cat or generator is not on the Life tab');
+});
+
 await t.check('a Lifetime game plays to the end with ⏭ Auto, and its slot is freed', async () => {
   await life({ jobId: null, retired: true, ageMonths: 96 * 12, health: 35 }, 'home', 'life');
   await page.evaluate(() => { S.noEvents = false; save(); });
