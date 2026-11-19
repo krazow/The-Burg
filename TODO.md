@@ -3241,6 +3241,81 @@ old ones.
 
 </details>
 
+## Ideas round 37 (pick on the build board)
+
+61 ideas. Details: [docs/ideas/round-37.md](docs/ideas/round-37.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 37: Food and drink of the valley</b> (31 ideas)</summary>
+
+- [ ] 🔴 **i37-a01** Harvest money: the town spends the wheat check (M)
+- [ ] 🔴 **i37-a02** A 50-pound sack of sweet onions in June (S)
+- [ ] 🟠 **i37-a03** Roadside asparagus in April (S)
+- [ ] 🔴 **i37-a04** Three weeks on the cherry packing line (M)
+- [ ] 🟠 **i37-a05** Pan dulce Saturday at the panadería (S)
+- [ ] 🟠 **i37-a06** Crew lunch at the taco truck on payday (S)
+- [ ] 🟠 **i37-a07** Cut and wrap: the meat locker or the garage (M)
+- [ ] 🟠 **i37-a08** Lent Friday fish fry at the parish hall (S)
+- [ ] 🟠 **i37-a09** The firefighters' pancake breakfast (S)
+- [ ] 🟠 **i37-a10** The church fall bazaar dinner: join the kitchen crew (M)
+- [ ] 🟡 **i37-a11** A jar that didn't seal (S)
+- [ ] 🟠 **i37-a12** A windstorm knocks out power and thaws the freezer (S)
+- [ ] 🔴 **i37-a13** Long commutes, late dinners (M)
+- [ ] 🔴 **i37-a14** Basic Food benefits when money is tight (M)
+- [ ] 🟠 **i37-a15** Free summer lunch at the park for kids (S)
+- [ ] 🟡 **i37-a16** Crawdads in the Touchet (S)
+- [ ] 🟡 **i37-a17** A food worker card for food jobs (S)
+- [ ] 🟠 **i37-a18** Field lunches for the harvest crew (S)
+- [ ] 🟠 **i37-a19** Food prices jump: a hard year at the grocery (M)
+- [ ] 🟡 **i37-a20** Cider pressing in October over the Oregon line (S)
+- [ ] 🟡 **i37-a21** A carboy of homemade wine with a neighbor (M)
+- [ ] 🟡 **i37-a22** A wine club at a Walla Walla winery (S)
+- [ ] 🟠 **i37-a23** Grow a contract field of sweet onions (L)
+- [ ] 🟠 **i37-a24** The doctor says ease off the fryer (M)
+- [ ] 🟡 **i37-a25** Cook with the kids on rest weeks (S)
+- [ ] 🟠 **i37-a26** Harvest moon supper in the wheat: work it or buy a seat (M)
+- [ ] 🟡 **i37-a27** Pumpkin patch and corn maze in October (S)
+- [ ] 🟠 **i37-a28** Harvest hours at the grain elevator (S)
+- [ ] 🟡 **i37-a29** Sunday menudo at the taquería (S)
+- [ ] 🟠 **i37-a30** Run a tab at Burg Basket (M)
+- [ ] 🟡 **i37-a31** The Tattler's what's-in-season line (S)
+
+</details>
+
+<details><summary><b>Ideas 37: Playtest of every background</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i37-b01** Bug: the young parent's toddler never shows up in 5 years (M)
+- [ ] 🔴 **i37-b02** Bug: start hints say "Standard" and "Head start" backwards (S)
+- [ ] 🔴 **i37-b03** Bug: Farm kid is told "Start by finding a job" with a job already (S)
+- [ ] 🔴 **i37-b04** Bug: the Farm kid rents a room on Main Street (M)
+- [ ] 🔴 **i37-b05** Balance: the Grad walks into a $6,500 Hanford job on week 0 (M)
+- [ ] 🔴 **i37-b06** Balance: newcomer loneliness fixes itself by week 13 (S)
+- [ ] 🔴 **i37-b07** Careless play tops 60 in every background's 5-year game (M)
+- [ ] 🟠 **i37-b08** Grad: the hometown rumor mill (S)
+- [ ] 🟠 **i37-b09** The family farm pays in more than wages (M)
+- [ ] 🟠 **i37-b10** Leaving the farm is a choice, not a click (S)
+- [ ] 🟠 **i37-b11** Farm kid: the folks need a hand at harvest (M)
+- [ ] 🟠 **i37-b12** Farm kid: "everybody knows you" lasts (S)
+- [ ] 🟠 **i37-b13** Transplant: the Seattle group chat (M)
+- [ ] 🟡 **i37-b14** Transplant: the moving bill catches up (S)
+- [ ] 🟡 **i37-b15** Transplant: the newcomer's welcome visit (S)
+- [ ] 🟠 **i37-b16** Young parent: a hand from Grandma (M)
+- [ ] 🟠 **i37-b17** Young parent: childcare drops when the kid starts school (S)
+- [ ] 🟡 **i37-b18** Young parent: the other parent (M)
+- [ ] 🟡 **i37-b19** Fresh start: give the classic start a hook (S)
+- [ ] 🟠 **i37-b20** Background check-ins at month 3 and year 1 (S)
+- [ ] 🟠 **i37-b21** One life goal tailored to each start (M)
+- [ ] 🟡 **i37-b22** End screen: a line that remembers how you started (S)
+- [ ] 🟠 **i37-b23** Backgrounds score within 10 points of each other (S)
+- [ ] 🟡 **i37-b24** Fix "From the wheat to the lab" to start as a Farm kid (S)
+- [ ] 🟡 **i37-b25** Start sheet: what your first month looks like (S)
+- [ ] 🟡 **i37-b26** Grad: the loan payment can be paused once (S)
+- [ ] 🟠 **i37-b27** Young parent: the toddler shapes the weekly focus (M)
+- [ ] 🟡 **i37-b28** Farm kid: the good-health start lasts (S)
+- [ ] 🟡 **i37-b29** Transplant: the sedan is a city car (S)
+- [ ] 🟡 **i37-b30** Heirs keep a trace of the family's start (M)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
