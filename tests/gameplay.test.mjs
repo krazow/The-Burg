@@ -303,22 +303,37 @@ await t.check('the gameplay tutorial walks through every step by tapping, then l
   const before = await page.evaluate(() => JSON.stringify(slots().map(g => g && { ...g, savedAt: 0 })));
   await page.click('#helpbtn');
   await page.click('#tutstart');
-  let steps = 0;
-  for (let guard = 0; guard < 80; guard++) {
+  let steps = 0, skipped = [], seen = new Set(), covered = [];
+  for (let guard = 0; guard < 120; guard++) {
     await page.waitForTimeout(450);
-    const st = await page.evaluate(() => TUT ? { i: TUT.i, sel: TSTEPS[TUT.i].sel || null, tap: !!TSTEPS[TUT.i].tap, shown: !document.querySelector('#coach').classList.contains('hidden') } : null);
+    const st = await page.evaluate(() => {
+      if (!TUT) return null;
+      const s = TSTEPS[TUT.i], el = s.sel && document.querySelector(s.sel), r = el && el.getBoundingClientRect();
+      const hit = r && document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      return { i: TUT.i, sel: s.sel || null, tap: !!s.tap, skipped: [...TUT.skipped], shown: !document.querySelector('#coach').classList.contains('hidden'), reach: !!(hit && el.contains(hit)) };
+    });
     if (!st) break;
+    skipped = st.skipped;
     if (!st.shown) continue;
     steps = Math.max(steps, st.i + 1);
+    if (st.sel) seen.add(st.sel);
+    if (st.tap && !st.reach) covered.push(st.sel);                // the pulsing ring must sit on a spot you can actually tap
     if (st.tap) { const box = await (await page.$(st.sel)).boundingBox(); await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2); }
     else await page.click('#cnext');
   }
   const total = await page.evaluate(() => TSTEPS.length);
   assert(steps === total, `tutorial reached step ${steps} of ${total}`);
+  assert(!skipped.length, `tutorial steps skipped because their target never appeared: ${skipped.join(', ')}`);
+  assert(!covered.length, `tap targets hidden under the coach: ${covered.join(', ')}`);
+  // G1: the tutorial shows what's on main now
+  for (const sel of ['#auto', '#planbtn', '#outbtn', '#tripchip', '#main .term[data-term="takehome"]', '[data-job="lineman"]', '#undo', '#inssheet', '#outlook', '.mpin[aria-label="Main Street"]', '.msmap', '#modal:not(.hidden) #settings'])
+    assert(seen.has(sel), `the tutorial never showed ${sel}`);
+  assert(total <= 42, `the tutorial is getting long: ${total} steps`);
   const s = await S();
   assert(s.name === 'Mine' && s.turn === 7 && !s.practice, 'the real life was not restored');
   assert((await page.evaluate(() => JSON.stringify(slots().map(g => g && { ...g, savedAt: 0 })))) === before, 'the tutorial changed the saves');
   assert(!(await page.evaluate(() => prefs().mapView)), 'the tutorial left the map setting on');
+  assert(!(await page.evaluate(() => LIFE_UNDO.length || MAPSEL)), 'the tutorial left an undo or a map pick behind');
 });
 
 await t.check('the tutorial dims everything but the highlighted spot, and Skip tutorial returns to the game', async () => {
