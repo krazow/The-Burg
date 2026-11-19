@@ -3164,6 +3164,158 @@ old ones.
 
 </details>
 
+## Ideas round 36 (pick on the build board)
+
+63 ideas. Details: [docs/ideas/round-36.md](docs/ideas/round-36.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 36: Love, conflict and family ties</b> (35 ideas)</summary>
+
+- [ ] 🔴 **i36-a01** A rough patch becomes a short story, not one card (M)
+- [ ] 🔴 **i36-a02** The money talk: one of you spends, one of you saves (S)
+- [ ] 🔴 **i36-a03** 'You're never home': the overtime argument (S)
+- [ ] 🟠 **i36-a04** Cool off before you answer (S)
+- [ ] 🟠 **i36-a05** Apologize first, with a small gesture (S)
+- [ ] 🔴 **i36-a06** Couples counseling in Walla Walla (M)
+- [ ] 🟡 **i36-a07** The chores fight: who does what at home (S)
+- [ ] 🟠 **i36-a08** A trial separation: eight weeks apart (M)
+- [ ] 🔴 **i36-a09** Divorce in Washington: the 90-day wait (M)
+- [ ] 🟠 **i36-a10** Split the savings, the house and the truck (M)
+- [ ] 🟡 **i36-a11** Who keeps the dog? (S)
+- [ ] 🔴 **i36-a12** Pick a parenting plan at the courthouse (M)
+- [ ] 🟠 **i36-a13** The ex moves to Walla Walla (S)
+- [ ] 🟠 **i36-a14** Child support on the monthly bills (S)
+- [ ] 🟠 **i36-a15** Holidays split: this year, next year (S)
+- [ ] 🟡 **i36-a16** Sit together at the graduation (S)
+- [ ] 🔴 **i36-a17** Back out there: dating again later in life (M)
+- [ ] 🟠 **i36-a18** Dating with kids at home (S)
+- [ ] 🟡 **i36-a19** Grange hall dance night for the over-50 crowd (S)
+- [ ] 🟠 **i36-a20** Moving in together: whose place? (M)
+- [ ] 🟡 **i36-a21** Joint account or keep it separate? (S)
+- [ ] 🟡 **i36-a22** A second marriage and a prenup (S)
+- [ ] 🟠 **i36-a23** Two sets of kids under one roof (M)
+- [ ] 🟠 **i36-a24** Your step-kid warms up slowly (M)
+- [ ] 🟡 **i36-a25** The other parent's weekend (S)
+- [ ] 🟠 **i36-a26** Your partner gets an offer in Spokane (M)
+- [ ] 🟡 **i36-a27** Long-distance family: a weekly call (S)
+- [ ] 🟠 **i36-a28** Fly home for a hard week (S)
+- [ ] 🟡 **i36-a29** Your grown kid's marriage hits a rough patch (S)
+- [ ] 🟠 **i36-a30** A sibling asks for a loan, and your partner says no (S)
+- [ ] 🟡 **i36-a31** Reach out to an estranged family member (M)
+- [ ] 🟡 **i36-a32** Empty nest: just the two of you again (S)
+- [ ] 🟡 **i36-a33** Retired together: too much time in the same kitchen (S)
+- [ ] 🔴 **i36-a34** A split isn't the end of a good life (S)
+- [ ] 🟠 **i36-a35** Help page: when things get hard at home (S)
+
+</details>
+
+<details><summary><b>Ideas 36: For veteran players</b> (28 ideas)</summary>
+
+- [ ] 🔴 **i36-b01** Lives-lived rank: Newcomer to Fixture of the Burg (M)
+- [ ] 🔴 **i36-b02** A hard goal for each background (M)
+- [ ] 🔴 **i36-b03** Rare combos open secret events (M)
+- [ ] 🟠 **i36-b04** Trade mastery across lives (M)
+- [ ] 🟠 **i36-b05** Banner year: a flawless year badge (S)
+- [ ] 🟠 **i36-b06** Lessons learned: a new choice for an event that burned you (M)
+- [ ] 🔴 **i36-b07** Deep-cut events after your 10th life (M)
+- [ ] 🟠 **i36-b08** Your old things turn up at the antique store (M)
+- [ ] 🟠 **i36-b09** A hall of fame wall at the museum (M)
+- [ ] 🟡 **i36-b10** Your past lives on the October cemetery walk (S)
+- [ ] 🟠 **i36-b11** Device milestones: weeks lived across every life (M)
+- [ ] 🟠 **i36-b12** How close you came: your best life part by part (S)
+- [ ] 🟠 **i36-b13** Race your best life: a ghost marker on the score bar (M)
+- [ ] 🟡 **i36-b14** Riddle of the week at the library (S)
+- [ ] 🟠 **i36-b15** Purist trophies: Local-only, Carless and Never-in-debt (M)
+- [ ] 🟡 **i36-b16** Old-hand mode: fewer first-life nudges after 3 lives (S)
+- [ ] 🟡 **i36-b17** Rare starts: 1 in 25 lives begins with a surprise (S)
+- [ ] 🟡 **i36-b18** A background and mode star grid (S)
+- [ ] 🟡 **i36-b19** A letter to your next life (S)
+- [ ] 🟡 **i36-b20** Every week by hand: a no-skip badge (S)
+- [ ] 🟡 **i36-b21** The fortune teller at the fair reads your past lives (S)
+- [ ] 🟠 **i36-b22** A cross-life story: the lost family Bible (L)
+- [ ] 🟡 **i36-b23** Open the books: exact odds after 10 lives (S)
+- [ ] 🟠 **i36-b24** Season pennants: a goal for all your lives this real season (M)
+- [ ] 🟡 **i36-b25** A secret job: grain elevator foreman (M)
+- [ ] 🟡 **i36-b26** Rare life stamp on the ending (S)
+- [ ] 🟡 **i36-b27** The café regulars use your rank (S)
+- [ ] 🟠 **i36-b28** Good-life streak on the title screen (S)
+
+</details>
+
+## Ideas round 37 (pick on the build board)
+
+61 ideas. Details: [docs/ideas/round-37.md](docs/ideas/round-37.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 37: Food and drink of the valley</b> (31 ideas)</summary>
+
+- [ ] 🔴 **i37-a01** Harvest money: the town spends the wheat check (M)
+- [ ] 🔴 **i37-a02** A 50-pound sack of sweet onions in June (S)
+- [ ] 🟠 **i37-a03** Roadside asparagus in April (S)
+- [ ] 🔴 **i37-a04** Three weeks on the cherry packing line (M)
+- [ ] 🟠 **i37-a05** Pan dulce Saturday at the panadería (S)
+- [ ] 🟠 **i37-a06** Crew lunch at the taco truck on payday (S)
+- [ ] 🟠 **i37-a07** Cut and wrap: the meat locker or the garage (M)
+- [ ] 🟠 **i37-a08** Lent Friday fish fry at the parish hall (S)
+- [ ] 🟠 **i37-a09** The firefighters' pancake breakfast (S)
+- [ ] 🟠 **i37-a10** The church fall bazaar dinner: join the kitchen crew (M)
+- [ ] 🟡 **i37-a11** A jar that didn't seal (S)
+- [ ] 🟠 **i37-a12** A windstorm knocks out power and thaws the freezer (S)
+- [ ] 🔴 **i37-a13** Long commutes, late dinners (M)
+- [ ] 🔴 **i37-a14** Basic Food benefits when money is tight (M)
+- [ ] 🟠 **i37-a15** Free summer lunch at the park for kids (S)
+- [ ] 🟡 **i37-a16** Crawdads in the Touchet (S)
+- [ ] 🟡 **i37-a17** A food worker card for food jobs (S)
+- [ ] 🟠 **i37-a18** Field lunches for the harvest crew (S)
+- [ ] 🟠 **i37-a19** Food prices jump: a hard year at the grocery (M)
+- [ ] 🟡 **i37-a20** Cider pressing in October over the Oregon line (S)
+- [ ] 🟡 **i37-a21** A carboy of homemade wine with a neighbor (M)
+- [ ] 🟡 **i37-a22** A wine club at a Walla Walla winery (S)
+- [ ] 🟠 **i37-a23** Grow a contract field of sweet onions (L)
+- [ ] 🟠 **i37-a24** The doctor says ease off the fryer (M)
+- [ ] 🟡 **i37-a25** Cook with the kids on rest weeks (S)
+- [ ] 🟠 **i37-a26** Harvest moon supper in the wheat: work it or buy a seat (M)
+- [ ] 🟡 **i37-a27** Pumpkin patch and corn maze in October (S)
+- [ ] 🟠 **i37-a28** Harvest hours at the grain elevator (S)
+- [ ] 🟡 **i37-a29** Sunday menudo at the taquería (S)
+- [ ] 🟠 **i37-a30** Run a tab at Burg Basket (M)
+- [ ] 🟡 **i37-a31** The Tattler's what's-in-season line (S)
+
+</details>
+
+<details><summary><b>Ideas 37: Playtest of every background</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i37-b01** Bug: the young parent's toddler never shows up in 5 years (M)
+- [ ] 🔴 **i37-b02** Bug: start hints say "Standard" and "Head start" backwards (S)
+- [ ] 🔴 **i37-b03** Bug: Farm kid is told "Start by finding a job" with a job already (S)
+- [ ] 🔴 **i37-b04** Bug: the Farm kid rents a room on Main Street (M)
+- [ ] 🔴 **i37-b05** Balance: the Grad walks into a $6,500 Hanford job on week 0 (M)
+- [ ] 🔴 **i37-b06** Balance: newcomer loneliness fixes itself by week 13 (S)
+- [ ] 🔴 **i37-b07** Careless play tops 60 in every background's 5-year game (M)
+- [ ] 🟠 **i37-b08** Grad: the hometown rumor mill (S)
+- [ ] 🟠 **i37-b09** The family farm pays in more than wages (M)
+- [ ] 🟠 **i37-b10** Leaving the farm is a choice, not a click (S)
+- [ ] 🟠 **i37-b11** Farm kid: the folks need a hand at harvest (M)
+- [ ] 🟠 **i37-b12** Farm kid: "everybody knows you" lasts (S)
+- [ ] 🟠 **i37-b13** Transplant: the Seattle group chat (M)
+- [ ] 🟡 **i37-b14** Transplant: the moving bill catches up (S)
+- [ ] 🟡 **i37-b15** Transplant: the newcomer's welcome visit (S)
+- [ ] 🟠 **i37-b16** Young parent: a hand from Grandma (M)
+- [ ] 🟠 **i37-b17** Young parent: childcare drops when the kid starts school (S)
+- [ ] 🟡 **i37-b18** Young parent: the other parent (M)
+- [ ] 🟡 **i37-b19** Fresh start: give the classic start a hook (S)
+- [ ] 🟠 **i37-b20** Background check-ins at month 3 and year 1 (S)
+- [ ] 🟠 **i37-b21** One life goal tailored to each start (M)
+- [ ] 🟡 **i37-b22** End screen: a line that remembers how you started (S)
+- [ ] 🟠 **i37-b23** Backgrounds score within 10 points of each other (S)
+- [ ] 🟡 **i37-b24** Fix "From the wheat to the lab" to start as a Farm kid (S)
+- [ ] 🟡 **i37-b25** Start sheet: what your first month looks like (S)
+- [ ] 🟡 **i37-b26** Grad: the loan payment can be paused once (S)
+- [ ] 🟠 **i37-b27** Young parent: the toddler shapes the weekly focus (M)
+- [ ] 🟡 **i37-b28** Farm kid: the good-health start lasts (S)
+- [ ] 🟡 **i37-b29** Transplant: the sedan is a city car (S)
+- [ ] 🟡 **i37-b30** Heirs keep a trace of the family's start (M)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
