@@ -2621,6 +2621,85 @@ old ones.
 
 </details>
 
+## Ideas round 29 (pick on the build board)
+
+65 ideas. Details: [docs/ideas/round-29.md](docs/ideas/round-29.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 29: Safety nets and helping each other</b> (31 ideas)</summary>
+
+- [ ] 🔴 **i29-a01** A back-on-your-feet plan after a layoff (M)
+- [ ] 🔴 **i29-a02** Join the credit union before you need it (M)
+- [ ] 🔴 **i29-a03** A neighbor loses their job: help without making it awkward (M)
+- [ ] 🔴 **i29-a04** Sign up for a neighbor's meal train (S)
+- [ ] 🟠 **i29-a05** Run the Saturday sort at the food bank (M)
+- [ ] 🟠 **i29-a06** Glean the field edges after harvest (S)
+- [ ] 🟡 **i29-a07** Donate a deer to the food bank (S)
+- [ ] 🟠 **i29-a08** Split wood for the firewood bank (S)
+- [ ] 🟡 **i29-a09** Weatherize a neighbor's windows with the Grange crew (S)
+- [ ] 🟠 **i29-a10** Even out the winter heat bill with budget billing (M)
+- [ ] 🟡 **i29-a11** Benefit dollars go twice as far at the farmers market (S)
+- [ ] 🟡 **i29-a12** Don't miss the coverage renewal letter (S)
+- [ ] 🟡 **i29-a13** Pay off the school's lunch balances (S)
+- [ ] 🟠 **i29-a14** Build a little free pantry by the sidewalk (M)
+- [ ] 🟠 **i29-a15** Borrow from the Grange tool library (M)
+- [ ] 🟠 **i29-a16** Sit on the Grange's help committee (L)
+- [ ] 🟡 **i29-a17** The giving tree at the grocery store (S)
+- [ ] 🟡 **i29-a18** A coat closet before the first frost (S)
+- [ ] 🟠 **i29-a19** Rent-to-own couch or the church rummage sale (S)
+- [ ] 🟠 **i29-a20** Help a friend out of a payday loan (M)
+- [ ] 🟡 **i29-a21** A free budget sit-down at the credit union (S)
+- [ ] 🟠 **i29-a22** Neighbors pass along job leads when you're out of work (S)
+- [ ] 🟡 **i29-a23** Hide it or tell them: the layoff talk at home (S)
+- [ ] 🟡 **i29-a24** A gas card for the job hunt (S)
+- [ ] 🟡 **i29-a25** Ask the coach about the sports fee (S)
+- [ ] 🟠 **i29-a26** Drive the senior meal route on Tuesdays (M)
+- [ ] 🟡 **i29-a27** Bring food after a funeral (S)
+- [ ] 🟠 **i29-a28** A 'carried and carried others' line on your life story (S)
+- [ ] 🟠 **i29-a29** A 'When money's tight' page in Help (S)
+- [ ] 🟡 **i29-a30** Your first full paycheck after a hard stretch (S)
+- [ ] 🟡 **i29-a31** Share a Thanksgiving table (S)
+
+</details>
+
+<details><summary><b>Ideas 29: Arts, music and making things</b> (34 ideas)</summary>
+
+- [ ] 🔴 **i29-b01** Buy a used instrument at the Junque Sisters (S)
+- [ ] 🔴 **i29-b02** Practice nights: a Music track on the Skills card (M)
+- [ ] 🟡 **i29-b03** Tunes you know: a short list that grows (S)
+- [ ] 🔴 **i29-b04** From the back row to calling tunes: the jam ladder (M)
+- [ ] 🟠 **i29-b05** Your first solo: push through or sit it out (S)
+- [ ] 🟠 **i29-b06** The slow jam for beginners (S)
+- [ ] 🟠 **i29-b07** Three regulars start a band (L)
+- [ ] 🟡 **i29-b08** Name the band (and the town has opinions) (S)
+- [ ] 🟡 **i29-b09** Busk on Main during Celebration Days (S)
+- [ ] 🔴 **i29-b10** Community theater: auditions in January, the show in March (L)
+- [ ] 🟠 **i29-b11** Opening night: you go up on your lines (S)
+- [ ] 🟠 **i29-b12** Build the set: theater crew uses your Handy skill (S)
+- [ ] 🔴 **i29-b13** The Tuesday quilting circle (M)
+- [ ] 🟠 **i29-b14** Finish a quilt: who gets it? (S)
+- [ ] 🟡 **i29-b15** Pick a quilt pattern and colors (S)
+- [ ] 🟠 **i29-b16** Paint the valley on Outside weeks (M)
+- [ ] 🟡 **i29-b17** Every painting gets a line of its own (S)
+- [ ] 🟠 **i29-b18** A month on the coffee shop wall (M)
+- [ ] 🔴 **i29-b19** Woodworking projects with a finish line (M)
+- [ ] 🟠 **i29-b20** Give it away: a gift that lands (S)
+- [ ] 🟠 **i29-b21** A bench for the park, with a small plaque (M)
+- [ ] 🟡 **i29-b22** The unfinished-projects pile (S)
+- [ ] 🟡 **i29-b23** Fix a cracked fiddle for a kid (S)
+- [ ] 🟠 **i29-b24** Your own column in the Tattler (M)
+- [ ] 🟡 **i29-b25** A book of valley stories, a hundred copies (L)
+- [ ] 🟠 **i29-b26** Photograph the valley, described in words (M)
+- [ ] 🟠 **i29-b27** The town calendar contest (S)
+- [ ] 🔴 **i29-b28** A booth at the December craft bazaar (M)
+- [ ] 🟠 **i29-b29** Teach a beginner class at the woodshop (M)
+- [ ] 🟠 **i29-b30** Your kid takes piano lessons (M)
+- [ ] 🟡 **i29-b31** Your skills meet at the spring show (S)
+- [ ] 🟠 **i29-b32** Making it through a hard week (S)
+- [ ] 🟠 **i29-b33** Things you made, and where they are now (M)
+- [ ] 🔴 **i29-b34** Creative payoffs only from finished work: a sim check (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
