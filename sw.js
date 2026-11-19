@@ -3,7 +3,7 @@
 const CACHE_PREFIX = 'theburg-';          // the release kit makes this 'theburgbeta-' in the beta
 const VERSION = CACHE_PREFIX + '0.1.0';
 const CACHE = VERSION;
-const ASSETS = ['./', './index.html', './js/state.js', './js/ui.js', './js/turn.js', './js/events.js', './js/features.js', './js/outabout.js', './js/maps.js', './js/help.js', './js/boot.js', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
+const ASSETS = ['./', './index.html', './js/state.js', './js/ui.js', './js/turn.js', './js/events.js', './js/features.js', './js/outabout.js', './js/weather.js', './js/maps.js', './js/help.js', './js/boot.js', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));

@@ -20,7 +20,7 @@ function rollEvent(month, trip){
 }
 function pickEvent(month, cat = 'town'){
   const wt = e => typeof e.w === 'function' ? e.w() : (e.w || 1);
-  const ok = EVENTS.filter(e => evCat(e) === cat && !(S.evCd[e.title] > S.turn) && !(e.once && S.evDone[e.title]) && (!e.when || e.when(month)) && wt(e) > 0);
+  const ok = EVENTS.filter(e => evCat(e) === cat && !(S.evCd[e.title] > S.turn) && !(e.once && S.evDone[e.title]) && (!e.when || e.when(month)) && !(e.big && wxCapped()) && wt(e) > 0);   // i75-a23: at most 2 big weather hits a year
   const total = ok.reduce((a,e) => a + wt(e), 0);
   let r = Math.random() * total;
   for (const e of ok) { r -= wt(e); if (r <= 0) return e; }
@@ -38,8 +38,9 @@ function showEvent(ev, then = null){
     const mBefore = S.money;
     const result = choices[+b.dataset.i].go() || '';
     const dm = S.money - mBefore;
+    wxTrack(ev, dm);                          // i75-a30: the weather bill
     if (result) S.log.unshift({d: S.evLabel || dateLabel(), m: `${ev.title}: ${result}`});
-    if (S.run) S.run.happened.push({ ic: ev.ic, title: ev.title, money: dm });
+    if (S.run) S.run.happened.push({ ic: ev.ic, title: ev.title, money: dm, wx: !!ev.wx });
     if (S.evPins && S.evPins[0] && S.evPins[0].t === ev.title) S.evPins[0].r = result;
     save();
     const st = ['happy', 'health', 'community'].reduce((a, k) => a + S[k] - before[k], 0);
@@ -127,7 +128,7 @@ const EVENTS = [
       {label:`Fix it yourself (-${fmtc(80)} in parts)`, if:() => skillLv('mechanic') >= 2, go:() => { adj({money:-Math.round(cost(80)), happy:2}); practice('mechanic', 1); return 'A new starter and a skinned knuckle later, it runs.'; }},
       {label:'Call a buddy who knows engines', if:() => S.community >= 40, go:() => { adj({money:-cost(120), community:2}); return 'Your buddy fixed it for parts and a six-pack.'; }}
     ]},
-  { ic:'🌊', title:'The Touchet is running high', yr:1, w:3, when:m => inM(m,1,2,3),
+  { ic:'🌊', title:'The Touchet is running high', yr:1, w:() => wxYear().wet ? 6 : wxDry() ? 0.5 : 2, when:m => inM(m,1,2,3),   // i75-a01: a wet spring brings it, a dry one rarely
     text:'Snowmelt and rain have the river climbing. Neighbors are filling sandbags.',
     choices:() => [
       {label:'Help sandbag', go:() => { adj({community:6, health:-2, happy:2}); S.highWater = null; return 'Muddy, cold and proud. The town held the line.'; }},

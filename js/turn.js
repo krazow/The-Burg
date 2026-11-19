@@ -268,6 +268,7 @@ function weekTick(auto){
   if (f.hustle && !truckTime) { gig = currentGig(); lines.push([`Side hustle: ${gig.name}`, hustlePay(gig, Math.random()), `Gigs follow the seasons. ${S.hustleWeeks ? `${S.hustleWeeks} weeks of experience add ${Math.round((hustleXp() - 1) * 100)}% to your pay.` : 'Pay grows as you get good at it.'}`]); S.hustleWeeks = (S.hustleWeeks || 0) + 1; S.hustleLast = S.turn; }
   else if (S.hustleWeeks > 0 && S.turn - (S.hustleLast ?? S.turn) > HUSTLE_FADE_AFTER) S.hustleWeeks = Math.max(0, S.hustleWeeks - HUSTLE_FADE);   // B9: rusty after 6 months off
   const home = HOMES[S.home];
+  wxWeek(lines, notes);                            // i75: this year's weather, gray weeks and the weather bill
   bizWeek(lines, notes);
   moneyWeek(lines, notes);                         // round 3: property tax, home equity loan, index funds, wine futures
   const trip = tripWeek(lines);                    // this week's trip around the region, if one is planned
@@ -357,6 +358,7 @@ function weekTick(auto){
   { const due = S.noEvents ? null : takeDue(); if (due) ev = due; }   // a harvest choice or a market drop comes first
   if (ev) {
     S.evCd[ev.title] = S.turn + (ev.yr ? 40 : 8);
+    if (ev.big) wxHit();                           // i75-a23: a big weather hit counts toward the year's cap
     { const pl = eventPlace(ev); S.evPins = [{ t: ev.title, ic: ev.ic, m: pl[0], k: pl[1], turn: S.turn + 1, r: '' }, ...(S.evPins || [])].slice(0, 12); }
     if (ev.once) S.evDone[ev.title] = 1;
     S.evLabel = dateLabel();
@@ -365,8 +367,9 @@ function weekTick(auto){
       const ch = ev.choices().filter(c => !c.if || c.if());
       if (ch.length === 1) {
         const m0 = S.money, r = ch[0].go();
+        wxTrack(ev, S.money - m0);
         if (r) log(`${ev.title}: ${r}`);
-        if (S.run) S.run.happened.push({ ic: ev.ic, title: ev.title, money: S.money - m0, auto: 1 });
+        if (S.run) S.run.happened.push({ ic: ev.ic, title: ev.title, money: S.money - m0, auto: 1, wx: !!ev.wx });
         if (S.evPins && S.evPins[0] && S.evPins[0].t === ev.title) S.evPins[0].r = r || '';
         ev = null;
       }
@@ -391,7 +394,7 @@ function weekTick(auto){
   const newYear = new Date(S.date).getFullYear();
   if (newYear > oldYear) {
     const snap = { nw: netWorth(), happy: S.happy, health: S.health, community: S.community };
-    if (S.yearStart && LENGTHS[S.len].turns > 26) review = { year: oldYear, start: S.yearStart, end: snap, events: S.yearEvents || 0,
+    if (S.yearStart && LENGTHS[S.len].turns > 26) review = { year: oldYear, start: S.yearStart, end: snap, events: S.yearEvents || 0, wx: wxYearEnd(oldYear),
       milestones: S.log.filter(e => e.d.endsWith(String(oldYear)) && !e.m.includes(': ')).map(e => e.m).reverse().slice(0, 8) };
     if (S.yearStart) S.years = [...(S.years || []), { year: oldYear, age: age(), start: S.yearStart, end: snap, m: yearMilestones(oldYear) }].slice(-120);   // i2-a29: for the life story
     S.yearStart = snap; S.yearEvents = 0;

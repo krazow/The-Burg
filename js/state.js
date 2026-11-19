@@ -236,7 +236,7 @@ function blankLife(name, len, slot = 0){
     // a pending interview, your reference, notice, sign-on bonus, union contract, strike, furlough, clearance, fiber, bus
     rung:0, tenure:0, program:null, major:null, certs:{}, certStudy:null, recall:null, interview:null, ref:null, notice:null, bonus:null,
     contractAt:-1, strike:null, furlough:null, clearAt:-1, fiber:false, bus:false, appWeeks:0, seasonGrace:null,
-    ...EVENT_STATE(), ...MONEY_STATE() };
+    ...EVENT_STATE(), ...MONEY_STATE(), ...WX_STATE() };
 }
 // H1: put back anything a damaged save is missing or has a bad value for, so rendering never throws
 function repairLife(s){
@@ -280,6 +280,7 @@ function migrate(s){
   const r = { goalAt:{}, skills:{}, biz:null, weekly:null, rng:null, rngEv:null, carpoolJob:s.jobId ?? null, hustleLast:s.turn || 0, highWater:null, recentF:[], gen:1, badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false, bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0, carpool:false, hustleWeeks:0, scoreQ:null, trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, dentist:s.turn || 0, stopLast:{}, out:null, tabsYear:new Date(s.date || Date.now()).getFullYear() };
   for (const k in r) if (s[k] === undefined) s[k] = r[k];
   for (const [k, v] of Object.entries(EVENT_STATE())) if (s[k] === undefined) s[k] = v;
+  for (const [k, v] of Object.entries(WX_STATE())) if (s[k] === undefined) s[k] = v;   // i75: weather (rolled on the next tick)
   // i3-a24/a25: lives from before work history count about three of every four adult years as worked, at their current job's pay
   if (s.earnYears === undefined) { const yrs = Math.max(0, (s.ageMonths || 216) / 12 - 18) * 0.75, jb = s.jobId ? JOBS.find(j => j.id === s.jobId) : null;
     s.earnYears = yrs; s.earnSum = yrs * (jb ? jb.pay : 3000); }
