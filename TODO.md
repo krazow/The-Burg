@@ -5342,6 +5342,80 @@ old ones.
 
 </details>
 
+## Ideas round 65 (pick on the build board)
+
+60 ideas. Details: [docs/ideas/round-65.md](docs/ideas/round-65.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 65: Bundles part 9 and v1.3</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i65-a01** Bundle: Debt counts in the Life Score (M)
+- [ ] 🔴 **i65-a02** Bundle: Debt in the score, shown and tested (M)
+- [ ] 🟠 **i65-a03** Bundle: Ways out of debt and the comeback story (M)
+- [ ] 🟠 **i65-a04** Bundle: Event choices with honest odds (M)
+- [ ] 🔴 **i65-a05** Bundle: Restore forgives messy codes (M)
+- [ ] 🔴 **i65-a06** Bundle: Restore with no twins and no surprises (M)
+- [ ] 🟠 **i65-a07** Bundle: Back up at the right moments (S)
+- [ ] 🟡 **i65-a08** Bundle: Backups that explain themselves (S)
+- [ ] 🔴 **i65-a09** Bundle: Lives that survive a wiped browser (M)
+- [ ] 🟠 **i65-a10** Bundle: Moving phones by QR (L)
+- [ ] 🟡 **i65-a11** Bundle: Small polish from the 0.2.0 playtest (S)
+- [ ] 🟠 **i65-a12** Bundle: Balance pass part 3: cheap visits and free stuff (M)
+- [ ] 🔴 **i65-a13** Bundle: Spanish groundwork: ids, t() and string files (M)
+- [ ] 🔴 **i65-a14** Bundle: Spanish that reads right (M)
+- [ ] 🟠 **i65-a15** Bundle: Ship Spanish in three waves (M)
+- [ ] 🟠 **i65-a16** Bundle: Spanish proven: Journal, screens and same score (M)
+- [ ] 🟡 **i65-a17** Bundle: Grew up bilingual (M)
+- [ ] 🔴 **i65-a18** Bundle: Running gags that pace themselves (M)
+- [ ] 🟠 **i65-a19** Bundle: Funny lines for your week and your year (M)
+- [ ] 🟠 **i65-a20** Bundle: The Tattler gets funny (S)
+- [ ] 🟡 **i65-a21** Bundle: Town characters and rare odd weeks (M)
+- [ ] 🔴 **i65-a22** Bundle: The Touchet's year and a River card (L)
+- [ ] 🟠 **i65-a23** Bundle: Summer on the Touchet (M)
+- [ ] 🟡 **i65-a24** Bundle: Water rights, levees and the winter river (M)
+- [ ] 🟡 **i65-a25** Bundle: River wildlife and caring for it (M)
+- [ ] 🟡 **i65-a26** Bundle: Quiet moments by the river and in town (S)
+- [ ] 🟡 **i65-a27** Bundle: Jobs that come and go, part 2 (S)
+- [ ] 🟡 **i65-a28** Bundle: Childhood odds and ends (S)
+- [ ] 🟡 **i65-a29** Bundle: Goals part 2: small steps and buddies (S)
+- [ ] 🔴 **i65-a30** Release plan: v1.3 — Fair score, safe moves, the valley comes alive (L)
+
+</details>
+
+<details><summary><b>Ideas 65: Harvest season</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i65-b01** Harvest is on: a town-wide mode for the weeks the combines run (M)
+- [ ] 🟠 **i65-b02** How much of the valley is cut: a percent on the town map (S)
+- [ ] 🟠 **i65-b03** The co-op chalkboard: this week's wheat price (M)
+- [ ] 🟠 **i65-b04** The truck line at the elevator backs onto Main (S)
+- [ ] 🔴 **i65-b05** Sign on with a custom harvest crew heading north (L)
+- [ ] 🟡 **i65-b06** The custom crew camps at the fairgrounds (S)
+- [ ] 🔴 **i65-b07** Every job feels harvest (M)
+- [ ] 🟠 **i65-b08** Parts run to Walla Walla at midnight (S)
+- [ ] 🔴 **i65-b09** Red flag days stop the combines at noon (S)
+- [ ] 🟠 **i65-b10** Keep the water trailer hitched: the farm fire rule (S)
+- [ ] 🟡 **i65-b11** Rain delay: the combines sit three days (S)
+- [ ] 🟠 **i65-b12** The elevator is full: wheat goes on the ground pile (S)
+- [ ] 🔴 **i65-b13** The auger and the loose sleeve (S)
+- [ ] 🟠 **i65-b14** Harvest tired: long days pile up (M)
+- [ ] 🟠 **i65-b15** Your teen drives truck for harvest (M)
+- [ ] 🟡 **i65-b16** School starts before harvest ends (S)
+- [ ] 🟠 **i65-b17** Park the food truck at the elevator line (S)
+- [ ] 🟡 **i65-b18** Rent the spare room to a harvest hand (S)
+- [ ] 🟡 **i65-b19** Bushels-per-acre talk at the café (S)
+- [ ] 🟡 **i65-b20** 105 in the cab: the swather's AC quits (S)
+- [ ] 🟠 **i65-b21** Harvest vs. the county fair (S)
+- [ ] 🟠 **i65-b22** Wash the combine and roll it into the shed (S)
+- [ ] 🟡 **i65-b23** The quiet week after harvest (S)
+- [ ] 🔴 **i65-b24** Harvest across the decades (L)
+- [ ] 🟡 **i65-b25** Grandpa's harvest story at the café (S)
+- [ ] 🟠 **i65-b26** Harvest planner: pick your days for six weeks (L)
+- [ ] 🟡 **i65-b27** Sundays during harvest (S)
+- [ ] 🟠 **i65-b28** The end-of-harvest party at the shop (M)
+- [ ] 🔴 **i65-b29** Harvest pay can't beat careful play: a sim guard (S)
+- [ ] 🟡 **i65-b30** Harvest help on the town map (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
