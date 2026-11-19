@@ -1243,6 +1243,82 @@ old ones.
 
 </details>
 
+## Ideas round 11 (pick on the build board)
+
+62 ideas. Details: [docs/ideas/round-11.md](docs/ideas/round-11.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 11: Home, food and daily life</b> (29 ideas)</summary>
+
+- [ ] 🔴 **i11-a01** Cook in or eat out: a weekly food habit (M)
+- [ ] 🔴 **i11-a02** Your potluck dish (S)
+- [ ] 🔴 **i11-a03** A good bed and the sleep you get (M)
+- [ ] 🔴 **i11-a04** One hobby at home that grows (L)
+- [ ] 🟠 **i11-a05** Morning coffee: the pot, the counter or the gas station (S)
+- [ ] 🟠 **i11-a06** Evening walks around the block (S)
+- [ ] 🟡 **i11-a07** A Sunday drive in the wheat (S)
+- [ ] 🟠 **i11-a08** Furnish your rooms (M)
+- [ ] 🟠 **i11-a09** Something breaks: fix it, call it in, or tell the landlord (M)
+- [ ] 🟠 **i11-a10** Weekend projects around the house (M)
+- [ ] 🟠 **i11-a11** Settling in after a move (S)
+- [ ] 🟠 **i11-a12** The Burg Basket receipt (S)
+- [ ] 🟠 **i11-a13** Shop local all month: the Burg Basket punch card (S)
+- [ ] 🟡 **i11-a14** Run a tab at the Burg Basket (M)
+- [ ] 🟠 **i11-a15** Food follows the seasons (M)
+- [ ] 🟡 **i11-a16** Canning day with the neighbor: jars for gifts (S)
+- [ ] 🟠 **i11-a17** Host a dinner for friends (S)
+- [ ] 🟠 **i11-a18** Be a regular at the Main Street diner (S)
+- [ ] 🟠 **i11-a19** Subscriptions that creep (S)
+- [ ] 🟠 **i11-a20** Food bank Thursday (S)
+- [ ] 🟡 **i11-a21** Bring the fiddle to the bluegrass jam (S)
+- [ ] 🟡 **i11-a22** Book club at the library (S)
+- [ ] 🟡 **i11-a23** A quilt for the school auction (S)
+- [ ] 🟡 **i11-a24** A recipe box that fills up (S)
+- [ ] 🟠 **i11-a25** Home has rooms you tap (L)
+- [ ] 🟡 **i11-a26** Weekdays and a weekend pick (L)
+- [ ] 🟡 **i11-a27** Late-night gaming and the 2 a.m. problem (S)
+- [ ] 🟡 **i11-a28** A slow cooker for busy weeks (S)
+- [ ] 🟡 **i11-a29** A spare key with the neighbor (S)
+
+</details>
+
+<details><summary><b>Ideas 11: Variants of the best</b> (33 ideas)</summary>
+
+- [ ] 🔴 **i11-b01** [i1-a01] Light version: a three-word job standing (S)
+- [ ] 🟠 **i11-b02** [i1-a01] Full version: standing that remembers why (M)
+- [ ] 🟡 **i11-b03** [i1-a01] Two-track version: standing with the boss and the crew (M)
+- [ ] 🔴 **i11-b04** [i2-a01] Light version: arrows only on event buttons (S)
+- [ ] 🟠 **i11-b05** [i2-a01] Full version: hints that unlock with skill and standing (M)
+- [ ] 🟡 **i11-b06** [i2-a01] Alternate: a 'Think it over' button instead of hints (S)
+- [ ] 🔴 **i11-b07** [i2-a02] Light version: money-only week preview (S)
+- [ ] 🟠 **i11-b08** [i2-a02] Full version: compare two focuses side by side (M)
+- [ ] 🟡 **i11-b09** [i2-a02] Alternate: a 4-week plan preview instead of one week (M)
+- [ ] 🔴 **i11-b10** [i1-b01] Light version: one neighbor next door (S)
+- [ ] 🟠 **i11-b11** [i1-b01] Full version: neighbors who move and change (L)
+- [ ] 🟡 **i11-b12** [i1-b01] Alternate: the street as a card you tend (M)
+- [ ] 🔴 **i11-b13** [i1-a02] Light version: one perk at each threshold (S)
+- [ ] 🟠 **i11-b14** [i1-a02] Full version: perks you pick (M)
+- [ ] 🟡 **i11-b15** [i1-a02] Alternate: community as a spendable 'goodwill' meter (M)
+- [ ] 🔴 **i11-b16** [i2-b03] Light version: last 10 lives as one-line rows (S)
+- [ ] 🟠 **i11-b17** [i2-b03] Full version: a shelf of books you open (M)
+- [ ] 🟡 **i11-b18** [i2-b03] Alternate: a family tree instead of a shelf (M)
+- [ ] 🔴 **i11-b19** [i3-a01] Light version: titles only, same pay steps (S)
+- [ ] 🟠 **i11-b20** [i3-a01] Full version: rungs with gates you can see (M)
+- [ ] 🟡 **i11-b21** [i3-a01] Alternate: side moves instead of a ladder (M)
+- [ ] 🔴 **i11-b22** [i8-a06] Light version: a few jobs closed each month (S)
+- [ ] 🟠 **i11-b23** [i8-a06] Full version: hiring seasons by job type (M)
+- [ ] 🟡 **i11-b24** [i8-a06] Alternate: apply and wait for a call back (M)
+- [ ] 🔴 **i11-b25** [i5-b01] Light version: weather line with one rule (S)
+- [ ] 🟠 **i11-b26** [i5-b01] Full version: weather that hits jobs and events (M)
+- [ ] 🟡 **i11-b27** [i5-b01] Alternate: a season mood instead of weekly weather (S)
+- [ ] 🔴 **i11-b28** [i10-a01] Light version: one want at a time (S)
+- [ ] 🟠 **i11-b29** [i10-a01] Full version: wants that come from your life (M)
+- [ ] 🔴 **i11-b30** [i1-b05] Light version: just a name and two stages (S)
+- [ ] 🟠 **i11-b31** [i1-b05] Full version: a relationship meter with ups and downs (M)
+- [ ] 🟠 **i11-b32** [i1-a05] Light version: a cushion line, no bank (S)
+- [ ] 🟠 **i11-b33** [i1-a05] Full version: savings goals with a jar on Home (M)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
