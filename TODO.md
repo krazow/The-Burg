@@ -4901,6 +4901,77 @@ old ones.
 
 </details>
 
+## Ideas round 59 (pick on the build board)
+
+57 ideas. Details: [docs/ideas/round-59.md](docs/ideas/round-59.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 59: Feels like a real app</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i59-a01** Back steps through tabs to Home, then asks before leaving (S)
+- [ ] 🔴 **i59-a02** Back closes Help pages and the tutorial one step at a time (S)
+- [ ] 🔴 **i59-a03** Back during an event never picks an answer for you (S)
+- [ ] 🟠 **i59-a04** Back on the title screen folds More options and the restore box first (S)
+- [ ] 🔴 **i59-a05** A double tap on End Week plays one week, not two (S)
+- [ ] 🔴 **i59-a06** No pull-to-refresh or scroll bounce in the middle of a week (S)
+- [ ] 🟠 **i59-a07** An open sheet holds still; the game behind it doesn't scroll (S)
+- [ ] 🟠 **i59-a08** Sheets fit the real screen height, not the tallest one (S)
+- [ ] 🟠 **i59-a09** Long-press on a button doesn't select text or pop a menu (S)
+- [ ] 🟡 **i59-a10** Every button presses down when touched (S)
+- [ ] 🔴 **i59-a11** The name box: Go starts your life, names get capitals, no squiggles (S)
+- [ ] 🟠 **i59-a12** The keyboard doesn't cover the box you're typing in (M)
+- [ ] 🟠 **i59-a13** A Paste button and a paste-friendly backup code box (S)
+- [ ] 🟠 **i59-a14** Sideways phones keep text clear of the notch (S)
+- [ ] 🟠 **i59-a15** The Android app's status bar and gesture bar match the game (M)
+- [ ] 🟡 **i59-a16** Tablets, Chromebooks and the Windows window can turn sideways (S)
+- [ ] 🟡 **i59-a17** Turning the phone keeps your spot (S)
+- [ ] 🟠 **i59-a18** A real round-safe app icon and a one-color themed icon (S)
+- [ ] 🔴 **i59-a19** Dark-mode phones don't repaint the game by themselves (S)
+- [ ] 🔴 **i59-a20** Backups and share cards use the phone's share sheet in the app (M)
+- [ ] 🟡 **i59-a21** Open a backup file straight from Files or a message (M)
+- [ ] 🔴 **i59-a22** Leaving the app saves what you changed this week (S)
+- [ ] 🟠 **i59-a23** Check for a new version when you come back to the app (S)
+- [ ] 🟠 **i59-a24** A nearly full phone trims old Journal lines before losing a week (M)
+- [ ] 🔴 **i59-a25** The Windows app opens in its own window, not a browser tab (M)
+- [ ] 🟠 **i59-a26** The Windows window opens phone-shaped and remembers its size (S)
+- [ ] 🟠 **i59-a27** A second launch on Windows brings up the first window (M)
+- [ ] 🟡 **i59-a28** The window title and app switcher say where you are (S)
+- [ ] 🟡 **i59-a29** The status bar dims with a sheet and goes cream in Help (S)
+- [ ] 🟡 **i59-a30** Long-press a saved life for Continue, Copy, Back up and Delete (S)
+- [ ] 🟠 **i59-a31** A 'feels like an app' test on a phone-sized page (M)
+- [ ] 🟡 **i59-a32** Haptic-free fallback: a tiny screen pulse on big moments (S)
+
+</details>
+
+<details><summary><b>Ideas 59: Balance of each weekly choice</b> (25 ideas)</summary>
+
+- [ ] 🔴 **i59-b01** Overtime pays time and a half, and wears a little less (S)
+- [ ] 🔴 **i59-b02** Get outside tops out like Rest does (S)
+- [ ] 🔴 **i59-b03** Bundle: the weekly-choice balance pass (M)
+- [ ] 🔴 **i59-b04** Balance sim: what each weekly choice is worth (M)
+- [ ] 🔴 **i59-b05** Balance sim: fail when a choice loses to Rest everywhere (S)
+- [ ] 🟠 **i59-b06** The second Out and about visit of a week does half (S)
+- [ ] 🟠 **i59-b07** Out and about happiness and community top out near full (S)
+- [ ] 🟠 **i59-b08** Classes: trade certificate 24 weeks, associate 32, bachelor's 56 (S)
+- [ ] 🟡 **i59-b09** Side-hustle cash pays the same 15% tax as a paycheck (S)
+- [ ] 🟠 **i59-b10** A trip's doctor checkup beats the town clinic again (S)
+- [ ] 🟡 **i59-b11** The mall, the food court and off-season car washes get a reason (S)
+- [ ] 🟡 **i59-b12** The paper and the farm counter stop being free community (S)
+- [ ] 🟡 **i59-b13** Two-year net worth target: $90,000 to $120,000 (S)
+- [ ] 🟡 **i59-b14** The coffee-shop run-in needs a few weeks away (S)
+- [ ] 🟡 **i59-b15** A trip away takes half your week, not a quarter (S)
+- [ ] 🟡 **i59-b16** The side-hustle ad lasts 4 weeks, not 8 (S)
+- [ ] 🟠 **i59-b17** Balance sim: flag any bot whose median hits 100 (S)
+- [ ] 🟡 **i59-b18** Balance sim: shared dice so swaps compare directly (S)
+- [ ] 🟡 **i59-b19** Balance sim: a points-per-dollar list for stops and visits (S)
+- [ ] 🟡 **i59-b20** Help: what a week of each choice does (S)
+- [ ] 🟡 **i59-b21** Get outside does less in deep winter (S)
+- [ ] 🟡 **i59-b22** Side-hustle experience counts per kind of gig (S)
+- [ ] 🟠 **i59-b23** Balance sim: the planner's lead isn't just coffee (S)
+- [ ] 🟡 **i59-b24** Overtime weeks count toward your next raise (S)
+- [ ] 🟡 **i59-b25** One Out and about visit a week: the strong version (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
