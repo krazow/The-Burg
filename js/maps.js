@@ -179,7 +179,7 @@ function townDetail(k){
   let btn = '';
   if (f) {
     const dis = (f.needsJob && (!job() || S.retired)) || (f.study && !canStudy());
-    const extra = f.study && S.edu < 3 && !S.certStudy ? ` · ${wk(cost(TUITION[S.edu]))}` : f.cost ? ` · ${wk(cost(f.cost))}` : '';
+    const extra = f.study && S.edu < 3 && !S.certStudy ? ` · ${wk(tuitionNow())}` : f.cost ? ` · ${wk(cost(f.cost))}` : '';
     btn = S.focus === p.focus ? `<span class="tag cur">This week's focus: ${f.name}</span>`
       : `<button class="sm" onclick="MAPFOCUS('${p.focus}')" ${dis?'disabled':''}>${f.ic} Spend this week here${extra}</button>`;
   }

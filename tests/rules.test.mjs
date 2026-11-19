@@ -25,13 +25,14 @@ await t.check('a weekly paycheck is the monthly pay × 12/52, taxed 13% on a sma
   const r = await ev(() => { fresh('two', { jobId: 'farmhand', focus: 'rest' }); return week().lines; });
   assert(near(r['Paycheck'], 3100 * W), `paycheck ${r['Paycheck']}`);
   assert(near(r['Taxes'], -3100 * W * 0.13), `taxes ${r['Taxes']}`);
-  assert(near(r['Rent'], -650 * W) && near(r['Food & utilities'], -700 * W) && near(r['Insurance & phone'], -160 * W), 'bills are off');
+  assert(near(r['Rent'], -650 * W) && near(r['Food & utilities'], -700 * W) && near(r['Insurance & phone'], -220 * W), 'bills are off');
   assert(near(r['Health care'], -130 * W), `health care at work before 50 ${r['Health care']}`);
 });
 
-await t.check('Work extra hours pays 20% more', async () => {
-  const r = await ev(() => { fresh('two', { jobId: 'farmhand', focus: 'work' }); return week().lines; });
-  assert(near(r['Paycheck + overtime'], 3100 * W * 1.2), `overtime paycheck ${r['Paycheck + overtime']}`);
+await t.check('i75-b27: Work extra hours pays time and a half (+35%) and wears on you faster', async () => {
+  const r = await ev(() => { fresh('two', { jobId: 'farmhand', focus: 'work' }); return { l: week().lines, fx: FOCUS.work.fx }; });
+  assert(near(r.l['Paycheck + overtime'], 3100 * W * 1.35), `overtime paycheck ${r.l['Paycheck + overtime']}`);
+  assert(r.fx.happy === -2.5 && r.fx.health === -2, JSON.stringify(r.fx));
 });
 
 await t.check('gas covers the commute both ways on 21 workdays plus errands, at your vehicle\'s mileage', async () => {
@@ -174,13 +175,45 @@ await t.check('unemployment benefits last 6 months after a layoff, then stop', a
 });
 
 await t.check('16 weeks of classes earn a trade certificate, and tuition is charged weekly', async () => {
-  const r = await ev(() => { fresh('two', { focus: 'study' }); const tu = week().lines['Tuition']; weeks(14); const mid = S.edu; const res = week(); return { tu, mid, edu: S.edu, note: res.notes.join(' ') }; });
-  assert(near(r.tu, -300 * W) && r.mid === 0 && r.edu === 1 && r.note.includes('Trade certificate'), JSON.stringify(r));
+  const r = await ev(() => { fresh('two', { focus: 'study', money: 50000 }); JOBS.push({ id: 'tst', title: 'Test', city: 'waitsburg', pay: 7000, edu: 0 }); S.jobId = 'tst';
+    const tu = week().lines['Tuition']; S.jobId = null; JOBS.pop(); weeks(14); const mid = S.edu; const res = week(); return { tu, mid, edu: S.edu, note: res.notes.join(' ') }; });
+  assert(near(r.tu, -520 * W) && r.mid === 0 && r.edu === 1 && r.note.includes('Trade certificate'), JSON.stringify(r));
 });
 
-await t.check('kids cost about $650 a month each until they turn 18', async () => {
-  const r = await ev(() => { fresh('life'); S.kids = [S.ageMonths, S.ageMonths - 17.9 * 12, S.ageMonths - 19 * 12]; const l = week().lines; return l; });
-  assert(near(r['Kids (2)'], -650 * 2 * W), JSON.stringify(r));
+await t.check('i75-b29: tuition at Washington rates; the College Grant pays all of it under $4,000 a month in pay, none from $6,500', async () => {
+  const r = await ev(() => {
+    const at = (pay, edu = 0) => { fresh('two', { focus: 'study', edu, money: 50000 }); JOBS.push({ id: 'tst', title: 'Test', city: 'waitsburg', pay, edu: 0 }); S.jobId = 'tst';
+      const v = week().lines['Tuition'] || 0; S.jobId = null; JOBS.pop(); return v; };
+    fresh('two', { focus: 'study' }); const words = tuitionWords(), none = week().lines['Tuition'];
+    return { low: at(3900), mid: at(5250), high: at(6600), uni: at(7000, 2), none, words, t: TUITION };
+  });
+  assert(r.t.join() === '520,520,1100', `tuition ${r.t}`);
+  assert(r.low === 0 && r.none === undefined && /free with the Washington College Grant/.test(r.words), JSON.stringify(r));
+  assert(near(r.mid, -520 * 0.5 * W) && near(r.high, -520 * W) && near(r.uni, -1100 * W), JSON.stringify(r));
+});
+
+await t.check('i75-b23: tuition while below $0 goes on the federal student loan (about 6.5%), not the 18% card', async () => {
+  const r = await ev(() => {
+    const go = money => { fresh('two', { focus: 'study', money }); JOBS.push({ id: 'tst', title: 'Test', city: 'waitsburg', pay: 7000, edu: 0 }); S.jobId = 'tst'; };
+    go(-5000); const per = tuitionNow() * W * sloanPerDollar(); const res = week();
+    const first = { left: S.sloanLeft, pay: S.sloanPay, notes: res.notes.join(' '), tu: res.lines['Tuition'] };
+    week(); const second = { left: S.sloanLeft, pay: S.sloanPay }; S.jobId = null; JOBS.pop();
+    go(50000); week(); const cash = { left: S.sloanLeft }; S.jobId = null; JOBS.pop();
+    return { first, second, per, cash, rate: sloanPerDollar() };
+  });
+  assert(near(r.rate, 0.011355, 0.001), `payment per dollar ${r.rate}`);
+  assert(r.first.left === 120 && near(r.first.pay, r.per) && r.first.tu === undefined && /student loan/.test(r.first.notes), JSON.stringify(r));
+  assert(r.second.left >= 119 && r.second.pay > r.first.pay && r.cash.left === 0, JSON.stringify(r));
+});
+
+await t.check('i75-b28: kids cost about $950 a month each until 18; Working Connections caps childcare at $115 on a low income', async () => {
+  const r = await ev(() => { fresh('life'); S.kids = [S.ageMonths, S.ageMonths - 17.9 * 12, S.ageMonths - 19 * 12]; const low = week().lines;
+    fresh('life', { jobId: 'hanford' }); S.kids = [S.ageMonths]; const high = week().lines;
+    fresh('life', { jobId: 'farmhand', partner: true }); S.kids = [S.ageMonths]; const two = { help: childcareHelp(), pay: householdPay() };
+    return { low: low['Kids (2)'], high: high['Kid'], two }; });
+  assert(near(r.low, -(550 + 115) * 2 * W), `low income ${r.low}`);
+  assert(near(r.high, -(950 + 200) * W), `Hanford commute ${r.high}`);
+  assert(r.two.help && r.two.pay === 3100 + 1400, JSON.stringify(r.two));
 });
 
 await t.check('net worth is cash + home equity + vehicle + 401(k) after tax − what\'s left on the truck loan', async () => {
@@ -443,7 +476,7 @@ await t.check('Relaxed softens drains and never ends in debt; Hard costs more an
   });
   assert(r.relaxed > r.normal + 1, `relaxed ${r.relaxed} vs normal ${r.normal}`);
   assert(!r.rEnd && r.rMoney >= -40000, `relaxed debt ${r.rEnd} ${r.rMoney}`);
-  assert(/debt/.test(r.hEnd || '') && near(r.hCost, -(650 + 700 + 160) * 0.1 * W) && near(r.lay, r.layN * 1.6), JSON.stringify(r));
+  assert(/debt/.test(r.hEnd || '') && near(r.hCost, -(650 + 700 + 220) * 0.1 * W) && near(r.lay, r.layN * 1.6), JSON.stringify(r));
 });
 
 await t.check('best scores are kept per mode', async () => {
@@ -513,14 +546,108 @@ await t.check('skills grow with practice and pay off', async () => {
 
 await t.check('a business costs money up front, earns, counts in net worth, and sells for 60%', async () => {
   const r = await ev(() => { fresh('two', { money: 10000, skills: { handy: 48 } }); render(); const nw0 = netWorth(); startBiz('shop'); const nw1 = netWorth();
-    let earned = 0; for (let i = 0; i < 20; i++) { const l = week().lines; earned += l['🪚 Woodworking shop'] || 0; }
+    let earned = 0, work = 0; for (let i = 0; i < 20; i++) { S.focus = 'rest'; const l = week().lines; earned += l['🪚 Woodworking shop'] || 0; }
+    S.focus = 'community'; for (let i = 0; i < 4; i++) work += week().lines['🪚 Woodworking shop'] || 0;
     const m = S.money; sellBiz(); const got = S.money - m;
     fresh('two', { money: 10000, date: new Date(2027, 6, 5).getTime() }); render(); startBiz('wheat'); let check = 0, n = 0;
     for (let i = 0; i < 6; i++) { const l = week().lines; if (l['🌾 Harvest check']) { check = l['🌾 Harvest check']; n++; } }
-    return { lost: nw0 - nw1, earned, got, biz: S.biz && S.biz.type, check, n }; });
-  assert(near(r.lost, 2500 * 0.4, 0.02), `starting should only lose 40% of the cost in net worth: ${r.lost}`);
-  assert(r.earned > 20 * 180 * W * 1.5 && near(r.got, 1500, 0.03), `shop earned ${r.earned}, sold for ${r.got}`);
+    return { lost: nw0 - nw1, earned, work, got, biz: S.biz && S.biz.type, check, n }; });
+  assert(near(r.lost, 6000 * 0.4, 0.02), `starting should only lose 40% of the cost in net worth: ${r.lost}`);
+  assert(r.earned > 20 * 90 * W * 1.5 && near(r.got, 3600, 0.03) && r.work === 0, `shop earned ${r.earned} (and ${r.work} in other weeks), sold for ${r.got}`);
   assert(r.n === 1 && r.check > 1500, `wheat lease paid ${r.n} times, ${r.check}`);
+});
+
+await t.check('i75-b15–b17: the shop costs $6,000, cattle $16,000 with a vet line, and the food truck pays a $1,000 permit each April', async () => {
+  const r = await ev(() => {
+    fresh('two', { money: 50000, date: new Date(2027, 3, 5).getTime(), focus: 'hustle' }); render(); startBiz('truck'); const a = week().lines; const b = week().lines;
+    return { shop: BIZ.shop.cost, cattle: BIZ.cattle.cost, calf: CALF_PRICE, pasture: PASTURE, permit: a['🚚 County health permit'], again: b['🚚 County health permit'], truck: a['🚚 Food truck'] }; });
+  assert(r.shop === 6000 && r.cattle === 16000 && r.calf === 1450 && r.pasture === 220, JSON.stringify(r));
+  assert(near(r.permit, -1000) && r.again === undefined && r.truck > 1700 * 0.7 * W, JSON.stringify(r));
+});
+
+// i75-b18: a no-browser-clicks ledger of every business: 5 years at skill 0 and skill 3, the dice set to their average.
+// The business's own focus every other week (Work extra hours in between); the food truck counts only what it earns
+// over the side hustle those weeks would have paid. Time spent is ignored, so the 30% ceiling is high on purpose.
+await t.check('i75-b18: every business returns between 0% and 30% a year (index funds: about 6%)', async () => {
+  const r = await ev(() => {
+    const rnd = Math.random, wy = wheatYield; let ey = 0; for (let i = 0; i < 20000; i++) ey += wy(); ey /= 20000;
+    const own = { shop: 'rest', truck: 'hustle', cattle: 'outdoors', wheat: 'work' }, out = {};
+    try {
+      wheatYield = () => ey;
+      for (const type of Object.keys(BIZ)) for (const lvl of [0, 3]) {
+        fresh('five', { money: 1e6, jobId: 'farmhand', date: new Date(2027, 0, 4).getTime() }); Math.random = () => 0.5; startBiz(type);   // newGame resets the dice
+        const y0 = new Date(S.date).getFullYear(), yrs = [0, 0, 0, 0, 0];
+        for (let w = 0; w < 260 && S.biz; w++) {
+          S.skills = lvl ? { handy: 1e4, cook: 1e4 } : {}; S.focus = w % 2 ? 'work' : own[type]; S.hustleWeeks = 12; S.health = 70; S.happy = 60;
+          const y = new Date(S.date).getFullYear() - y0, alt = S.focus === 'hustle' && truckSeason() ? hustlePay(currentGig(), 0.5) : 0;
+          weekTick(false);
+          const v = S.last.lines.filter(([k]) => k.startsWith(BIZ[type].ic)).reduce((a, [, x]) => a + x, 0);
+          if (y < 5) yrs[y] += (v - alt) / S.col / BIZ[type].cost;
+        }
+        out[`${type}${lvl}`] = yrs.map(v => Math.round(v * 1000) / 10);
+      }
+    } finally { Math.random = rnd; wheatYield = wy; }
+    return out;
+  });
+  console.log('     business return per year (skill 0 / skill 3), index funds about 6%: ' + Object.entries(r).map(([k, v]) => `${k} ${v.join('/')}%`).join(' · '));
+  const bad = Object.entries(r).filter(([, v]) => v.some(x => x > 30 || x < 0));
+  assert(!bad.length, `outside 0–30% a year: ${bad.map(([k, v]) => `${k} ${v.join('/')}`).join(', ')}`);
+});
+
+// i75-b19: no job is beaten on every count by another job at the same or a lower school level: take-home after taxes and gas,
+// the happiness drain (stress plus the drive) and wear. Gated jobs (seasonal, certificate, major, apprentice) are listed, not failed,
+// and can't be the better job. KNOWN are the jobs still beaten after the i75-b01–b09 repricing: the minimum-wage floor bunched the
+// low jobs together, so in-town jobs at the same pay now beat several commuting ones (mall retail and the food plant have perks this
+// check can't see: sure hiring and a discount, harvest overtime). A job beaten that isn't on the list fails, and a listed job that
+// is no longer beaten is reported so the list can shrink.
+const DOMINATED_KNOWN = ['diner', 'hardware', 'cellar', 'onion', 'retail', 'mech', 'foodplant', 'airport', 'reporter'];
+await t.check('i75-b19: no job is beaten on take-home, happiness and wear by another job at the same or a lower school level', async () => {
+  const r = await ev(() => {
+    fresh('two');
+    const gated = j => !!(j.season || j.needCert || j.needMajor || j.apprentice);
+    const take = j => j.pay * 0.85 - commuteCost(CITIES[j.city].miles, CARS.beater, j);
+    const drain = j => j.stress + CITIES[j.city].miles / 40 * driveDays(j);
+    return JOBS.map(j => ({ id: j.id, gated: gated(j), by: JOBS.filter(k => k !== j && !gated(k) && k.edu <= j.edu && take(k) > take(j) && drain(k) < drain(j) && k.wear < j.wear).map(k => k.id) })).filter(x => x.by.length);
+  });
+  const fail = r.filter(x => !x.gated && !DOMINATED_KNOWN.includes(x.id)), fixed = DOMINATED_KNOWN.filter(id => !r.some(x => x.id === id));
+  console.log(`     beaten on every count: ${r.map(x => `${x.id}${x.gated ? ' (gated)' : ''} < ${x.by.join('/')}`).join(' · ')}${fixed.length ? ` · no longer beaten (take off the list): ${fixed.join(', ')}` : ''}`);
+  assert(!fail.length, `a job is beaten on every count: ${fail.map(x => `${x.id} by ${x.by.join(', ')}`).join('; ')}`);
+});
+
+// i75-b20: base pay stays within 25% of real 2027 Washington pay, and never under the minimum wage. Monthly, rounded: 2024 state and
+// Tri-Cities/Walla Walla occupational wage medians (Washington ESD and BLS OEWS) grown about 3% a year to 2027, and the round-75 figures
+// for nurses, aides, techs and mechanics; the dam operator is a federal lock and dam operator. PAY_PENDING lists jobs waiting on a repricing (reported, not failed).
+// Seasonal jobs are information only.
+const WA_PAY_2027 = {
+  farmhand: 3500, diner: 3500, para: 3400, elevator: 4400, insure: 5600, hardware: 3300, lift: 3200, clerk: 4300, cna: 3800, cellar: 3600,
+  onion: 3300, co: 6000, rn: 8600, prof: 7800, retail: 3300, mech: 4800, imaging: 6400, loan: 7000, hanford: 7200, labadmin: 5600,
+  scientist: 10500, foodplant: 3700, airport: 4000, trucker: 6000, rail: 7000, windtech: 5800, damop: 5800, forest: 3600, teacher: 6500,
+  vaclerk: 4000, nukeop: 8200, harvtruck: 4200, electrician: 6800, plumber: 6400, lineman: 8000, welder: 4300, phleb: 3700, remote: 8800,
+  barista: 3100, grocer: 3200, reporter: 3800, teller: 3400, apprentice: 3500, medasst: 3700, agtech: 4200 };
+const PAY_PENDING = [];   // empty since the i75-b01–b09 repricing: every job is checked
+await t.check('i75-b20: every job pays within 25% of real 2027 Washington pay, and at least the minimum wage', async () => {
+  const r = await ev(() => ({ jobs: JOBS.map(j => ({ id: j.id, pay: j.pay, season: !!j.season })), min: MIN_WAGE_MONTH }));
+  const missing = r.jobs.filter(j => !WA_PAY_2027[j.id]).map(j => j.id);
+  assert(!missing.length, `add these jobs to WA_PAY_2027: ${missing.join(', ')}`);
+  const off = r.jobs.filter(j => Math.abs(j.pay / WA_PAY_2027[j.id] - 1) > 0.25 || (r.min && !j.season && j.pay < r.min));
+  const info = off.filter(j => j.season || PAY_PENDING.includes(j.id)), fail = off.filter(j => !info.includes(j));
+  if (info.length) console.log(`     pay off Washington rates (pending or seasonal): ${info.map(j => `${j.id} ${j.pay} vs ${WA_PAY_2027[j.id]}`).join(', ')}`);
+  assert(!fail.length, fail.map(j => `${j.id} pays ${j.pay}, Washington about ${WA_PAY_2027[j.id]}`).join('; '));
+});
+
+await t.check('i75-b22: collections stop calling once cash has gone up 4 weeks in a row: "On a payment plan"', async () => {
+  const r = await ev(() => {
+    const run = up => { fresh('two', { money: up ? -12000 : -6000, debtWeeks: 20, happy: 60, jobId: up ? 'rail' : null, edu: 1, focus: 'rest' }); const notes = [];
+      for (let i = 0; i < 8; i++) notes.push(...weekTick(false).notes); return { happy: S.happy, plan: onPlan(), notes: notes.join(' '), card: (tab = 'home', render(), document.querySelector('#main').textContent) }; };
+    return { up: run(true), down: run(false) }; });
+  assert(r.up.plan && /payment plan/.test(r.up.notes) && /On a payment plan/.test(r.up.card), JSON.stringify(r.up).slice(0, 300));
+  assert(!r.down.plan && /in collections/.test(r.down.card) && !/On a payment plan/.test(r.down.card), JSON.stringify(r.down).slice(0, 300));
+});
+
+await t.check('i75-b25: raises top out at 30% above inflation', async () => {
+  const r = await ev(() => { fresh('two', { jobId: 'farmhand', jobMonths: 24, raise: 1.27 }); const E = EVENTS.find(e => e.title === 'A raise'); const can = E.when(); E.choices()[0].go();
+    const after = S.raise, again = E.when(); S.raise = 1.29; bumpPay(1.05); return { cap: RAISE_CAP, can, after, again, bump: S.raise }; });
+  assert(r.cap === 1.3 && r.can && r.after === 1.3 && !r.again && r.bump === 1.3, JSON.stringify(r));
 });
 
 await t.check('the weekly challenge plays the same for everyone, even across saves', async () => {
@@ -667,7 +794,7 @@ await t.check('B2: a 6-month life starts with a little less happiness and health
 await t.check('B4: kids cost more for long commuters and lift you most in weeks at home', async () => {
   const r = await ev(() => { const kid = (extra) => { fresh('two', { kids: [S.ageMonths - 24], happy: 50, ...extra }); S.kids = [S.ageMonths - 24]; const l = week(); return { cost: l.lines['Kid'], happy: S.happy }; };
     return { home: kid({ focus: 'rest' }), away: kid({ focus: 'study' }), none: (fresh('two', { focus: 'study', happy: 50 }), week(), S.happy), commute: kid({ jobId: 'rail', focus: 'rest' }) }; });
-  assert(near(r.home.cost, -650 * W) && near(r.commute.cost, -850 * W), JSON.stringify(r));
+  assert(near(r.home.cost, -665 * W) && near(r.commute.cost, -1150 * W), JSON.stringify(r));   // i75-b28: childcare help at home on no pay; the rail job pays too much for it
   assert(r.away.happy - r.none < 0.05 && r.away.happy > r.none, `a study week with kids should add only a little: ${r.away.happy} vs ${r.none}`);
 });
 
@@ -1074,7 +1201,7 @@ await t.check('i3-a02: a program becomes your major at graduation, for +10% pay 
   assert(r.major === 'nursing' && r.edu === 1, `major ${JSON.stringify(r)}`);
   assert(Math.abs(r.cna - 1.1) < 1e-9 && Math.abs(r.mech - 1) < 1e-9, `major pay ${r.cna} ${r.mech}`);
   assert(Math.abs(r.d - 0.08) < 1e-9, `major odds ${r.d}`);
-  assert(near(r.tuition, -300 * 12 / 52), `same tuition: ${r.tuition}`);
+  assert(r.tuition === undefined, `no job: the College Grant pays the tuition: ${r.tuition}`);
   assert(r.windLock && !r.windOk, 'the wind tech job needs the wind energy program');
 });
 
@@ -1137,7 +1264,7 @@ await t.check('i3-a08: asking for more can raise the offer, pay a bonus you owe 
     const old = Math.random;
     fresh('two', { edu: 2, jobId: 'cna', tenure: 12 }); const before = { jobId: 'cna', jobMonths: 0, raise: 1, rung: 0, tenure: 12, money: S.money };
     startJob('rn'); Math.random = () => 0.3; const more = negotiate(1, before), raise = S.raise;
-    fresh('two', { edu: 2, money: 0 }); startJob('rn'); negotiate(2, { jobId: null, money: 0 }); const bonus = S.money, owed = S.bonus && S.bonus.amt;
+    fresh('two', { edu: 2, money: 0 }); startJob('rn'); Math.random = () => 0.3; negotiate(2, { jobId: null, money: 0 }); const bonus = S.money, owed = S.bonus && S.bonus.amt;
     startJob('cna'); const after = S.money;
     fresh('two', { edu: 2, jobId: 'cna', tenure: 12 }); const b2 = { jobId: 'cna', jobMonths: 0, raise: 1, rung: 0, tenure: 12, money: S.money };
     startJob('rn'); Math.random = () => 0.01; const lost = negotiate(1, b2); Math.random = old;
@@ -1287,26 +1414,26 @@ await t.check('i3-a18: cattle earn for an owner who checks the herd and lose mon
       return { cash, cows: S.biz ? S.biz.cows : 0, hay: true }; };
     const a = [], b = []; for (let i = 0; i < 6; i++) { a.push(year(true)); b.push(year(false)); }
     fresh('two', { money: 30000, date: new Date(2027, 11, 6).getTime() }); render(); startBiz('cattle'); const w = week().lines;
-    return { active: a.reduce((x, v) => x + v.cash, 0) / 6, idle: b.reduce((x, v) => x + v.cash, 0) / 6, cowsA: a.reduce((x, v) => x + v.cows, 0) / 6, cowsI: b.reduce((x, v) => x + v.cows, 0) / 6, hay: w['🐄 Hay'] || w['🐄 Hay (hard winter)'], rent: w['🐄 Pasture rent'] }; });
+    return { active: a.reduce((x, v) => x + v.cash, 0) / 6, idle: b.reduce((x, v) => x + v.cash, 0) / 6, cowsA: a.reduce((x, v) => x + v.cows, 0) / 6, cowsI: b.reduce((x, v) => x + v.cows, 0) / 6, hay: w['🐄 Hay'] || w['🐄 Hay (hard winter)'], rent: w['🐄 Pasture rent'], vet: w['🐄 Vet, minerals and bull lease'] }; });
   assert(r.active > 1000 && r.idle < 0, `active ${r.active}, idle ${r.idle}`);
   assert(r.cowsA > r.cowsI && r.cowsA >= 5.5, `cows ${r.cowsA} vs ${r.cowsI}`);
-  assert(near(r.hay, -60 * 6 * W) && near(r.rent, -120 * W), JSON.stringify(r));
+  assert(near(r.hay, -60 * 6 * W) && near(r.rent, -220 * W) && near(r.vet, -90 * 6 / 12 * W), JSON.stringify(r));
 });
 
-await t.check('i3-a19: insurance defaults to the old $160; cheaper coverage costs more when something happens', async () => {
+await t.check('i3-a19/i75-b26: insurance defaults to $220 at Washington prices; cheaper coverage costs more when something happens', async () => {
   const r = await ev(() => {
     fresh('two'); const def = insMonthly(), line = week().lines['Insurance & phone'];
-    S.home = 'fixer'; const own = insMonthly(); S.ins.ded = 2500; const high = insMonthly(); S.ins.ded = 500; const low = insMonthly();
+    S.home = 'farm'; const farm = insMonthly(); S.home = 'fixer'; const own = insMonthly(); S.ins.ded = 2500; const high = insMonthly(); S.ins.ded = 500; const low = insMonthly();
     S.ins.ded = 1000; S.col = 1; const ownFire = youPay('home', 9000); S.ins.ded = 2500; const ownFire2 = youPay('home', 9000);
     S.home = 'room'; S.ins = { auto: 'full', renters: true, ded: 1000 };
     const full = youPay('auto', 3200), stuff = youPay('stuff', 1800);
     S.ins.auto = 'liab'; S.ins.renters = false; const cheap = insMonthly(), liab = youPay('auto', 3200), bare = youPay('stuff', 1800), landlord = youPay('home', 9000);
     S.col = 1; const fb = EVENTS.find(e => e.title === 'A fender bender'), m = S.money; fb.choices()[0].go(); const hit = m - S.money;
     S.ins.auto = 'full'; const m2 = S.money; const res = fb.choices()[0].go(); const hit2 = m2 - S.money;
-    return { def, line, own, high, low, ownFire, ownFire2, full, stuff, cheap, liab, bare, landlord, hit, hit2, res }; });
-  assert(r.def === 160 && near(r.line, -160 * W) && r.own === 160 && r.high === 150 && r.low === 175, JSON.stringify(r));
+    return { def, line, farm, own, high, low, ownFire, ownFire2, full, stuff, cheap, liab, bare, landlord, hit, hit2, res }; });
+  assert(r.def === 220 && near(r.line, -220 * W) && r.own === 75 + 130 + 95 && r.high === 290 && r.low === 315 && r.farm === 75 + 130 + 140, JSON.stringify(r));
   assert(r.ownFire === 1000 && r.ownFire2 === 2500 && r.full === 500 && r.stuff === 250, JSON.stringify(r));
-  assert(r.cheap === 110 && r.liab === 3200 && r.bare === 1800 && r.landlord === 0, JSON.stringify(r));
+  assert(r.cheap === 130 && r.liab === 3200 && r.bare === 1800 && r.landlord === 0, JSON.stringify(r));
   assert(near(r.hit, 3200) && near(r.hit2, 500) && /deductible/.test(r.res), JSON.stringify(r));
 });
 
