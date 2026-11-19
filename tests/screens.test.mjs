@@ -169,6 +169,42 @@ await t.check('content gets at least 45% of the screen between the header and th
 await t.check('every tap target is at least 44 × 44 px (WCAG 2.5.5)', async () => { assert(!problems.tiny.length, uniq(problems.tiny).slice(0, 8).join('; ')); });
 await t.check('no text smaller than 11 px', async () => { assert(!problems.smallText.length, uniq(problems.smallText).slice(0, 8).join('; ')); });
 await t.check('text contrast meets WCAG AA (4.5:1, or 3:1 for large text)', async () => { assert(!problems.contrast.length, uniq(problems.contrast).slice(0, 10).join('; ')); });
+// G1: walk the whole tutorial at a small phone, a phone held sideways, a tablet and a computer: every tap step's ring
+// sits on a spot a finger can reach (not under the bubble or the dimmer, inside the screen), and no step is skipped
+await t.check("the tutorial's touch highlights work at every screen size, and no step is skipped", async () => {
+  const bad = [];
+  for (const [label, w, h] of [['small-phone', 320, 568], ['landscape', 844, 390], ['tablet', 768, 1024], ['desktop', 1280, 800]]) {
+    const ctx = await browser.newContext({ viewport: { width: w, height: h }, serviceWorkers: 'block', hasTouch: w < 900, isMobile: w < 900 });
+    await ctx.addInitScript(seedScript(78));
+    const page = await ctx.newPage();
+    await page.goto(srv.url, { waitUntil: 'load' });
+    await page.evaluate(() => startTutorial());
+    let steps = 0, skipped = [];
+    for (let g = 0; g < 120; g++) {
+      await page.waitForTimeout(430);
+      const st = await page.evaluate(() => {
+        if (!TUT) return null;
+        const s = TSTEPS[TUT.i], el = s.sel && document.querySelector(s.sel), r = el && el.getBoundingClientRect();
+        const x = r && r.left + r.width / 2, y = r && r.top + r.height / 2, hit = r && document.elementFromPoint(x, y);
+        return { i: TUT.i, sel: s.sel || null, tap: !!s.tap, skipped: [...TUT.skipped], shown: !document.querySelector('#coach').classList.contains('hidden'),
+          reach: !!(hit && el.contains(hit)), inView: !r || (r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth), x, y };
+      });
+      if (!st) break;
+      skipped = st.skipped;
+      if (!st.shown) continue;
+      steps = Math.max(steps, st.i + 1);
+      if (!st.inView) bad.push(`${label} step ${st.i + 1} (${st.sel}): off screen`);
+      if (st.tap && !st.reach) { bad.push(`${label} step ${st.i + 1} (${st.sel}): covered`); break; }
+      if (st.tap) { if (w < 900) await page.touchscreen.tap(st.x, st.y); else await page.mouse.click(st.x, st.y); }
+      else await page.click('#cnext');
+    }
+    const total = await page.evaluate(() => TSTEPS.length);
+    if (steps !== total) bad.push(`${label}: reached step ${steps} of ${total}`);
+    if (skipped.length) bad.push(`${label}: skipped steps ${skipped.map(i => i + 1).join(', ')}`);
+    await ctx.close();
+  }
+  assert(!bad.length, bad.slice(0, 6).join('; '));
+});
 
 // ---------- keyboard and screen readers ----------
 {
@@ -243,8 +279,9 @@ await t.check('text contrast meets WCAG AA (4.5:1, or 3:1 for large text)', asyn
       steps = Math.max(steps, st.i + 1);
       await page.keyboard.press('Enter');
     }
-    const total = await page.evaluate(() => TSTEPS.length);
+    const total = await page.evaluate(() => TSTEPS.length), skipped = await page.evaluate(() => typeof LAST_TUT_SKIPPED === 'undefined' ? [] : LAST_TUT_SKIPPED);
     assert(steps === total, `reached step ${steps} of ${total} with the keyboard`);
+    assert(!skipped.length, `steps skipped with the keyboard: ${skipped.join(', ')}`);
   });
 
   await t.check('screen readers: messages use a live status region, and tabs mark the current page', async () => {
