@@ -184,7 +184,7 @@ await t.check('every event\'s every choice works and shows a result', async () =
   }
   assert(tried >= titles.length, `only ${tried} choices across ${titles.length} events`);
   const cats = await page.evaluate(() => ['road', 'work'].map(c => EVENTS.filter(e => e.cat === c).length));
-  assert(cats[0] === 31 && cats[1] === 32, `expected 31 road and 32 work events (with the contract vote and the federal shutdown), got ${cats}`);
+  assert(cats[0] === 31 && cats[1] === 34, `expected 31 road and 34 work events (with the contract vote, the federal shutdown, a personal day and desk stiffness), got ${cats}`);
   console.log(`     (${tried} choices across ${titles.length} events)`);
 });
 
@@ -459,7 +459,7 @@ await t.check('Journal filter chips: Money, Events, Milestones and Trips, with o
 });
 
 await t.check('Out and about: visit every business from Home, with its card, limits and results', async () => {
-  const ids = await page.evaluate(() => PLACES.map(p => p.id));
+  const ids = await page.evaluate(() => PLACES.filter(p => !(p.hide && p.hide())).map(p => p.id));   // the senior center shows from 65 (health tests)
   for (const id of ids) {
     await life({ jobId: 'farmhand', money: 5000, ageMonths: 30 * 12, partner: false }, 'home');
     await setup(() => { S.date = new Date(2027, 4, 10).getTime(); S.turn = 4; render(); });

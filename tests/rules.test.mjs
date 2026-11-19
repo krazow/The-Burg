@@ -141,7 +141,7 @@ await t.check('events follow their rules: seasons, cooldowns, once-only, and job
 
 await t.check('at 0 health you go to the hospital (outside Lifetime), with a bill', async () => {
   const r = await ev(() => { fresh('two', { health: -5, jobId: 'hanford', focus: 'work' }); const m = S.money; const res = week(); return { note: res.notes.join(' '), health: S.health, paid: m + S.last.net - S.money }; });
-  assert(r.note.includes('hospital') && r.health === 30 && near(r.paid, 6500, 0.02), JSON.stringify(r));
+  assert(r.note.includes('hospital') && r.health === 30 && near(r.paid, 6500 + 1200, 0.02), JSON.stringify(r));   // i74-a04: plus the ambulance ride (no membership)
 });
 
 await t.check('nonstop overtime in a hard job lands you in the hospital within about two years; a balanced life stays healthy', async () => {
