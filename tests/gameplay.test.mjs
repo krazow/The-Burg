@@ -76,8 +76,10 @@ await t.check('an event shows choices, and choosing one shows a result', async (
     for (let k = 0; k < 3; k++) {
       const choice = await page.$(`${open} [data-i]`);
       if (choice) {
-        seen = true; await choice.click();
-        await page.waitForSelector(`${open} #ok`);
+        const n = (await page.$$(`${open} [data-i]`)).length;
+        await choice.click();
+        if (n < 2) { await clearSheets(); continue; }   // an event with one way to go closes with a toast; look for one with a choice
+        seen = true; await page.waitForSelector(`${open} #ok`);
         break;
       }
       const ok = await page.$(`${open} #ok`); if (ok) await ok.click(); else break;
