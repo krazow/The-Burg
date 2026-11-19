@@ -464,6 +464,84 @@ old ones.
 
 </details>
 
+## Ideas round 1 (pick on the build board)
+
+64 ideas. Details: [docs/ideas/round-1.md](docs/ideas/round-1.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 1: Gameplay depth</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i1-a01** Work standing at your job (M)
+- [ ] 🔴 **i1-a02** Community standing perks (M)
+- [ ] 🔴 **i1-a03** Home upgrades for owners (M)
+- [ ] 🟠 **i1-a04** Council seat that votes (M)
+- [ ] 🔴 **i1-a05** Savings account and savings goals (S)
+- [ ] 🟠 **i1-a06** Credit score (M)
+- [ ] 🟠 **i1-a07** Refinance your debt at the bank (S)
+- [ ] 🟠 **i1-a08** Take a roommate (S)
+- [ ] 🟠 **i1-a09** A garden plot (M)
+- [ ] 🟡 **i1-a10** Hunting and fishing licenses (S)
+- [ ] 🟡 **i1-a11** Winter heating bills (S)
+- [ ] 🟡 **i1-a12** Tax refund season (S)
+- [ ] 🟠 **i1-a13** Take a real vacation (M)
+- [ ] 🟠 **i1-a14** Partner closeness (M)
+- [ ] 🟠 **i1-a15** Kids grow up: stages and choices (L)
+- [ ] 🟠 **i1-a16** Aging parents (M)
+- [ ] 🟡 **i1-a17** Your dog grows old (S)
+- [ ] 🟠 **i1-a18** Become a landlord (L)
+- [ ] 🟠 **i1-a19** Grow your business (M)
+- [ ] 🟠 **i1-a20** Good years and bad years in the valley (M)
+- [ ] 🟠 **i1-a21** Volunteer fire department (M)
+- [ ] 🟠 **i1-a22** Healthy habits (M)
+- [ ] 🟡 **i1-a23** Old injuries that linger (M)
+- [ ] 🟠 **i1-a24** Choose when to retire (M)
+- [ ] 🟠 **i1-a25** Lead a big town project (M)
+- [ ] 🟡 **i1-a26** Chores pile up (S)
+- [ ] 🟡 **i1-a27** Employer pays for school (S)
+- [ ] 🟡 **i1-a28** Truck miles add up (S)
+- [ ] 🟡 **i1-a29** Grandkids (S)
+- [ ] 🟡 **i1-a30** Decade check-ins (M)
+- [ ] 🟡 **i1-a31** A stall at the summer market (M)
+- [ ] 🟡 **i1-a32** A second, lighter focus (M)
+
+</details>
+
+<details><summary><b>Ideas 1: Town and people</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i1-b01** Named neighbors on your street (L)
+- [ ] 🔴 **i1-b02** Community roles you hold over time (L)
+- [ ] 🔴 **i1-b03** Join the volunteer fire department (M)
+- [ ] 🔴 **i1-b04** Favors you can call in (M)
+- [ ] 🔴 **i1-b05** A partner with a name and a path to the altar (M)
+- [ ] 🟠 **i1-b06** A relationship meter instead of coin flips (S)
+- [ ] 🟠 **i1-b07** Your partner has their own job (M)
+- [ ] 🔴 **i1-b08** Kids grow up in stages (M)
+- [ ] 🔴 **i1-b09** Aging parents in town (M)
+- [ ] 🔴 **i1-b10** Holidays at home (S)
+- [ ] 🟠 **i1-b11** A council term with real votes (M)
+- [ ] 🟠 **i1-b12** Your kid raises an FFA market lamb (M)
+- [ ] 🟠 **i1-b13** Name your dog, and dogs grow old (M)
+- [ ] 🟠 **i1-b14** Barn cat, chickens and a horse (M)
+- [ ] 🟡 **i1-b15** Adopt a pet on purpose (S)
+- [ ] 🟠 **i1-b16** Home upkeep for owners (M)
+- [ ] 🟠 **i1-b17** A backyard garden (M)
+- [ ] 🟡 **i1-b18** Firewood and fall chores (S)
+- [ ] 🟠 **i1-b19** Take in a roommate or rent the spare room (S)
+- [ ] 🟡 **i1-b20** More places to live in town (S)
+- [ ] 🟠 **i1-b21** Roles for retirees (S)
+- [ ] 🟠 **i1-b22** Lonely stretches (S)
+- [ ] 🟠 **i1-b23** Trade childcare with neighbors (S)
+- [ ] 🟠 **i1-b24** The Burg almanac: town calendar and memory book (M)
+- [ ] 🟠 **i1-b25** What the town says about you (M)
+- [ ] 🟠 **i1-b26** Funerals and the house next door (S)
+- [ ] 🟡 **i1-b27** Welcome the new family (S)
+- [ ] 🟡 **i1-b28** Birthdays that matter (S)
+- [ ] 🟡 **i1-b29** Class reunion every ten years (S)
+- [ ] 🟡 **i1-b30** A best friend through the years (M)
+- [ ] 🟠 **i1-b31** Grown kids who stay or go (M)
+- [ ] 🟡 **i1-b32** Sunday crew: a congregation or the Grange (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
