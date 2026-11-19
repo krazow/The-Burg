@@ -618,6 +618,88 @@ old ones.
 
 </details>
 
+## Ideas round 3 (pick on the build board)
+
+68 ideas. Details: [docs/ideas/round-3.md](docs/ideas/round-3.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 3: Money, work and the valley</b> (34 ideas)</summary>
+
+- [ ] 🔴 **i3-a01** Job ladders with named rungs (M)
+- [ ] 🔴 **i3-a02** Pick a program, not just a level (M)
+- [ ] 🔴 **i3-a03** Short certificates: CDL, welding, phlebotomy, notary (S)
+- [ ] 🟠 **i3-a04** Apprenticeships: earn while you learn a trade (M)
+- [ ] 🟠 **i3-a05** More valley jobs: wind farms, dams, the Forest Service (S)
+- [ ] 🟡 **i3-a06** Seasonal jobs that end and start again (M)
+- [ ] 🟠 **i3-a07** Interviews with a choice or two (M)
+- [ ] 🟡 **i3-a08** Negotiate the offer (S)
+- [ ] 🟡 **i3-a09** References follow you (S)
+- [ ] 🟠 **i3-a10** A union card at the rail yard, Hanford and the hospital (M)
+- [ ] 🟡 **i3-a11** Federal shutdown furlough (S)
+- [ ] 🟡 **i3-a12** A security clearance for Hanford and the lab (S)
+- [ ] 🟠 **i3-a13** Remote job for a Seattle company (M)
+- [ ] 🟡 **i3-a14** Ride the county bus to Walla Walla (S)
+- [ ] 🟠 **i3-a15** Wheat prices: sell at harvest or store it (M)
+- [ ] 🟠 **i3-a16** Crop insurance for the wheat lease (S)
+- [ ] 🟡 **i3-a17** Wine futures with a Walla Walla winery (M)
+- [ ] 🟡 **i3-a18** A small cattle herd in the foothills (M)
+- [ ] 🔴 **i3-a19** A real insurance sheet: truck, renters, home (M)
+- [ ] 🟠 **i3-a20** Property taxes for owners (S)
+- [ ] 🟠 **i3-a21** The valley's housing market (M)
+- [ ] 🟡 **i3-a22** Mortgage rates and refinancing (S)
+- [ ] 🟡 **i3-a23** Borrow against your home (S)
+- [ ] 🔴 **i3-a24** Public pensions for school, county and state jobs (M)
+- [ ] 🟠 **i3-a25** Social Security that reflects your work (S)
+- [ ] 🟠 **i3-a26** Collections when debt drags on (S)
+- [ ] 🟡 **i3-a27** Bankruptcy instead of leaving town (M)
+- [ ] 🔴 **i3-a28** A 3-month money outlook (S)
+- [ ] 🟡 **i3-a29** A brokerage account with good and bad years (M)
+- [ ] 🟡 **i3-a30** Retire south for the winter (S)
+- [ ] 🟠 **i3-a31** Long-term care late in life (M)
+- [ ] 🟡 **i3-a32** Endow a scholarship at Waitsburg High (S)
+- [ ] 🟡 **i3-a33** Write a will (S)
+- [ ] 🟡 **i3-a34** Rent your spare room on wine weekends (S)
+
+</details>
+
+<details><summary><b>Ideas 3: App and platform</b> (34 ideas)</summary>
+
+- [ ] 🔴 **i3-b01** Keep beta saves apart from real saves (S)
+- [ ] 🔴 **i3-b02** An open event survives closing the app (S)
+- [ ] 🔴 **i3-b03** Ask the phone to keep your saves (S)
+- [ ] 🔴 **i3-b04** Last-good copy of every life (S)
+- [ ] 🟠 **i3-b05** Save repair and versioned updates (M)
+- [ ] 🟠 **i3-b06** Tell the player when a save fails (S)
+- [ ] 🔴 **i3-b07** A friendly screen when something breaks (S)
+- [ ] 🔴 **i3-b08** Update ready: refresh between weeks (S)
+- [ ] 🟠 **i3-b09** Check the offline file list in tests (S)
+- [ ] 🟠 **i3-b10** Move a life with a QR code (M)
+- [ ] 🟠 **i3-b11** Merge restore: the newest copy of each life wins (M)
+- [ ] 🟡 **i3-b12** Hand off a life instead of copying it (S)
+- [ ] 🟡 **i3-b13** A gentle backup reminder (S)
+- [ ] 🟠 **i3-b14** Light mode for old phones (S)
+- [ ] 🟠 **i3-b15** Auto weeks without redrawing every one (M)
+- [ ] 🟡 **i3-b16** Draw maps only when they're opened (S)
+- [ ] 🟠 **i3-b17** A speed test on a slow phone (S)
+- [ ] 🟠 **i3-b18** A plain message on browsers that are too old (S)
+- [ ] 🟠 **i3-b19** Pause Auto when you leave the app (S)
+- [ ] 🟠 **i3-b20** Language groundwork: one place for all words (M)
+- [ ] 🟡 **i3-b21** The Burg en español (L)
+- [ ] 🟠 **i3-b22** Play Store kit: screenshots, listing, privacy answers (M)
+- [ ] 🟠 **i3-b23** Protect saves in the Windows app (S)
+- [ ] 🟡 **i3-b24** Install shortcuts and a richer install sheet (S)
+- [ ] 🔴 **i3-b25** What this game knows about you (S)
+- [ ] 🟠 **i3-b26** Feedback without tracking (M)
+- [ ] 🟡 **i3-b27** Share a single moment as a picture (M)
+- [ ] 🟡 **i3-b28** Tell a friend: a link and a QR to install (S)
+- [ ] 🟠 **i3-b29** A replay test that catches accidental balance shifts (S)
+- [ ] 🟠 **i3-b30** A hidden builder panel (M)
+- [ ] 🟠 **i3-b31** Check every event is well-formed (S)
+- [ ] 🟡 **i3-b32** Catch name clashes between script files (S)
+- [ ] 🟡 **i3-b33** A map of what the tests never touch (S)
+- [ ] 🟡 **i3-b34** A badge on the app icon for the new weekly challenge (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
