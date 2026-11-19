@@ -1627,6 +1627,86 @@ old ones.
 
 </details>
 
+## Ideas round 16 (pick on the build board)
+
+66 ideas. Details: [docs/ideas/round-16.md](docs/ideas/round-16.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 16: Month by month</b> (34 ideas)</summary>
+
+- [ ] 🟠 **i16-a01** January: The December card bill comes due (S)
+- [ ] 🟠 **i16-a02** January: Ten below and the truck won't start (S)
+- [ ] 🟡 **i16-a03** January: Polar plunge in the Touchet for the food bank (S)
+- [ ] 🔴 **i16-a04** February: Valentine's dinner (S)
+- [ ] 🟡 **i16-a05** February: Super Bowl Sunday (S)
+- [ ] 🟡 **i16-a06** February: Prune vines for a week of winter cash (S)
+- [ ] 🟠 **i16-a07** March: Spring break with the kids (S)
+- [ ] 🟡 **i16-a08** March: State basketball in Spokane (S)
+- [ ] 🟡 **i16-a09** March: Mud season on the county roads (S)
+- [ ] 🟡 **i16-a10** April: Easter egg hunt at the park (S)
+- [ ] 🟠 **i16-a11** April: Prom for your teen (M)
+- [ ] 🟡 **i16-a12** April: Closing day at Bluewood (S)
+- [ ] 🟠 **i16-a13** May: Mother's Day brunch (S)
+- [ ] 🟡 **i16-a14** May: Teacher appreciation week (S)
+- [ ] 🔴 **i16-a15** June: Pea harvest night shifts (M)
+- [ ] 🟡 **i16-a16** June: Father's Day fishing (S)
+- [ ] 🟡 **i16-a17** June: U-pick cherries over the Oregon line (S)
+- [ ] 🟠 **i16-a18** July: Run the fireworks stand for the boosters (S)
+- [ ] 🟡 **i16-a19** July: Summer camp in the Blues (S)
+- [ ] 🔴 **i16-a20** August: Back-to-school week (S)
+- [ ] 🟡 **i16-a21** August: Perseids over the wheat (S)
+- [ ] 🟡 **i16-a22** August: The last truck and the harvest dinner (S)
+- [ ] 🟠 **i16-a23** September: Labor Day weekend (S)
+- [ ] 🟡 **i16-a24** September: Back-to-school night (S)
+- [ ] 🔴 **i16-a25** October: Halloween on Main Street (S)
+- [ ] 🟡 **i16-a26** October: A week on an orchard picking crew (S)
+- [ ] 🟡 **i16-a27** November: Veterans Day at the school gym (S)
+- [ ] 🟡 **i16-a28** November: Ski swap at the fairgrounds (S)
+- [ ] 🟡 **i16-a29** November: Turkey trot down Main Street (S)
+- [ ] 🟠 **i16-a30** December: Cut your own tree in the Blues (S)
+- [ ] 🟡 **i16-a31** December: The school Christmas concert (S)
+- [ ] 🟡 **i16-a32** December: A year-end gift to the food bank (S)
+- [ ] 🔴 **i16-a33** January–December: Holidays land on the right week (M)
+- [ ] 🟠 **i16-a34** January–December: The month at a glance on Home (M)
+
+</details>
+
+<details><summary><b>Ideas 16: For every play style</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i16-b01** [Optimizer] A focus queue: plan the next four weeks (M)
+- [ ] 🟡 **i16-b02** [Optimizer] Copy your life's weekly numbers as CSV (S)
+- [ ] 🟠 **i16-b03** [Optimizer] Soft-cap ticks on the stat bars (S)
+- [ ] 🟡 **i16-b04** [Optimizer] Tag a life with your strategy name (M)
+- [ ] 🔴 **i16-b05** [Storyteller] Name each year like a book chapter (S)
+- [ ] 🟡 **i16-b06** [Storyteller] A narrator voice: plain, porch-talk or dry (M)
+- [ ] 🟠 **i16-b07** [Storyteller] Why you did it: a reason chip on big choices (S)
+- [ ] 🟠 **i16-b08** [Storyteller] Still unfolding: open story threads (S)
+- [ ] 🔴 **i16-b09** [Explorer] A dot on choices you've never picked (S)
+- [ ] 🟠 **i16-b10** [Explorer] Seasonal pins that come and go (M)
+- [ ] 🟡 **i16-b11** [Explorer] Old townsites on the region map (M)
+- [ ] 🟠 **i16-b12** [Explorer] Ask a local which way to go (S)
+- [ ] 🔴 **i16-b13** [Homebody] Pick how you rest: read, bake, tinker or nap (M)
+- [ ] 🟡 **i16-b14** [Homebody] Houseplants on the windowsill (S)
+- [ ] 🟠 **i16-b15** [Homebody] A craft table that sells from home (M)
+- [ ] 🟡 **i16-b16** [Homebody] Badges where the house is the hero (S)
+- [ ] 🔴 **i16-b17** [Social Butterfly] A contacts list with 'last talked' weeks (M)
+- [ ] 🟠 **i16-b18** [Social Butterfly] Play matchmaker for two neighbors (M)
+- [ ] 🟠 **i16-b19** [Social Butterfly] Put in a word to get a friend hired (S)
+- [ ] 🟡 **i16-b20** [Social Butterfly] Throw a block party in summer (M)
+- [ ] 🔴 **i16-b21** [Collector] One collections page for every set (M)
+- [ ] 🟠 **i16-b22** [Collector] The license plate game on Highway 12 (S)
+- [ ] 🟡 **i16-b23** [Collector] Rocks from the river bars (S)
+- [ ] 🟠 **i16-b24** [Collector] A stop passport with a stamp for each place (S)
+- [ ] 🟠 **i16-b25** [Speedrunner] Split times for milestones (M)
+- [ ] 🔴 **i16-b26** [Speedrunner] Turbo setting: no animations, events still stop (S)
+- [ ] 🟡 **i16-b27** [Speedrunner] A run code that proves your result (M)
+- [ ] 🟡 **i16-b28** [Speedrunner] Practice one hard stretch (M)
+- [ ] 🔴 **i16-b29** [Parent + Kid] Guess first: what will happen? (S)
+- [ ] 🟡 **i16-b30** [Parent + Kid] Count the paycheck in coins and bills (S)
+- [ ] 🟡 **i16-b31** [Parent + Kid] Kid draws the dog or the truck (M)
+- [ ] 🟠 **i16-b32** [Parent + Kid] Picture icons on event choices (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
