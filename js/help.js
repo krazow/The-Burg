@@ -150,6 +150,20 @@ function guideHTML(){
       <p><b>🎓 A scholarship.</b> From a net worth of ${fmt(SCHOLAR_NW)} you can endow a scholarship at Waitsburg High (${fmt(SCHOLAR_COST)}): a graduate gets it every June, and you get a little community each year. <b>🛏️ A spare room:</b> homeowners can host visitors on the first weekend of May, July, September and November (about ${fmt(HOST_PAY)} each, a little happiness for the cleaning, and the odd rough guest).</p>`],
     ['family', '❤️ Family and household', `
       <p>Life brings people and pets: a <b>partner</b> (date nights, a part-time paycheck, and happier weeks), <b>kids</b> (about $650 a month each until 18, plus $200 of childcare if you commute 20+ miles; they bring the most joy in weeks you Rest or Show up for town, and more community), a <b>dog</b>, even a seat on the <b>town council</b> once your community standing is 60 or higher. These mostly arrive through events, so say yes when it fits your life.</p>`],
+    ['body', '🩺 Your body over a life', `
+      <p>Bodies change over a life, and the game tries to treat that gently. Most of this shows on the Life tab's <b>🩺 Health and body</b> card.</p>
+      <ul><li><b>Every job wears on something:</b> backs for farm hands and nurses, wrists on the onion and food lines, ears at the airport and rail yard, feet for retail and teaching, shoulders for linemen and welders. When you get <b>hurt on the job</b>, the event names it and offers the fix that fits.</li>
+      <li><b>Physical therapy:</b> after a work injury, the doctor suggests ${PT_WEEKS} weeks of therapy in Walla Walla, twice a week (copays and gas). Therapy clears it; toughing it out leaves a small, lasting drain on health until you start therapy later (a stop on a Walla Walla trip).</li>
+      <li><b>🤒 Sick hours:</b> like Washington's rule, a job earns one hour of sick time for every 40 worked (one a week), up to ${SICK_CAP}. When the flu or feeling run down hits, they cover the time off so the week isn't unpaid. They never turn into cash.</li>
+      <li><b>🌤️ A personal day:</b> when happiness falls below ${MH_HAPPY} and you have a job, a personal day can come up, no reason needed (at most once every ${MH_GAP} weeks). It uses a day of sick hours, or a day's pay.</li>
+      <li><b>💺 Desk jobs after ${DESK_AGE}:</b> jobs that are easy on the body start to wear a little (a stiff back, tired eyes). One good choice, walking at lunch, clears it for good.</li>
+      <li><b>🦷 Dental</b> (insurance sheet, $${DENTAL} a month): yearly checkups are free, an emergency dentist costs less, and a cracked tooth costs $${TOOTH_DENTAL.toLocaleString()} instead of $${TOOTH_BILL.toLocaleString()}. A yearly checkup makes a cracked tooth less likely either way.</li>
+      <li><b>🚑 Ambulance district</b> (insurance sheet, $${AMB_YEAR} a year): members pay nothing for the ride on a hospital trip. Without it, a hospital stay adds a $${AMB_RIDE.toLocaleString()} ride bill.</li>
+      <li><b>💉 Grown-up shots:</b> from 50, the pharmacy (a stop in Dayton or Walla Walla) has the shingles shot, and from 65 the pneumonia shot. With them a flu week is shorter and milder.</li>
+      <li><b>🎣 Get outside</b> reads differently with age: hiking the Blues when you're young, creek walks in your 50s, the riverwalk bench at 75. Skiing Bluewood on a powder day wants a fair health score (${SKI_HEALTH} or more); otherwise you can ride up for the view.</li>
+      <li><b>🪑 Chair exercise:</b> from ${CHAIR_AGE}, the Touchet Valley Senior Center (Out and about) has a cheap morning class: a little health, a little community, and people who ask how you are.</li>
+      <li><b>🚐 The county medical van:</b> at ${VAN_AGE} and up, Walla Walla appointments can go on the van: $${VAN_FARE} instead of gas, but it takes the whole day (your focus works at ${VAN_TIME * 100}% that week).</li>
+      <li><b>🧓 Dad's appointments</b> (Lifetime, in your late 40s or 50s): your sister calls from Spokane. Split the drives with her (money), pay for a driver and helper (more money), or take every drive yourself (happiness and health). With a job you can take Washington's <b>paid family leave</b>: up to ${LEAVE_WEEKS} weeks at 90% of your pay (up to a cap), with your job's wear paused. While you're helping, a <b>🌿 respite weekend</b> at the adult day program in Walla Walla gives back health and happiness caregiving took, never more.</li></ul>`],
     ['events', '🎲 Events', `
       <p>Many weeks something happens: about 100 events tied to the seasons, the road and your work. Tap a choice to decide, and every choice shows what it did. Events with only one choice close in one tap. A few examples:</p>
       <ul><li><b>Spring:</b> Celebration Days races, the Touchet running high, tax refunds.</li>
@@ -163,7 +177,7 @@ function guideHTML(){
       <p>A commuter with a job sees about one event every 3 weeks; someone at home with no job, about one every 7. Hard mode brings 25% more of each. Event prices rise with the cost of living.</p>`],
     ['maps', '🗺️ Maps', `
       <p>Home and Jobs both have a <b>📋 List / 🗺️ Map</b> switch, and the game remembers your choice.</p>
-      <ul><li><b>🏡 Waitsburg:</b> tap a place to spend your week there. Home is Rest, Main Street is Show up for town, the library is classes, the river is Get outside, the bulletin board is a side hustle, and your workplace or Highway 12 is Work extra hours. Dashed circles are just for looking. The fields around town change color with the seasons.</li>
+      <ul><li><b>🏡 Waitsburg:</b> tap a place to spend your week there. Home is Rest, Main Street is Show up for town, the library is classes, the river is Get outside, the bulletin board is a side hustle, and your workplace or Highway 12 is Work extra hours. Dashed circles are just for looking. The fields around town change color with the seasons. Tap <b>Main Street</b> for a close-up of the downtown businesses (see Out and about).</li>
       <li><b>🛣️ The region:</b> the six towns along US-12 and the rivers. Tap a town for its drive, gas cost and jobs, apply right there, or plan a trip. After each week your 🛻 drives your commute.</li></ul>
       <p><b>📍 Where things happen:</b> every event takes place somewhere (the fairgrounds, the Touchet, Bluewood, your workplace). The event tells you where, and for 4 weeks a gold badge marks the spot on the map. Tap the place to see what happened there.</p>
       <p class="muted">River shapes for the Columbia, Snake and Yakima come from <b>Natural Earth</b> (public domain). The Walla Walla and Touchet rivers and the roads are drawn by hand.</p>`],
@@ -192,7 +206,7 @@ function guideHTML(){
       <p><b>Badges:</b> earn them as your life unfolds. They're collected across all your lives (see them on the title screen).</p>
       <table><tr><th>Badge</th><th>How to earn it</th></tr>${BADGES.map(b => `<tr><td>${b.ic} ${b.name}</td><td>${b.desc}</td></tr>`).join('')}</table>
       <p><b>Life goals:</b> on the <b>Life</b> tab, pin up to ${GOAL_MAX} badges as goals for this life. Each one you reach <b>after</b> pinning it adds <b>${GOAL_POINTS} points</b> to your Life Score.</p>
-      <p><b>Stories:</b> some events unfold over weeks: fixing up the fixer-upper, a friend's food truck, and the flood that leads to a new levee (it only comes after high water that the town didn't sandbag with your help, and if it reaches your place you'll spend a few weeks drying out). What you choose at each step changes what comes next.</p>
+      <p><b>Stories:</b> some events unfold over weeks: fixing up the fixer-upper, a friend's food truck, a Little League season you coach (a losing streak, a comeback and the season party), and the flood that leads to a new levee (it only comes after high water that the town didn't sandbag with your help, and if it reaches your place you'll spend a few weeks drying out). What you choose at each step changes what comes next.</p>
       <p><b>🏁 Challenges</b> (on the title screen): set-up stories with a goal. ${Object.values(SCENARIOS).map(c => `${c.ic} <b>${c.name}</b>: ${c.desc}`).join(' ')}</p>`],
     ['grow', '🧰 Skills and your own business', `
       <p><b>Skills</b> grow with practice and show on the Life tab (★ levels 1–3):</p>
@@ -271,7 +285,7 @@ function showHelp(){
   v.innerHTML = `<div class="helphead"><h1>❓ Help</h1><button class="sm alt" id="helpclose" aria-label="Close help">✕ Close</button></div>
     <div class="helpbody">
       <div class="card tutcard"><h3>🎮 Gameplay tutorial</h3>
-        <p>Play a short <b>practice life</b>, about 3 minutes. A pulsing ring shows exactly what to tap, and each step waits for your tap. ${HELP_FROM === 'game' ? 'Your current life is saved first and comes right back afterward.' : 'Nothing is saved.'}</p>
+        <p>Play a short <b>practice life</b>, about 4 minutes: jobs, your weekly focus, skips and plans, Out and about, trips, insurance, the money outlook, the maps and Settings. A pulsing ring shows exactly what to tap, and each step waits for your tap. ${HELP_FROM === 'game' ? 'Your current life is saved first and comes right back afterward.' : 'Nothing is saved.'}</p>
         <button class="btn primary" id="tutstart">Start the tutorial</button></div>
       ${guideHTML()}
     </div>`;
@@ -289,7 +303,7 @@ function closeHelp(){
 }
 
 /* ---------- guided practice tutorial ---------- */
-let TUT = null;
+let TUT = null, LAST_TUT_SKIPPED = [];        // steps whose target never appeared (the tests check there are none)
 const TSTEPS = [
   { text:'👋 Welcome to a <b>practice life</b>. Nothing here is saved. Follow the <b>pulsing ring</b> and tap what it points to.' },
   { sel:'[data-apply="farmhand"]', tap:1, text:'This is the <b>Jobs</b> tab. Each job shows take-home pay after taxes and gas. Tap <b>Apply</b> on Wheat farm hand.' },
@@ -298,30 +312,45 @@ const TSTEPS = [
   { sel:'[data-f="community"]', tap:1, text:'Each week you pick one <b>focus</b>. Tap <b>Town</b> to show up for your community.' },
   { sel:'#end', tap:1, text:'The End Week button shows your focus. Tap <b>End Week</b> to play the week.' },
   { sel:'#strip', tap:1, text:'This strip shows what the week did: money, and ▲▼ for each stat. Tap it.' },
-  { sel:'#modal:not(.hidden) #ok', tap:1, text:'Here\'s every paycheck and bill. Tap <b>Close</b>.' },
+  { sel:'#modal:not(.hidden) #ok', tap:1, text:'Here\'s every paycheck and bill. Tap a line to see <b>why</b> it cost that. Tap <b>Close</b>.' },
   { before:() => showEvent(EVENTS.find(e => e.title === 'Celebration Days')), sel:'#modal:not(.hidden) [data-i="0"]', tap:1, text:'<b>Events</b> pop up as life happens. Tap the first choice.' },
   { sel:'#modal:not(.hidden) #ok', tap:1, text:'Every choice shows what it did. Tap <b>Continue</b>.' },
   { sel:'#ff4', tap:1, text:'<b>⏩</b> plays several weeks with the same focus and stops if something needs you. On small phones it hides behind a long press on End Week. Tap <b>⏩ 4</b>.' },
+  { sel:'#auto', text:'<b>⏭ Auto</b> plays until something needs you. Press and hold it (or Menu → Skip and Auto options) to pick <b>Auto until</b>: a stat getting low, cash below $0, or a new season.' },
+  { sel:'#planbtn', text:'<b>🗓 Plan</b> sets up to 4 focuses that take turns, one a week. Picking a focus by hand pauses the plan for that week.' },
+  { sel:'#outbtn', tap:1, text:'Quick visits to Waitsburg\'s shops, on top of your focus. Tap <b>🛍️ Out and about</b>.' },
+  { sel:'#modal:not(.hidden) #no', tap:1, text:'Every place has a card: when it\'s open and what you can do there. Up to 3 visits a week. Tap <b>Close</b>.' },
+  { sel:'#tripchip', text:'<b>🚗 Trips:</b> once a week, go to Dayton, Walla Walla or the Tri-Cities for groceries, the dentist, an oil change or a night out. It happens when you end the week.' },
   { sel:'nav [data-tab="jobs"]', tap:1, text:'Let\'s look for better work. Tap <b>Jobs</b>.' },
-  { sel:'[data-locked="para"]', tap:1, text:'🔒 jobs need more schooling. Tap the locked <b>School paraeducator</b> job.' },
+  { sel:'#main .term[data-term="takehome"]', tap:1, text:'<b>Underlined words</b> explain themselves. Tap <b>Take-home</b>.' },
+  { sel:'[data-job="lineman"]', text:'Tags show what\'s special: <b>🪪 union</b> jobs take dues but give steadier raises, and <b>🧰 apprentice</b> jobs start at 60% pay and step up each year.' },
+  { sel:'[data-locked="para"]', tap:1, text:'🔒 jobs need more schooling, a short certificate or a program (sign up on the Life tab). Tap the locked <b>School paraeducator</b> job.' },
   { sel:'#modal:not(.hidden) #yes', tap:1, text:'It shows what the job takes. Tap <b>Make Take classes my focus</b>.' },
-  { sel:'nav [data-tab="life"]', tap:1, text:'Tap <b>Life</b> for homes, rides, savings and family.' },
+  { sel:'nav [data-tab="life"]', tap:1, text:'Tap <b>Life</b> for school, homes, rides, savings and family.' },
   { sel:'[data-k401="1"]', tap:1, text:'Save for retirement: tap <b>5%</b>. Your employer adds 3% on top.' },
+  { sel:'#undo', text:'Changed your mind? <b>↩ Undo</b> takes back Life-tab changes until you end the week.' },
+  { sel:'#inssheet', tap:1, text:'🛡️ You choose your <b>insurance</b>. Tap <b>Change coverage</b>.' },
+  { sel:'#modal:not(.hidden) #ok', tap:1, text:'Cheaper coverage saves a little each month, but a crash or a break-in costs you more. Tap <b>Done</b>.' },
+  { sel:'#outlook', tap:1, text:'🧭 <b>Planning ahead</b> shows your Social Security and pension for retirement (in Lifetime games you can retire from 62). Tap <b>📅 Money outlook</b>.' },
+  { sel:'#modal:not(.hidden) #no', tap:1, text:'Your next 13 weeks of pay and bills, and the week your cash would dip below zero. Tap <b>Close</b>.' },
   { sel:'nav [data-tab="home"]', tap:1, text:'Back to <b>Home</b>.' },
   { sel:'#main .maptog button:nth-child(2)', tap:1, text:'Rather use a map? Tap <b>🗺️ Map</b>.' },
   { sel:'.mpin[aria-label="Touchet River"]', tap:1, text:'Tap a place to spend your week there. Tap the <b>River</b>.' },
   { sel:'.mapdet .sm', tap:1, text:'Tap <b>Spend this week here</b>.' },
-  { sel:'#main .maptog button:nth-child(1)', tap:1, text:'Your focus is now <b>Get outside</b>. Tap <b>📋 List</b> to switch back.' },
+  { sel:'.mpin[aria-label="Main Street"]', tap:1, text:'Your focus is now <b>Get outside</b>. Tap <b>Main Street</b> for a close-up of downtown.' },
+  { sel:'.msmap', text:'Each pin is a business. Tap one any time for its card. Dashed pins are closed this week.' },
+  { sel:'#main .maptog button:nth-child(1)', tap:1, text:'Tap <b>📋 List</b> to switch back.' },
   { sel:'nav [data-tab="menu"]', tap:1, text:'Tap <b>Menu</b>.' },
-  { sel:'#modal:not(.hidden) #save', text:'<b>💾 Save game</b> and <b>📂 Load game</b> live here. Real lives also save themselves every week, in up to 5 slots.' },
+  { sel:'#modal:not(.hidden) #settings', tap:1, text:'<b>💾 Save game</b> and <b>📂 Load game</b> live here; real lives also save themselves every week. Tap <b>⚙️ Settings</b>.' },
+  { sel:'#modal:not(.hidden) #back', tap:1, text:'Night theme, text size, sounds and swipes. Tap <b>Back to Menu</b>.' },
   { sel:'#modal:not(.hidden) #close', tap:1, text:'Tap <b>Close</b>.' },
-  { sel:'#helpbtn', text:'Tap <b>?</b> any time for the full game guide, or to replay this tutorial.' },
-  { text:'🎉 That\'s the basics! Balance <b>happiness, health, community and money</b>, and mix up your weekly focus. Good luck in the Burg.', done:1 }
+  { sel:'#helpbtn', text:'🎉 That\'s the basics! Balance <b>happiness, health, community and money</b>, and mix up your focus. When a life ends, your <b>life story</b> plays before the score. Tap <b>?</b> any time for the game guide or this tutorial.', done:1 }
 ];
 function startTutorial(){
   closeHelp(); closeSheet();
   if (S && !S.over && !S.practice) save();
-  TUT = { i: -1, prev: { S: S && !S.over ? clone(S) : null, tab, prefs: clone(prefs()), jobCity, jobOK } };
+  TUT = { i: -1, skipped: [], prev: { S: S && !S.over ? clone(S) : null, tab, prefs: clone(prefs()), jobCity, jobOK, undo: LIFE_UNDO } };
+  LIFE_UNDO = [];
   setPref('mapView', false); jobCity = 'all'; jobOK = false;
   newGame('Practice', 'half', 0, { practice: true });
   if (!$('#coach')) document.body.insertAdjacentHTML('beforeend', '<div id="coach" class="hidden"></div>');
@@ -341,7 +370,7 @@ function drawCoach(){
   const st = TSTEPS[TUT.i], c = $('#coach');
   $('#toast').classList.add('hidden');
   const el = st.sel ? document.querySelector(st.sel) : null;
-  if (st.sel && !el) { if (++TUT.tries < 12) return setTimeout(drawCoach, 150); return tutNext(); }   // skip a step whose target never appeared
+  if (st.sel && !el) { if (++TUT.tries < 12) return setTimeout(drawCoach, 150); TUT.skipped.push(TUT.i); return tutNext(); }   // skip a step whose target never appeared
   if (el && el.scrollIntoView && !el.closest('.endbar, .weekstrip, nav, .sheet')) el.scrollIntoView({ block: 'center' });
   else if (el && el.scrollIntoView && el.closest('.sheet')) el.scrollIntoView({ block: 'nearest' });   // a long sheet: bring its button into view
   const r = el ? el.getBoundingClientRect() : null, pad = 6;
@@ -351,20 +380,38 @@ function drawCoach(){
       [0, 0, vw, Math.max(0, box.y)], [0, box.y + box.h, vw, Math.max(0, vh - box.y - box.h)],
       [0, box.y, Math.max(0, box.x), box.h], [box.x + box.w, box.y, Math.max(0, vw - box.x - box.w), box.h]]
     : [[0, 0, vw, vh]];
-  const below = box && box.y + box.h / 2 < vh / 2;
-  const bubbleY = !box ? 'top:50%;transform:translate(-50%,-50%)' : below ? `top:${Math.min(vh - 200, box.y + box.h + 14)}px` : `bottom:${Math.min(vh - 120, vh - box.y + 14)}px`;
   c.innerHTML = dim.map(([x,y,w,h]) => `<div class="cdim" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px"></div>`).join('') +
     (box ? `<div class="cring${st.tap ? ' tap' : ''}" style="left:${box.x}px;top:${box.y}px;width:${box.w}px;height:${box.h}px"></div>${st.tap ? `<div class="cfinger" style="left:${box.x + box.w/2}px;top:${box.y + box.h/2}px">👆</div>` : ''}` : '') +
-    `<div class="cbubble" role="dialog" aria-live="polite" style="${bubbleY}">
+    `<div class="cbubble" role="dialog" aria-live="polite" style="${box ? 'visibility:hidden' : 'top:50%;transform:translate(-50%,-50%)'}">
       <div class="cstep">Step ${TUT.i + 1} of ${TSTEPS.length}</div>
       <div class="ctext">${st.text}</div>
       <div class="cbtns">${st.tap ? '<span class="chint">👆 Tap the highlighted spot</span>' : `<button class="sm" id="cnext">${st.done ? 'Finish' : 'Next'}</button>`}
         ${st.done ? '' : '<button class="sm alt" id="cskip">Skip tutorial</button>'}</div></div>`;
   c.classList.remove('hidden');
+  if (box) placeBubble(c.querySelector('.cbubble'), box, vw, vh, !!st.tap);
   announce(`Tutorial step ${TUT.i + 1} of ${TSTEPS.length}. ${c.querySelector('.ctext').textContent}`);
   { const f = st.tap && el && el.focus ? el : $('#cnext'); if (f) f.focus({ preventScroll: true }); }   // keyboard users can press Enter
   if ($('#cnext')) $('#cnext').onclick = e => { e.stopPropagation(); hideCoach(); tutNext(); };
   if ($('#cskip')) $('#cskip').onclick = e => { e.stopPropagation(); endTutorial(false); };
+}
+// G1: put the bubble where it never covers the highlighted spot, at any screen size: below or above it if it fits,
+// beside it on a wide screen, and otherwise in the bigger gap, scrolling inside itself
+function placeBubble(b, box, vw, vh, tap){
+  const m = 8, gap = 14, bh = b.offsetHeight;
+  const below = vh - (box.y + box.h) - gap - m, above = box.y - gap - m;
+  const at = css => { Object.assign(b.style, css); b.style.visibility = ''; };
+  if (below >= bh && (below >= above || above < bh)) return at({ top: `${box.y + box.h + gap}px` });
+  if (above >= bh) return at({ top: `${box.y - gap - bh}px` });
+  const right = vw - (box.x + box.w) - gap - m, left = box.x - gap - m, side = Math.max(left, right);
+  if (side >= 240) {
+    const w = Math.min(440, side), x = right >= left ? box.x + box.w + gap : box.x - gap - w;
+    b.style.width = `${w}px`;
+    const h = b.offsetHeight;
+    return at({ left: `${x}px`, transform: 'none', top: `${Math.max(m, Math.min(vh - h - m, box.y + box.h / 2 - h / 2))}px` });
+  }
+  const room = Math.max(below, above);
+  if (!tap && room < 120) return at({ top: 'auto', bottom: `${m}px` });   // a big area to look at: the bubble may sit over part of it
+  at({ maxHeight: `${Math.max(80, room)}px`, overflowY: 'auto', top: below >= above ? `${box.y + box.h + gap}px` : `${Math.max(m, box.y - gap - Math.min(bh, room))}px` });
 }
 function hideCoach(){ const c = $('#coach'); if (c) { c.classList.add('hidden'); c.innerHTML = ''; } }
 // a tap on the highlighted spot moves the tutorial on (the app handles the tap as usual)
@@ -375,10 +422,10 @@ document.addEventListener('click', e => {
 }, true);
 addEventListener('resize', () => { if (TUT && !$('#coach').classList.contains('hidden')) drawCoach(); });
 function endTutorial(done){
-  const prev = TUT && TUT.prev; TUT = null; hideCoach(); closeSheet();
+  const prev = TUT && TUT.prev; if (TUT) LAST_TUT_SKIPPED = TUT.skipped; TUT = null; hideCoach(); closeSheet();
   if (!prev) return;
-  store.set(PREF_KEY, prev.prefs); jobCity = prev.jobCity; jobOK = prev.jobOK;
-  S = prev.S; tab = prev.tab || 'home';
+  store.set(PREF_KEY, prev.prefs); applyPrefs(); jobCity = prev.jobCity; jobOK = prev.jobOK; LIFE_UNDO = prev.undo || [];
+  S = prev.S; tab = prev.tab || 'home'; MAPSIDE = null; MAPSEL = null;
   if (S) { render(); window.scrollTo(0,0); } else renderTitle();
   toast(done ? '🎉 Tutorial finished' : 'Tutorial closed');
 }
