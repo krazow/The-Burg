@@ -60,6 +60,7 @@ function careMult(){ const w = S.turn - (S.svc ?? 0); return w <= 26 ? 0.6 : w <
 const ditchMult = () => S.tires === S.car ? 0.4 : 1;
 // plan this week's trip; returns '' or why it can't be planned
 function planTrip(city, ids){
+  if (awaySouth()) return 'You\'re in Arizona until April.';   // i3-a30
   if (!CITIES[city] || city === 'waitsburg') return 'Pick a town to visit.';
   ids = [...new Set(ids)];
   if (!ids.length) return 'Pick at least one stop.';
@@ -502,11 +503,18 @@ function heirName(name){
   const suffix = ' ' + toRoman(Math.min(39, n + 1));
   return base.slice(0, 20 - suffix.length).trim() + suffix;
 }
+// i3-a33: what the will (or the lack of one) means for the grandkid
+function legacyWillLine(p){
+  const inh = inheritance(p);
+  return inh.will ? `<div class="card tip">📜 <b>${esc(p.name)} left a will.</b> ${fmt(inh.now)} passes right away${inh.home ? `, and so does the ${HOMES[inh.home].name.toLowerCase()}` : ''}.</div>`
+    : `<div class="card warn">⚖️ <b>No will.</b> ${inh.later > 0 ? `${HOMES[p.home] && HOMES[p.home].own ? 'The house is sold, and p' : 'P'}robate takes ${fmt(inh.cut)} and about 6 months: ${fmt(inh.later)} arrives after 26 weeks.` : 'There\'s nothing to pass on.'}</div>`;
+}
 // pick (or type) the grandkid's name before the next generation starts
 function legacySheet(parent){
   const sugg = heirName(parent.name);
   sheet(`<div class="big">🌳</div><h2 style="text-align:center">Continue as your grandkid</h2>
     <p>${esc(parent.name)}'s grandkid just turned 18 and is staying in Waitsburg, with part of the family's savings and a name people know around town.</p>
+    ${legacyWillLine(parent)}
     <label class="field" for="heirnm">Your grandkid's name</label>
     <input type="text" id="heirnm" maxlength="20" value="${esc(sugg)}" autocomplete="off">
     <button class="btn primary" id="heirgo">Start the next generation</button>
@@ -515,14 +523,19 @@ function legacySheet(parent){
   $('#no').onclick = () => { closeSheet(); S = null; useDice(); renderTitle(); };
 }
 function startLegacy(parent, name = heirName(parent.name)){
-  const real = Math.max(0, parent.nw), heir = Math.min(250000 * (parent.col || 1), Math.round(real * 0.5));
+  const inh = inheritance(parent);                 // i3-a33: the will decides how (and when) the family's money arrives
   name = String(name).slice(0, 20);
   newGame(name, 'life', parent.slot ?? 0, { bg:'fresh', mode:parent.mode });
-  S.gen = (parent.gen || 1) + 1; S.money = heir; S.community = clamp(Math.round(parent.community / 2) + 15);
+  S.gen = (parent.gen || 1) + 1; S.community = clamp(Math.round(parent.community / 2) + 15);
   S.date = parent.date; S.col = parent.col; S.wage = parent.wage; S.tabsYear = new Date(S.date).getFullYear();
+  if (inh.will) {
+    S.money = inh.now;
+    if (inh.home) { S.home = inh.home; S.equity = parent.equity || 0; S.mortgage = parent.mortgage || cost(HOMES[inh.home].cost); }
+  } else if (inh.later > 0) S.probate = { amt: inh.later, at: S.turn + PROBATE_WEEKS, from: parent.name };
   S.yearStart = { nw: netWorth(), happy: S.happy, health: S.health, community: S.community };
   S.badges = {}; S.log = [];
-  log(`${name} turns 18 and picks up where grandparent ${parent.name} left off, with ${fmt(heir)} from the family and a name people know around town.`);
+  log(inh.will ? `${name} turns 18 and picks up where grandparent ${parent.name} left off, with ${fmt(inh.now)} from the family${inh.home ? `, the family's ${HOMES[inh.home].name.toLowerCase()}` : ''} and a name people know around town. The will made it simple.`
+    : `${name} turns 18 and picks up where grandparent ${parent.name} left off, with a name people know around town. There was no will: ${inh.later > 0 ? `probate takes ${fmt(inh.cut)} and about 6 months before ${fmt(inh.later)} comes through` : 'there was nothing left to pass on'}.`);
   save(); render(); toast(`🌳 Generation ${S.gen}: ${name}`);
 }
 
@@ -620,11 +633,215 @@ function finish(reason){
     <div class="kv"><span>Education</span><span>${EDU[S.edu]}</span></div>
     ${S.biz ? `<div class="kv"><span>🏪 Business</span><span>${BIZ[S.biz.type].name}, earned ${fmt(S.biz.earned)}</span></div>` : ''}
     ${S.gen > 1 ? `<div class="kv"><span>🌳 Generation</span><span>${S.gen}</span></div>` : ''}
+    ${S.scholar ? `<div class="kv"><span>🎓 ${esc(scholarName())}</span><span>${S.scholar.n} graduate${S.scholar.n === 1 ? '' : 's'} helped</span></div>` : ''}
+    ${pensionVested() ? `<div class="kv"><span>🏛️ Public pension</span><span>${Math.floor(S.pensionYears)} years</span></div>` : ''}
+    ${LENGTHS[S.len].turns === Infinity && (S.kids || []).length && !S.practice ? `<div class="kv"><span>📜 Will</span><span>${hasWill() ? 'On file' : 'None: probate will take a share'}</span></div>` : ''}
     ${!S.practice ? '<button class="btn ghost" id="share">📤 Share score card</button>' : ''}
     ${LENGTHS[S.len].turns === Infinity && (S.kids || []).length && !S.practice ? `<button class="btn primary" id="legacy">🌳 Continue as your grandkid</button>` : ''}
     <button class="btn ${LENGTHS[S.len].turns === Infinity && (S.kids || []).length && !S.practice ? 'ghost' : 'primary'}" id="again">Play again</button>`);
-  const parent = { name:S.name, nw:netWorth(), community:S.community, slot:S.slot, mode:mode(), gen:S.gen || 1, date:S.date, col:S.col, wage:S.wage };
+  const parent = { name:S.name, nw:netWorth(), community:S.community, slot:S.slot, mode:mode(), gen:S.gen || 1, date:S.date, col:S.col, wage:S.wage,
+    will:hasWill(), home:S.home, equity:S.equity, mortgage:S.mortgage };
   if ($('#share')) $('#share').onclick = shareCard;
   if ($('#legacy')) $('#legacy').onclick = () => legacySheet(parent);
   $('#again').onclick = () => { closeSheet(); S = null; useDice(); renderTitle(); };
+}
+
+/* ============================================================
+   🧓 RETIREMENT AND PLANNING (ideas round 3: i3-a24 to i3-a34)
+   Pensions and Social Security live in state.js (pensionPay, ssPay); this part has the late-life choices,
+   the will, the scholarship, the spare room and the 13-week money outlook. Amounts are monthly 2027 dollars.
+   ============================================================ */
+const isLifetime = () => LENGTHS[S.len].turns === Infinity;
+// i3-a33: a will at Mother Hubbard's Legal Cupboard. Without one, probate takes 10% of what the grandkid gets and about 6 months
+const WILL_FEE = 300, WILL_MIN_AGE = 25, PROBATE_CUT = 0.10, PROBATE_WEEKS = 26;
+const hasWill = () => !!(S && (S.will || (S.out && S.out.will)));
+function writeWill(){
+  if (hasWill()) return 'Your will is already on file.';
+  if (age() < WILL_MIN_AGE) return `From age ${WILL_MIN_AGE}.`;
+  if (S.money < cost(WILL_FEE)) return `You need ${fmtc(WILL_FEE)} on hand.`;
+  S.money -= cost(WILL_FEE); S.will = true; S.out = S.out || outDefault(); S.out.will = true; adj({ happy:2 });
+  log(`Wrote a will at Mother Hubbard's Legal Cupboard (${fmtc(WILL_FEE)}).`, 'money');
+  return '';
+}
+// what the grandkid gets: half the net worth, up to $250,000 in 2027 dollars. A will passes it at once, with the family home;
+// without one the house is sold and probate takes 10% and 26 weeks
+function inheritance(p){
+  const cap = 250000 * (p.col || 1), nw = Math.max(0, p.nw || 0), owned = !!(HOMES[p.home] && HOMES[p.home].own);
+  if (p.will) return { will:true, now: Math.min(cap, Math.round(Math.max(0, nw - (owned ? p.equity || 0 : 0)) * 0.5)), later:0, cut:0, home: owned ? p.home : null };
+  const share = Math.min(cap, Math.round(nw * 0.5)), later = Math.round(share * (1 - PROBATE_CUT));
+  return { will:false, now:0, later, cut: share - later, home:null };
+}
+// i3-a30: retirees can winter in Arizona from January to March
+const SOUTH_MONTHS = [0, 1, 2], SOUTH_COST = 1950;
+const awaySouth = () => !!S && !!S.retired && S.snowbird === new Date(S.date).getFullYear() && SOUTH_MONTHS.includes(curMonth());
+// i3-a31: long-term care from 75 when health is under 50; insurance bought at 55 pays 60% of the bill
+const LTC_PREMIUM = 120, LTC_COVER = 0.6, CARE_AGE = 75, CARE_HEALTH = 50, LTC_AGE = 55;
+// happy, health and comm are monthly drift, like a job's stress
+const CARE = {
+  aide:   { ic:'🏠', name:'A paid aide at home', bill:'Home care aide', cost:4200, happy:0.8, health:2, comm:0,
+    desc:'Stay in your own house with a home care aide most days. Costs the most to keep life as it is.' },
+  living: { ic:'🏥', name:'Assisted living in Walla Walla', bill:'Assisted living', cost:5600, happy:-0.3, health:3, comm:-1.5,
+    desc:'Nurses down the hall and meals made for you. Your health holds up best, but you see less of Waitsburg.' },
+  family: { ic:'👪', name:'Count on family', bill:'', cost:0, happy:-2, health:1, comm:0.3,
+    desc:'Your kids take turns helping out. No bill, but it weighs on everyone.' },
+  medicaid: { ic:'🛏️', name:'A Medicaid bed at the Dayton nursing home', bill:'', cost:0, happy:-2.5, health:1.5, comm:-1,
+    desc:'With your savings spent down, Medicaid pays for a shared room in Dayton. You\'re looked after, but it isn\'t home.' }
+};
+// paid care needs about 6 months of the bill on hand; when the money runs out, Medicaid takes over
+const careAfford = k => S.money >= cost(CARE[k].cost) * (S.ltc && S.ltc.ins ? 1 - LTC_COVER : 1) * 6;
+const careMonthly = () => S.care && CARE[S.care] ? CARE[S.care].cost * (S.ltc && S.ltc.ins ? 1 - LTC_COVER : 1) : 0;
+const hasFamily = () => (S.kids || []).length > 0 || S.partner;
+// i3-a32: a scholarship in your name at Waitsburg High
+const SCHOLAR_NW = 150000, SCHOLAR_COST = 40000;
+const scholarName = () => `${S.name} Scholarship`;
+function endowScholarship(){
+  if (S.scholar) return 'Your scholarship is already set up.';
+  if (netWorth() < cost(SCHOLAR_NW)) return `From a net worth of ${fmtc(SCHOLAR_NW)}.`;
+  if (S.money < cost(SCHOLAR_COST)) return `You need ${fmtc(SCHOLAR_COST)} on hand.`;
+  S.money -= cost(SCHOLAR_COST); S.scholar = { y: new Date(S.date).getFullYear(), n:0, at: age() };
+  adj({ community:5, happy:4 }); log(`Endowed the ${scholarName()} at Waitsburg High with ${fmtc(SCHOLAR_COST)}.`, 'mile');
+  return '';
+}
+// i3-a34: owners with a spare room host visitors on the first weekend of May, July, September and November
+const HOST_WEEKS = { 4:'spring release weekend', 6:'summer concerts at the wineries', 8:'Fair & Frontier Days', 10:'fall release weekend' };
+const HOST_PAY = 170, HOST_HAPPY = -1.5;
+const spareRoom = () => !!(HOMES[S.home] && HOMES[S.home].own) && kidsAtHome() <= (S.home === 'farm' ? 2 : 1);
+const hostWeekAt = d => HOST_WEEKS[d.getMonth()] !== undefined && d.getDate() <= 7;
+// the planning lines and notes for one week (runs in weekTick's money step)
+function planWeek(lines, notes){
+  const m = W;
+  if (awaySouth()) lines.push(['Winter in Arizona', -cost(SOUTH_COST) * m]);
+  if (S.roomHost && spareRoom() && !S.practice && hostWeekAt(new Date(S.date))) {
+    lines.push([`Spare room: ${HOST_WEEKS[curMonth()]} guests`, cost(HOST_PAY)]); adj({ happy: HOST_HAPPY }); S.hostLast = S.turn;
+  }
+  if ((S.care === 'aide' || S.care === 'living') && S.money < 0) {   // paid care ran through the savings: Medicaid takes over
+    S.care = 'medicaid'; notes.push('🛏️ Your savings ran out, so Medicaid moved you to a shared room at the Dayton nursing home.'); log('Savings ran out: moved into a Medicaid bed in Dayton.', 'mile');
+  }
+  if (S.probate && S.turn >= S.probate.at) {
+    lines.push(['Inheritance (probate closed)', S.probate.amt]);
+    notes.push(`⚖️ Probate is finally done: ${fmt(S.probate.amt)} from ${S.probate.from}'s estate is yours.`);
+    log(`Probate closed on ${S.probate.from}'s estate: ${fmt(S.probate.amt)}.`, 'money'); S.probate = null;
+  }
+}
+// events that come when they're due instead of by the dice (the care chain, the winter choice, scholarship night)
+function planDue(month){
+  return PLAN_DUE.find(e => !(S.evCd[e.title] > S.turn) && !(e.once && S.evDone[e.title]) && e.when(month)) || null;
+}
+const PLAN_DUE = [
+  { ic:'📋', title:'Long-term care insurance', once:1, when:() => isLifetime() && age() >= LTC_AGE && age() < LTC_AGE + 5 && !S.ltc,
+    text:() => `An agent from the farm insurance office explains long-term care insurance: ${wk(cost(LTC_PREMIUM))} from now on, and it pays ${LTC_COVER * 100}% of an aide or assisted living if you need one after ${CARE_AGE}.`,
+    choices:() => [
+      {label:`Buy it (${wk(cost(LTC_PREMIUM))})`, go:() => { S.ltc = { ins:true, at:age() }; return 'Signed. One less thing to worry about later.'; }},
+      {label:'Pass', go:() => { S.ltc = { ins:false, at:age() }; return 'You\'ll take your chances, or count on family.'; }}
+    ]},
+  { ic:'🧓', title:'Who will care for you?', once:1, when:() => isLifetime() && age() >= CARE_AGE && S.health < CARE_HEALTH && !S.care,
+    text:() => `The stairs are harder and the doctor wants someone checking on you. Time to decide how you'll be cared for.${S.ltc && S.ltc.ins ? ` Your care insurance pays ${LTC_COVER * 100}% of the bill.` : ''}`,
+    choices:() => [
+      ...['aide', 'living'].map(k => ({ label:`${CARE[k].ic} ${CARE[k].name} (${wk(cost(CARE[k].cost) * (S.ltc && S.ltc.ins ? 1 - LTC_COVER : 1))})`, if:() => careAfford(k),
+        go:() => { S.care = k; log(`Chose care: ${CARE[k].name.toLowerCase()}.`, 'mile'); return CARE[k].desc; } })),
+      { label:`${CARE.family.ic} ${CARE.family.name}`, if:hasFamily, go:() => { S.care = 'family'; log('Chose care: family looks after you.', 'mile'); return CARE.family.desc; } },
+      { label:`${CARE.medicaid.ic} ${CARE.medicaid.name}`, if:() => !careAfford('aide'), go:() => { S.care = 'medicaid'; log('Moved into a Medicaid bed at the Dayton nursing home.', 'mile'); return CARE.medicaid.desc; } }
+    ]},
+  { ic:'🌵', title:'Winter in Arizona?', yr:1, when:m => m === 11 && S.retired && !S.care && S.snowbird !== new Date(S.date).getFullYear() + 1 && S.money >= cost(SOUTH_COST) * 4,
+    text:() => `Friends from church are renting places near Yuma again, January through March. Sunshine and golf for about ${fmt(cost(SOUTH_COST))} a month, but Waitsburg goes on without you.`,
+    choices:() => [
+      {label:`Go south for the winter (${wk(cost(SOUTH_COST))})`, go:() => { S.snowbird = new Date(S.date).getFullYear() + 1; return 'Bags packed for January. The gray months will be someone else\'s problem.'; }},
+      {label:'Stay home this winter', go:() => 'Snow on Main Street and coffee at the bakery. Home is home.'}
+    ]},
+  { ic:'🎓', title:'Scholarship night at Waitsburg High', when:m => m === 5 && !!S.scholar && S.scholar.y !== new Date(S.date).getFullYear(),
+    text:() => `Awards night in the gym. This year's ${scholarName()} goes to a senior headed to college in the fall.`,
+    choices:() => [{label:'Hand over the certificate', go:() => { S.scholar.y = new Date(S.date).getFullYear(); S.scholar.n++; adj({ community:3, happy:2 });
+      return `The whole gym clapped. That's ${S.scholar.n} graduate${S.scholar.n === 1 ? '' : 's'} helped so far.`; }}]}
+];
+// i3-a34: the odd guest, in the weeks right after a hosting weekend
+const PLAN_EVENTS = [
+  { ic:'🛏️', title:'Wine weekend guests', w:3, when:() => S.roomHost && S.turn - (S.hostLast ?? -99) <= 1,
+    text:'Your spare-room guests from Seattle loved the town: the bakery, the river walk, the quiet.',
+    choices:() => [{label:'Wave them off', go:() => { adj({ money:cr(40), happy:2 }); return `A glowing review and a ${fmtc(40)} tip on the dresser.`; }}]},
+  { ic:'🍷', title:'A rough guest', w:2, when:() => S.roomHost && S.turn - (S.hostLast ?? -99) <= 1,
+    text:'Your spare-room guest came back from the tasting rooms loud at 2 a.m. and left red wine on the carpet.',
+    choices:() => [
+      {label:`Pay for a carpet cleaner (-${fmtc(220)})`, go:() => { adj({ money:-cr(220), happy:-1 }); return 'The stain came out. The memory didn\'t.'; }},
+      {label:'Scrub it yourself', go:() => { adj({ happy:-3, health:-1 }); return 'An afternoon on your knees with club soda. Mostly out.'; }}
+    ]}
+];
+EVENTS.push(...PLAN_EVENTS);
+Object.assign(EVENT_PLACE, { 'Long-term care insurance':['T','mainst'], 'Who will care for you?':['T','home'], 'Winter in Arizona?':['T','home'],
+  'Scholarship night at Waitsburg High':['T','school'], 'Wine weekend guests':['T','home'], 'A rough guest':['T','home'] });
+
+// i3-a28: the next 13 weeks of regular money, read-only, from the same bill lines weekTick uses
+function moneyOutlook(n = 13){
+  const out = [], j = S.retired ? null : job(), f = FOCUS[S.focus] || FOCUS.rest, d0 = new Date(S.date);
+  let cash = S.money, tabsYear = S.tabsYear, lowWeek = null;
+  const lease = S.biz && S.biz.type === 'wheat' ? (S.biz.lease ?? LEASE_WEEKS) - S.biz.weeks : null;
+  for (let i = 0; i < n; i++) {
+    const d = new Date(d0.getTime() + i * 7 * 864e5), lines = [], big = [], grow = Math.pow(1 + COL_RATE, i / 52);
+    let gross = 0;
+    if (S.retired) { gross = ssPay() * W + pensionPay() * W; lines.push(['Social Security and pension', gross]); }
+    else if (j) { gross = payNow(j) * W * (f.payMult || 1) * (1 - (S.k401rate ? K401[S.k401rate] : 0)); lines.push(['Paycheck', gross]); }
+    if (gross) lines.push(['Taxes', -gross * (S.retired ? 0.05 : 0.15)]);
+    if (S.partner && age() < 65) lines.push(["Partner's paycheck", 1400 * S.wage * W]);
+    lines.push(...billLines(i));
+    if (f.cost) lines.push([f.name, -cost(f.cost) * grow * W]);
+    if (f.study && S.edu < 3) big.push(['Tuition', -cost(TUITION[S.edu]) * grow * W]);
+    if (S.loanLeft > i * W) lines.push(['Truck payment', -(S.loanPay || CARS.truck.pay) * Math.min(W, S.loanLeft - i * W)]);
+    if (S.sloanLeft > i * W) lines.push(['Student loan', -S.sloanPay * Math.min(W, S.sloanLeft - i * W)]);
+    if (d.getMonth() === 0 && tabsYear !== d.getFullYear()) { big.push(['Vehicle tabs (DMV)', -vehicleTabs() * grow]); tabsYear = d.getFullYear(); }
+    if (lease != null && lease === i) big.push(['Wheat lease renewal', -leaseCost()]);
+    if (S.retired && S.snowbird === d.getFullYear() && SOUTH_MONTHS.includes(d.getMonth())) big.push(['Winter in Arizona', -cost(SOUTH_COST) * grow * W]);
+    if (S.roomHost && spareRoom() && hostWeekAt(d)) lines.push(['Spare-room guests', cost(HOST_PAY) * grow]);
+    if (S.probate && S.probate.at === S.turn + i) big.push(['Inheritance (probate closes)', S.probate.amt]);
+    const net = [...lines, ...big].reduce((a, [, v]) => a + v, 0);
+    cash += net;
+    if (cash < 0 && lowWeek == null) lowWeek = i;
+    out.push({ d, net, cash, big });
+  }
+  return { weeks: out, lowWeek };
+}
+function outlookSheet(back){
+  const o = moneyOutlook(), lab = d => `${MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}`;
+  const end = o.weeks[o.weeks.length - 1].cash;
+  sheet(`<h2>📅 Money outlook: the next 13 weeks</h2>
+    <p class="muted">Your regular pay and bills from today's numbers, week by week. Events, trips and side hustles aren't counted.</p>
+    <div class="card ${o.lowWeek == null ? 'tip' : 'warn'}" role="status">${o.lowWeek == null
+      ? `✅ On track: cash stays above zero, about ${fmt(end)} by ${lab(o.weeks[o.weeks.length - 1].d)}.`
+      : `⚠️ Cash dips below zero in the week of ${lab(o.weeks[o.lowWeek].d)}. Cut a cost or pick up hours before then.`}</div>
+    <table class="rec outlook"><caption class="sr-only">Cash week by week</caption><thead><tr><th scope="col">Week of</th><th scope="col">Change</th><th scope="col">Cash after</th></tr></thead><tbody>
+    ${o.weeks.map(w => `<tr class="${w.cash < 0 ? 'neg' : ''}"><th scope="row">${lab(w.d)}${w.big.length ? `<br><small>${w.big.map(([l, v]) => `${esc(l)} ${v > 0 ? '+' : ''}${fmt(v)}`).join(' · ')}</small>` : ''}</th>
+      <td>${w.net >= 0 ? '+' : ''}${fmt(w.net)}</td><td>${fmt(w.cash)}</td></tr>`).join('')}</tbody></table>
+    ${back ? '<button class="btn primary" id="back">Back</button>' : ''}<button class="btn ${back ? 'ghost' : 'primary'}" id="no">Close</button>`);
+  if ($('#back')) $('#back').onclick = back;
+  $('#no').onclick = closeSheet;
+}
+// the Life tab's planning card: retirement income, the outlook, the will, care, the scholarship and the spare room
+function planningCard(){
+  const life = isLifetime(), owned = HOMES[S.home].own;
+  const row = (l, v) => `<div class="kv"><span>${l}</span><span>${v}</span></div>`;
+  const pens = (S.pensionYears || 0) > 0 ? row(`🏛️ Public pension<br><small class="muted">${PENSION_RATE * 100}% of your best public pay for each of your ${Math.floor(S.pensionYears * 10) / 10} years${pensionVested() ? '' : ` · vests at ${PENSION_VEST}`}</small>`,
+    pensionVested() ? `<b>${wk(pensionPay())}</b>` : 'Not vested yet') : '';
+  return `<div class="card"><h3>🧭 Planning ahead</h3>
+    <button class="sm alt" id="outlook">📅 Money outlook: next 13 weeks</button>
+    ${row(`🇺🇸 Social Security${S.retired ? '' : ' (estimate)'}<br><small class="muted">${Math.floor(S.earnYears || 0)} years worked of ${SS_FULL_YEARS} · ${Math.round(ssFactor() * 100)}% of the standard amount</small>`, `<b>${wk(ssPay())}</b>`)}
+    ${pens}
+    ${life && S.ltc ? row('📋 Long-term care insurance', S.ltc.ins ? (S.care ? `Pays ${LTC_COVER * 100}% of care` : wk(cost(LTC_PREMIUM))) : 'None') : ''}
+    ${S.care ? row(`${CARE[S.care].ic} Care`, `${CARE[S.care].name}${careMonthly() ? ` · ${wk(cost(careMonthly()))}` : ''}`) : ''}
+    ${S.retired && S.snowbird != null ? row('🌵 Winters', S.snowbird >= new Date(S.date).getFullYear() ? `Arizona, January to March ${S.snowbird}` : 'At home') : ''}
+    ${row('📜 Will', hasWill() ? 'On file' : life ? 'None yet: probate would take 10% and 6 months from your heir' : 'None yet')}
+    ${hasWill() ? '' : `<button class="sm" id="will" ${age() < WILL_MIN_AGE ? 'disabled' : ''}>Write a will (${fmtc(WILL_FEE)})${age() < WILL_MIN_AGE ? ` · from age ${WILL_MIN_AGE}` : ''}</button>`}
+    ${S.scholar ? row(`🎓 ${esc(scholarName())}`, `${S.scholar.n} graduate${S.scholar.n === 1 ? '' : 's'} helped`)
+      : netWorth() >= cost(SCHOLAR_NW) ? `<p class="muted" style="margin:6px 0">Endow a scholarship at Waitsburg High in your name: ${fmtc(SCHOLAR_COST)} now, a graduate every June, and a little community each year.</p><button class="sm" id="scholar">🎓 Endow a scholarship (${fmtc(SCHOLAR_COST)})</button>` : ''}
+    ${owned ? `<p class="muted" style="margin:6px 0">🛏️ Spare room: host visitors on Walla Walla's big wine weekends, four times a year, about ${fmtc(HOST_PAY)} each, plus the cleaning.${spareRoom() ? '' : ' A full house leaves no spare room right now.'}</p>
+      <button class="sm ${S.roomHost ? 'alt' : ''}" id="host" aria-pressed="${!!S.roomHost}">${S.roomHost ? 'Hosting: stop renting the room' : 'Rent out the spare room'}</button>` : ''}
+  </div>`;
+}
+function planningWire(){
+  if ($('#outlook')) $('#outlook').onclick = () => outlookSheet();
+  if ($('#will')) $('#will').onclick = () => { const e = writeWill(); if (e) return toast(e); save(); render(); toast('📜 Your will is on file'); announce('Your will is on file.'); };
+  if ($('#scholar')) $('#scholar').onclick = () => {
+    sheet(`<h2>🎓 Endow the ${esc(scholarName())}?</h2><p>${fmtc(SCHOLAR_COST)} goes to Waitsburg High. A graduating senior gets it every June, and the town remembers who made it happen.</p>
+      <button class="btn primary" id="y">Endow it</button><button class="btn ghost" id="no">Not now</button>`);
+    $('#y').onclick = () => { const e = endowScholarship(); closeSheet(); if (e) return toast(e); save(); render(); toast(`🎓 The ${scholarName()} is set up`); };
+    $('#no').onclick = closeSheet;
+  };
+  if ($('#host')) $('#host').onclick = () => { S.roomHost = !S.roomHost; save(); render(); toast(S.roomHost ? '🛏️ The spare room is listed for wine weekends' : 'The spare room is yours again'); };
 }

@@ -80,7 +80,7 @@ await t.check('the 401(k) takes 5% pre-tax, adds a 3% match, and grows', async (
 });
 
 await t.check('retirement pays Social Security and draws about 4% a year from the 401(k)', async () => {
-  const r = await ev(() => { fresh('life', { retired: true, k401: 100000 }); return week().lines; });
+  const r = await ev(() => { fresh('life', { retired: true, k401: 100000, earnYears: 35, earnSum: 35 * (2000 + 4000 / 6) }); return week().lines; });
   assert(near(r['Social Security'], 1900 * W) && near(r['401(k) withdrawal'], 100000 * 0.04 * W / 12), JSON.stringify(r));
 });
 
@@ -538,7 +538,7 @@ await t.check('the weekly challenge plays the same for everyone, even across sav
 
 await t.check('legacy: a Lifetime game with kids continues as the grandkid, named in a sheet', async () => {
   const r = await ev(() => { localStorage.clear(); newGame('Pat Doe', 'life', 0); S.noEvents = true; S.kids = [300]; S.money = 400000; S.community = 70;
-    S.date = new Date(2080, 3, 1).getTime(); S.col = 2; finish('done'); const btn = document.querySelector('#legacy').textContent; document.querySelector('#legacy').click();
+    S.date = new Date(2080, 3, 1).getTime(); S.col = 2; S.will = true; finish('done'); const btn = document.querySelector('#legacy').textContent; document.querySelector('#legacy').click();
     const sugg = document.querySelector('#heirnm').value; document.querySelector('#heirgo').click();
     return { btn, sugg, name: S.name, gen: S.gen, money: S.money, community: S.community, age: age(), year: new Date(S.date).getFullYear(), col: S.col, log: S.log.map(e => e.m).join(' ') }; });
   assert(/grandkid/.test(r.btn) && r.sugg === 'Pat Doe II' && r.name === 'Pat Doe II' && r.gen === 2 && r.age === 18, JSON.stringify(r));
@@ -909,6 +909,99 @@ await t.check('business events: at their places, on their days; the doctor and t
   assert(r.fest && !r.festYoung, 'Grenache Fest is 21 and over');
   assert(/Burg Clinic/.test(r.run[0]) && /doctor/.test(r.run[1]) && r.run[2][1] === 'mainst', JSON.stringify(r.run));
   assert(/Mother Hubbard/.test(r.inh[0]) && r.inh[1][1] === 'mainst', JSON.stringify(r.inh));
+});
+
+// ---- Retirement and planning (ideas round 3: i3-a24, a25, a28, a30, a31, a32, a33, a34) ----
+await t.check('i3-a25: Social Security runs from 60% with no work record to 140% after 35 years of good pay', async () => {
+  const r = await ev(() => { const ss = extra => { fresh('life', { retired: true, ...extra }); return week().lines['Social Security']; };
+    return { none: ss({ earnYears: 0, earnSum: 0 }), full: ss({ earnYears: 35, earnSum: 35 * 7000 }), half: ss({ earnYears: 17.5, earnSum: 17.5 * 2000 }), long: ss({ earnYears: 50, earnSum: 50 * 9000 }) }; });
+  assert(near(r.none, 1900 * 0.6 * W) && near(r.full, 1900 * 1.4 * W) && near(r.long, 1900 * 1.4 * W), JSON.stringify(r));
+  assert(near(r.half, 1900 * (0.6 + 0.8 * 0.5 * 0.4) * W), JSON.stringify(r));
+});
+await t.check('i3-a25: every week with a paycheck adds to your work record, in 2027 dollars', async () => {
+  const r = await ev(() => { fresh('life', { jobId: 'elevator', focus: 'rest' }); weeks(52); const a = { y: S.earnYears, avg: avgEarn() };
+    fresh('life', { jobId: null, focus: 'rest' }); weeks(52); return { a, idle: S.earnYears }; });
+  assert(near(r.a.y, 1) && r.a.avg > 3700 && r.a.avg < 3900 && r.idle === 0, JSON.stringify(r));
+});
+await t.check('i3-a24: public jobs vest a pension after 5 years that pays 1.5% of best pay per year in retirement', async () => {
+  const r = await ev(() => { fresh('life', { jobId: 'clerk', focus: 'rest' }); weeks(52 * 4); const at4 = { vested: pensionVested(), pay: pensionPay() };
+    weeks(52 * 2); const yrs = S.pensionYears, best = S.pensionPay; S.retired = true; S.jobId = null; const l = week().lines;
+    fresh('life', { jobId: 'hanford', focus: 'rest' }); weeks(52 * 6); const priv = S.pensionYears;
+    return { at4, yrs, best, pension: l['Pension'], expect: cost(yrs * 0.015 * best) * W, priv, log: JSON.stringify(S.log), pub: JOBS.filter(j => j.pension).map(j => j.id) }; });
+  assert(!r.at4.vested && r.at4.pay === 0, 'not vested at 4 years');
+  assert(near(r.yrs, 6, 0.02) && near(r.pension, r.expect, 0.02) && r.pension > 0, JSON.stringify(r));
+  assert(r.priv === 0 && r.pub.join() === 'para,clerk,co,rn', JSON.stringify(r.pub));
+});
+await t.check('i3-a28: the money outlook projects 13 weeks from the same bills and flags the first week below zero', async () => {
+  const r = await ev(() => { fresh('two', { jobId: null, money: 1200, focus: 'rest', ui: 0 }); const o = moneyOutlook();
+    const net0 = o.weeks[0].net; const real = week(); const ok = Math.abs(real.lines && S.last.net - net0) < 1;
+    fresh('two', { jobId: 'rn', money: 5000, focus: 'rest', date: new Date(2027, 11, 6).getTime(), tabsYear: 2027 }); const p = moneyOutlook();
+    const tabs = p.weeks.findIndex(w => w.big.some(b => b[0] === 'Vehicle tabs (DMV)'));
+    return { n: o.weeks.length, low: o.lowWeek, ok, net0, last: S.last && S.last.net, good: p.lowWeek, tabs }; });
+  assert(r.n === 13 && r.low != null && r.low < 13, JSON.stringify(r));
+  assert(r.good === null && r.tabs >= 3 && r.tabs <= 5, JSON.stringify(r));
+});
+await t.check('i3-a30: a December choice sends a retiree to Arizona for January to March: a bill, no events, community fades', async () => {
+  const r = await ev(() => { fresh('life', { retired: true, ageMonths: 70 * 12, money: 50000, community: 60, date: new Date(2070, 11, 3).getTime() });
+    S.noEvents = false; const e = planDue(11); const title = e && e.title; e.choices()[0].go();
+    S.date = new Date(2071, 0, 7).getTime(); const away = awaySouth(); const l = week().lines; const trip = planTrip('wallawalla', ['movies']);
+    let evs = 0; for (let i = 0; i < 10; i++) if (weekTick(false).ev) evs++;
+    const comm = S.community; S.date = new Date(2071, 3, 7).getTime(); return { title, away, bill: l['Winter in Arizona'], trip, evs, comm, after: awaySouth() }; });
+  assert(r.title === 'Winter in Arizona?' && r.away && r.bill < 0 && /Arizona/.test(r.trip) && r.evs === 0, JSON.stringify(r));
+  assert(r.comm < 60 && !r.after, JSON.stringify(r));
+});
+await t.check('i3-a31: insurance at 55, then a care choice at 75 with health under 50; insurance pays 60% of the bill', async () => {
+  const r = await ev(() => { fresh('life', { ageMonths: 55 * 12 }); const ins = planDue(3); ins.choices()[0].go(); const prem = week().lines['Long-term care insurance'];
+    S.ageMonths = 76 * 12; S.health = 60; const early = planDue(3); S.health = 40; S.kids = []; S.partner = false; S.money = 100000; const care = planDue(3);
+    const labels = care.choices().filter(c => !c.if || c.if()).map(c => c.label); care.choices()[0].go(); const l = week().lines;
+    fresh('life', { ageMonths: 76 * 12, health: 40, ltc: { ins: false }, kids: [100], money: 100000 }); const fam = planDue(3).choices().filter(c => !c.if || c.if());
+    fam[2].go(); const lf = week().lines;
+    return { ins: ins.title, prem, early: early && early.title, labels, aide: l['Home care aide'], expect: -cost(4200) * 0.4 * W, premAfter: l['Long-term care insurance'], famN: fam.length, famBill: Object.keys(lf).filter(k => /aide|living/i.test(k)) }; });
+  assert(r.ins === 'Long-term care insurance' && r.prem < 0 && r.early == null, JSON.stringify(r));
+  assert(r.labels.length === 2 && near(r.aide, r.expect) && r.premAfter === undefined, JSON.stringify(r));
+  assert(r.famN === 3 && r.famBill.length === 0, JSON.stringify(r));
+});
+await t.check('i3-a31: without the money for paid care, Medicaid takes over, and paid care that runs dry moves there too', async () => {
+  const r = await ev(() => { fresh('life', { ageMonths: 80 * 12, health: 40, money: 2000, retired: true }); const ch = planDue(3).choices().filter(c => !c.if || c.if()).map(c => c.label);
+    fresh('life', { ageMonths: 80 * 12, health: 40, money: -10, retired: true, care: 'aide' }); const res = week();
+    return { ch, care: S.care, note: res.notes.join(' ') }; });
+  assert(r.ch.length === 1 && /Medicaid/.test(r.ch[0]) && r.care === 'medicaid' && /Medicaid/.test(r.note), JSON.stringify(r));
+});
+await t.check('i3-a32: a scholarship needs $150,000 of net worth, costs $40,000 and pays out every June', async () => {
+  const r = await ev(() => { fresh('life', { money: 100000 }); const poor = endowScholarship();
+    fresh('life', { money: 200000, community: 40, date: new Date(2030, 4, 6).getTime() }); const ok = endowScholarship(); const money = S.money, comm = S.community;
+    S.date = new Date(2031, 5, 2).getTime(); const e = planDue(5); const res = e.choices()[0].go(); const again = planDue(5);
+    return { poor, ok, money, comm, title: e.title, res, n: S.scholar.n, again }; });
+  assert(/150,000/.test(r.poor) && r.ok === '' && r.money === 160000 && r.comm === 45, JSON.stringify(r));
+  assert(r.n === 1 && r.again === null && /1 graduate/.test(r.res), JSON.stringify(r));
+});
+await t.check('i3-a33: the will is read at the handoff: in full with the home, or probate takes 10% and 26 weeks', async () => {
+  const r = await ev(() => { const p = { name:'Gran', nw:600000, community:60, col:1, wage:1, date:new Date(2080, 0, 5).getTime(), gen:1, mode:'normal', home:'farm', equity:200000, mortgage:1650 };
+    startLegacy({ ...p, will:true }, 'Kid'); const w = { money:S.money, home:S.home, equity:S.equity, probate:S.probate };
+    startLegacy({ ...p, will:false }, 'Kid'); S.noEvents = true; const n = { money:S.money, home:S.home, probate:{ ...S.probate } };
+    for (let i = 0; i < 26; i++) weekTick(false); const before = S.money; const res = weekTick(false); const got = S.money - before;
+    S.out.will = false; S.will = false; S.money = 1000; S.ageMonths = 30 * 12; const fee = writeWill(); 
+    return { w, n, got, note: res.notes.join(' '), fee, has: hasWill(), outWill: S.out.will }; });
+  assert(r.w.money === 200000 && r.w.home === 'farm' && r.w.equity === 200000 && !r.w.probate, JSON.stringify(r.w));
+  assert(r.n.money === 1500 && r.n.home === 'room' && r.n.probate.amt === 225000, JSON.stringify(r.n));
+  assert(r.got > 215000 && /Probate/.test(r.note), JSON.stringify(r));
+  assert(r.fee === '' && r.has && r.outWill, 'the Life-tab will also counts at the law office');
+});
+await t.check('i3-a33: the law office will and the Life-tab will are the same will', async () => {
+  const r = await ev(() => { fresh('life', { ageMonths: 30 * 12, money: 5000, date: new Date(2030, 4, 8).getTime() }); const v = visit('legal', 'will'); return { v: !v.err, will: S.will, again: writeWill() }; });
+  assert(r.v && r.will && /already/.test(r.again), JSON.stringify(r));
+});
+await t.check('i3-a34: a spare room pays on the first weekend of May, July, September and November, a few hundred a year', async () => {
+  const r = await ev(() => { fresh('life', { home: 'fixer', mortgage: 950, roomHost: true, date: new Date(2030, 0, 7).getTime() }); let paid = 0, weeksPaid = 0, happyHits = 0;
+    for (let i = 0; i < 52; i++) { const l = week().lines; const k = Object.keys(l).find(x => /^Spare room/.test(x)); if (k) { paid += l[k]; weeksPaid++; } }
+    fresh('life', { home: 'room', roomHost: true, date: new Date(2030, 4, 6).getTime() }); const renter = Object.keys(week().lines).some(x => /^Spare room/.test(x));
+    return { paid, weeksPaid, renter }; });
+  assert(r.weeksPaid === 4 && r.paid > 500 && r.paid < 900 && !r.renter, JSON.stringify(r));
+});
+await t.check('i3-a24/a25: older saves get an estimated work record', async () => {
+  const r = await ev(() => { const old = JSON.parse(JSON.stringify(fresh('life', { ageMonths: 40 * 12, jobId: 'para', jobMonths: 36 }))); for (const k of ['earnYears', 'earnSum', 'pensionYears', 'pensionPay', 'will', 'ltc', 'care']) delete old[k];
+    const m = migrate(old); return { y: m.earnYears, p: m.pensionYears, pay: m.pensionPay, will: m.will, care: m.care }; });
+  assert(near(r.y, 16.5) && near(r.p, 3) && r.pay === 2900 && r.will === false && r.care === null, JSON.stringify(r));
 });
 
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });

@@ -40,7 +40,7 @@ await t.check('every challenge plays to the end and is judged', async () => {
 
 await t.check('legacy runs three generations in a row', async () => {
   const r = await ev(() => { localStorage.clear(); newGame('Ann Lee', 'life', 0); S.noEvents = true; const gens = [];
-    for (let g = 0; g < 3; g++) { S.kids = [S.ageMonths - 20 * 12]; S.money = 200000 + g * 50000; S.date += 30 * 365 * 864e5; S.col *= 2; finish('end');
+    for (let g = 0; g < 3; g++) { S.kids = [S.ageMonths - 20 * 12]; S.money = 200000 + g * 50000; S.date += 30 * 365 * 864e5; S.col *= 2; S.will = true; finish('end');
       document.querySelector('#legacy').click(); document.querySelector('#heirgo').click(); gens.push({ name: S.name, gen: S.gen, money: Math.round(S.money), year: new Date(S.date).getFullYear() }); S.noEvents = true; for (let i = 0; i < 5; i++) weekTick(false); }
     return gens; });
   assert(r.length === 3 && r[2].gen === 4 && r.every(g => g.money > 0) && r[2].year > r[0].year, JSON.stringify(r));

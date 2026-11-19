@@ -27,7 +27,19 @@ const SS_PAY = 1900;
 const COL_RATE = 0.03, WAGE_RATE = 0.025;          // yearly growth of prices and of pay
 const cost = v => v * (S ? S.col : 1);              // today's price of something listed in 2027 dollars
 const payNow = (j, withRaise = true) => j.pay * (S ? S.wage : 1) * (withRaise && S && S.jobId === j.id ? S.raise : 1);
-const ssPay = () => cost(SS_PAY);
+// i3-a25: Social Security grows with your working years (35 is a full career) and your average pay, 60% to 140% of SS_PAY
+const SS_FULL_YEARS = 35, SS_LOW_PAY = 2000, SS_HIGH_PAY = 6000;
+const avgEarn = () => (S && S.earnYears > 0) ? S.earnSum / S.earnYears : 0;     // average monthly pay in 2027 dollars
+function ssFactor(){
+  if (!S) return 1;
+  const work = Math.min(1, (S.earnYears || 0) / SS_FULL_YEARS), pay = clamp((avgEarn() - SS_LOW_PAY) / (SS_HIGH_PAY - SS_LOW_PAY), 0, 1);
+  return 0.6 + 0.8 * work * (0.4 + 0.6 * pay);
+}
+const ssPay = () => cost(SS_PAY * ssFactor());
+// i3-a24: school, county and state jobs earn a pension: 1.5% of your best pay there for each year, once you have 5 years
+const PENSION_RATE = 0.015, PENSION_VEST = 5;
+const pensionVested = () => !!S && (S.pensionYears || 0) >= PENSION_VEST;
+const pensionPay = () => pensionVested() ? cost(S.pensionYears * PENSION_RATE * (S.pensionPay || 0)) : 0;   // monthly, today's dollars
 // layoff risk by job: 1 = shaky (retail, seasonal), 0.2 = steady (public sector, licensed work)
 const LAYOFF_RISK = { diner:1, hardware:1, lift:1, cellar:1, onion:1, retail:1, foodplant:1, airport:1,
   elevator:.5, cna:.5, mech:.5, imaging:.5, loan:.5, hanford:.5, labadmin:.5, trucker:.5, rail:.5,
@@ -77,17 +89,17 @@ const CITIES = {
 const JOBS = [
   {id:'farmhand', city:'waitsburg', title:'Wheat farm hand',            pay:2500, edu:0, stress:.2, wear:1.0},
   {id:'diner',    city:'waitsburg', title:'Main Street diner cook',     pay:2300, edu:0, stress:.5, wear:.5},
-  {id:'para',     city:'waitsburg', title:'School paraeducator',        pay:2900, edu:1, stress:.4, wear:.1},
+  {id:'para',     city:'waitsburg', title:'School paraeducator',        pay:2900, edu:1, stress:.4, wear:.1, pension:true},
   {id:'elevator', city:'waitsburg', title:'Grain elevator operator',    pay:3800, edu:1, stress:.4, wear:.7},
   {id:'insure',   city:'waitsburg', title:'Farm insurance agent',       pay:4900, edu:2, stress:.6, wear:0, remote:2},
   {id:'hardware', city:'dayton',    title:'Hardware store clerk',       pay:2600, edu:0, stress:.3, wear:.3},
   {id:'lift',     city:'dayton',    title:'Bluewood ski lift operator', pay:2400, edu:0, stress:.1, wear:.5},
-  {id:'clerk',    city:'dayton',    title:'County courthouse clerk',    pay:3500, edu:1, stress:.5, wear:0, remote:2},
+  {id:'clerk',    city:'dayton',    title:'County courthouse clerk',    pay:3500, edu:1, stress:.5, wear:0, remote:2, pension:true},
   {id:'cna',      city:'dayton',    title:'Hospital nursing assistant', pay:3400, edu:1, stress:.8, wear:.5},
   {id:'cellar',   city:'wallawalla',title:'Winery cellar hand',         pay:3000, edu:0, stress:.3, wear:.7},
   {id:'onion',    city:'wallawalla',title:'Sweet onion packing shed',   pay:2700, edu:0, stress:.4, wear:.9},
-  {id:'co',       city:'wallawalla',title:'Corrections officer',        pay:5000, edu:1, stress:1.3,wear:.7},
-  {id:'rn',       city:'wallawalla',title:'Registered nurse',           pay:7300, edu:2, stress:1.0,wear:.5},
+  {id:'co',       city:'wallawalla',title:'Corrections officer',        pay:5000, edu:1, stress:1.3,wear:.7, pension:true},
+  {id:'rn',       city:'wallawalla',title:'Registered nurse',           pay:7300, edu:2, stress:1.0,wear:.5, pension:true},
   {id:'prof',     city:'wallawalla',title:'College professor',          pay:6700, edu:3, stress:.5, wear:0, remote:2},
   {id:'retail',   city:'kennewick', title:'Mall retail associate',      pay:2600, edu:0, stress:.6, wear:.2},
   {id:'mech',     city:'kennewick', title:'Auto mechanic',              pay:4400, edu:1, stress:.5, wear:.8},
@@ -149,6 +161,7 @@ function blankLife(name, len, slot = 0){
     trip:null, svc:0, tires:null, stockUntil:-1, dentist:0, stopLast:{}, tabsYear:2027, carpool:false, hustleWeeks:0, scoreQ:null,
     bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0,
     badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false,
+    earnYears:0, earnSum:0, pensionYears:0, pensionPay:0, ltc:null, care:null, snowbird:null, scholar:null, will:false, probate:null, roomHost:false, hostLast:-99,
     skills:{}, biz:null, weekly:null, rng:null, rngEv:null, gen:1, goalAt:{}, carpoolJob:null, hustleLast:0, highWater:null, recentF:[], out:outDefault(),
     ...EVENT_STATE() };
 }
@@ -187,6 +200,11 @@ function migrate(s){
   const r = { goalAt:{}, skills:{}, biz:null, weekly:null, rng:null, rngEv:null, carpoolJob:s.jobId ?? null, hustleLast:s.turn || 0, highWater:null, recentF:[], gen:1, badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false, bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0, carpool:false, hustleWeeks:0, scoreQ:null, trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, dentist:s.turn || 0, stopLast:{}, out:null, tabsYear:new Date(s.date || Date.now()).getFullYear() };
   for (const k in r) if (s[k] === undefined) s[k] = r[k];
   for (const [k, v] of Object.entries(EVENT_STATE())) if (s[k] === undefined) s[k] = v;
+  // i3-a24/a25: lives from before work history count about three of every four adult years as worked, at their current job's pay
+  if (s.earnYears === undefined) { const yrs = Math.max(0, (s.ageMonths || 216) / 12 - 18) * 0.75, jb = s.jobId ? JOBS.find(j => j.id === s.jobId) : null;
+    s.earnYears = yrs; s.earnSum = yrs * (jb ? jb.pay : 3000); }
+  if (s.pensionYears === undefined) { const jb = s.jobId ? JOBS.find(j => j.id === s.jobId) : null; s.pensionYears = jb && jb.pension && !s.retired ? (s.jobMonths || 0) / 12 : 0; s.pensionPay = jb && jb.pension ? jb.pay : 0; }
+  if (s.will === undefined) s.will = !!(s.out && s.out.will);
   if (!s.out || typeof s.out !== 'object') s.out = outDefault();   // Out and about (#50)
   if (HOMES[s.home] && HOMES[s.home].own && !s.mortgage) s.mortgage = HOMES[s.home].cost;
   // weekly-challenge lives from before separate event dice get their own event dice (R8)

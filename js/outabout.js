@@ -118,11 +118,12 @@ function placeClosed(p){
 const shownActs = p => p.acts.filter(a => !(a.min21 && age() < 21));
 // why an option can't be done right now ('' when it can)
 function actBlocked(p, a){
+  if (awaySouth()) return 'You\'re in Arizona until April';   // i3-a30
   const shut = placeClosed(p); if (shut) return shut;
   if (a.min21 && age() < 21) return '21 and over';
   if (a.minAge && age() < a.minAge) return `From age ${a.minAge}`;
   if (a.months && !a.months.includes(curMonth())) return `Only ${MONTH_SPAN(a.months)}`;
-  if (a.once && a.id === 'will' && S.out && S.out.will) return 'Done: your will is on file';
+  if (a.once && a.id === 'will' && hasWill()) return 'Done: your will is on file';
   if (a.info) return '';
   const o = outState();
   if (o.here.includes(p.id)) return 'You went here this week';
@@ -158,7 +159,7 @@ function visit(pid, aid){
   if (pid === 'shavings') { practice('handy', 1); if (S.streakN > 4) S.streakN = Math.max(1, S.streakN - 2); }
   if (pid === 'rouge') o.look = S.turn;
   if (aid === 'ad') o.ad = S.turn;
-  if (aid === 'will') o.will = true;
+  if (aid === 'will') { o.will = true; S.will = true; }   // i3-a33: the will is read when the grandkid takes over
   o.n++; o.here.push(pid); o.last[pid] = S.turn; o.visits++;
   const did = a.name.charAt(0).toLowerCase() + a.name.slice(1);
   log(`Out and about: ${did} at ${p.name}.`);
