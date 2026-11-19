@@ -25,8 +25,8 @@ added, finished or re-prioritized, both change in the same session.
 | 2 | **Try it, then promote** (`/release promote`) | The Android app is signed with The Burg's key since beta 4, so updates install over each other. | — |
 | 3 | **Pick from the review and the 90 events** (below) | The three 🔴 review bugs are fixed; the rest is yours to pick. | [#90](https://github.com/krazow/The-Burg/issues/90) |
 
-- [x] Cut a new beta with everything on `main` (0.2.0-beta.5)
-- [ ] Try it on your phone, then `/release promote`
+- [x] Cut a new beta with everything on `main` (0.2.0-beta.6)
+- [x] Try it on your phone, then `/release promote` (0.2.0-beta.6 promoted: [v0.2.0](https://github.com/krazow/The-Burg/releases/tag/v0.2.0))
 - [x] Pick review items and events to build (104 picked on the build board; all built)
 
 ## Soon: P2
@@ -4959,6 +4959,7 @@ that careless play stays at or below 60 and good play at or above 70.
 
 | Date | What | Where |
 |---|---|---|
+| Nov 19, 2026 | **Released 0.2.0 to production** (beta 6 promoted): Out and about, 60 road and work events, the review and balance fixes, records, What's new and Journal filters. | [v0.2.0](https://github.com/krazow/The-Burg/releases/tag/v0.2.0) |
 | Nov 18, 2026 | **Build board picks, all 104 built:** the review gotchas, balance and testing fixes, title screen with More options, Your records, What's new, Journal filters, event pacing by category, 30 road and 30 work events, and **Out and about** (20 Waitsburg businesses under stand-in names, Main Street map, visits, 7 local jobs, business events). | PRs [#97](https://github.com/krazow/The-Burg/pull/97), [#98](https://github.com/krazow/The-Burg/pull/98), [#99](https://github.com/krazow/The-Burg/pull/99), [#100](https://github.com/krazow/The-Burg/pull/100), [#101](https://github.com/krazow/The-Burg/pull/101) |
 | Nov 16, 2026 | Built **The Burg**: a turn-based life sim set in Waitsburg with 25 jobs across Waitsburg, Dayton, Walla Walla, Kennewick, Richland and Pasco; housing, vehicles, schooling, about 27 seasonal local events, Life Score, auto-save, installable with offline play. | `main` |
 | Nov 16, 2026 | Balance fixes from simulated games: raises capped at +50%, 6 months of unemployment benefits after a layoff, debt warnings. | `main` |
