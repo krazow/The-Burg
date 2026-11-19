@@ -2773,6 +2773,87 @@ old ones.
 
 </details>
 
+## Ideas round 31 (pick on the build board)
+
+67 ideas. Details: [docs/ideas/round-31.md](docs/ideas/round-31.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 31: Public places</b> (34 ideas)</summary>
+
+- [ ] 🔴 **i31-a01** Shared places wear down and get cared for (L)
+- [ ] 🔴 **i31-a02** Pitch in at a public place (M)
+- [ ] 🔴 **i31-a03** Let a place slide and it closes a door (M)
+- [ ] 🔴 **i31-a04** A seat on the parks board (M)
+- [ ] 🟠 **i31-a05** Adopt a place for life (M)
+- [ ] 🟠 **i31-a06** Friends of the Library book sale (S)
+- [ ] 🟡 **i31-a07** A seed library at Weller (S)
+- [ ] 🟠 **i31-a08** Borrow your textbooks through the library (S)
+- [ ] 🟠 **i31-a09** The library as a cool room in smoke and heat (S)
+- [ ] 🟡 **i31-a10** Reserve the Preston Park shelter (S)
+- [ ] 🟠 **i31-a11** Storm takes a limb off a park tree (M)
+- [ ] 🟠 **i31-a12** Opening day and the last day at the pool (S)
+- [ ] 🟠 **i31-a13** Scrub and paint the pool in May (S)
+- [ ] 🟡 **i31-a14** Morning water aerobics at the pool (S)
+- [ ] 🟡 **i31-a15** Rent a P.O. box (S)
+- [ ] 🟡 **i31-a16** The postmaster knows what's going on (S)
+- [ ] 🟠 **i31-a17** Grandstand work weekend before Celebration Days (S)
+- [ ] 🟡 **i31-a18** Winter storage in the fairgrounds barns (S)
+- [ ] 🟠 **i31-a19** Animals come to the fairgrounds in a wildfire (M)
+- [ ] 🟡 **i31-a20** Blood drive in the school gym (S)
+- [ ] 🟠 **i31-a21** Winter walking in the school gym (S)
+- [ ] 🟠 **i31-a22** Cemetery cleanup before Memorial Day (S)
+- [ ] 🟡 **i31-a23** October history walk in the cemetery (S)
+- [ ] 🟡 **i31-a24** Buy a cemetery plot (S)
+- [ ] 🟠 **i31-a25** The riverwalk after high water (M)
+- [ ] 🟡 **i31-a26** Plant willows on the riverbank (S)
+- [ ] 🟠 **i31-a27** The old depot, open on Saturdays (L)
+- [ ] 🟡 **i31-a28** The water bill and the City Hall clerk (S)
+- [ ] 🟠 **i31-a29** Borrow a church hall for your reception (S)
+- [ ] 🟡 **i31-a30** Winter coat closet in a church basement (S)
+- [ ] 🟠 **i31-a31** Lights on the grain elevator at Christmas (S)
+- [ ] 🟡 **i31-a32** The elevators on the skyline: coming home (S)
+- [ ] 🟡 **i31-a33** Then and now on each place's sheet (M)
+- [ ] 🟠 **i31-a34** The town you leave behind on the end screen (S)
+
+</details>
+
+<details><summary><b>Ideas 31: Unlocking systems over a game</b> (33 ideas)</summary>
+
+- [ ] 🔴 **i31-b01** One unlock table for every system (M)
+- [ ] 🔴 **i31-b02** Week 1 is just four focuses, stats and End Week (M)
+- [ ] 🟠 **i31-b03** Classes open when you tap a locked job (S)
+- [ ] 🟠 **i31-b04** Side hustle opens with a neighbor asking for help (S)
+- [ ] 🟠 **i31-b05** Out and about opens with a walk down Main Street (S)
+- [ ] 🟠 **i31-b06** Trips open when town runs out of something (S)
+- [ ] 🟠 **i31-b07** A coworker offers a ride: carpools open with a long commute (S)
+- [ ] 🟠 **i31-b08** Skills appear the first time you earn a point (S)
+- [ ] 🟠 **i31-b09** Goals and badges open with your first report card (S)
+- [ ] 🟡 **i31-b10** Town goals start at the first new season (S)
+- [ ] 🟡 **i31-b11** Stories wait until your second month (S)
+- [ ] 🟠 **i31-b12** The 401(k) opens with your first benefits packet (S)
+- [ ] 🟡 **i31-b13** Buying a home opens when a down payment is in reach (S)
+- [ ] 🟠 **i31-b14** Business opens after a year with savings (M)
+- [ ] 🔴 **i31-b15** A 'New' tag on anything just opened (S)
+- [ ] 🔴 **i31-b16** The unlock card: two lines and 'Show me' (M)
+- [ ] 🔴 **i31-b17** Short 'Show me how' tours for each system (M)
+- [ ] 🟠 **i31-b18** 'Coming up in your life' in Help (S)
+- [ ] 🔴 **i31-b19** 'I know this one': open any system early (S)
+- [ ] 🔴 **i31-b20** Start setting: 'Open as I go' or 'Everything open' (S)
+- [ ] 🟠 **i31-b21** Your device remembers what you've met (S)
+- [ ] 🔴 **i31-b22** Unlock pace follows game length (M)
+- [ ] 🟠 **i31-b23** 6-month lives skip systems that can't pay off (S)
+- [ ] 🟠 **i31-b24** Lifetime chapters: what opens at 25, 35 and 50 (M)
+- [ ] 🟠 **i31-b25** Backgrounds start with their own systems open (S)
+- [ ] 🟡 **i31-b26** Challenges, weekly runs and heirs start with everything open (S)
+- [ ] 🟡 **i31-b27** The Menu grows with you (S)
+- [ ] 🟠 **i31-b28** The title screen grows after your first life (S)
+- [ ] 🟡 **i31-b29** Life Score button shows after your first month (S)
+- [ ] 🟡 **i31-b30** Auto stops once for each new system (S)
+- [ ] 🟡 **i31-b31** 'Firsts' in the Journal (S)
+- [ ] 🟡 **i31-b32** Help guide sections match what's open (S)
+- [ ] 🔴 **i31-b33** Sim and tests play with unlocks on and off (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
