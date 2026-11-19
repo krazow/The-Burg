@@ -1935,6 +1935,85 @@ old ones.
 
 </details>
 
+## Ideas round 20 (pick on the build board)
+
+65 ideas. Details: [docs/ideas/round-20.md](docs/ideas/round-20.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 20: Screen by screen</b> (35 ideas)</summary>
+
+- [ ] 🔴 **i20-a01** [Jobs] Town filter chips stop squashing into circles (S)
+- [ ] 🔴 **i20-a02** [Journal] Filter chips show whole words and a count (S)
+- [ ] 🔴 **i20-a03** [Home] Toasts sit above the bottom bars, not on top of them (S)
+- [ ] 🔴 **i20-a04** [Event] Hold toasts while an event sheet is open (S)
+- [ ] 🔴 **i20-a05** [Home] A slimmer bottom stack on short phones (M)
+- [ ] 🟠 **i20-a06** [Home] Fast-forward buttons say what they do (S)
+- [ ] 🟠 **i20-a07** [Home] Map view gets the room it needs (M)
+- [ ] 🟡 **i20-a08** [Home] Town goal box: one short line and progress dots (S)
+- [ ] 🔴 **i20-a09** [Jobs] Section headers: can apply, needs a certificate, needs a degree (M)
+- [ ] 🟠 **i20-a10** [Jobs] Clearer pay words: before tax and take-home (S)
+- [ ] 🟠 **i20-a11** [Jobs] Locked buttons name what you need (S)
+- [ ] 🟠 **i20-a12** [Jobs] Your current job pinned as its own card (M)
+- [ ] 🟡 **i20-a13** [Jobs] Quit my job looks like a risky button (S)
+- [ ] 🔴 **i20-a14** [Life] Buy buttons never cut off (S)
+- [ ] 🟠 **i20-a15** [Life] Jump chips at the top of a long tab (M)
+- [ ] 🟡 **i20-a16** [Life] Badges row says what you earned (S)
+- [ ] 🟡 **i20-a17** [Life] Household rows in plain words (S)
+- [ ] 🟡 **i20-a18** [Life] Around town buttons side by side (S)
+- [ ] 🟡 **i20-a19** [Life] What you have stands out from what you could buy (S)
+- [ ] 🟠 **i20-a20** [Main Street] Readable labels on the close-up map (M)
+- [ ] 🟠 **i20-a21** [Region map] Bars don't cover the bottom of the map (S)
+- [ ] 🔴 **i20-a22** [Business card] One way to count visits (S)
+- [ ] 🔴 **i20-a23** [Trip] A header that stays put on the trip sheet (M)
+- [ ] 🟠 **i20-a24** [Sheets] Close and main action pinned at the bottom of long sheets (M)
+- [ ] 🟠 **i20-a25** [Menu] Save first, risky last (S)
+- [ ] 🟡 **i20-a26** [All] Names ending in s read right (S)
+- [ ] 🟠 **i20-a27** [Life goals] A picked counter and Done button in view (S)
+- [ ] 🔴 **i20-a28** [End] Score math in a clean table (S)
+- [ ] 🟡 **i20-a29** [Title] Mode and start chips in a tidy grid (S)
+- [ ] 🔴 **i20-a30** [Challenges] Start buttons fit on screen (S)
+- [ ] 🟠 **i20-a31** [Weekly] Name the week in plain words (S)
+- [ ] 🟡 **i20-a32** [Records] Your bests stand out from the dashes (S)
+- [ ] 🟡 **i20-a33** [What's new] Short list, then 'See all' (S)
+- [ ] 🟡 **i20-a34** [Tutorial] The highlight ring hugs the button (S)
+- [ ] 🟡 **i20-a35** [Tablet] Bottom bars match the content column (S)
+
+</details>
+
+<details><summary><b>Ideas 20: What winning means</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i20-b01** Play for something: pick a life aim (L)
+- [ ] 🟠 **i20-b02** Roots: a measure of how deep you grew in (M)
+- [ ] 🟠 **i20-b03** Adventure: a measure of the new things you tried (M)
+- [ ] 🟠 **i20-b04** Legacy: what outlasts you (M)
+- [ ] 🔴 **i20-b05** Good weeks: a count money can't buy (S)
+- [ ] 🔴 **i20-b06** Your aim can change, but it counts by the week (S)
+- [ ] 🟠 **i20-b07** End titles from your aim and your score (S)
+- [ ] 🟡 **i20-b08** Low scores get kind titles (S)
+- [ ] 🟠 **i20-b09** Two verdicts at the end: the town's and yours (M)
+- [ ] 🟡 **i20-b10** Rate your own life before you see the score (S)
+- [ ] 🟠 **i20-b11** Security, not riches, in short games (M)
+- [ ] 🟠 **i20-b12** An 'enough' line on the score sheet (S)
+- [ ] 🔴 **i20-b13** A balanced life counts more than one maxed part (S)
+- [ ] 🔴 **i20-b14** The Life Score is the average of your report cards (M)
+- [ ] 🟠 **i20-b15** Net worth counts what you'd really walk away with (S)
+- [ ] 🟠 **i20-b16** Score so far says what the last weeks can still change (S)
+- [ ] 🟠 **i20-b17** Your three turning points (M)
+- [ ] 🟠 **i20-b18** The score as a picture: four bars and their weights (S)
+- [ ] 🟡 **i20-b19** Try other weights on the end screen (S)
+- [ ] 🟡 **i20-b20** Every part's score in plain words (S)
+- [ ] 🟡 **i20-b21** Your aim shows up on birthdays (S)
+- [ ] 🟠 **i20-b22** Halfway reckoning: is this still what you want? (S)
+- [ ] 🔴 **i20-b23** No aim beats another: a balance-sim check (S)
+- [ ] 🟠 **i20-b24** Share card leads with good weeks, not money (S)
+- [ ] 🟠 **i20-b25** Compare lives by what mattered, not dollars (M)
+- [ ] 🟡 **i20-b26** Pick your epitaph from three lines (S)
+- [ ] 🟠 **i20-b27** The goals sheet suggests badges for your aim (S)
+- [ ] 🟠 **i20-b28** New badges money can't buy (S)
+- [ ] 🟡 **i20-b29** A weekly challenge board for each aim (S)
+- [ ] 🟡 **i20-b30** Your partner has an aim too (M)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
