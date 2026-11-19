@@ -4678,6 +4678,81 @@ old ones.
 
 </details>
 
+## Ideas round 56 (pick on the build board)
+
+61 ideas. Details: [docs/ideas/round-56.md](docs/ideas/round-56.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 56: Signature moments</b> (28 ideas)</summary>
+
+- [ ] 🔴 **i56-a01** Signature scenes: a full-page sheet, a gold edge and a pacing rule (M)
+- [ ] 🔴 **i56-a02** Directions that use your place as the landmark (S)
+- [ ] 🔴 **i56-a03** Sandbags at the Preston Avenue bridge at 2 a.m. (M)
+- [ ] 🔴 **i56-a04** Your kid's name read out in the gym (M)
+- [ ] 🔴 **i56-a05** The last tune you call at the jam (M)
+- [ ] 🔴 **i56-a06** The car in the ditch on 12, and who it turns out to be (M)
+- [ ] 🟠 **i56-a07** CPR in the bleachers (M)
+- [ ] 🟠 **i56-a08** Fish of a lifetime on the Touchet (S)
+- [ ] 🟠 **i56-a09** Your initials on the repainted welcome sign (S)
+- [ ] 🔴 **i56-a10** Sunrise from Lewis Peak after the worst year (S)
+- [ ] 🟠 **i56-a11** The boss who let you go applies to work for you (M)
+- [ ] 🟠 **i56-a12** Asked to carry the casket for the old-timer who taught you (M)
+- [ ] 🟠 **i56-a13** Last night at the tavern before your best friend moves (S)
+- [ ] 🟠 **i56-a14** The town picks you to flip on the Main Street lights (S)
+- [ ] 🔴 **i56-a15** Your folks sign the farm over at the kitchen table (L)
+- [ ] 🟠 **i56-a16** The kid you coached comes back grown (S)
+- [ ] 🟠 **i56-a17** Somebody in Richland has heard of you (S)
+- [ ] 🔴 **i56-a18** Your grown kid buys a house two streets over (M)
+- [ ] 🟡 **i56-a19** The first snow with nowhere to be (S)
+- [ ] 🔴 **i56-a20** Your last day: the crew lines the hallway (M)
+- [ ] 🔴 **i56-a21** The 3 a.m. drive to the Walla Walla hospital (M)
+- [ ] 🟠 **i56-a22** Your kid's last-second shot and the gym goes up (S)
+- [ ] 🟠 **i56-a23** Buy back the house you grew up in (M)
+- [ ] 🟡 **i56-a24** Your kid out-fishes you for the first time (S)
+- [ ] 🟠 **i56-a25** Two people at the old bachelor's funeral (S)
+- [ ] 🟠 **i56-a26** The first year Thanksgiving is at your house (S)
+- [ ] 🟠 **i56-a27** The pass closes and strangers sleep in the school gym (M)
+- [ ] 🔴 **i56-a28** Guard test: signature moments can't be farmed (S)
+
+</details>
+
+<details><summary><b>Ideas 56: Test coverage gaps</b> (33 ideas)</summary>
+
+- [ ] 🔴 **i56-b01** A broken save never locks you out of the title screen (S)
+- [ ] 🔴 **i56-b02** A player name with HTML in it shows as plain text everywhere (S)
+- [ ] 🔴 **i56-b03** Open-bug repros that stay quiet until the fix lands (S)
+- [ ] 🔴 **i56-b04** Repro: reloading during an event shows the same event again (i22-a01) (S)
+- [ ] 🟠 **i56-b05** Repro: an ending behind a notes sheet survives a reload (i22-a02) (S)
+- [ ] 🟠 **i56-b06** Repro: the wheat lease pays only for seasons it farmed (i22-a04–a06) (S)
+- [ ] 🟠 **i56-b07** Repro: a new job ends benefits; a raise keeps job time (i22-a03, a11) (S)
+- [ ] 🟠 **i56-b08** Repro: a new car or house drops the old one's extras (i22-a08, a26) (S)
+- [ ] 🟠 **i56-b09** Repro: helping with college never ends the game by itself (i22-a16) (S)
+- [ ] 🟠 **i56-b10** Repro: old saves and Hard mode price the mortgage right (i22-a18, a20) (S)
+- [ ] 🔴 **i56-b11** Repro: backups with odd parts restore safely (i22-a21, i54-a11, a12) (S)
+- [ ] 🟠 **i56-b12** Repro: a trip keeps 1 stop if you fall into debt (i22-a25) (S)
+- [ ] 🟡 **i56-b13** Repro: jam on jam weeks; gas spike uses real drive (i22-a13, a14) (S)
+- [ ] 🟠 **i56-b14** Repro: tutorial look-only step and Help close cleanly (i54-a10, a17) (S)
+- [ ] 🟡 **i56-b15** Repro: same backup file twice; focus after full slots (i54-a21, a22) (S)
+- [ ] 🔴 **i56-b16** Every event has a way to happen: a reach table (M)
+- [ ] 🔴 **i56-b17** Every job gets worked in the sim (M)
+- [ ] 🟠 **i56-b18** A worn-out bot that hits the hospital and the clinic (S)
+- [ ] 🟠 **i56-b19** A big-spender bot that reaches the debt ending (S)
+- [ ] 🔴 **i56-b20** The screen audit covers events, notes and the year in review (S)
+- [ ] 🟠 **i56-b21** Every event choice works for a broke 19-year-old too (S)
+- [ ] 🟠 **i56-b22** Debt and the last week: which ending wins, at the exact line (S)
+- [ ] 🔴 **i56-b23** Real saves from every tagged version, kept as fixtures (M)
+- [ ] 🟠 **i56-b24** Backup codes made by older versions still restore (S)
+- [ ] 🟠 **i56-b25** Story chains: every branch to its end (M)
+- [ ] 🟡 **i56-b26** A 4-week skip and four single weeks end the same (S)
+- [ ] 🟡 **i56-b27** Event perks last their window and no longer (S)
+- [ ] 🟡 **i56-b28** Long lives keep their lists short (S)
+- [ ] 🟡 **i56-b29** A practice life leaves no records behind (S)
+- [ ] 🟡 **i56-b30** Heir names at the edges (S)
+- [ ] 🟡 **i56-b31** Business rules past the happy path (S)
+- [ ] 🟡 **i56-b32** Same game in any time zone (S)
+- [ ] 🟡 **i56-b33** Reduce Motion stops the game's animations (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
