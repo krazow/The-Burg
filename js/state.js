@@ -236,7 +236,7 @@ function blankLife(name, len, slot = 0){
     // a pending interview, your reference, notice, sign-on bonus, union contract, strike, furlough, clearance, fiber, bus
     rung:0, tenure:0, program:null, major:null, certs:{}, certStudy:null, recall:null, interview:null, ref:null, notice:null, bonus:null,
     contractAt:-1, strike:null, furlough:null, clearAt:-1, fiber:false, bus:false, appWeeks:0, seasonGrace:null,
-    ...EVENT_STATE(), ...MONEY_STATE() };
+    ...EVENT_STATE(), ...MONEY_STATE(), ...HEALTH_STATE() };   // i74: sick hours, injuries, shots, Dad's care
 }
 // H1: put back anything a damaged save is missing or has a bad value for, so rendering never throws
 function repairLife(s){
@@ -286,6 +286,7 @@ function migrate(s){
   if (s.pensionYears === undefined) { const jb = s.jobId ? JOBS.find(j => j.id === s.jobId) : null; s.pensionYears = jb && jb.pension && !s.retired ? (s.jobMonths || 0) / 12 : 0; s.pensionPay = jb && jb.pension ? jb.pay : 0; }
   if (s.will === undefined) s.will = !!(s.out && s.out.will);
   if (!s.out || typeof s.out !== 'object') s.out = outDefault();   // Out and about (#50)
+  healthMigrate(s);                                                 // i74: health, body and aging (no sick hours banked, no dental or ambulance plan)
   if (HOMES[s.home] && HOMES[s.home].own && !s.mortgage) s.mortgage = HOMES[s.home].cost;
   // weekly-challenge lives from before separate event dice get their own event dice (R8)
   if (s.rng != null && s.rngEv == null && s.weekly) s.rngEv = weekSeed(`${s.weekly}:events`);

@@ -179,7 +179,7 @@ function outSheet(){
   const grp = (title, list) => `<h3 class="triph">${title}</h3>` + list.map(p => `<button class="kv job tripto" data-place="${p.id}"><span><span class="t">${p.ic} ${esc(p.name)}</span><span class="s">${esc(p.addr)} · ${placeLine(p)}</span></span><span aria-hidden="true">›</span></button>`).join('');
   sheet(`<h2>🛍️ Out and about</h2>
     <p class="muted">Quick visits around town, on top of your week's focus: up to ${OUT_MAX} a week, one per place. ${visitsLeft()} left this week. Going back within ${OUT_REPEAT} weeks is half as special.</p>
-    ${grp('Main Street', PLACES.filter(p => p.st === 'main'))}${grp('Preston Avenue', PLACES.filter(p => p.st === 'preston'))}${grp('Around town', PLACES.filter(p => p.st === 'town'))}
+    ${grp('Main Street', PLACES.filter(p => p.st === 'main'))}${grp('Preston Avenue', PLACES.filter(p => p.st === 'preston'))}${grp('Around town', PLACES.filter(p => p.st === 'town' && !(p.hide && p.hide())))}
     <p class="muted">Places use stand-in names. Days and seasons last checked ${PLACES_CHECKED}.</p>
     <button class="btn ghost" id="no">Close</button>`);
   document.querySelectorAll('#sheet [data-place]').forEach(b => b.onclick = () => bizSheet(b.dataset.place, true));

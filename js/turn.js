@@ -138,7 +138,7 @@ const FOCUS_K = 0.28;
 function focusFx(fk, eff, away){
   const f = FOCUS[fk] || FOCUS.rest;
   return Object.fromEntries(Object.entries(f.fx).map(([st,v]) => {
-    let d = v * FOCUS_K * (v > 0 ? eff * (away ? TRIP_TIME : 1) : 1);
+    let d = v * FOCUS_K * (v > 0 ? eff * (away ? (away === true ? TRIP_TIME : away) : 1) : 1);   // i74-a05: a van day passes a number
     if (fk === 'rest' && v > 0) d *= clamp((86 - S[st]) / 20, 0, 1);   // rest tops out in the low 80s
     return [st, d];
   }));
@@ -253,6 +253,7 @@ function weekTick(auto){
     if (pensionVested()) { const p = pensionPay()*m; gross += p; lines.push(['Pension', p]); }
     if (S.k401 > 0) { const w = Math.min(S.k401, S.k401 * 0.04 * m / 12); S.k401 -= w; gross += w; lines.push(['401(k) withdrawal', w]); }
   }
+  else if (j && onLeave()) gross = leavePay(j, lines);   // i74-a14: paid family leave
   else if (j) gross = jobPay(j, payNow(j) * m * (f.payMult||1), lines, f);   // i3: strikes, furloughs, clearances, union dues
   gross += furloughBackPay(lines);
   if (j) workYear(j, m);                           // i3-a24/a25: years worked count toward Social Security and a public pension
@@ -284,6 +285,7 @@ function weekTick(auto){
   if (S.partner && age() < 65) lines.push(["Partner's paycheck (part-time)", 1400*S.wage*m]);
   const kidsHome = kidsAtHome();
   if (f.cost) lines.push([f.name, -cost(f.cost)*m]);
+  healthWeek(lines, notes, j, gross);              // i74: sick hours, physical therapy, Dad's care
   planWeek(lines, notes);                          // i3-a30/a31/a33/a34: winters south, late-life care, probate and spare-room guests
   // i3-a03: a certificate course takes the week's classes first (its fee was paid up front)
   if (f.study && !certWeek(trip && trip.away ? TRIP_TIME : 1, notes) && S.edu < 3) {
@@ -320,7 +322,7 @@ function weekTick(auto){
   let dH = ((a < 30 ? 85 : a < 50 ? 78 : a < 65 ? 68 : a < 80 ? 55 : 42) - S.health) * 0.025;
   let dc = (25 - S.community) * 0.05 * (S.community > 25 ? 1 - skillLv('people') * 0.15 : 1);   // people skill: community fades slower
   if (S.retired) dh += 1;
-  else if (j) { dh -= j.stress + rungOf(j).stress; dH -= j.wear; dc += j.remote === 5 ? -0.4 : j.city==='waitsburg' ? 0.6 : j.city==='dayton' ? 0.2 : 0; }   // i3-a01 rung stress; i3-a13 no coworkers
+  else if (j) { dh -= j.stress + rungOf(j).stress; dH -= onLeave() ? 0 : j.wear; dc += j.remote === 5 ? -0.4 : j.city==='waitsburg' ? 0.6 : j.city==='dayton' ? 0.2 : 0; }   // i3-a01 rung stress; i3-a13 no coworkers
   else dh -= 2;
   dh -= commuteOneWay() / 40 * driveDays() * (carpooling() ? 0.6 : 1);
   if (carpooling()) dc += 0.3;                    // riding with neighbors keeps you in the loop
@@ -329,6 +331,7 @@ function weekTick(auto){
   dc += kidsHome * 0.2;
   if (S.council) dc += 0.8;
   if (awaySouth()) { dh = Math.max(dh, 0.5); dH = Math.max(dH, 0.3); dc -= 1.2; }   // i3-a30: sun holds you up, but town forgets you a little
+  { const b = bodyDrift(a, j, why); dh += b.dh; dH += b.dH; dc += b.dc; }   // i74: desk wear, an old injury, helping Dad
   if (S.care && CARE[S.care]) { const cr = CARE[S.care]; dh += cr.happy; dH += cr.health; dc += cr.comm; }   // i3-a31
   // worn down: pushing through low health with overtime or side hustles makes it worse, fast
   if (S.health < 35 && (S.focus === 'work' || S.focus === 'hustle')) dH -= 3.2;
@@ -339,7 +342,7 @@ function weekTick(auto){
   if (S.streakF === S.focus) S.streakN++; else { S.streakF = S.focus; S.streakN = 1; }
   S.recentF = [S.focus, ...(S.recentF || [])].slice(0, 4);
   const eff = focusEffect();
-  adj(focusFx(S.focus, eff, !!(trip && trip.away)));
+  adj(focusFx(S.focus, eff, trip && trip.away ? (trip.van ? VAN_TIME : true) : false));
   S.last.why = why;
   if (S.focus !== 'study' && S.streakN > RUT_WEEKS) {
     adj({happy: -1.2});
@@ -404,7 +407,8 @@ function weekTick(auto){
   let ending = null;
   if (S.health <= 0) {
     if (L.turns === Infinity && age() >= 50) ending = `${S.name}'s health finally gave out at age ${age()}.`;
-    else { const bill = Math.round(cost(6500)); S.money -= bill; S.health = 30; adj({happy:-10}); notes.push(`🏥 You ended up in the hospital. The bill was ${fmt(bill)}.`); log('Spent a week in the hospital in Walla Walla.'); }
+    else { const ride = ambRide(), bill = Math.round(cost(6500)) + ride; S.money -= bill; S.health = 30; adj({happy:-10});   // i74-a04: the ambulance ride, unless you're a member
+      notes.push(`🏥 You ended up in the hospital. The bill was ${fmt(bill)}${ride ? `, ${fmt(ride)} of it for the ambulance ride` : ', and your ambulance district membership covered the ride'}.`); log('Spent a week in the hospital in Walla Walla.'); }
   }
   if (!ending && L.turns === Infinity && age() >= 60) {
     const p = Math.pow((age()-60)/35, 3) * 0.22 * (1.6 - S.health/100) * (W/3);
