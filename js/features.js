@@ -1415,6 +1415,7 @@ const PLAN_DUE = [
     choices:() => [{label:'Hand over the certificate', go:() => { S.scholar.y = new Date(S.date).getFullYear(); S.scholar.n++; adj({ community:3, happy:2 });
       return `The whole gym clapped. That's ${S.scholar.n} graduate${S.scholar.n === 1 ? '' : 's'} helped so far.`; }}]}
 ];
+PLAN_DUE.push(...LEAGUE_STEPS);   // W22: the Little League season's later steps (js/events.js)
 // i3-a34: the odd guest, in the weeks right after a hosting weekend
 const PLAN_EVENTS = [
   { ic:'🛏️', title:'Wine weekend guests', w:3, when:() => S.roomHost && S.turn - (S.hostLast ?? -99) <= 1,
