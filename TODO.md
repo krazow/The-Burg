@@ -4141,6 +4141,79 @@ old ones.
 
 </details>
 
+## Ideas round 49 (pick on the build board)
+
+59 ideas. Details: [docs/ideas/round-49.md](docs/ideas/round-49.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 49: The 10-minute session</b> (28 ideas)</summary>
+
+- [ ] 🔴 **i49-a01** Game lengths say how long they take (S)
+- [ ] 🔴 **i49-a02** An event result can go straight to next week (S)
+- [ ] 🔴 **i49-a03** Milestone notes ride along instead of stopping a skip (S)
+- [ ] 🔴 **i49-a04** Change focus from the End Week button (S)
+- [ ] 🔴 **i49-a05** Done for now: a sitting card, then the title (S)
+- [ ] 🟠 **i49-a06** The Continue card shows stats, focus and weeks left (S)
+- [ ] 🟠 **i49-a07** The Continue card says what your last sitting did (S)
+- [ ] 🟠 **i49-a08** The Journal marks where each sitting started (M)
+- [ ] 🟠 **i49-a09** Year in review has a 'Stop here for today' button (S)
+- [ ] 🟠 **i49-a10** Year in review ends with 'Coming up' (S)
+- [ ] 🔴 **i49-a11** 'Always answer this way' for repeat small events (M)
+- [ ] 🟠 **i49-a12** A reading-budget test (S)
+- [ ] 🟡 **i49-a13** Each event leads with its question in bold (S)
+- [ ] 🟠 **i49-a14** Stats card as one slim row (S)
+- [ ] 🟠 **i49-a15** Open straight into the life you played today (S)
+- [ ] 🟡 **i49-a16** Add a play reminder to your own calendar (S)
+- [ ] 🟡 **i49-a17** A Sunday reminder on installed Android, off by default (M)
+- [ ] 🟠 **i49-a18** A 1 Year game that fits one sitting (M)
+- [ ] 🟡 **i49-a19** The end screen says how long the life took (S)
+- [ ] 🟡 **i49-a20** The sim report estimates minutes per game (S)
+- [ ] 🟠 **i49-a21** Apply from Home's 'No job yet' card (S)
+- [ ] 🟡 **i49-a22** The progress bar shows this sitting (S)
+- [ ] 🟡 **i49-a23** The week strip knows you were away (S)
+- [ ] 🟡 **i49-a24** The app icon shows a waiting choice (S)
+- [ ] 🟠 **i49-a25** The first week back stops for nothing small (S)
+- [ ] 🟡 **i49-a26** Skip totals per sitting in the Menu (S)
+- [ ] 🟠 **i49-a27** Lifetime parts on the Continue card (M)
+- [ ] 🟠 **i49-a28** Pick up a skip where you left it (S)
+
+</details>
+
+<details><summary><b>Ideas 49: The small towns nearby</b> (31 ideas)</summary>
+
+- [ ] 🔴 **i49-b01** Light pins for the small towns (L)
+- [ ] 🔴 **i49-b02** Stop on the way: add one small town to a trip (M)
+- [ ] 🔴 **i49-b03** Small-town stops share the cooldown and fade with repeats (S)
+- [ ] 🟠 **i49-b04** Prescott: rides to practice with Prescott parents (S)
+- [ ] 🟠 **i49-b05** Prescott: the tavern burger night (S)
+- [ ] 🟠 **i49-b06** Touchet: Friday at the tavern by the tracks (S)
+- [ ] 🟠 **i49-b07** Touchet: the other small school (S)
+- [ ] 🟡 **i49-b08** Lowden: a tasting room in the old schoolhouse (S)
+- [ ] 🟡 **i49-b09** Lowden: the cottonwood lane in October (S)
+- [ ] 🟡 **i49-b10** Dixie: the honor box egg stand (S)
+- [ ] 🟡 **i49-b11** Dixie: the old schoolhouse open house (S)
+- [ ] 🟠 **i49-b12** Starbuck: coffee and talk at the store (S)
+- [ ] 🟡 **i49-b13** Starbuck: the fall wild game feed (S)
+- [ ] 🟠 **i49-b14** Pomeroy: the Garfield County Fair in August (M)
+- [ ] 🟡 **i49-b15** Pomeroy: the courthouse lawn on a summer evening (S)
+- [ ] 🟠 **i49-b16** Milton-Freewater: a fruit stand box for the freezer (S)
+- [ ] 🟡 **i49-b17** Milton-Freewater: count the frog statues (S)
+- [ ] 🟡 **i49-b18** Milton-Freewater: the Muddy Frogwater festival in August (S)
+- [ ] 🟡 **i49-b19** Athena: the Scottish games in July (S)
+- [ ] 🟡 **i49-b20** Athena: a cousin's family on the wheat ground (S)
+- [ ] 🟠 **i49-b21** Family in a small town: weddings, birthdays and funerals (L)
+- [ ] 🟠 **i49-b22** The rural mail carrier who knows three towns (S)
+- [ ] 🟡 **i49-b23** A Prescott date (S)
+- [ ] 🟡 **i49-b24** Weekend bartending in Touchet (S)
+- [ ] 🟠 **i49-b25** The back-roads loop: Prescott, Starbuck, Pomeroy and home (M)
+- [ ] 🟡 **i49-b26** Small-town Saturday spring cleanups and yard sales (S)
+- [ ] 🟡 **i49-b27** A ride from a farmer at the Prescott grain scale (S)
+- [ ] 🟡 **i49-b28** Small towns get a line in the weekly news (S)
+- [ ] 🟡 **i49-b29** Know the back roads badge (S)
+- [ ] 🟡 **i49-b30** Help page: the small towns (S)
+- [ ] 🟠 **i49-b31** Small-town stops in the playtest bots (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
