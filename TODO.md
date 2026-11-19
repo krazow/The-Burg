@@ -700,6 +700,83 @@ old ones.
 
 </details>
 
+## Ideas round 4 (pick on the build board)
+
+63 ideas. Details: [docs/ideas/round-4.md](docs/ideas/round-4.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 4: Stories and seasons</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i4-a01** Tattler headlines from your own week (S)
+- [ ] 🟠 **i4-a02** Write a letter to the editor (S)
+- [ ] 🟠 **i4-a03** Tattler classifieds you can answer (M)
+- [ ] 🔴 **i4-a04** The trunk in the attic (M)
+- [ ] 🟠 **i4-a05** The Cardinals make a playoff run (M)
+- [ ] 🟠 **i4-a06** Build a float for the Celebration Days parade (M)
+- [ ] 🟠 **i4-a07** Enter something at the county fair (M)
+- [ ] 🔴 **i4-a08** Coffee with an old-timer (M)
+- [ ] 🟠 **i4-a09** The empty storefront on Main Street (M)
+- [ ] 🟠 **i4-a10** Work a whole harvest with a farm family (M)
+- [ ] 🟠 **i4-a11** Letters from a friend who left (M)
+- [ ] 🟡 **i4-a12** The Sunday phone call (S)
+- [ ] 🟠 **i4-a13** A Mailbox on Home (M)
+- [ ] 🟡 **i4-a14** Christmas cards (S)
+- [ ] 🟠 **i4-a15** A shoebox of twelve photos (M)
+- [ ] 🔴 **i4-a16** New Year's resolutions (S)
+- [ ] 🔴 **i4-a17** A line about the weather and the land (S)
+- [ ] 🟠 **i4-a18** The long winter (M)
+- [ ] 🔴 **i4-a19** Celebration Days as a planned weekend (M)
+- [ ] 🟡 **i4-a20** The goat that won't be caught (S)
+- [ ] 🟡 **i4-a21** Sheriff's log in the Tattler (S)
+- [ ] 🟡 **i4-a22** The old pickup's last ride (S)
+- [ ] 🔴 **i4-a23** A last walk down Main Street (M)
+- [ ] 🔴 **i4-a24** Unfinished business (S)
+- [ ] 🟠 **i4-a25** The school bond vote (M)
+- [ ] 🟠 **i4-a26** A town story that spans years (L)
+- [ ] 🟡 **i4-a27** Little firsts (S)
+- [ ] 🟠 **i4-a28** The dry summer (M)
+- [ ] 🟡 **i4-a29** The reporter's big story (M)
+- [ ] 🟡 **i4-a30** A year ago today (S)
+- [ ] 🔴 **i4-a31** A time capsule at Celebration Days (M)
+- [ ] 🟠 **i4-a32** Gossip at the café table (S)
+
+</details>
+
+<details><summary><b>Ideas 4: Challenge and new modes</b> (31 ideas)</summary>
+
+- [ ] 🔴 **i4-b01** Heat levels above Hard (M)
+- [ ] 🔴 **i4-b02** Ironman lives (S)
+- [ ] 🔴 **i4-b03** House rules you set before you start (M)
+- [ ] 🔴 **i4-b04** Contracts on the bulletin board (M)
+- [ ] 🔴 **i4-b05** A comeback arc after a hard fall (M)
+- [ ] 🟠 **i4-b06** Hospital bills: payment plan or charity care (S)
+- [ ] 🔴 **i4-b07** Bigger money brings bigger asks (M)
+- [ ] 🟠 **i4-b08** Custom mode: set your own sliders (M)
+- [ ] 🟠 **i4-b09** Mode check-in at the end of year one (S)
+- [ ] 🟠 **i4-b10** A gentle first season on your first life (S)
+- [ ] 🟠 **i4-b11** One do-over a year (S)
+- [ ] 🟠 **i4-b12** Stake a life goal (S)
+- [ ] 🟠 **i4-b13** Push your luck at harvest (M)
+- [ ] 🟠 **i4-b14** Go all in on a week (M)
+- [ ] 🟡 **i4-b15** Small bets at the Days horse races (S)
+- [ ] 🟡 **i4-b16** Grange raffle tickets (S)
+- [ ] 🟠 **i4-b17** Fishing the Touchet: a quick tap game (M)
+- [ ] 🟡 **i4-b18** Pie and preserves at the fair (S)
+- [ ] 🟠 **i4-b19** Kitchen-table bills when money is short (M)
+- [ ] 🟠 **i4-b20** Puzzle weeks (M)
+- [ ] 🟠 **i4-b21** Speedrun goals: fewest weeks (M)
+- [ ] 🟡 **i4-b22** Porch mode: a sandbox (S)
+- [ ] 🟡 **i4-b23** Blitz: a clock on every week (S)
+- [ ] 🟠 **i4-b24** The Joneses: a rival life next door (M)
+- [ ] 🟡 **i4-b25** Two households, one town (L)
+- [ ] 🟠 **i4-b26** Dynasty: a family score across generations (L)
+- [ ] 🟡 **i4-b27** Sheriff's auction fixer-upper (M)
+- [ ] 🟡 **i4-b28** Hard hides the exact numbers (S)
+- [ ] 🟡 **i4-b29** A grit rating for harder lives (S)
+- [ ] 🟠 **i4-b30** Big seasonal tests you can prepare for (M)
+- [ ] 🟡 **i4-b31** The sim plays every new mode and rule (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
