@@ -3088,6 +3088,82 @@ old ones.
 
 </details>
 
+## Ideas round 35 (pick on the build board)
+
+62 ideas. Details: [docs/ideas/round-35.md](docs/ideas/round-35.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 35: Insurance, taxes and paperwork</b> (34 ideas)</summary>
+
+- [ ] 🔴 **i35-a01** Your papers: one card for everything on file (L)
+- [ ] 🔴 **i35-a02** Register to vote, then the ballot comes by mail (M)
+- [ ] 🔴 **i35-a03** Itemize or take the standard deduction (S)
+- [ ] 🔴 **i35-a04** Name a beneficiary on your 401(k) (S)
+- [ ] 🟠 **i35-a05** Transfer the title within 15 days (S)
+- [ ] 🟠 **i35-a06** Shop your car insurance once a year (S)
+- [ ] 🟠 **i35-a07** Pay the small claim yourself, keep the clean record (S)
+- [ ] 🟠 **i35-a08** Term life insurance when the first kid comes (M)
+- [ ] 🟡 **i35-a09** The whole-life pitch at the kitchen table (S)
+- [ ] 🟡 **i35-a10** Pet insurance for the dog (S)
+- [ ] 🟡 **i35-a11** The extended warranty at the dealer (S)
+- [ ] 🟠 **i35-a12** Business insurance: a customer slips on the ice (M)
+- [ ] 🟡 **i35-a13** Renter's insurance pays when the upstairs tub overflows (S)
+- [ ] 🟠 **i35-a14** Keep the receipts folder (S)
+- [ ] 🟠 **i35-a15** A letter from the IRS: you forgot a form (S)
+- [ ] 🟡 **i35-a16** Owe in April? Set up a payment plan (S)
+- [ ] 🟠 **i35-a17** Washington's working families credit (M)
+- [ ] 🟡 **i35-a18** The assessor says your house is worth more (S)
+- [ ] 🟡 **i35-a19** Senior property tax break at 61 (S)
+- [ ] 🟠 **i35-a20** Wedding paperwork week (S)
+- [ ] 🟠 **i35-a21** Power of attorney for an aging parent (M)
+- [ ] 🟡 **i35-a22** Executor of a parent's estate (M)
+- [ ] 🟠 **i35-a23** Washington paid family leave when the baby comes (M)
+- [ ] 🔴 **i35-a24** Unemployment asks for three job contacts a week (S)
+- [ ] 🟡 **i35-a25** Upgrade to the enhanced license before Canada (S)
+- [ ] 🟡 **i35-a26** Dog license at City Hall (S)
+- [ ] 🟡 **i35-a27** Burn permit for the fall leaf pile (S)
+- [ ] 🟠 **i35-a28** Pull a permit for the deck (S)
+- [ ] 🟡 **i35-a29** File it in small claims court (M)
+- [ ] 🟡 **i35-a30** A fireproof box for the papers (S)
+- [ ] 🔴 **i35-a31** Kitchen-table admin hour (S)
+- [ ] 🟠 **i35-a32** Sign here: a form card for paperwork choices (M)
+- [ ] 🟠 **i35-a33** Due soon: a strip of the next three deadlines (S)
+- [ ] 🟡 **i35-a34** An 'On top of it' badge (S)
+
+</details>
+
+<details><summary><b>Ideas 35: Playtest of Hard and the challenges</b> (28 ideas)</summary>
+
+- [ ] 🔴 **i35-b01** Single parent and Debt-free agree on what "out of debt" means (S)
+- [ ] 🔴 **i35-b02** Debt-free starts $20,000 down and ends with $15,000 saved (S)
+- [ ] 🔴 **i35-b03** Save the family farm becomes a 2-year race (S)
+- [ ] 🔴 **i35-b04** The balance sim plays every challenge, idle included (M)
+- [ ] 🔴 **i35-b05** Hard lowers the resting points, not just the drain (M)
+- [ ] 🔴 **i35-b06** The sim fails if Hard scores like Normal (S)
+- [ ] 🟠 **i35-b07** Hard tilts the event mix toward trouble (S)
+- [ ] 🟠 **i35-b08** Lean winter weeks on Hard for shaky jobs (M)
+- [ ] 🟠 **i35-b09** A Hard hospital stay costs two weeks of pay (S)
+- [ ] 🟠 **i35-b10** Sent home sick: the boss steps in when you're run down (S)
+- [ ] 🟠 **i35-b11** A credit check on Hard for bank and office jobs (S)
+- [ ] 🟠 **i35-b12** A summer intensive to catch up on classes (M)
+- [ ] 🟡 **i35-b13** The national lab hires in spring and fall (S)
+- [ ] 🟠 **i35-b14** A sitter for overtime when you parent alone (S)
+- [ ] 🟠 **i35-b15** Single parent's happiness bar goes to 62 (S)
+- [ ] 🟠 **i35-b16** Debt-free starts with the pickup repossessed (M)
+- [ ] 🟡 **i35-b17** Store-card offers in the Debt-free challenge (S)
+- [ ] 🟡 **i35-b18** The farmhouse price climbs while you save (S)
+- [ ] 🟡 **i35-b19** First-year farmhouse bills: well pump and roof (S)
+- [ ] 🟠 **i35-b20** Worry eats into rest when you're in debt on Hard (S)
+- [ ] 🟡 **i35-b21** Hard's mode card says what it really changes (S)
+- [ ] 🟡 **i35-b22** Keep the café open: a business challenge (M)
+- [ ] 🟡 **i35-b23** Pre-K for the toddler in the Single parent challenge (S)
+- [ ] 🟡 **i35-b24** Steady jobs open less often on Hard (S)
+- [ ] 🟡 **i35-b25** A grinder bot in the balance sim (S)
+- [ ] 🟡 **i35-b26** Sick-kid weeks for a parent on their own (S)
+- [ ] 🟠 **i35-b27** A lighter class load: half credit, half the strain (S)
+- [ ] 🟡 **i35-b28** Family help with the farm down payment, earned by standing in town (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
