@@ -5808,6 +5808,79 @@ old ones.
 
 </details>
 
+## Ideas round 71 (pick on the build board)
+
+59 ideas. Details: [docs/ideas/round-71.md](docs/ideas/round-71.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 71: Fighting the samey weeks</b> (29 ideas)</summary>
+
+- [ ] 🔴 **i71-a01** A dry-spell floor: six empty weeks, then something happens (S)
+- [ ] 🔴 **i71-a02** Quiet weeks notice things: seeds that become chances later (M)
+- [ ] 🔴 **i71-a03** Offers with a clock: a chance on Home that's gone in two weeks (M)
+- [ ] 🔴 **i71-a04** The plateau: three years at a capped job brings a work crossroads (M)
+- [ ] 🟠 **i71-a05** Slack: calm, steady weeks cushion the next hard one (M)
+- [ ] 🟠 **i71-a06** Restless: a long, comfortable stretch wants something new (M)
+- [ ] 🟠 **i71-a07** Momentum: varied weeks tilt luck your way (M)
+- [ ] 🔴 **i71-a08** Same focus, different month: seasonal flavors for three focuses (M)
+- [ ] 🟠 **i71-a09** Open door or lay low: one tap sets how lively your week is (S)
+- [ ] 🟠 **i71-a10** A quarterly work pick at report-card time (M)
+- [ ] 🟡 **i71-a11** A sabbatical: eight unpaid weeks after seven years at one job (M)
+- [ ] 🟡 **i71-a12** Train for the Walla Walla half marathon (M)
+- [ ] 🟠 **i71-a13** Skill level 3 opens a moonlight job (M)
+- [ ] 🔴 **i71-a14** A crossroads scheduler for the long middle (L)
+- [ ] 🟡 **i71-a15** Season tickets to the Friday night games (S)
+- [ ] 🟠 **i71-a16** Steady jobs grow new work events with tenure (M)
+- [ ] 🟠 **i71-a17** A clean quarter earns a gold star on the report card (S)
+- [ ] 🟡 **i71-a18** Rain check: pass on an offer now, maybe see it again (S)
+- [ ] 🟠 **i71-a19** Double-booked: two good things want the same Saturday (S)
+- [ ] 🟡 **i71-a20** Secondhand finds that change a focus a little (S)
+- [ ] 🟠 **i71-a21** Each year has a character: wet, dry, boom or lean (M)
+- [ ] 🟠 **i71-a22** Money crossroads: what to do with a healthy savings account (M)
+- [ ] 🔴 **i71-a23** The skip button lists what will lapse (S)
+- [ ] 🟠 **i71-a24** Tenure perks at 2, 5 and 10 years (M)
+- [ ] 🟡 **i71-a25** A perfect Waitsburg week, once in a long while (S)
+- [ ] 🟠 **i71-a26** Empty nest: a half-strength second focus (M)
+- [ ] 🟡 **i71-a27** A friendly bet: biggest steelhead or the best tomato (S)
+- [ ] 🟠 **i71-a28** A sim check that measures samey stretches (S)
+- [ ] 🟡 **i71-a29** Pick your seat at the monthly grange potluck (S)
+
+</details>
+
+<details><summary><b>Ideas 71: Code health after the merge wave</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i71-b01** Chain-event buttons show the price you really pay (S)
+- [ ] 🔴 **i71-b02** The money outlook test actually checks what it says (S)
+- [ ] 🔴 **i71-b03** One resolveChoice() for picked and auto-played events (M)
+- [ ] 🔴 **i71-b04** Promotion stress counts in quiet weeks too (S)
+- [ ] 🔴 **i71-b05** Collections fees and hospital bills show in the week's money (S)
+- [ ] 🟠 **i71-b06** migrate() drops its two hand-kept default lists (S)
+- [ ] 🟠 **i71-b07** One graduate() for classes and class-week events (S)
+- [ ] 🟠 **i71-b08** Use working() and longCommute() everywhere (S)
+- [ ] 🟠 **i71-b09** curYear() and ownsHome() helpers (S)
+- [ ] 🟠 **i71-b10** One month helper instead of three (S)
+- [ ] 🟠 **i71-b11** Skill discounts come from one constant (S)
+- [ ] 🟠 **i71-b12** Around-town card reads the real bills (S)
+- [ ] 🟠 **i71-b13** hireOdds() moves out of the Jobs screen (M)
+- [ ] 🟠 **i71-b14** State fields stop sharing names with functions (S)
+- [ ] 🟠 **i71-b15** One will, not two flags (S)
+- [ ] 🟠 **i71-b16** Remove dead code and stale file headers (S)
+- [ ] 🟠 **i71-b17** A guard test for the one shared global scope (M)
+- [ ] 🟠 **i71-b18** Event titles stay unique, and every place points at a real event (S)
+- [ ] 🟠 **i71-b19** Events get a stable id apart from their title (M)
+- [ ] 🟠 **i71-b20** Jobs added from other files get the same checks (S)
+- [ ] 🟠 **i71-b21** Badges touch storage only when one is earned (S)
+- [ ] 🟡 **i71-b22** Truck-loan fallback set once in migrate (S)
+- [ ] 🟡 **i71-b23** Name the magic numbers in weekTick (S)
+- [ ] 🟡 **i71-b24** A withStub() helper for test fakes (S)
+- [ ] 🟡 **i71-b25** Money lines get a key, so tests don't read labels (M)
+- [ ] 🟡 **i71-b26** Screen tests wait for the screen, not the clock (S)
+- [ ] 🟡 **i71-b27** Rules checks for systems with no test (M)
+- [ ] 🟡 **i71-b28** One loan-payment helper for the week and the outlook (S)
+- [ ] 🟡 **i71-b29** Old cooldowns are cleared each New Year (S)
+- [ ] 🟡 **i71-b30** The long-shot win says the same as the money chip (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
