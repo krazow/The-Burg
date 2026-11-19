@@ -2014,6 +2014,84 @@ old ones.
 
 </details>
 
+## Ideas round 21 (pick on the build board)
+
+64 ideas. Details: [docs/ideas/round-21.md](docs/ideas/round-21.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 21: Writing and voice</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i21-a01** Real job names in event text (S)
+- [ ] 🔴 **i21-a02** Workplace words for each kind of job (M)
+- [ ] 🟠 **i21-a03** Retire the repeated punchlines (S)
+- [ ] 🟠 **i21-a04** A test that catches repeated lines (S)
+- [ ] 🟠 **i21-a05** Saying no gets a real line (M)
+- [ ] 🟡 **i21-a06** Choice buttons in one voice (S)
+- [ ] 🟡 **i21-a07** An exclamation-mark budget (S)
+- [ ] 🔴 **i21-a08** Text that knows your age (M)
+- [ ] 🔴 **i21-a09** Text that knows where you came from (S)
+- [ ] 🟠 **i21-a10** Text that knows who's at home (M)
+- [ ] 🟠 **i21-a11** Text that knows how you're doing (M)
+- [ ] 🔴 **i21-a12** A last line that fits the life (S)
+- [ ] 🟡 **i21-a13** Leaving town in debt, with some dignity (S)
+- [ ] 🟡 **i21-a14** Decade birthdays that mention your life (S)
+- [ ] 🟠 **i21-a15** A bigger Tattler, by month, without repeats (M)
+- [ ] 🟡 **i21-a16** One spelling for every local place (S)
+- [ ] 🟠 **i21-a17** A dry closer for flat result lines (M)
+- [ ] 🟠 **i21-a18** Our best lines as the voice examples (S)
+- [ ] 🟠 **i21-a19** First names for the people you meet once (M)
+- [ ] 🟠 **i21-a20** Townsfolk who speak in their own words (M)
+- [ ] 🔴 **i21-a21** A valley detail in every generic event (M)
+- [ ] 🔴 **i21-a22** A say() helper with variants and tokens (M)
+- [ ] 🟡 **i21-a23** Event titles in one style (S)
+- [ ] 🟡 **i21-a24** Business events that start at the moment (S)
+- [ ] 🟠 **i21-a25** Journal lines in one voice (S)
+- [ ] 🟡 **i21-a26** Small wins and big wins read differently (S)
+- [ ] 🟡 **i21-a27** Retirement that fits the job you left (S)
+- [ ] 🟡 **i21-a28** A local's tip in each Help section (S)
+- [ ] 🟡 **i21-a29** Season touches inside events (M)
+- [ ] 🟠 **i21-a30** A rewrite pass on the ten flattest events (L)
+
+</details>
+
+<details><summary><b>Ideas 21: The economy over decades</b> (34 ideas)</summary>
+
+- [ ] 🔴 **i21-b01** The mortgage ends after 30 years (S)
+- [ ] 🔴 **i21-b02** A real home value, with equity as value minus the loan (M)
+- [ ] 🟠 **i21-b03** Home prices run on their own index, not the price of milk (M)
+- [ ] 🟠 **i21-b04** The bank checks your pay before the mortgage (S)
+- [ ] 🟡 **i21-b05** Affordability on the Homes list: years of pay (S)
+- [ ] 🔴 **i21-b06** A valley cycle that lasts years, not coin flips (M)
+- [ ] 🟠 **i21-b07** Hiring freeze: the job board thins out in a recession (S)
+- [ ] 🟠 **i21-b08** Raises freeze, then catch up (S)
+- [ ] 🔴 **i21-b09** 401(k) and savings follow the cycle (M)
+- [ ] 🟠 **i21-b10** Panic or hold: the market-drop card (S)
+- [ ] 🟠 **i21-b11** One interest rate runs the whole economy (M)
+- [ ] 🟡 **i21-b12** Your locked payment gets lighter every year (S)
+- [ ] 🟠 **i21-b13** Rent goes up once a year, at lease renewal (S)
+- [ ] 🟠 **i21-b14** Pay steps up each January, by employer type (S)
+- [ ] 🔴 **i21-b15** Washington's minimum wage rises with prices each January (S)
+- [ ] 🟠 **i21-b16** Real pay that rises a little with experience (M)
+- [ ] 🔴 **i21-b17** Prices that rise at different speeds (M)
+- [ ] 🟠 **i21-b18** Gas shocks that last a year or two (S)
+- [ ] 🟡 **i21-b19** Newer cars get better mileage over the years (M)
+- [ ] 🔴 **i21-b20** See everything in today's dollars or 2027 dollars (S)
+- [ ] 🟠 **i21-b21** What it costs in hours of your work (S)
+- [ ] 🟠 **i21-b22** Your cash lost value this year (S)
+- [ ] 🟡 **i21-b23** A decade chart of the valley economy (M)
+- [ ] 🟠 **i21-b24** Pick your withdrawal rate in retirement (S)
+- [ ] 🟠 **i21-b25** Does retirement cover the bills? A plain check (S)
+- [ ] 🟡 **i21-b26** Claim Social Security at 62, 67 or 70 (S)
+- [ ] 🟡 **i21-b27** Older workers in a downturn (S)
+- [ ] 🟡 **i21-b28** Extended unemployment in a recession (S)
+- [ ] 🟡 **i21-b29** Booms tempt you to buy high (S)
+- [ ] 🔴 **i21-b30** Sim test: frozen prices give the same score (S)
+- [ ] 🔴 **i21-b31** Sim test: affordability stays sane every decade (M)
+- [ ] 🟠 **i21-b32** Sim test: a recession at the worst time (M)
+- [ ] 🟠 **i21-b33** A check that every price goes through cost() (S)
+- [ ] 🟡 **i21-b34** Two lives, one economy: an economy seed (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
