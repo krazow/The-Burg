@@ -123,10 +123,11 @@ await t.check('reaching 0 health sends you to the hospital, with a bill', async 
   assert((await S()).health === 30, 'health should reset to 30');
 });
 
-await t.check('falling below -$40,000 ends the game: you leave town', async () => {
+await t.check('falling below -$40,000 offers bankruptcy; leaving town ends the game', async () => {
   await life({ money: -40500 });
   await page.click('#end');
-  await clearSheets();
+  await page.waitForSelector(`${open} #bkfile`);
+  await page.click(`${open} #bkleave`);
   await page.waitForSelector(`${open} >> text=Buried in debt`);
   await page.click(`${open} #again`);
   await page.waitForSelector('#start');
@@ -183,7 +184,7 @@ await t.check('every event\'s every choice works and shows a result', async () =
   }
   assert(tried >= titles.length, `only ${tried} choices across ${titles.length} events`);
   const cats = await page.evaluate(() => ['road', 'work'].map(c => EVENTS.filter(e => e.cat === c).length));
-  assert(cats[0] === 30 && cats[1] === 32, `expected 30 road and 32 work events (with the contract vote and the federal shutdown), got ${cats}`);
+  assert(cats[0] === 31 && cats[1] === 32, `expected 31 road and 32 work events (with the contract vote and the federal shutdown), got ${cats}`);
   console.log(`     (${tried} choices across ${titles.length} events)`);
 });
 
@@ -594,6 +595,309 @@ await t.check('i3-a14: the bus toggle shows for a Walla Walla job and swaps out 
   await page.click('#bus');
   const s = await S();
   assert(s.bus === true && !(await page.$('#carpool')) && (await page.getAttribute('#bus', 'aria-pressed')) === 'true', 'bus not on');
+});
+
+/* ---------- round 2 feel: Settings, sound, vibration, text size, night theme, swipes, thumb reach, two columns, install ---------- */
+await t.check('i2-a03: Menu → Settings holds every comfort option; Back returns to the Menu, Escape closes it', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.click('[data-tab=menu]');
+  await page.click(`${open} #settings`);
+  await page.waitForSelector(`${open} .setrow`);
+  const groups = await page.$$eval('#sheet .setrow', g => g.map(x => x.getAttribute('aria-labelledby')));
+  for (const k of ['theme', 'textSize', 'sound', 'swipe']) assert(groups.includes('set-' + k), `no ${k} setting (${groups})`);
+  assert(await page.$eval('#sheet [data-set=sound][data-v=off]', b => b.getAttribute('aria-pressed') === 'true'), 'sound is not off by default');
+  assert(await page.$eval('#sheet [data-set=theme][data-v=auto]', b => b.getAttribute('aria-pressed') === 'true'), 'theme does not follow the phone by default');
+  await page.click(`${open} #back`);
+  await page.waitForSelector(`${open} #settings`);
+  await page.click(`${open} #settings`);
+  await page.keyboard.press('Escape');            // Escape = Back to the Menu
+  await page.waitForSelector(`${open} #settings`);
+  await page.keyboard.press('Escape');
+  assert(await page.isHidden('#modal'), 'Escape did not close the Menu');
+});
+
+await t.check('i2-a06/i2-a07: text size and night theme apply at once, are remembered, and come back after a reload', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => settingsSheet(true));
+  await page.click(`${open} [data-set=theme][data-v=night]`);
+  await page.click(`${open} [data-set=textSize][data-v=xl]`);
+  const r = await page.evaluate(() => ({ night: document.documentElement.classList.contains('night'), px: getComputedStyle(document.documentElement).fontSize,
+    bg: getComputedStyle(document.body).backgroundColor, pressed: document.querySelector('#sheet [data-set=textSize][data-v=xl]').getAttribute('aria-pressed') }));
+  assert(r.night && r.px === '20px' && r.bg === 'rgb(23, 18, 14)' && r.pressed === 'true', JSON.stringify(r));
+  await page.reload({ waitUntil: 'load' });
+  const after = await page.evaluate(() => ({ night: document.documentElement.classList.contains('night'), px: getComputedStyle(document.documentElement).fontSize }));
+  assert(after.night && after.px === '20px', `after reload: ${JSON.stringify(after)}`);
+  await page.evaluate(() => { setPref('theme', 'day'); setPref('textSize', 'normal'); applyPrefs(); });
+  assert(await page.evaluate(() => !document.documentElement.classList.contains('night') && getComputedStyle(document.documentElement).fontSize === '16px'), 'day / normal did not come back');
+});
+
+await t.check('i2-a07: "Match phone" follows the dark mode setting; Day and Night override it', async () => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  const night = () => page.evaluate(() => document.documentElement.classList.contains('night'));
+  await page.evaluate(() => { setPref('theme', 'auto'); applyPrefs(); });
+  assert(await night(), 'auto + dark phone is not night');
+  await page.evaluate(() => { setPref('theme', 'day'); applyPrefs(); });
+  assert(!(await night()), 'Day did not override a dark phone');
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.evaluate(() => { setPref('theme', 'auto'); applyPrefs(); });
+  assert(!(await night()), 'auto + light phone is night');
+  await page.emulateMedia({ colorScheme: 'dark' });           // the change listener switches without a reload
+  await page.waitForTimeout(50);
+  assert(await night(), 'did not follow the phone switching to dark');
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.evaluate(() => { localStorage.removeItem(PREF_KEY); applyPrefs(); });
+});
+
+await t.check('i2-a04: a buzz for a week, an event and a badge; none when Vibration is off', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => { window.__buzz = []; navigator.vibrate = p => { window.__buzz.push(p); return true; }; S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1])); });
+  await page.click('#end'); await clearSheets();
+  await page.evaluate(() => { S.badges = {}; });
+  await page.click('#end'); await clearSheets();
+  await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Celebration Days')));
+  const { got, want } = await page.evaluate(() => ({ got: window.__buzz.map(p => JSON.stringify(p)), want: ['week', 'event', 'badge'].map(k => JSON.stringify(BUZZ[k])) }));
+  assert(want.every(w => got.includes(w)), `buzzes: ${got}`);
+  await page.click(`${open} [data-i="2"]`); await clearSheets();
+  await page.evaluate(() => { setPref('vibrate', 'off'); window.__buzz = []; });
+  await page.click('#end'); await clearSheets();
+  await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Celebration Days')));
+  assert((await page.evaluate(() => window.__buzz.length)) === 0, 'buzzed with Vibration off');
+  await page.click(`${open} [data-i="2"]`); await clearSheets();
+});
+
+await t.check('i2-a05: sounds are off by default; once on, a week ticks, events chime, and ⏩ stays quiet', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => { sfx.last = null; AUDIO = null; });
+  await page.click('#end'); await clearSheets();
+  assert(await page.evaluate(() => sfx.last === null && AUDIO === null), 'a sound played (or audio started) while Sounds is off');
+  await page.evaluate(() => { setPref('sound', 'soft'); sfx.last = null; });
+  await page.click('#end'); await clearSheets();
+  assert((await page.evaluate(() => sfx.last)) === 'week' && await page.evaluate(() => !!AUDIO), 'no week sound');
+  await page.evaluate(() => { sfx.last = null; S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1])); });
+  await page.click('#ff4'); await clearSheets();
+  assert((await page.evaluate(() => sfx.last)) === null, `⏩ 4 played "${await page.evaluate(() => sfx.last)}"`);
+  await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Celebration Days')));
+  assert((await page.evaluate(() => sfx.last)) === 'event', 'no event chime');
+  await page.click(`${open} [data-i="0"]`);
+  assert(['good', 'bad', 'tap'].includes(await page.evaluate(() => sfx.last)), 'no sound for the result');
+  await clearSheets();
+  await page.evaluate(() => { setPref('sound', 'off'); });
+});
+
+const swipe = (sel, dx, dy, type = 'touch') => page.evaluate(([sel, dx, dy, type]) => {
+  const el = document.querySelector(sel), r = el.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + Math.min(r.height / 2, 20);
+  const ev = (t, x, y) => el.dispatchEvent(new PointerEvent(t, { bubbles: true, pointerId: 7, pointerType: type, isPrimary: true, clientX: x, clientY: y }));
+  ev('pointerdown', x, y); ev('pointermove', x + dx / 2, y + dy / 2); ev('pointerup', x + dx, y + dy);
+}, [sel, dx, dy, type]);
+await t.check('i2-a22: swiping left and right changes tabs; scrolling, a mouse drag or Swipes off do not', async () => {
+  await life({ jobId: 'farmhand' });
+  await swipe('#main .card', -140, 10);
+  assert((await page.evaluate(() => tab)) === 'jobs', 'swipe left did not go to Jobs');
+  await page.waitForTimeout(120);
+  assert((await page.textContent('#sr')).includes('Jobs'), 'tab change not announced');
+  await swipe('#main .card', 140, 0);
+  assert((await page.evaluate(() => tab)) === 'home', 'swipe right did not come back Home');
+  await swipe('#main .card', 140, 0);
+  assert((await page.evaluate(() => tab)) === 'home', 'swiped past the first tab');
+  await swipe('#main .card', -60, 200);
+  assert((await page.evaluate(() => tab)) === 'home', 'a scroll changed tabs');
+  await swipe('#main .card', -140, 0, 'mouse');
+  assert((await page.evaluate(() => tab)) === 'home', 'a mouse drag changed tabs');
+  await page.evaluate(() => setPref('swipe', 'off'));
+  await swipe('#main .card', -140, 0);
+  assert((await page.evaluate(() => tab)) === 'home', 'swiped with Swipes off');
+  await page.evaluate(() => setPref('swipe', 'on'));
+});
+
+await t.check('i2-a22: a pop-up swipes closed from its handle, but an event asking for a choice cannot', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.click('[data-tab=menu]');
+  assert(await page.$(`${open} .grab`), 'the Menu has no handle');
+  await swipe('#sheet .grab', 0, 30);
+  assert(await page.isVisible('#modal'), 'a short pull closed it');
+  await swipe('#sheet .grab', 0, 150);
+  assert(await page.isHidden('#modal'), 'swiping the handle down did not close the Menu');
+  await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Celebration Days')));
+  assert(!(await page.$(`${open} .grab`)), 'an event with choices has a handle');
+  await page.evaluate(() => { const sh = document.querySelector('#sheet'); for (const [t, y] of [['pointerdown', 200], ['pointerup', 500]]) sh.dispatchEvent(new PointerEvent(t, { bubbles: true, pointerId: 8, pointerType: 'touch', isPrimary: true, clientX: 100, clientY: y })); });
+  await page.keyboard.press('Escape');
+  assert(await page.isVisible('#modal'), 'the event was dismissed without a choice');
+  await page.click(`${open} [data-i="2"]`);
+  assert(await page.$(`${open} .grab`), 'the result has no handle');
+  await swipe('#sheet .grab', 0, 150);
+  assert(await page.isHidden('#modal'), 'the result did not swipe closed');
+});
+
+await t.check('i2-a24: event choices sit at the bottom of the pop-up, and the result keeps the layout', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Celebration Days')));
+  const m = await page.evaluate(() => { const sh = document.querySelector('#sheet').getBoundingClientRect(), last = [...document.querySelectorAll('#sheet [data-i]')].pop().getBoundingClientRect();
+    return { ev: document.querySelector('#sheet').classList.contains('ev'), gap: sh.bottom - last.bottom, h: sh.height, vh: innerHeight }; });
+  assert(m.ev && m.gap < 60 && m.h >= m.vh * 0.55, JSON.stringify(m));
+  await page.click(`${open} [data-i="2"]`);
+  const r = await page.evaluate(() => { const sh = document.querySelector('#sheet').getBoundingClientRect(), ok = document.querySelector('#sheet #ok').getBoundingClientRect(); return { ev: document.querySelector('#sheet').classList.contains('ev'), gap: sh.bottom - ok.bottom }; });
+  assert(r.ev && r.gap < 60, `result layout ${JSON.stringify(r)}`);
+  await clearSheets();
+  await page.evaluate(() => sheet('<h2>Plain</h2><button id="ok">OK</button>'));
+  assert(!(await page.evaluate(() => document.querySelector('#sheet').classList.contains('ev'))), 'other pop-ups kept the event layout');
+  await page.evaluate(() => closeSheet());
+});
+
+await t.check('i2-a27: Home has a side column on a tablet held sideways, and one column on a phone', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.click('#end'); await clearSheets();
+  const cols = () => page.evaluate(() => { const a = document.querySelector('.hmain').getBoundingClientRect(), b = document.querySelector('.hside').getBoundingClientRect();
+    return { side: b.left >= a.right - 1 && b.top < a.bottom, recent: getComputedStyle(document.querySelector('.hside .wideonly')).display !== 'none' }; });
+  let c = await cols();
+  assert(!c.side && !c.recent, `phone: ${JSON.stringify(c)}`);
+  await page.setViewportSize({ width: 1024, height: 768 });
+  c = await cols();
+  assert(c.side && c.recent, `tablet: ${JSON.stringify(c)}`);
+  await page.setViewportSize({ width: 390, height: 844 });
+});
+
+await t.check('i2-a30: the install card waits for 8 weeks of play, installs on tap, and hides for good after', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => { window.__prompted = 0; const e = new Event('beforeinstallprompt', { cancelable: true }); e.prompt = () => { window.__prompted++; }; e.userChoice = Promise.resolve({ outcome: 'accepted' }); window.dispatchEvent(e); });
+  assert(!(await page.$('#install')), 'offered to install in the first week');
+  await page.evaluate(() => { S.turn = 8; render(); });
+  assert(await page.$('#install'), 'no install card after 8 weeks');
+  await page.click('#install');
+  await page.waitForTimeout(50);
+  assert((await page.evaluate(() => window.__prompted)) === 1 && await page.evaluate(() => prefs().installed === true), 'install did not prompt or was not remembered');
+  assert(!(await page.$('#install')), 'card still showing after installing');
+  // Not now hides it; the Android app (or a home-screen app) never shows it
+  await page.evaluate(() => { localStorage.removeItem(PREF_KEY); setPref('tips', ['focus', 'strip', 'tabs']); INSTALL_EVT = { prompt(){}, userChoice: Promise.resolve({ outcome: 'dismissed' }) }; render(); });
+  await page.click('#installno');
+  assert(!(await page.$('#install')) && await page.evaluate(() => !!prefs().installNo), 'Not now did not hide it');
+  await page.evaluate(() => { setPref('installNo', null); Object.defineProperty(document, 'referrer', { configurable: true, get: () => 'android-app://com.krazow.theburg' }); render(); });
+  assert(!(await page.$('#install')), 'shown inside the Android app');
+  await page.evaluate(() => { delete document.referrer; INSTALL_EVT = null; render(); });
+});
+
+
+/* ---------- round 3: money (insurance, housing, loans, investing, farm markets, debt help) ---------- */
+await t.check('i3-a27: filing for bankruptcy wipes the debt and keeps the life going, once', async () => {
+  await life({ money: -40500, car: 'truck', carValue: 30000, loanLeft: 30, loanPay: 640, k401: 5000, stocks: 2000 });
+  await page.click('#end');
+  await page.waitForSelector(`${open} #bkfile`);
+  const txt = await page.textContent('#sheet');
+  assert(/lose/.test(txt) && /401\(k\)/.test(txt) && /only do it once/.test(txt), txt.slice(0, 300));
+  await page.click(`${open} #bkfile`);
+  let s = await S();
+  assert(s.money === 0 && s.bk != null && s.car === 'beater' && s.loanLeft === 0 && s.stocks === 0 && s.k401 >= 5000 && !s.over, JSON.stringify({ m: s.money, bk: s.bk, car: s.car, k: s.k401 }));
+  assert(await page.$('#end'), 'the game should go on');
+  await page.evaluate(() => { S.money = -40500; });
+  await page.click('#end');
+  await clearSheets();
+  await page.waitForSelector(`${open} >> text=Buried in debt`);
+  assert(!(await page.$(`${open} #bkfile`)), 'bankruptcy is once a life');
+  await page.click(`${open} #again`);
+  await page.waitForSelector('#start');
+});
+
+await t.check('i3-a19: the insurance sheet changes coverage and the weekly bill', async () => {
+  await life({ jobId: 'farmhand', money: 5000 }, 'life');
+  assert((await page.textContent('#main')).includes('Insurance & phone'), 'no insurance card on Life');
+  await page.click('#inssheet');
+  await page.click(`${open} [data-ins="auto"][data-v="liab"]`);
+  await page.click(`${open} [data-ins="renters"][data-v="false"]`);
+  assert(await page.getAttribute(`${open} [data-ins="auto"][data-v="liab"]`, 'aria-pressed') === 'true', 'the choice should show as pressed');
+  await page.click(`${open} #ok`);
+  const s = await S();
+  assert(s.ins.auto === 'liab' && s.ins.renters === false, JSON.stringify(s.ins));
+  await page.click('[data-tab=home]'); await page.click('#end'); await clearSheets();
+  assert(near((await S()).last.lines.find(l => l[0] === 'Insurance & phone')[1], -(160 - 35 - 15) * 12 / 52), 'the bill should drop by $50 a month');
+});
+
+await t.check('i3-a21/a22/a23: the home card shows the market and rates; refinancing and borrowing against the house work', async () => {
+  await life({ jobId: 'farmhand', money: 20000, homeGrow: 0.07 }, 'life');
+  assert(/Hot/.test(await page.textContent('#main')), 'a hot market should show');
+  await page.click('[data-home="fixer"]');
+  assert(/hot/.test(await page.textContent('#sheet')), 'the buy sheet shows the market');
+  await page.click(`${open} #y`);
+  let s = await S();
+  assert(s.money === 20000 - Math.round(9000 * 1.05) - 300 && near(s.mortgage, 950 * 1.05) && s.mortRate === 6.5, JSON.stringify({ m: s.money, mort: s.mortgage }));
+  await page.evaluate(() => { S.rate = 5.25; S.equity = 40000; render(); });
+  await page.click('#refi'); await page.click(`${open} #y`);
+  s = await S();
+  assert(s.mortRate === 5.25 && s.mortgage < 950 * 1.05 * 0.9, `refi ${s.mortgage}`);
+  await page.click('#heloan');
+  await page.click(`${open} [data-he="20000"]`);
+  s = await S();
+  assert(s.heLeft === 120 && s.hePay > 200 && /Home equity loan/.test(await page.textContent('#main')), JSON.stringify({ he: s.heLeft, pay: s.hePay }));
+});
+
+await t.check('i3-a29/a17: index funds and wine futures from the Life tab', async () => {
+  await life({ jobId: 'farmhand', money: 9000, date: new Date(2027, 9, 4).getTime() }, 'life');
+  await page.click('[data-inv="5000"]');
+  await page.click('[data-inv="-1000"]');
+  await page.click('#wine');
+  const s = await S();
+  assert(s.stocks === 4000 && s.wine.length === 1 && s.money === 9000 - 4000 - 2500, JSON.stringify({ st: s.stocks, w: s.wine, m: s.money }));
+  assert(!(await page.$('#wine')) && /in on the 2027 vintage/.test(await page.textContent('#main')), 'one vintage a year');
+  await page.click('[data-inv="all"]');
+  assert((await S()).stocks === 0, 'sell all');
+});
+
+await t.check('i3-a15/a16: the harvest asks sell or store; stored wheat sells from the Life tab; crop insurance toggles', async () => {
+  await life({ jobId: 'farmhand', money: 10000, date: new Date(2027, 7, 2).getTime() }, 'life');
+  await page.evaluate(() => { startBiz('wheat'); S.noEvents = false; S.due = []; });
+  await page.click('#cropins');
+  assert((await S()).biz.ins === true, 'crop insurance should turn on');
+  await page.evaluate(() => { bizWeek([], []); showEvent(takeDue()); });
+  assert(/elevator/.test(await page.textContent('#sheet')), 'the harvest choice explains storing');
+  await page.click(`${open} [data-i="1"]`); await page.click(`${open} #ok`);
+  let s = await S();
+  assert(s.biz.stored > 0 && s.biz.crop === 0, JSON.stringify(s.biz));
+  await page.click('[data-tab=life]');
+  const m = s.money; await page.click('#sellwheat');
+  s = await S();
+  assert(s.biz.stored === 0 && s.money > m, 'selling stored wheat pays');
+});
+
+await t.check('i3-a18: a cattle herd shows on the Life tab and warns when nobody has checked it', async () => {
+  await life({ jobId: 'farmhand', money: 10000 }, 'life');
+  await page.evaluate(() => { startBiz('cattle'); S.biz.check = S.turn - 10; render(); });
+  const txt = await page.textContent('#main');
+  assert(/6 cows/.test(txt) && /Get outside/.test(txt), txt.slice(0, 200));
+});
+// ---- Retirement and planning (ideas round 3) ----
+await t.check('i3-a33/a28: the Life tab writes a will, opens the 13-week money outlook, and the legacy sheet reads the will', async () => {
+  await life({ jobId: 'farmhand', money: 3000, ageMonths: 30 * 12 }, 'life', 'life');
+  assert((await page.textContent('#main')).includes('Planning ahead'), 'no planning card');
+  await page.click('#will');
+  let s = await S();
+  assert(s.will && s.out.will && near(s.money, 2700), JSON.stringify({ will: s.will, money: s.money }));
+  assert((await page.textContent('#main')).includes('On file') && !(await page.$('#will')), 'will not shown as on file');
+  await page.click('#outlook');
+  const txt = await page.textContent('#sheet');
+  assert(/next 13 weeks/.test(txt) && /On track|dips below zero/.test(txt) && (await page.$$('#sheet tbody tr')).length === 13, txt.slice(0, 200));
+  await page.keyboard.press('Escape');
+  assert(!(await page.$(open)), 'Escape closes the outlook');
+  await setup(() => { S.kids = [S.ageMonths - 240]; S.money = 300000; finish('done'); });
+  await page.click('#legacy');
+  assert((await page.textContent('#sheet')).includes('left a will'), 'legacy sheet should say a will was left');
+  await page.click(`${open} #heirgo`);
+  s = await S();
+  assert(s.gen === 2 && s.money > 100000 && !s.probate, JSON.stringify({ gen: s.gen, money: s.money, probate: s.probate }));
+});
+await t.check('i3-a34/a32: owners can list the spare room, and the rich can endow a scholarship from the Life tab', async () => {
+  await life({ jobId: 'farmhand', money: 200000, home: 'farm', mortgage: 1650, equity: 40000 }, 'life');
+  await page.click('#host');
+  assert((await S()).roomHost === true && (await page.getAttribute('#host', 'aria-pressed')) === 'true', 'hosting not on');
+  await page.click('#scholar'); await page.click(`${open} #y`);
+  const s = await S();
+  assert(s.scholar && s.money === 160000, JSON.stringify({ scholar: s.scholar, money: s.money }));
+  assert((await page.textContent('#main')).includes('Flow Scholarship'), 'scholarship row missing');
+});
+await t.check('i3-a24: the retire button counts a vested pension', async () => {
+  await life({ ageMonths: 63 * 12, jobId: 'para', pensionYears: 20, pensionPay: 2900 }, 'jobs', 'life');
+  const label = await page.textContent('#retire');
+  assert(/pension/.test(label), label);
+  await page.click('#retire'); await page.click('[data-tab=home]'); await page.click('#end'); await clearSheets();
+  const l = Object.fromEntries((await S()).last.lines);
+  assert(l['Pension'] > 0 && l['Social Security'] > 0, JSON.stringify(l));
 });
 
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });

@@ -1,0 +1,42 @@
+# Merges a pull request as soon as its CI run passes, if the pull request has the "automerge" label.
+# Claude adds the label when it opens a pull request, so merging no longer waits on a chat session.
+# Remove the label from a pull request to stop it merging on its own.
+name: Auto-merge
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+
+jobs:
+  merge:
+    if: >-
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request') ||
+      (github.event_name == 'pull_request' && github.event.label.name == 'automerge')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge labeled pull requests whose checks passed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.event.workflow_run.head_branch || github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          for pr in $(gh pr list -R "$REPO" --head "$BRANCH" --state open --label automerge --json number -q '.[].number'); do
+            sha=$(gh pr view "$pr" -R "$REPO" --json headRefOid -q .headRefOid)
+            # every check on the latest commit must have finished green (skipped is fine)
+            pending=$(gh api "repos/$REPO/commits/$sha/check-runs" -q '[.check_runs[] | select(.name != "merge") | select(.status != "completed" or (.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral"))] | length')
+            if [ "$pending" = "0" ]; then
+              echo "Merging #$pr"
+              gh pr merge "$pr" -R "$REPO" --merge
+            else
+              echo "#$pr: $pending check(s) not green yet; waiting for the next CI run"
+            fi
+          done

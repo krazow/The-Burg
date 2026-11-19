@@ -46,8 +46,9 @@ function renderTitle(){
     ${hasRecords() ? '<button class="btn ghost" id="records">🏆 Your records</button>' : ''}
     <button class="btn ghost" id="how">❓ Help & tutorial</button>
     <button class="btn ghost" id="restore">📥 Restore from a backup</button>
-    ${Object.keys(store.get(BADGE_KEY) || {}).length ? `<div class="muted" style="margin-top:10px;font-size:13px">🏅 Badges collected across your lives: ${BADGES.filter(b => (store.get(BADGE_KEY) || {})[b.id]).map(b => b.ic).join(' ')} (${Object.keys(store.get(BADGE_KEY) || {}).length}/${BADGES.length})</div>` : ''}
-    <div class="muted" style="margin-top:14px;font-size:12px">v${APP_VERSION}</div>
+    <button class="btn ghost" id="settings">⚙️ Settings</button>
+    ${Object.keys(store.get(BADGE_KEY) || {}).length ? `<div class="muted" style="margin-top:10px;font-size:0.8125rem">🏅 Badges collected across your lives: ${BADGES.filter(b => (store.get(BADGE_KEY) || {})[b.id]).map(b => b.ic).join(' ')} (${Object.keys(store.get(BADGE_KEY) || {}).length}/${BADGES.length})</div>` : ''}
+    <div class="muted" style="margin-top:14px;font-size:0.75rem">v${APP_VERSION}</div>
   </div>`;
   let bg = 'fresh', md = 'normal';
   const moreSum = () => { $('#moresum').textContent = `${BACKGROUNDS[bg].ic} ${BACKGROUNDS[bg].name} · ${MODES[md].ic} ${MODES[md].name}`; };
@@ -81,6 +82,7 @@ function renderTitle(){
     $('#n').onclick = closeSheet;
   };
   $('#restore').onclick = restoreSheet;
+  $('#settings').onclick = () => settingsSheet(false);
   if ($('#records')) $('#records').onclick = recordsSheet;
 }
 /* ---------- 🏆 Your records (G7, R7): best scores by length × mode, challenges, and this week's weekly challenge ---------- */
@@ -425,18 +427,19 @@ function renderHome(){
     : `<div class="card warn">${why} <button class="sm" data-sugg="${fk}">${FOCUS[fk].ic} ${FOCUS[fk].name} this week</button></div>`;
   const streak = S.streakF === S.focus && S.focus !== 'study' && S.streakN >= 4
     ? `<div class="s">🔁 ${S.streakN} weeks in a row: next week it works at ${Math.round(focusEffect(S.focus, S.streakN + 1) * 100)}%${S.streakN >= RUT_WEEKS ? ', and you\'re in a rut (−happiness)' : ''}.</div>` : '';
-  $('#main').innerHTML = `
+  $('#main').innerHTML = `<div class="homegrid"><div class="hmain">
   <div class="card"><div class="stats">
     ${statBtn('happy','Happiness', S.happy)}${statBtn('health','Health', S.health)}
     ${statBtn('community','Community', S.community)}
-    <button class="stat statbtn" data-stat="net" aria-label="Net worth: what counts"><label><span>Net worth <span class="info">ⓘ</span></span></label><div style="font-weight:800;font-size:18px;margin-top:2px">${fmt(netWorth())}</div></button>
+    <button class="stat statbtn" data-stat="net" aria-label="Net worth: what counts"><label><span>Net worth <span class="info">ⓘ</span></span></label><div style="font-weight:800;font-size:1.125rem;margin-top:2px">${fmt(netWorth())}</div></button>
   </div>${scoreButton()}</div>
   ${tip ? `<div class="card tip"><div>${tip.text}</div><button class="sm alt" data-tip="${tip.id}">Got it</button></div>` : ''}
+  ${installReady() ? `<div class="card tip installcard"><div>📲 <b>Enjoying the Burg?</b> Install it: it opens from your home screen like an app and plays offline.</div><div class="slotbtns"><button class="sm" id="install">Install</button><button class="sm alt" id="installno">Not now</button></div></div>` : ''}
   ${!j && !S.retired ? `<div class="card warn">💼 No paycheck coming in. <button class="sm" data-go="jobs">Find a job</button></div>` : ''}
   ${S.happy < 30 ? sugg('happy', 'outdoors', `😟 Happiness is low (${Math.round(S.happy)}).`) : ''}
   ${S.health < 30 ? sugg('health', 'rest', `🤒 Health is low (${Math.round(S.health)}).`) : ''}
   ${overtimeTip() ? `<div class="card warn">${overtimeTip()}</div>` : ''}
-  ${S.money < -15000 ? `<div class="card warn">⚠️ Your debt is getting dangerous. Below -$40,000 you'll have to leave town.</div>` : ''}
+  ${S.money < -15000 ? `<div class="card warn">⚠️ Your debt is getting dangerous. Below ${fmt(mode() === 'hard' ? -25000 : -40000)} you'll have to leave town${canBankrupt() ? ' or file for bankruptcy' : ''}.</div>` : inCollections() ? `<div class="card warn">📞 Your debt is in collections: daily calls (−happiness) and worse odds on job applications and loans until you're back above $0.</div>` : ''}
   <div class="card"><div class="focushead"><h3>This week's focus</h3></div>${scenarioLine()}${seasonLine()}${mapToggle()}
     ${prefs().mapView ? mapBlock('T') : `<div class="fgrid">${Object.entries(FOCUS).map(([k,x]) => {
       const dis = (x.needsJob && (!j || S.retired)) || (x.study && !canStudy());
@@ -444,14 +447,17 @@ function renderHome(){
     }).join('')}</div>
     <div class="fdesc"><b>${f.ic} ${f.name}:</b> ${focusDesc(f)}${streak}</div>`}
     ${outButton()}
-  </div>
+  </div></div>
+  <aside class="hside" aria-label="At a glance">
   <div class="card sumrow">
     <button class="sumchip" data-go="jobs">${work}</button>
     <button class="sumchip" data-go="life">🏠 ${HOMES[S.home].name.replace(/^Rented /,'')}</button>
     <button class="sumchip" data-go="life">🛻 ${CARS[S.car].name}</button>
     <button class="sumchip" data-go="life">🎓 ${EDU[S.edu].replace(' diploma','')}</button>
     <button class="sumchip${S.trip ? ' on' : ''}" id="tripchip">${tripChip()}</button>
-  </div>`;
+  </div>
+  ${S.log.length ? `<div class="card wideonly"><h3>📜 Lately</h3>${S.log.slice(0, 6).map(e => `<div class="logitem"><em>${e.d}</em>${e.m}</div>`).join('')}<button class="sm alt" data-go="log" style="margin-top:8px">Open the Journal</button></div>` : ''}
+  </aside></div>`;
   $('#tripchip').onclick = () => S.trip ? tripSheet(S.trip.city) : tripPicker();
   $('#outbtn').onclick = outSheet;
   document.querySelectorAll('.fbtn').forEach(b => b.onclick = () => { S.focus = b.dataset.f; save(); render(); });
@@ -460,6 +466,26 @@ function renderHome(){
   document.querySelectorAll('[data-sugg]').forEach(b => b.onclick = () => { S.focus = b.dataset.sugg; save(); render(); toast(`This week: ${FOCUS[S.focus].name}`); });
   document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { tab = b.dataset.go; render(); window.scrollTo(0,0); });
   document.querySelectorAll('[data-tip]').forEach(b => b.onclick = () => { setPref('tips', [...(prefs().tips || []), b.dataset.tip]); renderHome(); });
+  if ($('#install')) $('#install').onclick = installNow;
+  if ($('#installno')) $('#installno').onclick = () => { setPref('installNo', Date.now()); renderHome(); announce('OK. Help has the install steps any time.'); };
+}
+// i2-a30: offer to install at a good moment: after a couple of months of play, when no other tip is showing,
+// and never when it's already installed (home-screen app or the Android app) or the browser can't install it
+const INSTALL_AFTER = 8, INSTALL_SNOOZE = 14 * 864e5;
+const isInstalled = () => (typeof matchMedia === 'function' && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true || String(document.referrer || '').startsWith('android-app://');
+function installReady(){
+  const p = prefs();
+  return !!(typeof INSTALL_EVT !== 'undefined' && INSTALL_EVT) && !S.practice && !isInstalled() && !p.installed
+    && !(p.installNo && Date.now() - p.installNo < INSTALL_SNOOZE) && S.turn >= INSTALL_AFTER && !currentTip();
+}
+function installNow(){
+  const e = INSTALL_EVT; if (!e) return;
+  INSTALL_EVT = null;
+  try {
+    e.prompt();
+    Promise.resolve(e.userChoice).then(c => { if (c && c.outcome === 'accepted') { setPref('installed', true); toast('📲 Installed: find the Burg on your home screen.'); } else setPref('installNo', Date.now()); if (S && tab === 'home') renderHome(); }).catch(() => {});
+  } catch(err){}
+  if (S && tab === 'home') renderHome();
 }
 const STATINFO = {
   happy: { t:'😊 Happiness', up:['Rest & recharge, Get outside, Show up for town', 'A partner, a dog, kids at home, a nicer home', 'Retirement'],
@@ -478,7 +504,12 @@ function showStatInfo(k){
       <div class="kv"><span>Home equity</span><span>${fmt(S.equity)}</span></div>
       <div class="kv"><span>${CARS[S.car].name}</span><span>${fmt(S.carValue)}</span></div>
       <div class="kv"><span>401(k)</span><span>${fmt(S.k401 || 0)}</span></div>
+      ${S.biz ? `<div class="kv"><span>${BIZ[S.biz.type].name}</span><span>${fmt(bizValue())}</span></div>` : ''}
+      ${S.stocks > 0 ? `<div class="kv"><span>Index funds</span><span>${fmt(S.stocks)}</span></div>` : ''}
+      ${wineAtCost() ? `<div class="kv"><span>Wine futures (at cost)</span><span>${fmt(wineAtCost())}</span></div>` : ''}
       ${loan ? `<div class="kv"><span>Truck loan</span><span>-${fmt(loan)}</span></div>` : ''}
+      ${S.sloanLeft > 0 ? `<div class="kv"><span>Student loans</span><span>-${fmt(S.sloanLeft * S.sloanPay * 0.85)}</span></div>` : ''}
+      ${heBalance() ? `<div class="kv"><span>Home equity loan</span><span>-${fmt(heBalance())}</span></div>` : ''}
       <div class="kv"><span><b>Net worth</b></span><span><b>${fmt(netWorth())}</b></span></div>
       <p class="muted">Counts for 30% of your Life Score: ${fmt(t)} (in 2027 dollars) or more by the end gets full points.</p>
       <button class="btn primary" id="ok">Got it</button>`);
@@ -576,7 +607,7 @@ function renderJobs(){
   ${jobCity!=='all' ? `<div class="card muted">${CITIES[jobCity].blurb}</div>` : ''}
   <div class="card">
     <h3>Job board <span class="tag">${S.applied ? 'Applied this week' : '1 application per week'}</span></h3>
-    <p class="muted" style="margin:0 0 4px;font-size:13px">Take-home is pay after taxes and gas${job() && !S.retired ? ', with ▲▼ against your current job' : ''}.</p>
+    <p class="muted" style="margin:0 0 4px;font-size:0.8125rem">Take-home is pay after taxes and gas${job() && !S.retired ? ', with ▲▼ against your current job' : ''}.</p>
     ${list.map(jobRow).join('') || '<p class="muted">No jobs match.</p>'}
   </div>`}
   ${j && !S.retired && commuteOneWay() >= 20 && !onBus() ? `<div class="card"><h3>🚙 Carpool</h3>
@@ -584,7 +615,7 @@ function renderJobs(){
       : canCarpool() ? `<p class="muted" style="margin:0 0 6px">Split the drive to ${CITIES[j.city].name} with neighbors: half the gas, less wear from the commute, and a little community.</p><button class="sm" id="carpool">Join a carpool</button>`
       : `<p class="muted" style="margin:0">Know more people in town (community 30+) and you can join a carpool: half the gas and an easier commute.</p>`}</div>` : ''}
   ${j && !S.retired && S.notice == null ? `<button class="btn ghost" id="quit">Quit my job</button>` : ''}
-  ${LENGTHS[S.len].turns===Infinity && age()>=62 && !S.retired ? `<button class="btn primary" id="retire">Retire (Social Security ${wk(ssPay())}${S.k401>0?` + 401(k) ${wk(S.k401*0.04/12)}`:''})</button>` : ''}`;
+  ${LENGTHS[S.len].turns===Infinity && age()>=62 && !S.retired ? `<button class="btn primary" id="retire">Retire (Social Security ${wk(ssPay())}${pensionVested()?` + pension ${wk(pensionPay())}`:''}${S.k401>0?` + 401(k) ${wk(S.k401*0.04/12)}`:''})</button>` : ''}`;
   document.querySelectorAll('.chip[data-c]').forEach(b => b.onclick = () => { jobCity = b.dataset.c; render(); });
   if ($('#jobok')) $('#jobok').onclick = () => { jobOK = !jobOK; render(); };
   if ($('#carpool')) $('#carpool').onclick = () => { S.carpool = !S.carpool; S.carpoolJob = S.carpool ? S.jobId : null; save(); render(); toast(S.carpool ? '🚙 You joined a carpool' : 'Driving alone again'); };
@@ -651,11 +682,18 @@ ${eduCard()}
   <div class="card"><h3>🏡 Home in Waitsburg</h3>
     ${Object.entries(HOMES).map(([k,x]) => {
       const cur = S.home === k;
-      let btn = cur ? '<span class="tag cur">Home</span>' : `<button class="sm ${x.own?'':'alt'}" data-home="${k}">${x.own ? `Buy (${fmt(cost(x.down))} down)` : 'Move'}</button>`;
-      return `<div class="kv job"><div><div class="t">${x.name}</div><div class="s">${x.own?'Mortgage':'Rent'} ${wk(cur && x.own && S.mortgage ? S.mortgage : cost(x.cost))}${x.own?' · builds equity':''}</div></div>${btn}</div>`;
+      let btn = cur ? '<span class="tag cur">Home</span>' : `<button class="sm ${x.own?'':'alt'}" data-home="${k}">${x.own ? `Buy (${fmt(homeDown(k))} down)` : 'Move'}</button>`;
+      return `<div class="kv job"><div><div class="t">${x.name}</div><div class="s">${x.own?'Mortgage':'Rent'} ${wk(cur && x.own && S.mortgage ? S.mortgage : x.own ? newMortgage(k) : cost(x.cost))}${x.own?` · builds equity · worth ${fmt(homeValue(k))}`:''}</div></div>${btn}</div>`;
     }).join('')}
-    ${h.own ? `<p class="muted">Home equity: <b>${fmt(S.equity)}</b>. Moving sells your house (6% fees).</p>` : ''}
+    ${h.own ? `<p class="muted">Home equity: <b>${fmt(S.equity)}</b>. Moving sells your house (6% agent fees).</p>` : ''}
+    ${homeMoneyHTML()}
   </div>
+  <div class="card"><h3>🛡️ Insurance & phone</h3>
+    ${insParts().map(([l, v]) => `<div class="kv"><span>${l}</span><span>${fmtc(v)}/mo</span></div>`).join('')}
+    <div class="kv"><span><b>Total</b></span><span><b>${wk(cost(insMonthly()))}</b></span></div>
+    <button class="sm alt" id="inssheet">Change coverage</button>
+  </div>
+  ${S.practice ? '' : investCard()}
   <div class="card"><h3>🛻 Ride</h3>
     ${Object.entries(CARS).map(([k,c]) => {
       const cur = S.car === k;
@@ -672,6 +710,7 @@ ${eduCard()}
     <p class="muted" style="margin:6px 0">Put part of each paycheck away before taxes. At 5% or more your employer adds 3%. It grows about 6% a year and pays out when you retire.</p>
     <div class="maptog">${K401.map((r,i) => `<button class="${S.k401rate===i?'on':''}" data-k401="${i}">${r*100}%</button>`).join('')}</div>`}
   </div>
+  ${S.practice ? '' : planningCard()}
   <div class="card"><h3>❤️ Household</h3>
     <div class="kv"><span>Partner</span><span>${S.partner ? 'Together 💕' : 'Single'}</span></div>
     <div class="kv"><span>Dog</span><span>${S.dog ? 'One good dog 🐕' : 'None'}</span></div>
@@ -691,20 +730,36 @@ ${eduCard()}
     $('#no').onclick = closeSheet; });
   document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => moveHome(b.dataset.home));
   document.querySelectorAll('[data-car]').forEach(b => b.onclick = () => buyCar(b.dataset.car));
+  if (!S.practice) planningWire();
   document.querySelectorAll('[data-k401]').forEach(b => b.onclick = () => { S.k401rate = +b.dataset.k401; save(); renderLife(); toast(`Saving ${K401[S.k401rate]*100}% of each paycheck`); });
+  // round 3: insurance, the house, crop and herd, investing
+  if ($('#inssheet')) $('#inssheet').onclick = () => insSheet();
+  if ($('#refi')) $('#refi').onclick = () => { sheet(`<h2>📉 Refinance?</h2><p>Standard Bearer Bank would redo your mortgage at ${S.rate.toFixed(2)}%: ${wk(S.mortgage)} becomes ${wk(refiPay())}. Closing costs are ${fmt(refiFee())}, paid now.</p>
+      <p class="muted">It pays for itself in about ${Math.ceil(refiFee() / Math.max(1, S.mortgage - refiPay()))} months, so it's worth it if you'll stay a while.</p><button class="btn primary" id="y">Refinance</button><button class="btn ghost" id="no">Not now</button>`);
+    $('#y').onclick = () => { if (refinance()) { closeSheet(); save(); render(); toast('📉 Refinanced'); } }; $('#no').onclick = closeSheet; };
+  if ($('#heloan')) $('#heloan').onclick = heSheet;
+  if ($('#sellwheat')) $('#sellwheat').onclick = () => { const v = sellStoredWheat(); save(); render(); toast(`🌾 Sold the stored wheat for ${fmt(v)}`); };
+  if ($('#cropins')) $('#cropins').onclick = () => { S.biz.ins = !S.biz.ins; save(); render(); const b = $('#cropins'); if (b) b.focus({ preventScroll: true }); announce(S.biz.ins ? `Crop insurance on: ${fmt(cost(CROP_INS))} each April.` : 'Crop insurance off.'); };
+  document.querySelectorAll('[data-inv]').forEach(b => b.onclick = () => {
+    const v = b.dataset.inv === 'all' ? -(S.stocks || 0) : +b.dataset.inv;
+    if (invest(v)) { save(); render(); toast(v > 0 ? `📈 Put ${fmt(v)} in index funds` : `📈 Took ${fmt(-v)} out`); announce(`Index funds now ${fmt(S.stocks)}. Cash ${fmt(S.money)}.`); }
+  });
+  if ($('#wine')) $('#wine').onclick = () => { if (buyWine()) { save(); render(); toast(`🍷 You're in on the ${wineYear()} vintage`); } };
 }
 
 function moveHome(k){
   const x = HOMES[k], old = HOMES[S.home];
-  const sale = old.own ? Math.round(S.equity * 0.94) : 0;
-  const need = (x.own ? cost(x.down) : 0) + cost(300);
+  const he = old.own ? heBalance() : 0, sale = old.own ? Math.round(S.equity * (1 - SELL_FEE) - he) : 0;   // i3-a21: 6% agent fees; i3-a23: the equity loan is paid off
+  const down = x.own ? homeDown(k) : 0, need = down + cost(300), md = MOODS[homeMood()];
   if (S.money + sale < need) return toast(`You need ${fmt(need - sale)} on hand (down payment + moving).`);
   sheet(`<h2>${x.own ? 'Buy' : 'Move to'} ${x.name}?</h2>
-    <p>${x.own ? `Down payment ${fmt(cost(x.down))}, then ${wk(cost(x.cost))} mortgage (locked in) from Standard Bearer Bank, with the closing papers at Mother Hubbard's Legal Cupboard.` : `Rent is ${wk(cost(x.cost))}.`} Moving costs ${fmt(cost(300))}.</p>
-    ${old.own ? `<p>You'll sell your current place and pocket ${fmt(sale)}.</p>` : ''}
+    <p>${x.own ? `Down payment ${fmt(down)}, then ${wk(newMortgage(k))} mortgage at ${buyRate().toFixed(2)}% (locked in) from Standard Bearer Bank, with the closing papers at Mother Hubbard's Legal Cupboard.` : `Rent is ${wk(cost(x.cost))}.`} Moving costs ${fmt(cost(300))}.</p>
+    <p class="muted">${md.ic} The housing market is <b>${md.name.toLowerCase()}</b>: ${md.desc}.</p>
+    ${old.own ? `<p>You'll sell your current place and pocket ${fmt(sale)} after the 6% agent fees${he ? ` and paying off the ${fmt(he)} home equity loan` : ''}.</p>` : ''}
     <button class="btn primary" id="y">Do it</button><button class="btn ghost" id="n">Cancel</button>`);
   $('#y').onclick = () => {
-    S.money += sale - need; S.equity = x.own ? cost(x.down) : 0; S.mortgage = x.own ? cost(x.cost) : null; S.home = k;
+    if (old.own) { S.heLeft = 0; S.hePay = 0; }
+    S.money += sale - need; S.equity = down; S.mortgage = x.own ? newMortgage(k) : null; S.mortRate = x.own ? buyRate() : null; S.home = k;
     adj({happy:4}); outMoved(); log(`Moved into the ${x.name.toLowerCase()}.`);
     closeSheet(); save(); render();
   };
@@ -712,6 +767,7 @@ function moveHome(k){
 }
 function buyCar(k){
   const c = CARS[k], bonus = tradeBonus(), price = cost(k==='sedan' ? c.price : c.down) - Math.round(S.carValue) - bonus;
+  if (c.pay && loanBlock()) return toast(loanBlock());          // financing needs a bank that will lend to you
   if (S.money < price) return toast(`You need ${fmt(price)} after your trade-in.`);
   sheet(`<h2>Get the ${c.name.toLowerCase()}?</h2>
     <p>Your ${CARS[S.car].name.toLowerCase()} trades in for ${fmt(S.carValue)}${bonus ? `, plus the dealer's ${fmt(bonus)} bonus this week` : ''}. You pay ${fmt(Math.max(0,price))} now${c.pay?`, then ${wk(cost(c.pay))} for 5 years (financed through Standard Bearer Bank)`:''}.</p>
@@ -747,6 +803,7 @@ function showMenu(){
     <button class="btn primary" id="load">📂 Load game</button>
     <button class="btn ghost" id="backup">📤 Back up or restore</button>
     <p class="muted" style="margin-top:12px">${esc(S.name)}'s life is in slot ${S.slot+1} and also saves itself after every week.</p>
+    <button class="btn ghost" id="settings">⚙️ Settings</button>
     <button class="btn ghost" id="help">❓ Help & tutorial</button>
     <button class="btn ghost" id="title">Back to title screen</button>
     <button class="btn ghost" id="retireNow">End this life now (see score)</button>
@@ -754,10 +811,39 @@ function showMenu(){
   $('#save').onclick = saveCopySheet;
   $('#load').onclick = loadSheet;
   $('#backup').onclick = backupSheet;
+  $('#settings').onclick = () => settingsSheet(true);
   $('#help').onclick = showHelp;
   $('#title').onclick = () => { save(); closeSheet(); S = null; renderTitle(); };
   $('#retireNow').onclick = confirmRetire;
   $('#close').onclick = closeSheet;
+}
+
+/* ---------- ⚙️ Settings (i2-a03): comfort options in one place; none of them changes the game ---------- */
+const SETTING_ROWS = [
+  ['theme', '🌗 Theme', 'Night is easier on the eyes in the dark. Match phone follows your phone\'s dark mode.'],
+  ['textSize', '🔠 Text size', 'Makes all the writing bigger.'],
+  ['sound', '🎵 Sounds', 'Small sounds for a new week, events and badges. Quiet while ⏩ and Auto play.'],
+  ['vibrate', '📳 Vibration', 'A short buzz for events and badges, on phones that can (not iPhones).'],
+  ['swipe', '👆 Swipes', 'Swipe left or right to change tabs, and swipe a pop-up\'s handle down to close it.']
+];
+function settingsSheet(fromMenu = false, keep = null){
+  const canBuzz = typeof navigator !== 'undefined' && 'vibrate' in navigator;
+  sheet(`<h2>⚙️ Settings</h2><p class="muted">These are saved on this device for every life. They don't change the game.</p>
+    ${SETTING_ROWS.filter(([k]) => k !== 'vibrate' || canBuzz).map(([k, label, desc]) => `<div class="setrow" role="group" aria-labelledby="set-${k}">
+      <div class="setl" id="set-${k}">${label}</div>
+      <div class="seg">${SETTINGS[k].opts.map(([v, l]) => `<button data-set="${k}" data-v="${v}" class="${setting(k) === v ? 'on' : ''}" aria-pressed="${setting(k) === v}">${l}</button>`).join('')}</div>
+      <div class="s">${desc}</div></div>`).join('')}
+    <button class="btn ghost" id="back">${fromMenu ? '← Back to Menu' : 'Done'}</button>`);
+  document.querySelectorAll('#sheet [data-set]').forEach(b => b.onclick = () => {
+    const k = b.dataset.set, v = b.dataset.v;
+    setPref(k, v); applyPrefs();
+    if (k === 'sound') sfx('tap');
+    if (k === 'vibrate') buzz('week');
+    settingsSheet(fromMenu, { k, v, top: $('#sheet').scrollTop });
+    announce(`${SETTING_ROWS.find(r => r[0] === k)[1].replace(/^\S+ /, '')}: ${b.textContent.replace(/^[^\w]+/u, '')}`);
+  });
+  $('#back').onclick = () => fromMenu ? showMenu() : closeSheet();
+  if (keep) { const b = $(`#sheet [data-set="${keep.k}"][data-v="${keep.v}"]`); $('#sheet').scrollTop = keep.top; setTimeout(() => { if (b) b.focus({ preventScroll: true }); }, 40); }
 }
 
 // H2: ending a life early asks first, with the score so far and 'Keep playing' as the safe choice (Escape = keep playing)
@@ -775,7 +861,8 @@ let lastFocus = null;
 function sheet(html){
   const wasOpen = !$('#modal').classList.contains('hidden');
   if (!wasOpen) lastFocus = document.activeElement && document.activeElement.id ? document.activeElement.id : null;
-  const sh = $('#sheet'); sh.innerHTML = html; $('#modal').classList.remove('hidden'); sh.scrollTop = 0;
+  const sh = $('#sheet'); sh.className = 'sheet'; sh.style.transform = ''; sh.innerHTML = html; $('#modal').classList.remove('hidden'); sh.scrollTop = 0;
+  if (sheetCloser(sh)) sh.insertAdjacentHTML('afterbegin', '<div class="grab" aria-hidden="true"><i></i></div>');   // i2-a22: a handle to swipe it away
   const h = sh.querySelector('h2'); sh.setAttribute('aria-label', h ? h.textContent : 'Message');
   const first = sh.querySelector('[data-i], button.primary, button');
   if (first && !(typeof TUT !== 'undefined' && TUT)) setTimeout(() => first.focus({ preventScroll: true }), 30);   // the tutorial places focus itself
@@ -785,6 +872,9 @@ function closeSheet(){
   $('#modal').classList.add('hidden');
   if (wasOpen) setTimeout(() => { const el = lastFocus && document.getElementById(lastFocus); if (el && !TUT) el.focus({ preventScroll: true }); }, 30);
 }
+// the button that closes the open sheet the safe way (Escape and a swipe down both use it); sheets that ask
+// for a choice (events with data-i buttons) have none, so they can't be swiped or escaped away
+const sheetCloser = (sh = $('#sheet')) => sh.querySelector('[data-i]') ? null : ['#no', '#close', '#back', '#ok'].map(q => sh.querySelector(q)).find(Boolean) || null;
 const focusables = root => [...root.querySelectorAll('button:not([disabled]), [tabindex="0"], input, a[href]')].filter(e => e.offsetParent !== null || e.closest('svg'));
 // say something to screen readers without showing it
 function announce(msg){ const r = $('#sr'); if (!r) return; r.textContent = ''; setTimeout(() => { r.textContent = msg; }, 60); }
@@ -803,4 +893,45 @@ document.addEventListener('keydown', e => {
     if (e.shiftKey && (i <= 0)) { e.preventDefault(); f[f.length - 1].focus(); }
     else if (!e.shiftKey && (i === -1 || i === f.length - 1)) { e.preventDefault(); f[0].focus(); }
   }
+});
+
+/* ---------- 👆 swipes (i2-a22): left/right on the page changes tabs; the handle on a pop-up swipes it closed ---------- */
+const SWIPE_TABS = [['home', 'Home'], ['jobs', 'Jobs'], ['life', 'Life'], ['log', 'Journal']];
+const SWIPE_MIN = 70;                 // px sideways before a swipe counts, and it must be mostly sideways, so scrolling never triggers it
+let swipeAt = null;
+const swipeOK = () => setting('swipe') !== 'off' && !(typeof TUT !== 'undefined' && TUT);
+function swipeTab(dir){
+  if (!S || !swipeOK()) return false;
+  const i = SWIPE_TABS.findIndex(t => t[0] === tab), n = i + dir;
+  if (i < 0 || n < 0 || n >= SWIPE_TABS.length) return false;
+  tab = SWIPE_TABS[n][0]; MAPSIDE = null; MAPSEL = null; render(); window.scrollTo(0, 0);
+  const m = $('#main'); if (m) m.classList.add(dir > 0 ? 'slide-l' : 'slide-r');
+  announce(`${SWIPE_TABS[n][1]} tab`);
+  return true;
+}
+document.addEventListener('pointerdown', e => {
+  swipeAt = null;
+  if (e.pointerType === 'mouse' || !e.isPrimary || !swipeOK()) return;
+  const t = e.target;
+  if (t.closest && t.closest('.grab')) { swipeAt = { kind: 'sheet', x: e.clientX, y: e.clientY, t: Date.now(), id: e.pointerId }; try { t.closest('.grab').setPointerCapture(e.pointerId); } catch(_){} return; }
+  if (!t.closest || !t.closest('#main') || t.closest('.chips, .mapsvg, input, textarea, .seg')) return;
+  if (!$('#modal').classList.contains('hidden') || !$('#helpview').classList.contains('hidden')) return;
+  swipeAt = { kind: 'tab', x: e.clientX, y: e.clientY, t: Date.now(), id: e.pointerId };
+});
+document.addEventListener('pointermove', e => {
+  if (!swipeAt || swipeAt.kind !== 'sheet' || e.pointerId !== swipeAt.id) return;
+  const dy = Math.max(0, e.clientY - swipeAt.y); $('#sheet').style.transform = dy ? `translateY(${dy}px)` : '';
+});
+document.addEventListener('pointercancel', () => { if (swipeAt && swipeAt.kind === 'sheet') $('#sheet').style.transform = ''; swipeAt = null; });
+document.addEventListener('pointerup', e => {
+  const s0 = swipeAt; swipeAt = null;
+  if (!s0 || e.pointerId !== s0.id) return;
+  const dx = e.clientX - s0.x, dy = e.clientY - s0.y, quick = Date.now() - s0.t < 900;
+  if (s0.kind === 'sheet') {
+    $('#sheet').style.transform = '';
+    const b = sheetCloser();
+    if (dy >= SWIPE_MIN && Math.abs(dy) > Math.abs(dx) && b) b.click();
+    return;
+  }
+  if (quick && Math.abs(dx) >= SWIPE_MIN && Math.abs(dx) > 2 * Math.abs(dy)) swipeTab(dx < 0 ? 1 : -1);
 });

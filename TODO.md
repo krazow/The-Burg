@@ -17,23 +17,33 @@ added, finished or re-prioritized, both change in the same session.
 
 ---
 
+## Status (Nov 19, 2026)
+
+- **Live:** 0.2.0 at [krazow.github.io/The-Burg](https://krazow.github.io/The-Burg/) ([release](https://github.com/krazow/The-Burg/releases/tag/v0.2.0)).
+- **Merged, not released yet:** 0.2.1 hotfixes H1–H3 ([#153](https://github.com/krazow/The-Burg/pull/153)): safe saves, confirm before deleting a life, separate beta saves.
+- **Building now:** your 61 picks from Ideas 2 and Ideas 3, in six pull requests (settings and feel, clarity, flow, jobs and school, money, retirement). Each is marked "Building" below.
+- **Ideas:** 66 rounds on this list. New rounds are paused while the picks are built.
+
 ## Next up: P1, in order
 
-| # | Item | Why it's next | Issue |
-|---|---|---|---|
-| 1 | **Cut a new beta** (`/release now`) | `main` now has Around the region and all four gameplay phases (Life Score so far, carpools, backgrounds, modes, town goals, badges, stories, challenges, skills, businesses, weekly challenge, legacy). Beta 4 has none of it. | — |
-| 2 | **Try it, then promote** (`/release promote`) | The Android app is signed with The Burg's key since beta 4, so updates install over each other. | — |
-| 3 | **Pick from the review and the 90 events** (below) | The three 🔴 review bugs are fixed; the rest is yours to pick. | [#90](https://github.com/krazow/The-Burg/issues/90) |
+| # | Item | Why it's next |
+|---|---|---|
+| 1 | **Finish and merge the 61 picks** | In progress; each lands as its own pull request after tests and the balance check pass. |
+| 2 | **Cut and release 0.2.1** (`/release all`) | Ships the hotfixes and the picks to live players. |
+| 3 | **0.2.2 patch plan** (Ideas 64, i64-a) | 25 ranked fixes still open on main, led by the phone Back button, End Week double tap and a backup-restore escaping bug. |
 
 - [x] Cut a new beta with everything on `main` (0.2.0-beta.6)
 - [x] Try it on your phone, then `/release promote` (0.2.0-beta.6 promoted: [v0.2.0](https://github.com/krazow/The-Burg/releases/tag/v0.2.0))
 - [x] Pick review items and events to build (104 picked on the build board; all built)
+- [x] Hotfixes H1–H3 merged ([#153](https://github.com/krazow/The-Burg/pull/153))
+- [ ] Merge the 61 picks from Ideas 2 and Ideas 3
+- [ ] Release 0.2.1 (`/release all`)
 
 ## Soon: P2
 
 - [ ] **Manual play-test pass on real phones** (iPhone and Android install, offline, resume) — [#9](https://github.com/krazow/The-Burg/issues/9)
 
-## Feature: Out and about (Waitsburg's real businesses) — built, ships in the next beta
+## Feature: Out and about (Waitsburg's real businesses) — built, live in 0.2.0
 
 Waitsburg's open businesses come into the game: pins on a Main Street close-up map, places to visit for a small cost
 and a small boost, real jobs, and events from their real rhythms (Ten Ton's every-other-week bluegrass jam, Grenache
@@ -213,7 +223,7 @@ Fest at Atelier, winter breaks). Business list, how each one appears, decisions 
 - [x] Life systems at real places — [#53](https://github.com/krazow/The-Burg/issues/53)
 - [x] Out and about QA — [#54](https://github.com/krazow/The-Burg/issues/54)
 
-## Soon: Around the region (Dayton, Walla Walla and the Tri-Cities) — built, ships in the next beta
+## Soon: Around the region (Dayton, Walla Walla and the Tri-Cities) — built, live in 0.2.0
 
 Today the other towns are only places to work. This gives you reasons to go: errands, car care, eating out and
 outings, with real trade-offs (cheaper groceries in the big towns cost gas and time; skipping an oil change raises
@@ -5416,6 +5426,83 @@ old ones.
 
 </details>
 
+## Ideas round 66 (pick on the build board)
+
+63 ideas. Details: [docs/ideas/round-66.md](docs/ideas/round-66.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 66: Celebration Days up close</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i66-a01** A weather roll for the festival weekend (S)
+- [ ] 🔴 **i66-a02** Cap what one festival weekend can give (S)
+- [ ] 🔴 **i66-a03** Pick a festival volunteer job and keep it for years (M)
+- [ ] 🟡 **i66-a04** Park cars in the hayfield (S)
+- [ ] 🟠 **i66-a05** Sunday dawn trash crew (S)
+- [ ] 🟠 **i66-a06** The first aid tent for nurses and EMTs (S)
+- [ ] 🟠 **i66-a07** Call the horse races from the announcer's booth (M)
+- [ ] 🟡 **i66-a08** Hot-walk horses at the barn row (S)
+- [ ] 🔴 **i66-a09** Rent a booth on the street fair (M)
+- [ ] 🟡 **i66-a10** The booth next to yours (S)
+- [ ] 🟡 **i66-a11** A lost kid at the street fair (S)
+- [ ] 🟠 **i66-a12** Enter your own car in the car show (M)
+- [ ] 🟡 **i66-a13** Judge the car show (S)
+- [ ] 🟠 **i66-a14** Designated driver from the beer garden (S)
+- [ ] 🟠 **i66-a15** Under 21 and outside the beer garden fence (S)
+- [ ] 🟡 **i66-a16** Two-step lessons before the Days dance (S)
+- [ ] 🟡 **i66-a17** The last slow song (S)
+- [ ] 🟡 **i66-a18** Sponsor a royalty scholarship (S)
+- [ ] 🟡 **i66-a19** The old court rides again (S)
+- [ ] 🔴 **i66-a20** Your lawn chairs on Main Street (S)
+- [ ] 🟠 **i66-a21** A family festival tradition (M)
+- [ ] 🟡 **i66-a22** Kids' stick-horse race (S)
+- [ ] 🔴 **i66-a23** The festival shows up on the Main Street map (S)
+- [ ] 🟡 **i66-a24** Main Street closes for the parade (S)
+- [ ] 🟠 **i66-a25** Put your business in the parade (M)
+- [ ] 🟠 **i66-a26** A share in a race horse (L)
+- [ ] 🟡 **i66-a27** The photo finish argument (S)
+- [ ] 🟠 **i66-a28** Will the town keep the horse races? (M)
+- [ ] 🟠 **i66-a29** A round-number anniversary year (M)
+- [ ] 🟡 **i66-a30** Rain on the parade: pack up or march on (S)
+- [ ] 🟡 **i66-a31** Wind takes the booth tents (S)
+- [ ] 🟡 **i66-a32** Sunburn at the races (S)
+
+</details>
+
+<details><summary><b>Ideas 66: Event pool health</b> (31 ideas)</summary>
+
+- [ ] 🔴 **i66-b01** A tip from a friend only comes when a better job is open (S)
+- [ ] 🔴 **i66-b02** Wine country weekend: weight 3 to 2, April to October only (S)
+- [ ] 🟠 **i66-b03** Neighbor's moving day happens in moving season (May to September) (S)
+- [ ] 🟡 **i66-b04** Found money turns up in winter-coat season (November to February) (S)
+- [ ] 🟡 **i66-b05** Pothole season covers February too (S)
+- [ ] 🟡 **i66-b06** Fog in the Touchet Valley runs into February (S)
+- [ ] 🔴 **i66-b07** Truck trouble: the buddy fix works 60% of the time (S)
+- [ ] 🟠 **i66-b08** Gas prices spike: a carpool covers half the spike, not all of it (S)
+- [ ] 🟠 **i66-b09** A coworker conflict: going to the boss buys a quiet year (S)
+- [ ] 🟡 **i66-b10** Train the new hire: mentoring costs a late night (S)
+- [ ] 🟡 **i66-b11** A lost wallet: finding the owner costs an afternoon (S)
+- [ ] 🟡 **i66-b12** A friend in the hospital: flowers become the easy kind choice (S)
+- [ ] 🟡 **i66-b13** Skipping the holiday party or the conference gets you something (S)
+- [ ] 🟡 **i66-b14** Bluegrass jam: sitting in costs a late night (S)
+- [ ] 🔴 **i66-b15** Health plan: better coverage pays back (M)
+- [ ] 🔴 **i66-b16** Bluewood season pass: winter "Get outside" weeks count as ski days (S)
+- [ ] 🔴 **i66-b17** Feeling run down comes under 45 health, not 40 (S)
+- [ ] 🟠 **i66-b18** Job events get double weight for your own job group (M)
+- [ ] 🟠 **i66-b19** Harvest crunch: more harvest jobs, weight 4 to 8 (S)
+- [ ] 🟡 **i66-b20** Chains required also comes on Bluewood ski days (S)
+- [ ] 🟠 **i66-b21** Fixer-upper: hiring a contractor pays close to doing it yourself (S)
+- [ ] 🟠 **i66-b22** The flood: Water in the basements gets 16 weeks to arrive, not 8 (S)
+- [ ] 🟠 **i66-b23** Hurt on the job: light duty costs half as much (S)
+- [ ] 🟠 **i66-b24** Cooldowns grow each time an event repeats (M)
+- [ ] 🟠 **i66-b25** A raise, Layoffs and Tax refund move to the work pool (S)
+- [ ] 🟠 **i66-b26** The idle bot answers events with the do-nothing choice (S)
+- [ ] 🔴 **i66-b27** A strictly-better choice check in the sim (L)
+- [ ] 🟡 **i66-b28** Music night at The Royal Brick: weight 2 to 1 (S)
+- [ ] 🟠 **i66-b29** Celebration Days: the long-shot horse loses money on average (S)
+- [ ] 🟡 **i66-b30** Mandatory overtime: refusing has a real cost (S)
+- [ ] 🟡 **i66-b31** A season-mix check: every month at least 20% seasonal events (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
@@ -5474,6 +5561,7 @@ that careless play stays at or below 60 and good play at or above 70.
 
 | Date | What | Where |
 |---|---|---|
+| Nov 19, 2026 | **Hotfixes for 0.2.1 merged**: damaged saves can't blank the game, deleting a life asks first, beta saves kept apart. | [#153](https://github.com/krazow/The-Burg/pull/153) |
 | Nov 19, 2026 | **Released 0.2.0 to production** (beta 6 promoted): Out and about, 60 road and work events, the review and balance fixes, records, What's new and Journal filters. | [v0.2.0](https://github.com/krazow/The-Burg/releases/tag/v0.2.0) |
 | Nov 18, 2026 | **Build board picks, all 104 built:** the review gotchas, balance and testing fixes, title screen with More options, Your records, What's new, Journal filters, event pacing by category, 30 road and 30 work events, and **Out and about** (20 Waitsburg businesses under stand-in names, Main Street map, visits, 7 local jobs, business events). | PRs [#97](https://github.com/krazow/The-Burg/pull/97), [#98](https://github.com/krazow/The-Burg/pull/98), [#99](https://github.com/krazow/The-Burg/pull/99), [#100](https://github.com/krazow/The-Burg/pull/100), [#101](https://github.com/krazow/The-Burg/pull/101) |
 | Nov 16, 2026 | Built **The Burg**: a turn-based life sim set in Waitsburg with 25 jobs across Waitsburg, Dayton, Walla Walla, Kennewick, Richland and Pasco; housing, vehicles, schooling, about 27 seasonal local events, Life Score, auto-save, installable with offline play. | `main` |
