@@ -11,7 +11,7 @@ const SCALE = Number(process.env.SIM_SCALE || (process.env.GITHUB_EVENT_NAME ===
 const FILTERED = !!(process.env.SIM_ONLY || process.env.SIM_LEN || process.env.SIM_VARIANTS);   // a tuning run: no balance ceilings
 const CEILING = { careless: 62, idle: 52 };                     // the targets (60 and 50) plus a small margin for dice
 let GAMES = { half: 6, two: 4, five: 2, life: 1 };              // per strategy, times SIM_SCALE
-let STRATEGIES = ['planner', 'homebody', 'commuter', 'student', 'hustler', 'careless', 'idle', 'tripper', 'roadie'];
+let STRATEGIES = ['planner', 'homebody', 'commuter', 'student', 'hustler', 'careless', 'idle', 'tripper', 'roadie', 'rotation'];
 // for tuning: SIM_ONLY=commuter,hustler and/or SIM_LEN=five,two run a subset (CI always runs everything)
 if (process.env.SIM_ONLY) STRATEGIES = STRATEGIES.filter(x => process.env.SIM_ONLY.split(',').includes(x));
 if (process.env.SIM_LEN) GAMES = Object.fromEntries(Object.entries(GAMES).filter(([k]) => process.env.SIM_LEN.split(',').includes(k)));
@@ -42,7 +42,7 @@ for (const { len, strat, g, opts, label } of JOBS_LIST) {
         // ---- the bot, running inside the game page ----
         render = () => {}; toast = () => {};   // skip redrawing the screen: just the rules
         newGame('Bot', len, 0, opts);
-        S.k401rate = { planner: 2, homebody: 1, commuter: 1, student: 1 }[strat] || 0;
+        S.k401rate = { planner: 2, homebody: 1, commuter: 1, student: 1, rotation: 1 }[strat] || 0;
         const bad = [], events = {};
         const best = () => JOBS.filter(x => x.edu <= S.edu).sort((a, b) =>
           (b.pay - commuteCost(CITIES[b.city].miles) * (strat === 'homebody' ? 4 : 1)) - (a.pay - commuteCost(CITIES[a.city].miles) * (strat === 'homebody' ? 4 : 1)))[0];
@@ -60,6 +60,10 @@ for (const { len, strat, g, opts, label } of JOBS_LIST) {
           let f;
           if (strat === 'idle') f = 'rest';                          // never touches the focus
           else if (strat === 'careless') f = opts[Math.floor(Math.random() * opts.length)];
+          else if (strat === 'rotation') {                            // i2-a12: sets a 🗓 focus plan once and lets End Week follow it
+            if (!S.plan.length) { S.plan = ['work', 'community', 'outdoors', 'rest']; S.planI = 0; S.focus = planFocus(); }
+            f = S.focus;
+          }
           else if (S.health < 45 || S.happy < 40) f = S.health < S.happy ? 'rest' : 'outdoors';
           else if (strat === 'student' && S.edu < 3) f = 'study';
           else if (strat === 'planner') f = S.edu < 2 && LENGTHS[S.len].turns > 26 ? 'study' : ['work', 'community', 'outdoors', 'work', 'community', 'rest'][weeks % 6];

@@ -533,6 +533,70 @@ await t.check('H2: Replace on a full board asks first, and Back changes nothing'
   await page.evaluate(() => { closeSheet(); localStorage.clear(); S = null; renderTitle(); });
 });
 
+await t.check('Life tab: Undo takes back a change made this week, one step at a time, until End Week', async () => {
+  await life({ jobId: 'farmhand', money: 20000 }, 'life');
+  const before = await S();
+  await page.click('[data-k401="1"]');
+  await page.click('[data-car="sedan"]'); await page.click(`${open} #y`);
+  await page.waitForSelector('#undo');
+  assert((await page.textContent('.undo')).includes('sedan'), 'the Undo bar should say what it undoes');
+  await page.click('#undo');
+  let s = await S();
+  assert(s.car === before.car && s.k401rate === 1, `first undo: car ${s.car}, 401(k) ${s.k401rate}`);
+  await page.click('#undo');
+  s = await S();
+  assert(s.k401rate === 0 && near(s.money, before.money), 'second undo should restore the 401(k) rate and the cash');
+  assert(!(await page.$('#undo')), 'nothing left to undo');
+  await page.click('[data-k401="2"]'); await page.waitForSelector('#undo');
+  await page.click('[data-tab=home]'); await page.click('#end'); await clearSheets(); await page.click('[data-tab=life]');
+  assert(!(await page.$('#undo')), 'a played week cannot be undone');
+});
+
+await t.check('Life tab: a change that rolled the dice cannot be undone (no rerolls)', async () => {
+  await life({ jobId: 'farmhand' }, 'life');
+  await setup(() => { document.querySelector('#main').insertAdjacentHTML('afterbegin', '<button id="rnd">Roll</button>'); $('#rnd').onclick = () => { S.money += Math.round(Math.random() * 100) + 1; save(); }; });
+  await page.click('#rnd'); await page.waitForTimeout(50); await setup(() => render());
+  assert(!(await page.$('#undo')), 'a dice roll was offered for undo');
+});
+
+await t.check('a long press, Shift+Enter or the Menu opens the skip options; Auto until and the speed are remembered', async () => {
+  await life({ jobId: 'farmhand' }, 'home', 'five');
+  assert(await page.isVisible('#auto') && !(await page.isVisible('#ff4')) && !(await page.isVisible('#ff13')), 'a narrow phone shows End Week and Auto only');
+  await page.focus('#end'); await page.keyboard.press('Shift+Enter');
+  await page.waitForSelector(`${open} #sk13`);
+  assert((await S()).turn === 0, 'Shift+Enter should not play a week');
+  await page.click(`${open} [data-until="season"]`);
+  assert(await page.getAttribute(`${open} [data-until="season"]`, 'aria-checked') === 'true', 'the pick is not shown as checked');
+  await page.click(`${open} #close`);
+  assert(/season turns/.test(await page.getAttribute('#auto', 'aria-label')), 'Auto should say what it plays until');
+  await page.click('#auto'); await clearSheets();
+  const s = await S();
+  assert(s.turn >= 8 && s.turn <= 9 && new Date(s.date).getMonth() === 2, `Auto until the season changes stopped at week ${s.turn}`);
+  await page.click('[data-tab=menu]'); await page.click(`${open} #skipopts`); await page.click(`${open} [data-until="event"]`); await page.click(`${open} #close`);
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await setup(() => render());
+  assert(await page.isVisible('#ff4') && await page.isVisible('#ff13'), 'wide screens keep the ⏩ buttons');
+  await page.setViewportSize({ width: 390, height: 844 });
+});
+
+await t.check('🗓 Plan: build a rotation, End Week follows it, and picking by hand pauses it for a week', async () => {
+  await life({ jobId: 'farmhand' }, 'home');
+  await page.click('#planbtn');
+  await page.click(`${open} [data-rm="0"]`);
+  for (const k of ['work', 'community', 'outdoors']) await page.click(`${open} [data-add="${k}"]`);
+  await page.click(`${open} #psave`);
+  assert((await S()).focus === 'work' && (await page.textContent('.planline')).includes('Plan'), 'plan not on');
+  assert(await page.getAttribute('#planbtn', 'aria-pressed') === 'true', 'Plan toggle not pressed');
+  await page.waitForTimeout(400); await page.click('#end'); await clearSheets();
+  assert((await S()).focus === 'community', 'End Week should move on to the next focus in the plan');
+  await page.click('[data-f=rest]');
+  assert((await page.textContent('.planline')).includes('paused'), 'a hand pick should pause the plan');
+  await page.waitForTimeout(400); await page.click('#end'); await clearSheets();
+  assert((await S()).focus === 'outdoors', 'the plan should pick up again the next week');
+  await page.click('#planbtn'); await page.click(`${open} #poff`);
+  assert(!(await S()).plan.length && !(await page.$('.planline')), 'Stop the plan should turn it off');
+});
+
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });
 
 await browser.close();

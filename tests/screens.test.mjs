@@ -89,7 +89,10 @@ for (const [label, w, h] of SIZES) {
     ['business-card', async () => { await page.evaluate(() => { S.ageMonths = 25 * 12; bizSheet('pasta'); }); }],
     ['region-map', async () => { await page.evaluate(() => { closeSheet(); S.evPins = [{ t: 'Wine country weekend', ic: '🍷', m: 'R', k: 'wallawalla', turn: S.turn, r: 'A sunny afternoon.' }]; }); await page.click('.maptabs button:nth-child(2)'); await page.click('.mpin[aria-label="Walla Walla"]'); }],
     ['trip', async () => { await page.evaluate(() => { S.date = new Date(2027, 5, 7).getTime(); tripSheet('wallawalla'); }); await page.click('#modal [data-stop="market"]'); }],
-    ['menu', async () => { await page.evaluate(() => closeSheet()); await page.click('#main .maptog button:nth-child(1)'); await page.click('[data-tab=menu]'); await page.waitForTimeout(300); }],
+    ['skip-options', async () => { await page.evaluate(() => { closeSheet(); skipSheet(); }); }],
+    ['focus-plan', async () => { await page.evaluate(() => { closeSheet(); S.plan = ['work', 'community']; planSheet(); }); }],
+    ['life-undo', async () => { await page.evaluate(() => { closeSheet(); S.plan = []; tab = 'life'; render(); }); await page.click('[data-k401="1"]'); await page.waitForSelector('#undo'); await page.evaluate(() => { tab = 'home'; render(); }); await page.evaluate(() => { tab = 'life'; render(); }); }],
+    ['menu', async () => { await page.evaluate(() => { tab = 'home'; render(); }); await page.click('[data-tab=home]'); await page.evaluate(() => closeSheet()); await page.click('#main .maptog button:nth-child(1)'); await page.click('[data-tab=menu]'); await page.waitForTimeout(300); }],
     ['tutorial', async () => { await page.evaluate(() => { closeSheet(); startTutorial(); }); await page.waitForTimeout(500); await page.click('#cnext'); await page.waitForTimeout(600); }],
     // the newer pop-ups (G3): life goals, the end screen, the title screen's options, challenges, weekly challenge, records and What's new
     ['life-goals', async () => { await page.evaluate(() => { endTutorial(false); $('#toast').classList.add('hidden'); tab = 'life'; render(); }); await page.click('#goals'); }],

@@ -129,6 +129,11 @@ const FOCUS = {
   hustle:   {ic:'🔧', name:'Side hustle',      desc:'Weekend gigs that follow the seasons, and pay more as you get good at them.',        fx:{happy:-1, health:-1}, hustle:true}
 };
 
+// i2-a12: a weekly focus rotation: up to 4 focuses that take turns, one a week
+const PLAN_MAX = 4;
+const planOK = k => !!FOCUS[k] && !(FOCUS[k].needsJob && (!S.jobId || S.retired)) && !(FOCUS[k].study && S.edu >= 3);
+const planFocus = () => { const k = S.plan && S.plan.length ? S.plan[(S.planI || 0) % S.plan.length] : null; return k == null ? null : planOK(k) ? k : 'rest'; };
+
 let S = null;                 // game state
 let tab = 'home', jobCity = 'all';
 
@@ -150,6 +155,7 @@ function blankLife(name, len, slot = 0){
     bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0,
     badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false,
     skills:{}, biz:null, weekly:null, rng:null, rngEv:null, gen:1, goalAt:{}, carpoolJob:null, hustleLast:0, highWater:null, recentF:[], out:outDefault(),
+    plan:[], planI:0,                              // i2-a12: a weekly focus rotation (empty = no plan)
     ...EVENT_STATE() };
 }
 // H1: put back anything a damaged save is missing or has a bad value for, so rendering never throws
@@ -176,6 +182,7 @@ function repairLife(s){
   if (Array.isArray(s.log)) s.log = s.log.filter(isObj);
   if (Array.isArray(s.kids)) s.kids = s.kids.filter(okNum);
   if (Array.isArray(s.goals)) s.goals = s.goals.filter(x => typeof x === 'string');
+  if (Array.isArray(s.plan)) s.plan = s.plan.filter(k => FOCUS[k]).slice(0, PLAN_MAX);
   return s;
 }
 function migrate(s){

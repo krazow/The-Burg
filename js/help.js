@@ -34,7 +34,9 @@ function guideHTML(){
       <table><tr><th>Focus</th><th>What it does</th><th>Cost</th></tr>${focusRows}</table>
       <p><b>Town goals:</b> each season the town has a goal you work toward with your focus: ${SEASON_GOALS.map(g => `${g.ic} <b>${g.name}</b> (${g.need} weeks of ${g.what})`).join(', ')}. Finish it before the season ends for a boost in community and happiness. Your progress shows above the focus buttons.</p>
       <p><b>Mix it up.</b> A focus works at full strength for 4 weeks in a row, then fades (down to 30%). After 8 weeks of the same thing you're <b>in a rut</b>, and happiness drops every week until you switch. Classes are the exception: study as long as you like.</p>
-      <p><b>Skipping ahead:</b> <b>⏩ 4</b> and <b>⏩ 13</b> play several weeks with the same focus. <b>⏭ Auto</b> plays until something needs you (up to 26 weeks). Skips stop when an event needs a choice, at a milestone, or at New Year.</p>
+      <p><b>Skipping ahead:</b> <b>⏩ 4</b> and <b>⏩ 13</b> play several weeks with the same focus (or your focus plan). <b>⏭ Auto</b> plays until something needs you (up to 26 weeks). Skips stop when an event needs a choice, at a milestone, or at New Year. An event with only one way to go plays out on its own and shows in the week strip. On small phones, press and hold <b>End Week</b> (or press Shift+Enter) for the ⏩ skips and the options; they're also in the Menu.</p>
+      <p><b>Auto until…</b> In the skip options, pick what else stops ⏭ Auto: a stat dropping below 35, cash dropping below $0, or the season changing. Skipping never changes what happens, only how many taps it takes. Pick <b>Watch the weeks go by</b> to see each week roll past (tap <b>Stop</b> any time); if your device asks for less motion, skips always jump straight there.</p>
+      <p><b>Focus plan:</b> tap <b>🗓 Plan</b> to set up to 4 focuses that take turns, one a week. Picking a focus by hand pauses the plan for that week only. Plans follow the same rules as picking by hand: a focus that comes up week after week still fades.</p>
       <p><b>What the week did:</b> the strip above End Week shows your money (events included) and ▲▼ for each stat. Tap it to see every paycheck, bill and event.</p>`],
     ['stats', '📊 Stats', `
       <p>Tap any stat on Home to see what moves it.</p>
@@ -60,6 +62,7 @@ function guideHTML(){
       <table><tr><th>Diploma</th><th>Weeks</th><th>Tuition</th><th>Where</th></tr>${eduRows}</table>`],
     ['home', '🏡 Homes and vehicles', `
       <p>On the <b>Life</b> tab you can move or buy a home in Waitsburg (moving costs $300) and trade up your ride. Owned homes build equity and gain value. Moving out of one sells it (6% fees).</p>
+      <p><b>Changed your mind?</b> Until you end the week, an <b>↩ Undo</b> bar at the top of the Life tab takes back your last Life-tab changes (a move, a new ride, a 401(k) rate, a business). Anything that rolled the dice, and anything already played out in a week, can't be undone.</p>
       <table><tr><th>Home</th><th>Cost</th><th></th></tr>${homeRows}</table>
       <table><tr><th>Vehicle</th><th>Mileage</th><th>Price</th></tr>${carRows}</table>
       <p>Better mileage means cheaper commutes, and newer vehicles break down less. Your old ride counts as a trade-in. Prices shown are 2027 prices; they rise over time.</p>`],
@@ -81,7 +84,7 @@ function guideHTML(){
       <p>A commuter with a job sees about one event every 3 weeks; someone at home with no job, about one every 7. Hard mode brings 25% more of each. Event prices rise with the cost of living.</p>`],
     ['maps', '🗺️ Maps', `
       <p>Home and Jobs both have a <b>📋 List / 🗺️ Map</b> switch, and the game remembers your choice.</p>
-      <ul><li><b>🏡 Waitsburg:</b> tap a place to spend your week there. Home is Rest, Main Street is Show up for town, the library is classes, the river is Get outside, the bulletin board is a side hustle, and your workplace or Highway 12 is Work extra hours. Dashed circles are just for looking.</li>
+      <ul><li><b>🏡 Waitsburg:</b> tap a place to spend your week there. Home is Rest, Main Street is Show up for town, the library is classes, the river is Get outside, the bulletin board is a side hustle, and your workplace or Highway 12 is Work extra hours. Dashed circles are just for looking. The fields around town change color with the seasons.</li>
       <li><b>🛣️ The region:</b> the six towns along US-12 and the rivers. Tap a town for its drive, gas cost and jobs, apply right there, or plan a trip. After each week your 🛻 drives your commute.</li></ul>
       <p><b>📍 Where things happen:</b> every event takes place somewhere (the fairgrounds, the Touchet, Bluewood, your workplace). The event tells you where, and for 4 weeks a gold badge marks the spot on the map. Tap the place to see what happened there.</p>
       <p class="muted">River shapes for the Columbia, Snake and Yakima come from <b>Natural Earth</b> (public domain). The Walla Walla and Touchet rivers and the roads are drawn by hand.</p>`],
@@ -192,7 +195,7 @@ const TSTEPS = [
   { sel:'#modal:not(.hidden) #ok', tap:1, text:'Here\'s every paycheck and bill. Tap <b>Close</b>.' },
   { before:() => showEvent(EVENTS.find(e => e.title === 'Celebration Days')), sel:'#modal:not(.hidden) [data-i="0"]', tap:1, text:'<b>Events</b> pop up as life happens. Tap the first choice.' },
   { sel:'#modal:not(.hidden) #ok', tap:1, text:'Every choice shows what it did. Tap <b>Continue</b>.' },
-  { sel:'#ff4', tap:1, text:'<b>⏩</b> plays several weeks with the same focus and stops if something needs you. Tap <b>⏩ 4</b>.' },
+  { sel:'#ff4', tap:1, text:'<b>⏩</b> plays several weeks with the same focus and stops if something needs you. On small phones it hides behind a long press on End Week. Tap <b>⏩ 4</b>.' },
   { sel:'nav [data-tab="jobs"]', tap:1, text:'Let\'s look for better work. Tap <b>Jobs</b>.' },
   { sel:'[data-locked="para"]', tap:1, text:'🔒 jobs need more schooling. Tap the locked <b>School paraeducator</b> job.' },
   { sel:'#modal:not(.hidden) #yes', tap:1, text:'It shows what the job takes. Tap <b>Make Take classes my focus</b>.' },

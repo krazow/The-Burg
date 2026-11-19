@@ -88,7 +88,9 @@ await t.check('an event shows choices, and choosing one shows a result', async (
 
 await t.check('⏩ 4 weeks plays up to four weeks and stops early when something happens', async () => {
   const before = (await S()).turn;
-  await page.click('#ff4');
+  assert(!(await page.isVisible('#ff4')), '⏩ 4 should hide behind a long press on a narrow phone');
+  await page.dispatchEvent('#end', 'contextmenu');      // a long press on End Week opens the skip options
+  await page.click(`${open} #sk4`);
   await clearSheets();
   const d = (await S()).turn - before;
   assert(d >= 1 && d <= 4, `skipped ${d} weeks`);
