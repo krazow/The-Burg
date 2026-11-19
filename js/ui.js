@@ -126,7 +126,10 @@ const WHATS_NEW = {
     ['🧰', 'Skills', 'get handier, cook better and know more people as you go.'],
     ['🏪', 'Your own business', 'lease wheat ground, run a food truck or open a woodworking shop.'],
     ['📅', 'Weekly challenge and score card', 'everyone gets the same start each week; share your score.'],
-    ['🌳', 'Legacy', 'when a Lifetime game ends, carry on as your grown kid.']
+    ['🌳', 'Legacy', 'when a Lifetime game ends, carry on as your grandkid.'],
+    ['🏘️', 'Out and about', 'visit 20 Waitsburg businesses from a new Main Street map, with new local jobs.'],
+    ['🛣️', 'Road and work events', '60 new events on the road, in other towns and at work.'],
+    ['📒', 'Your records and Journal filters', 'see your best scores by length and mode, and filter the Journal.']
   ]
 };
 const baseVersion = () => APP_VERSION.replace(/-.*/, '');

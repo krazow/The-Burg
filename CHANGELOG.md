@@ -3,7 +3,7 @@
 Release notes for The Burg. `/release now` turns the Unreleased section into a dated `## X.Y.Z (YYYY-MM-DD)`
 entry for every release, and the GitHub release notes are taken from it.
 
-## Unreleased
+## 0.2.0 (2026-11-18)
 
 ### Added
 - **Out and about:** 20 Waitsburg businesses under stand-in names, with pins on a new Main Street close-up map and business cards. Visit up to 2 a week for a small boost; real seasons and winter breaks apply, and drinks are 21 and over.
@@ -14,26 +14,6 @@ entry for every release, and the GitHub release notes are taken from it.
 - A one-time "What's new" sheet after an update.
 - Journal filter chips: All, Money, Events, Milestones, Trips.
 - Heirs get a numbered name (Ann Lee II, III…) that you can change.
-
-### Changed
-- Events are paced by kind: town 14%, road 8% (long commute or trip week) and work 8% (with a job) each week; Hard mode raises each.
-- The title screen puts Name, Game length and Start first; backgrounds and modes are under "More options".
-- Balance: higher net-worth targets for 5-year and Lifetime games; 6-month games start a little lower; the grad, young parent, trips in debt, stock-up runs, overtime grinding and side-hustle experience were all rebalanced.
-- Businesses lose value over time, and the wheat lease must be renewed every 5 years.
-- Vehicle tabs scale with the vehicle's value; Hard mode's extra costs are 10% of rent, food and insurance.
-- Relaxed and Hard scores are labeled everywhere; Life Score so far says whether you're on track.
-- The weekly challenge brings the same events in the same weeks whatever you choose, and its week is counted in UTC.
-- The game code is split into 8 script files.
-
-### Fixed
-- The flood story only follows high water you didn't prepare for.
-- Out-of-town trips now slow class progress, and a carpool ends when you change jobs.
-- Only the current week's weekly-challenge best is kept.
-- An event in the New Year week no longer skips the year in review.
-
-## 0.2.0 (2026-11-18)
-
-### Added
 - **Events happen at places.** Every event says where it takes place (the fairgrounds, the Touchet, Bluewood, Walla
   Walla, your workplace…). For 4 weeks a gold badge marks the spot on the Waitsburg or region map, and tapping the
   place shows what happened there.
@@ -91,11 +71,23 @@ entry for every release, and the GitHub release notes are taken from it.
 - **🌳 Legacy:** when a Lifetime game ends and you had kids, keep playing as your grown kid.
 
 ### Changed
+- Events are paced by kind: town 14%, road 8% (long commute or trip week) and work 8% (with a job) each week; Hard mode raises each.
+- The title screen puts Name, Game length and Start first; backgrounds and modes are under "More options".
+- Balance: higher net-worth targets for 5-year and Lifetime games; 6-month games start a little lower; the grad, young parent, trips in debt, stock-up runs, overtime grinding and side-hustle experience were all rebalanced.
+- Businesses lose value over time, and the wheat lease must be renewed every 5 years.
+- Vehicle tabs scale with the vehicle's value; Hard mode's extra costs are 10% of rent, food and insurance.
+- Relaxed and Hard scores are labeled everywhere; Life Score so far says whether you're on track.
+- The weekly challenge brings the same events in the same weeks whatever you choose, and its week is counted in UTC.
+- The game code is split into 8 script files.
 - **Work extra hours** now pays +20% (was +15%) and wears on you less. Long commutes and side hustles were traps:
   in simulated 5-year games a sensible long-commuter now scores 73 (was 66), an overtime grinder 51 (was 46) and a
   side hustler 50 (was 37). Overworking while your health is low is more dangerous than before.
 
 ### Fixed
+- The flood story only follows high water you didn't prepare for.
+- Out-of-town trips now slow class progress, and a carpool ends when you change jobs.
+- Only the current week's weekly-challenge best is kept.
+- An event in the New Year week no longer skips the year in review.
 - **Help guide:** the contents list was stuck to the bottom of the screen, covering the guide's text. It now scrolls
   with the page like everything else.
 - **Backups now include your badges and challenge wins**, and restoring keeps every best score (modes, challenges and
