@@ -5950,6 +5950,84 @@ old ones.
 
 </details>
 
+## Ideas round 73 (pick on the build board)
+
+64 ideas. Details: [docs/ideas/round-73.md](docs/ideas/round-73.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 73: Civic life in a small town</b> (33 ideas)</summary>
+
+- [ ] 🔴 **i73-a01** Council terms end: run again every four years (S)
+- [ ] 🔴 **i73-a02** Doorbelling Saturdays: a three-week campaign instead of a coin flip (M)
+- [ ] 🟠 **i73-a03** Candidate night at the Grange hall (S)
+- [ ] 🟠 **i73-a04** A write-in run when nobody files (S)
+- [ ] 🟡 **i73-a05** A tied race is settled by drawing lots (S)
+- [ ] 🔴 **i73-a06** Pick a council committee: streets, water or parks (M)
+- [ ] 🟡 **i73-a07** Council night is the second Wednesday (S)
+- [ ] 🟡 **i73-a08** Three council members at the café is a meeting (S)
+- [ ] 🟠 **i73-a09** Step out of the vote on your own shop's permit (S)
+- [ ] 🟠 **i73-a10** Mayor after a council term (L)
+- [ ] 🔴 **i73-a11** The pool levy: six weeks of pool, four, or none (M)
+- [ ] 🔴 **i73-a12** Each levy shows as its own line on the tax bill (S)
+- [ ] 🔴 **i73-a13** Days committee: pick three things for this year's Days (M)
+- [ ] 🟠 **i73-a14** Facade grant: one storefront repainted a year (M)
+- [ ] 🟡 **i73-a15** Your share of the new sidewalk (S)
+- [ ] 🟠 **i73-a16** Fire district commissioner: the engine or the station (M)
+- [ ] 🟠 **i73-a17** The boot drive at the four-way stop (S)
+- [ ] 🟠 **i73-a18** Library board: pick the new librarian (M)
+- [ ] 🟡 **i73-a19** Grange resolutions: send one idea to the state meeting (S)
+- [ ] 🟠 **i73-a20** Four-day school week on the school board agenda (M)
+- [ ] 🟡 **i73-a21** A dog park on the council agenda (S)
+- [ ] 🟠 **i73-a22** Write the grant for the new playground (M)
+- [ ] 🟠 **i73-a23** Put your own idea on the ballot: 60 signatures (L)
+- [ ] 🟡 **i73-a24** After the bond passes: two summers of dust and detours (S)
+- [ ] 🟠 **i73-a25** An 'I Voted' sticker streak (S)
+- [ ] 🟡 **i73-a26** Youth council: your teen sits in at city hall (S)
+- [ ] 🔴 **i73-a27** Civic hours on the Community card (M)
+- [ ] 🟠 **i73-a28** Two boards at once wears thin (S)
+- [ ] 🟠 **i73-a29** A failed levy comes back in the spring (S)
+- [ ] 🟠 **i73-a30** End screen: what you helped pass (S)
+- [ ] 🟡 **i73-a31** Swearing in, and the first agenda packet (S)
+- [ ] 🟡 **i73-a32** The farm at the edge of town asks to come in (M)
+- [ ] 🟡 **i73-a33** Planning commission: a shop in a neighbor's garage (S)
+
+</details>
+
+<details><summary><b>Ideas 73: Saves, endings and sharing</b> (31 ideas)</summary>
+
+- [ ] 🔴 **i73-b01** Finished lives leave a small stub, so they aren't lost at "Play again" (M)
+- [ ] 🔴 **i73-b02** Top 10 lives in Your records (S)
+- [ ] 🟠 **i73-b03** Read your last ending again, and share it later (S)
+- [ ] 🟡 **i73-b04** Deleting a life still keeps its stub, marked "set aside" (S)
+- [ ] 🟡 **i73-b05** Records by starting background (S)
+- [ ] 🟡 **i73-b06** Totals across all your lives (S)
+- [ ] 🟡 **i73-b07** Your best life under the title (S)
+- [ ] 🟡 **i73-b08** Name a slot: a short label under the life's name (S)
+- [ ] 🟠 **i73-b09** Star a life so Replace and Delete pass it by (S)
+- [ ] 🟠 **i73-b10** Slot cards show the Life Score so far (S)
+- [ ] 🔴 **i73-b11** The weekly challenge gets its own slot (S)
+- [ ] 🔴 **i73-b12** Private window warning on the title screen (S)
+- [ ] 🔴 **i73-b13** iPhone Safari: warn that lives go after 7 days away (S)
+- [ ] 🟠 **i73-b14** Empty title screen on a phone that played before: offer Restore first (S)
+- [ ] 🟠 **i73-b15** A Storage line in Settings: is this phone keeping your lives? (M)
+- [ ] 🟠 **i73-b16** Auto-backup to a folder you choose (M)
+- [ ] 🟡 **i73-b17** A sync file two computers can share (L)
+- [ ] 🔴 **i73-b18** Share a short text along with the picture (S)
+- [ ] 🟡 **i73-b19** Square and tall sizes for the score card (S)
+- [ ] 🟠 **i73-b20** The score card says how the life ended (S)
+- [ ] 🟡 **i73-b21** A picture on the score card that fits the life (M)
+- [ ] 🟠 **i73-b22** A QR code on the score card to play the same start (M)
+- [ ] 🟠 **i73-b23** A challenge link with a score to beat, and a side-by-side result (M)
+- [ ] 🟠 **i73-b24** Last month's weekly challenges stay playable (S)
+- [ ] 🔴 **i73-b25** Each heir's save carries the family line (M)
+- [ ] 🟠 **i73-b26** A cousin's life: start a second heir from the same ending (M)
+- [ ] 🟡 **i73-b27** A family card: the whole line in one picture (M)
+- [ ] 🟡 **i73-b28** Slot cards show the generation and the family best (S)
+- [ ] 🟡 **i73-b29** Players on this device: separate lives and records for each person (L)
+- [ ] 🟠 **i73-b30** Backups carry finished lives and family lines (S)
+- [ ] 🟡 **i73-b31** A score card picture that is also a keepsake file (M)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
