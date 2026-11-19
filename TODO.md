@@ -1395,6 +1395,82 @@ old ones.
 
 </details>
 
+## Ideas round 13 (pick on the build board)
+
+62 ideas. Details: [docs/ideas/round-13.md](docs/ideas/round-13.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 13: Health, body and mind</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i13-a01** Fitness that builds slowly and fades slowly (L)
+- [ ] 🔴 **i13-a02** A video visit with the clinic from the kitchen table (S)
+- [ ] 🔴 **i13-a03** Workers' comp after you're hurt on the job (M)
+- [ ] 🔴 **i13-a04** Quit smoking: a habit you can start the game with (M)
+- [ ] 🔴 **i13-a05** Talk it out: a friend, the pastor or a counselor (M)
+- [ ] 🟠 **i13-a06** A checkup finds high blood pressure (M)
+- [ ] 🟠 **i13-a07** The specialist is in Walla Walla (M)
+- [ ] 🟠 **i13-a08** Sick on a Saturday: wait for Monday or urgent care (S)
+- [ ] 🟠 **i13-a09** Squinting at the menu: reading glasses in your 40s (S)
+- [ ] 🟠 **i13-a10** The dentist's postcard on the fridge (S)
+- [ ] 🟠 **i13-a11** A free health fair and flu shots at the fairgrounds (S)
+- [ ] 🟠 **i13-a12** Good boots and earplugs for field and trades jobs (S)
+- [ ] 🟠 **i13-a13** Spring pollen and harvest dust (S)
+- [ ] 🟠 **i13-a14** A pint is a treat, not a habit (S)
+- [ ] 🟠 **i13-a15** Drive a neighbor to treatment in Walla Walla (S)
+- [ ] 🟠 **i13-a16** You need a ride home after a procedure (S)
+- [ ] 🟠 **i13-a17** Health shows up at work (S)
+- [ ] 🟠 **i13-a18** Grief takes its time (M)
+- [ ] 🟠 **i13-a19** Morning walking group on Main Street (S)
+- [ ] 🟡 **i13-a20** Rec league softball and pickup at the school gym (M)
+- [ ] 🟡 **i13-a21** Get outside changes with age (S)
+- [ ] 🟡 **i13-a22** A gym in Walla Walla or the school weight room (M)
+- [ ] 🟡 **i13-a23** Braces for a kid (S)
+- [ ] 🟡 **i13-a24** Dry January (S)
+- [ ] 🟡 **i13-a25** Daylight saving week (S)
+- [ ] 🟡 **i13-a26** Summer at the town pool (S)
+- [ ] 🟡 **i13-a27** Your year in health (S)
+- [ ] 🟡 **i13-a28** A health savings account with the cheaper plan (M)
+- [ ] 🟠 **i13-a29** Your body: back, knees, teeth, eyes and heart (L)
+- [ ] 🟠 **i13-a30** A regular doctor who knows you (M)
+- [ ] 🟡 **i13-a31** Ladders and chainsaws: fixing it yourself (S)
+- [ ] 🟡 **i13-a32** A heart scare after 55, and cardiac rehab (M)
+
+</details>
+
+<details><summary><b>Ideas 13: Town history and civic life</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i13-b01** The town ledger: Waitsburg changes over a long game (M)
+- [ ] 🔴 **i13-b02** Wait's mill: how the town got its name (S)
+- [ ] 🔴 **i13-b03** Levy season: vote, campaign or stay home (M)
+- [ ] 🔴 **i13-b04** Public comment night at city hall (M)
+- [ ] 🟠 **i13-b05** The water system is a hundred years old (M)
+- [ ] 🟠 **i13-b06** Broadband comes up the valley (M)
+- [ ] 🟠 **i13-b07** Rent creeps up as new families arrive (S)
+- [ ] 🟠 **i13-b08** New families on your block (M)
+- [ ] 🟠 **i13-b09** Enrollment and the school's future (M)
+- [ ] 🟠 **i13-b10** Run for school board (M)
+- [ ] 🟠 **i13-b11** The Bruce House: be a museum docent (M)
+- [ ] 🟠 **i13-b12** Coppei: the school before the town (S)
+- [ ] 🟠 **i13-b13** Flood memory: the year the Touchet came over (M)
+- [ ] 🟠 **i13-b14** Celebration Days through the years (M)
+- [ ] 🟠 **i13-b15** The town's old charter, explained (S)
+- [ ] 🟠 **i13-b16** A storefront closes, a storefront opens (M)
+- [ ] 🟠 **i13-b17** Library card week (S)
+- [ ] 🟠 **i13-b18** Library hours on the ballot (M)
+- [ ] 🟠 **i13-b19** Fill a town board seat (M)
+- [ ] 🟠 **i13-b20** Election Day helper (S)
+- [ ] 🟠 **i13-b21** The town budget hearing (M)
+- [ ] 🟠 **i13-b22** Volunteer firefighter tones (S)
+- [ ] 🟡 **i13-b23** Old-timer oral history project (M)
+- [ ] 🟡 **i13-b24** Historic district paint rules (S)
+- [ ] 🟡 **i13-b25** A plaque for your house (S)
+- [ ] 🟡 **i13-b26** The town's 'then and now' photo walk (M)
+- [ ] 🟡 **i13-b27** Population sign update (S)
+- [ ] 🟡 **i13-b28** A town hall on housing (M)
+- [ ] 🟡 **i13-b29** Read the Tattler's minutes (S)
+- [ ] 🟡 **i13-b30** A century in the Burg: lifetime town timeline (L)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
