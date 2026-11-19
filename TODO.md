@@ -542,6 +542,82 @@ old ones.
 
 </details>
 
+## Ideas round 2 (pick on the build board)
+
+62 ideas. Details: [docs/ideas/round-2.md](docs/ideas/round-2.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 2: Play experience</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i2-a01** Show what each event choice does (S)
+- [ ] 🔴 **i2-a02** Preview what this week's focus will do (S)
+- [ ] 🔴 **i2-a03** A Settings sheet in the Menu (M)
+- [ ] 🟠 **i2-a04** Vibration on phones (S)
+- [ ] 🟠 **i2-a05** Small sounds, made in code (M)
+- [ ] 🟠 **i2-a06** Text size setting (S)
+- [ ] 🟠 **i2-a07** Night theme (M)
+- [ ] 🟠 **i2-a08** Stats that count up after a week (S)
+- [ ] 🟡 **i2-a09** Seasons on the town scene (M)
+- [ ] 🟠 **i2-a10** A real moment for badges and milestones (S)
+- [ ] 🔴 **i2-a11** Auto until something you choose (M)
+- [ ] 🔴 **i2-a12** A weekly focus rotation (M)
+- [ ] 🔴 **i2-a13** Don't stop skips for events with no choice (M)
+- [ ] 🔴 **i2-a14** "Previously in the Burg" when you come back (S)
+- [ ] 🟡 **i2-a15** A good place to stop (S)
+- [ ] 🟠 **i2-a16** First-month checklist in a real game (M)
+- [ ] 🟠 **i2-a17** First-time explainers for new systems (S)
+- [ ] 🟠 **i2-a18** Early warning when a stat keeps falling (S)
+- [ ] 🟠 **i2-a19** One "next step" hint on Home (S)
+- [ ] 🟡 **i2-a20** Tap a word to see what it means (S)
+- [ ] 🟡 **i2-a21** Why did that happen? (M)
+- [ ] 🟡 **i2-a22** Swipe between tabs and to close sheets (M)
+- [ ] 🟡 **i2-a23** Skip options behind a long-press on End Week (S)
+- [ ] 🟡 **i2-a24** Event choices in thumb reach (S)
+- [ ] 🟡 **i2-a25** Undo Life-tab changes before End Week (S)
+- [ ] 🟡 **i2-a26** Keyboard shortcuts on desktop and Windows (S)
+- [ ] 🟡 **i2-a27** Two columns on tablets and landscape (M)
+- [ ] 🟡 **i2-a28** Watch the weeks roll by on Auto (M)
+- [ ] 🟠 **i2-a29** Your life story at the ending (M)
+- [ ] 🟠 **i2-a30** Install the app at the right moment (S)
+- [ ] 🟡 **i2-a31** High-contrast and color-blind check (S)
+- [ ] 🟠 **i2-a32** Big choices say what will change (S)
+
+</details>
+
+<details><summary><b>Ideas 2: Replay and progression</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i2-b01** Your life in the Tattler: an obituary at the end (S)
+- [ ] 🔴 **i2-b02** Where are they now: epilogue lines (S)
+- [ ] 🔴 **i2-b03** Lives lived: a shelf of every finished life (M)
+- [ ] 🔴 **i2-b04** Unlockable starts earned across lives (M)
+- [ ] 🟠 **i2-b05** Start in the middle of life (M)
+- [ ] 🟠 **i2-b06** Five new challenges, unlocked as a ladder (M)
+- [ ] 🟠 **i2-b07** Bronze, silver and gold on every challenge (S)
+- [ ] 🔴 **i2-b08** A badge book with hidden badges and progress (M)
+- [ ] 🟡 **i2-b09** Badges with levels (S)
+- [ ] 🔴 **i2-b10** The Burg album: every event you have seen (M)
+- [ ] 🟠 **i2-b11** Story endings to collect (S)
+- [ ] 🔴 **i2-b12** Life paths: what kind of life it was (M)
+- [ ] 🔴 **i2-b13** Heirlooms in legacy mode (M)
+- [ ] 🟠 **i2-b14** The family tree (M)
+- [ ] 🟠 **i2-b15** Previous lives show up in town (M)
+- [ ] 🟠 **i2-b16** The town grows across your lives (L)
+- [ ] 🔴 **i2-b17** Daily 4-week sprint (M)
+- [ ] 🟠 **i2-b18** Weekly challenge twists (S)
+- [ ] 🟡 **i2-b19** Weekly streak and history (S)
+- [ ] 🔴 **i2-b20** Challenge a friend with a life code (M)
+- [ ] 🟠 **i2-b21** Race your best run (S)
+- [ ] 🟠 **i2-b22** Family night: take turns on the same life (M)
+- [ ] 🟡 **i2-b23** A life story score card (S)
+- [ ] 🟠 **i2-b24** Stars for every start and mode (S)
+- [ ] 🟡 **i2-b25** Next unlock on the title screen (S)
+- [ ] 🟡 **i2-b26** Your personal town records (S)
+- [ ] 🟡 **i2-b27** Holiday specials on the real calendar (S)
+- [ ] 🟠 **i2-b28** Retirement chapter: choose your last years (M)
+- [ ] 🟡 **i2-b29** A keepsake shelf on Home (S)
+- [ ] 🟡 **i2-b30** Score card shows your best and your record (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
