@@ -4294,6 +4294,163 @@ old ones.
 
 </details>
 
+## Ideas round 51 (pick on the build board)
+
+65 ideas. Details: [docs/ideas/round-51.md](docs/ideas/round-51.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 51: A focused 1.0</b> (33 ideas)</summary>
+
+- [ ] 🔴 **i51-a01** A first life defaults to 2 Years, Fresh start, Normal (S)
+- [ ] 🔴 **i51-a02** Golden path, week 1: a paycheck before anything else (S)
+- [ ] 🔴 **i51-a03** Golden path, weeks 2–4: one focus, then try a second (M)
+- [ ] 🟠 **i51-a04** Golden path, month 2: the first place in town (S)
+- [ ] 🟠 **i51-a05** Golden path, month 3: the first town goal finishes on screen (S)
+- [ ] 🟠 **i51-a06** Golden path, the halfway check-in (S)
+- [ ] 🟠 **i51-a07** Golden path ends with 'try a different start' (S)
+- [ ] 🔴 **i51-a08** Five moments every life has: a shared checklist (M)
+- [ ] 🔴 **i51-a09** Moment 1: the first paycheck gets a real beat (S)
+- [ ] 🟠 **i51-a10** Moment 2: your own place, with a key (S)
+- [ ] 🟠 **i51-a11** Moment 3: someone in town knows your name (S)
+- [ ] 🟠 **i51-a12** Moment 4: the hard week you got through (S)
+- [ ] 🔴 **i51-a13** Moment 5: every ending gets a goodbye line (S)
+- [ ] 🔴 **i51-a14** Signature five: name them and show them on the title screen (S)
+- [ ] 🔴 **i51-a15** Every signature feature appears in the first 13 weeks (M)
+- [ ] 🟠 **i51-a16** The map is one tap from Home, every week (S)
+- [ ] 🟠 **i51-a17** Year in review becomes the 1.0 showcase screen (M)
+- [ ] 🔴 **i51-a18** A word list: one name per thing, checked by a test (M)
+- [ ] 🔴 **i51-a19** 'Standing' and 'belonging' become 'Community' everywhere (S)
+- [ ] 🟡 **i51-a20** Score titles show on the stats, the end screen and records alike (S)
+- [ ] 🟠 **i51-a21** Places and towns: same spelling, same icon on every screen (S)
+- [ ] 🔴 **i51-a22** Stats on Home show whole numbers with a word (S)
+- [ ] 🟠 **i51-a23** Money under $10,000 shows dollars; above, shows $12.4k (S)
+- [ ] 🟠 **i51-a24** Net worth on Home shows the change since last week (S)
+- [ ] 🟠 **i51-a25** Every percent the player sees is a whole number (S)
+- [ ] 🟡 **i51-a26** '2027 dollars' shows once per screen, as a footnote (S)
+- [ ] 🔴 **i51-a27** 1.0 quality bar: a checklist file the release kit reads (M)
+- [ ] 🔴 **i51-a28** Quality bar: the sim targets hold across 500 lives (S)
+- [ ] 🟠 **i51-a29** Quality bar: a cold start under two seconds on a mid phone (S)
+- [ ] 🔴 **i51-a30** Quality bar: a 10-year save from 0.2 loads and plays (M)
+- [ ] 🟠 **i51-a31** Quality bar: no text cut off at 320 px or 200% zoom (M)
+- [ ] 🔴 **i51-a32** Quality bar: three new players finish a first life without help (S)
+- [ ] 🟠 **i51-a33** Quality bar: zero console errors in a 260-week bot run (S)
+
+</details>
+
+<details><summary><b>Ideas 51: Evenings and weekends</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i51-b01** Night owl sleep bank: what the night shift really costs (L)
+- [ ] 🔴 **i51-b02** Night pay differential on the job board (S)
+- [ ] 🟠 **i51-b03** Blackout curtains and a box fan (S)
+- [ ] 🟠 **i51-b04** Days off: flip back or stay a night owl (S)
+- [ ] 🟡 **i51-b05** The 10 a.m. mower: day sleeper versus the neighbors (S)
+- [ ] 🟡 **i51-b06** Breakfast at 2 a.m. at the all-night truck stop (S)
+- [ ] 🟡 **i51-b07** Vending machine dinners or a packed lunch bag (S)
+- [ ] 🔴 **i51-b08** Deer at dusk on Highway 12 (M)
+- [ ] 🟠 **i51-b09** Rumble strips: drowsy on the drive home (S)
+- [ ] 🟠 **i51-b10** Call an old friend on the long drive home (S)
+- [ ] 🟡 **i51-b11** The 10 p.m. call: a friend needs a ride home (S)
+- [ ] 🔴 **i51-b12** Daylight by month: what fits after work (M)
+- [ ] 🟠 **i51-b13** Moon phase on the date line (S)
+- [ ] 🟠 **i51-b14** The dark-sky pullout on the ridge road (M)
+- [ ] 🟡 **i51-b15** Borrow the library telescope and keep a sky log (M)
+- [ ] 🟡 **i51-b16** The space station flies over tonight (S)
+- [ ] 🟡 **i51-b17** Star party with the valley astronomy club (S)
+- [ ] 🟡 **i51-b18** Ask a neighbor to shield the new yard light (S)
+- [ ] 🟠 **i51-b19** Movie on the lawn at Preston Park (S)
+- [ ] 🟡 **i51-b20** Heat-wave evenings: the town comes out after eight (S)
+- [ ] 🟠 **i51-b21** Friday night on Main: what is lit tonight (M)
+- [ ] 🔴 **i51-b22** The walk home from the ale house: where you live matters (M)
+- [ ] 🟡 **i51-b23** The after-jam in the back room (S)
+- [ ] 🟡 **i51-b24** Pint night for the boosters (S)
+- [ ] 🟠 **i51-b25** A teen sitter for Saturday date night (S)
+- [ ] 🟡 **i51-b26** Saturday at the county transfer station (S)
+- [ ] 🟡 **i51-b27** Coffee pot Saturdays at the hardware counter (S)
+- [ ] 🟠 **i51-b28** Sunday-night meal prep for the week (S)
+- [ ] 🟡 **i51-b29** Your teen's curfew and the Main Street loop (M)
+- [ ] 🟡 **i51-b30** Night fishing for catfish on the Snake (S)
+- [ ] 🟡 **i51-b31** Backyard fire pit nights, when there is no burn ban (S)
+- [ ] 🟠 **i51-b32** The sky calendar: one data table for moon, showers and flyovers (L)
+
+</details>
+
+## Ideas round 52 (pick on the build board)
+
+64 ideas. Details: [docs/ideas/round-52.md](docs/ideas/round-52.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 52: The first hour</b> (29 ideas)</summary>
+
+- [ ] 🔴 **i52-a01** Two "Good first job" tags on the Jobs list in a first life (S)
+- [ ] 🔴 **i52-a02** "You're hired" names the drive and what it costs you (S)
+- [ ] 🔴 **i52-a03** The first "Work extra" tap says it's overtime on top of your job (S)
+- [ ] 🟠 **i52-a04** An ignored warning card counts what it has cost (M)
+- [ ] 🟠 **i52-a05** A rejection offers "Spend this week on Town" in one tap (S)
+- [ ] 🟠 **i52-a06** Job cards show your hiring chances in words (S)
+- [ ] 🟡 **i52-a07** No happiness loss for a rejection in your first month (S)
+- [ ] 🟠 **i52-a08** End Week asks once when you have no job and haven't applied (S)
+- [ ] 🟠 **i52-a09** Each job card says what the work week feels like (S)
+- [ ] 🔴 **i52-a10** No event repeats in your first 52 weeks (S)
+- [ ] 🟡 **i52-a11** A stray you found a home for stays found (S)
+- [ ] 🟠 **i52-a12** Big repair bills in your first half-year can be split (S)
+- [ ] 🟠 **i52-a13** A gamble that fails says what the careful choice would have done (S)
+- [ ] 🟡 **i52-a14** Event text doesn't claim a past you didn't have (S)
+- [ ] 🟠 **i52-a15** A new partner's next scene is a good one (S)
+- [ ] 🟡 **i52-a16** Cut the longest early event cards to under 35 words (S)
+- [ ] 🟠 **i52-a17** First lives start the first week of April (M)
+- [ ] 🟡 **i52-a18** January's town goal gets a January name (S)
+- [ ] 🟠 **i52-a19** Out and about lists open places before closed ones (S)
+- [ ] 🟠 **i52-a20** Your first birthday comes inside your first year (M)
+- [ ] 🟡 **i52-a21** A grad's negative net worth says it's mostly the student loan (S)
+- [ ] 🟠 **i52-a22** Kept the dog? It shows on Home from the next week (S)
+- [ ] 🟠 **i52-a23** The week strip counts a town-goal week when it happens (S)
+- [ ] 🟠 **i52-a24** Week 13's report card shows itself once (M)
+- [ ] 🟠 **i52-a25** A 6-month ending offers "Keep going to 2 years" (M)
+- [ ] 🟠 **i52-a26** The header says "Year 1 of 5", not "259 weeks left" (S)
+- [ ] 🟠 **i52-a27** A one-time "Your first month" recap after week 4 (M)
+- [ ] 🟠 **i52-a28** A neighbor's porch notes guide your first 13 weeks (L)
+- [ ] 🔴 **i52-a29** A first-hour retention test with five scripted newcomers (L)
+
+</details>
+
+<details><summary><b>Ideas 52: Clubs and organizations</b> (35 ideas)</summary>
+
+- [ ] 🔴 **i52-b01** Clubs card: join up to two town groups (L)
+- [ ] 🟠 **i52-b02** Try a meeting before you join (S)
+- [ ] 🔴 **i52-b03** Dues day on the bills (S)
+- [ ] 🔴 **i52-b04** Meeting nights ride on Show up for town (M)
+- [ ] 🟠 **i52-b05** Lapsed: three missed meetings and you're off the active list (S)
+- [ ] 🔴 **i52-b06** Hold an office: secretary, treasurer, president (M)
+- [ ] 🟠 **i52-b07** The annual meeting: nobody wants to be president (S)
+- [ ] 🔴 **i52-b08** Run the club's big event (L)
+- [ ] 🔴 **i52-b09** Members-only doors: what joining opens (M)
+- [ ] 🟠 **i52-b10** Spread too thin: the third club costs more than it gives (S)
+- [ ] 🟡 **i52-b11** Service club eyeglass box and the school vision check (S)
+- [ ] 🟡 **i52-b12** The service club's bike rodeo for kids (S)
+- [ ] 🟡 **i52-b13** Rival service clubs' tug-of-war at Celebration Days (S)
+- [ ] 🟡 **i52-b14** Flag Day: retire worn flags at the Legion (S)
+- [ ] 🟡 **i52-b15** Poppies at the post office for the veterans' post (S)
+- [ ] 🟠 **i52-b16** In through family: join the Legion auxiliary (S)
+- [ ] 🟡 **i52-b17** Your teen goes to Boys State or Girls State (S)
+- [ ] 🟠 **i52-b18** Garden club keeps the Main Street planters (M)
+- [ ] 🟡 **i52-b19** Yard of the month sign on your lawn (S)
+- [ ] 🟡 **i52-b20** Garden club plant sale: split your perennials (S)
+- [ ] 🟡 **i52-b21** The historical society's treasurer keeps a shoebox (S)
+- [ ] 🟡 **i52-b22** Booster club paints the bleachers in August (S)
+- [ ] 🟠 **i52-b23** Take the EMT class with the volunteer ambulance crew (M)
+- [ ] 🟠 **i52-b24** On call for the ambulance: the weekend pager (M)
+- [ ] 🟡 **i52-b25** Ribbon cutting: the Chamber welcomes your business (S)
+- [ ] 🟡 **i52-b26** Quilts for a veteran: the guild and the post together (S)
+- [ ] 🟠 **i52-b27** Be a scout den leader (M)
+- [ ] 🟡 **i52-b28** Scout popcorn sale in the fall (S)
+- [ ] 🟡 **i52-b29** Your teen's Eagle-style project, and how much you help (S)
+- [ ] 🟠 **i52-b30** Your congregation, or none, shows up when you're laid up (S)
+- [ ] 🟡 **i52-b31** Club scholarship night for your senior (S)
+- [ ] 🟡 **i52-b32** Club news in the Tattler (S)
+- [ ] 🟡 **i52-b33** Service pins: 10, 25 and 40 years (S)
+- [ ] 🟠 **i52-b34** Clubs on the end screen and for the heir (S)
+- [ ] 🔴 **i52-b35** Sim check: joiners versus ghosts (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
