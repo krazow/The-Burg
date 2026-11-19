@@ -5581,6 +5581,86 @@ old ones.
 
 </details>
 
+## Ideas round 68 (pick on the build board)
+
+66 ideas. Details: [docs/ideas/round-68.md](docs/ideas/round-68.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 68: Fall and winter</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i68-a01** Winter prep list on Home each October (S)
+- [ ] 🟠 **i68-a02** Plastic on the windows and door sweeps (S)
+- [ ] 🔴 **i68-a03** The furnace won't light on the first cold night (M)
+- [ ] 🟡 **i68-a04** Space heaters in every room (S)
+- [ ] 🟠 **i68-a05** Heat with wood: a stove for the house (L)
+- [ ] 🟡 **i68-a06** Prebuy propane in August, not January (S)
+- [ ] 🟠 **i68-a07** Blow out the sprinklers before the hard freeze (S)
+- [ ] 🔴 **i68-a08** Dead battery on the first cold morning (S)
+- [ ] 🟡 **i68-a09** Frost on the windshield: leave ten minutes early (S)
+- [ ] 🟠 **i68-a10** Opening morning empties the shop (S)
+- [ ] 🟡 **i68-a11** Hunters' breakfast at 4 a.m. (S)
+- [ ] 🟡 **i68-a12** Blaze orange on your Get outside weeks (S)
+- [ ] 🟡 **i68-a13** The meat processor is three weeks behind (S)
+- [ ] 🟠 **i68-a14** Build the haunted house in the empty storefront (M)
+- [ ] 🟡 **i68-a15** Pumpkin drop from the fire truck ladder (S)
+- [ ] 🔴 **i68-a16** Thanksgiving drive: Tuesday night or Wednesday (M)
+- [ ] 🟠 **i68-a17** Shop Main Street the Saturday after Thanksgiving (S)
+- [ ] 🟠 **i68-a18** Caroling to the shut-ins (S)
+- [ ] 🔴 **i68-a19** Drive the holiday basket route (S)
+- [ ] 🟡 **i68-a20** Christmas cookie exchange (S)
+- [ ] 🟠 **i68-a21** The quiet week between Christmas and New Year (S)
+- [ ] 🟠 **i68-a22** Salt the front steps or risk a fall (S)
+- [ ] 🟡 **i68-a23** Follow the sand truck at 25 (S)
+- [ ] 🔴 **i68-a24** Check the road cams before you leave (M)
+- [ ] 🟡 **i68-a25** Move your car for the plow (S)
+- [ ] 🟠 **i68-a26** River ice on the Touchet: keep the kids off (S)
+- [ ] 🟠 **i68-a27** Seed catalogs on the kitchen table (S)
+- [ ] 🟡 **i68-a28** Winter reading challenge at the library (S)
+- [ ] 🟠 **i68-a29** Cabin fever: the February itch (M)
+- [ ] 🟡 **i68-a30** Red-wing blackbirds on the Touchet: spring's coming (S)
+- [ ] 🟠 **i68-a31** Freezing rain, not snow (S)
+- [ ] 🟠 **i68-a32** Shovel your way through the winter goal (M)
+
+</details>
+
+<details><summary><b>Ideas 68: Help for the new systems</b> (34 ideas)</summary>
+
+- [ ] 🔴 **i68-b01** One Help order once PRs #161–#164 land (M)
+- [ ] 🔴 **i68-b02** Fix the glossary's net worth to match the game (S)
+- [ ] 🔴 **i68-b03** Split Jobs into "Getting a job" and "Moving up at work" (M)
+- [ ] 🔴 **i68-b04** Plain text: job ladders (S)
+- [ ] 🟠 **i68-b05** Plain text: unions, in one paragraph (S)
+- [ ] 🟠 **i68-b06** Plain text: jobs that change with the calendar (S)
+- [ ] 🔴 **i68-b07** "Working for the government": one paragraph for public jobs (M)
+- [ ] 🔴 **i68-b08** School becomes "School, programs and certificates" (S)
+- [ ] 🟠 **i68-b09** The program picker shows its jobs, so Help drops the table (S)
+- [ ] 🔴 **i68-b10** First-time explainers for the jobs and school systems (M)
+- [ ] 🔴 **i68-b11** First-time explainers for the money systems (M)
+- [ ] 🔴 **i68-b12** Cut Help text the game already says at the moment (S)
+- [ ] 🟠 **i68-b13** "Later life and your legacy" section (M)
+- [ ] 🔴 **i68-b14** Plain text: Social Security (S)
+- [ ] 🟠 **i68-b15** Plain text: insurance in a three-row table (S)
+- [ ] 🟠 **i68-b16** Plain text: the housing market and refinancing (S)
+- [ ] 🟠 **i68-b17** Plain text: index funds without the fear (S)
+- [ ] 🔴 **i68-b18** Plain text: collections and bankruptcy as steps (S)
+- [ ] 🔴 **i68-b19** Farm and ranch: a section built as a calendar (M)
+- [ ] 🟠 **i68-b20** A money calendar: what happens each month (M)
+- [ ] 🟠 **i68-b21** A "by age" table (S)
+- [ ] 🟠 **i68-b22** Help shows your own retirement estimate (M)
+- [ ] 🔴 **i68-b23** Your week: rewrite for Plan, Auto until and Undo (S)
+- [ ] 🟠 **i68-b24** Help states exactly how a plan counts for fade and ruts (S)
+- [ ] 🟠 **i68-b25** Animations joins Settings, and Help says so (S)
+- [ ] 🟡 **i68-b26** Settings help shrinks to two lines (S)
+- [ ] 🟠 **i68-b27** "Finding your way" takes in the Tips section (S)
+- [ ] 🔴 **i68-b28** New glossary words for the new systems (S)
+- [ ] 🟠 **i68-b29** Help uses the same tappable words as the game (S)
+- [ ] 🔴 **i68-b30** Help search indexes the new systems' words (S)
+- [ ] 🟠 **i68-b31** Search shows the glossary meaning first (S)
+- [ ] 🟡 **i68-b32** A legend for the job table marks (S)
+- [ ] 🟡 **i68-b33** "New" tags on Help sections that changed this version (S)
+- [ ] 🟠 **i68-b34** A test that every explainer and word has a Help home (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
