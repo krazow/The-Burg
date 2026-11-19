@@ -3536,6 +3536,86 @@ old ones.
 
 </details>
 
+## Ideas round 41 (pick on the build board)
+
+66 ideas. Details: [docs/ideas/round-41.md](docs/ideas/round-41.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 41: Waitsburg businesses, deeper</b> (34 ideas)</summary>
+
+- [ ] 🔴 **i41-a01** [Howlin' Bean] Dee, the morning barista who learns your order (S)
+- [ ] 🟠 **i41-a02** [Howlin' Bean] Barista to shift lead to opening manager (M)
+- [ ] 🟡 **i41-a03** [Howlin' Bean] The seasonal drink board (S)
+- [ ] 🟠 **i41-a04** [Simply Shavings] The winter-break build: a key to the shop (M)
+- [ ] 🟡 **i41-a05** [Simply Shavings] December gift market: sell what you made (S)
+- [ ] 🟠 **i41-a06** [Simply Shavings] The shop changes hands in a long game (M)
+- [ ] 🔴 **i41-a07** [Little Kiss] The same table every anniversary (S)
+- [ ] 🟡 **i41-a08** [Little Kiss] Tomato season and winter braise menus (S)
+- [ ] 🟠 **i41-a09** [Little Kiss] Dishwasher to prep cook to pasta maker (M)
+- [ ] 🔴 **i41-a10** [Rouge] Jo at the chair: the town's news, early (S)
+- [ ] 🟡 **i41-a11** [Rouge] Prom and wedding season: book ahead (S)
+- [ ] 🟠 **i41-a12** [Rouge] Shampoo assistant to licensed stylist (M)
+- [ ] 🟠 **i41-a13** [Legal Cupboard] Your will goes out of date (S)
+- [ ] 🟡 **i41-a14** [Legal Cupboard] Front desk to paralegal (M)
+- [ ] 🟡 **i41-a15** [Junque Sisters] Bev and Lou's running argument (S)
+- [ ] 🟠 **i41-a16** [Junque Sisters] Consign your things when you move (S)
+- [ ] 🟡 **i41-a17** [Junque Sisters] The March reopening estate sale (S)
+- [ ] 🟠 **i41-a18** [Standard Bearer Bank] Teller to head teller to loan officer (M)
+- [ ] 🟡 **i41-a19** [Standard Bearer Bank] The lollipop jar and a kid's first account (S)
+- [ ] 🟠 **i41-a20** [Standard Bearer Bank] Branch hours shrink in a long game (M)
+- [ ] 🟡 **i41-a21** [Grenache & Gather] A guest chef a month (S)
+- [ ] 🟠 **i41-a22** [Grenache & Gather] Pour at Grenache Fest: the volunteer crew (S)
+- [ ] 🔴 **i41-a23** [Burg Basket] Earl at register two, thirty years in (S)
+- [ ] 🟠 **i41-a24** [Burg Basket] Clerk to produce lead to store manager (M)
+- [ ] 🟡 **i41-a25** [Burg Basket] Holiday ham and turkey orders (S)
+- [ ] 🟠 **i41-a26** [Royal Brick] The guests upstairs (S)
+- [ ] 🟡 **i41-a27** [Mr. Q's] Brisket's gone by one (S)
+- [ ] 🟠 **i41-a28** [Mr. Q's] Weekend smoker hand to pitmaster (M)
+- [ ] 🟡 **i41-a29** [Laughing Lad] Name the fall seasonal (S)
+- [ ] 🟡 **i41-a30** [Laughing Lad] Grill cook to brewer's helper (M)
+- [ ] 🟠 **i41-a31** [Bourbon Gulch] Line cook to kitchen manager (M)
+- [ ] 🟡 **i41-a32** [Bourbon Gulch] Friday nights: the team eats here (S)
+- [ ] 🟠 **i41-a33** [McGrub & Grain] Ag tech to field agronomist (M)
+- [ ] 🔴 **i41-a34** [Sharp Point Builders] Apprentice to journeyman to your own crew (L)
+
+</details>
+
+<details><summary><b>Ideas 41: Each job, deeper</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i41-b01** [Registered nurse] Shift report at 7: the handoff that matters (S)
+- [ ] 🟠 **i41-b02** [Registered nurse] Floated to the ER: extra pay, extra strain (S)
+- [ ] 🟡 **i41-b03** [Registered nurse] Paper charts give way to tablets over the decades (M)
+- [ ] 🔴 **i41-b04** [Barista] The Saturday rush line at the coffee shop (M)
+- [ ] 🟡 **i41-b05** [Barista] Know the regulars' orders (S)
+- [ ] 🟠 **i41-b06** [Barista] Shift lead, then the keys to open (S)
+- [ ] 🔴 **i41-b07** [Reporter] Tuesday night: the paper goes to the printer (S)
+- [ ] 🟠 **i41-b08** [Reporter] Your editor, the old hand, and the day they retire (M)
+- [ ] 🟡 **i41-b09** [Reporter] From darkroom to phone camera across the decades (S)
+- [ ] 🟠 **i41-b10** [Bank teller] Teller, head teller, personal banker (S)
+- [ ] 🟡 **i41-b11** [Bank teller] Harvest checks at the drive-up window (S)
+- [ ] 🔴 **i41-b12** [Trades apprentice] The foreman's Friday punch list (S)
+- [ ] 🟠 **i41-b13** [Trades apprentice] Journeyman card, then your own contractor license (M)
+- [ ] 🟠 **i41-b14** [Trades apprentice] A fall off the ladder (S)
+- [ ] 🟠 **i41-b15** [Grain elevator operator] Moisture meter calls at the scale (S)
+- [ ] 🟡 **i41-b16** [Grain elevator operator] Small elevators close, a big loader opens (M)
+- [ ] 🟠 **i41-b17** [Wheat farm hand] Truck, then the combine seat, then farm manager (S)
+- [ ] 🟡 **i41-b18** [Wheat farm hand] GPS autosteer arrives in the cab (S)
+- [ ] 🟠 **i41-b19** [Hospital nursing assistant] The resident you look after (M)
+- [ ] 🔴 **i41-b20** [Hospital nursing assistant] The hospital pays for nursing school (M)
+- [ ] 🟠 **i41-b21** [Auto mechanic] ASE patches on your shirt (M)
+- [ ] 🟠 **i41-b22** [Auto mechanic] The tool truck comes on Tuesdays (S)
+- [ ] 🟡 **i41-b23** [Auto mechanic] Carburetors, then computers, then electric cars (M)
+- [ ] 🔴 **i41-b24** [College professor] The tenure clock (L)
+- [ ] 🟡 **i41-b25** [College professor] Wednesday office hours (S)
+- [ ] 🟠 **i41-b26** [Truck driver] Buy your own rig: owner-operator (L)
+- [ ] 🟡 **i41-b27** [Truck driver] Paper logbook to electronic logs (S)
+- [ ] 🟡 **i41-b28** [Ski lift operator] First chair on a powder Saturday (S)
+- [ ] 🟡 **i41-b29** [Ski lift operator] Thin-snow winters over the decades (S)
+- [ ] 🟡 **i41-b30** [Ag technician] Drones and soil maps over the wheat (M)
+- [ ] 🟡 **i41-b31** [Grocery clerk] Truck day on Wednesdays, and the day-old shelf (S)
+- [ ] 🟠 **i41-b32** [Rail yard conductor] The extra board, then the engineer's seat (M)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
