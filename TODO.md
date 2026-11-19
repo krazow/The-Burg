@@ -3616,6 +3616,82 @@ old ones.
 
 </details>
 
+## Ideas round 42 (pick on the build board)
+
+62 ideas. Details: [docs/ideas/round-42.md](docs/ideas/round-42.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 42: Playtest of trips and commutes</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i42-a01** Trips in overtime and hustle weeks cost no time (S)
+- [ ] 🔴 **i42-a02** Errands in your work town aren't free fun (S)
+- [ ] 🔴 **i42-a03** The same stop every week stops being special (S)
+- [ ] 🟠 **i42-a04** Trip fun tops out like Rest does (S)
+- [ ] 🔴 **i42-a05** Walla Walla and Tri-Cities road events on a Dayton trip (S)
+- [ ] 🔴 **i42-a06** Carpool savings show up on every far job's gas (S)
+- [ ] 🟠 **i42-a07** The region map's town card shows the gas you really pay (S)
+- [ ] 🟡 **i42-a08** A trip's free gas changes when your job changes (S)
+- [ ] 🟠 **i42-a09** Road events follow the miles you drive (M)
+- [ ] 🟠 **i42-a10** Stop cards say how big the lift is (S)
+- [ ] 🟡 **i42-a11** The stock-up run says what it saves (S)
+- [ ] 🟠 **i42-a12** Stops you went to lately say so (S)
+- [ ] 🟠 **i42-a13** A trip receipt in the week strip (S)
+- [ ] 🟠 **i42-a14** Winter stops so Pasco isn't a one-taco town (M)
+- [ ] 🟡 **i42-a15** The carpool follows the town, not the job (S)
+- [ ] 🟠 **i42-a16** Dayton commuters can carpool too (S)
+- [ ] 🟠 **i42-a17** A Tri-Cities vanpool (M)
+- [ ] 🟡 **i42-a18** Gas as a share of pay on far job rows (S)
+- [ ] 🟡 **i42-a19** A crash pad night in the Tri-Cities (M)
+- [ ] 🟠 **i42-a20** Ask for another remote day (M)
+- [ ] 🟡 **i42-a21** Know the region counts towns you've worked in (S)
+- [ ] 🟠 **i42-a22** A trip away uses one Out and about visit (S)
+- [ ] 🟡 **i42-a23** Bring someone along (M)
+- [ ] 🟠 **i42-a24** An errand list that picks the town (M)
+- [ ] 🟠 **i42-a25** Your planned trip on the region map (S)
+- [ ] 🟡 **i42-a26** Town pins show what's in season (S)
+- [ ] 🟠 **i42-a27** The town card lists its stops, not just a count (S)
+- [ ] 🟡 **i42-a28** The truck shows your carpool and remote days (S)
+- [ ] 🟡 **i42-a29** This week's gas price on the region map (S)
+- [ ] 🔴 **i42-a30** Sim bots that test trip exploits (S)
+
+</details>
+
+<details><summary><b>Ideas 42: Who you are</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i42-b01** Early bird: first in, first tired (S)
+- [ ] 🟠 **i42-b02** Homebody: home is the best week (S)
+- [ ] 🟠 **i42-b03** Handy: fix it, but you can't leave it alone (S)
+- [ ] 🟠 **i42-b04** Chatty: everybody knows you, everybody talks (S)
+- [ ] 🔴 **i42-b05** Frugal: tight with a dollar (S)
+- [ ] 🔴 **i42-b06** A trait has two sides, shown on one line (S)
+- [ ] 🔴 **i42-b07** Traits come in pairs that pull apart (M)
+- [ ] 🔴 **i42-b08** The balance sim plays every trait pair (M)
+- [ ] 🟠 **i42-b09** Traits only pay when you lean into them (S)
+- [ ] 🔴 **i42-b10** Pick your interests: two things you care about (M)
+- [ ] 🟠 **i42-b11** Interest events: the history buff's walk (M)
+- [ ] 🟡 **i42-b12** Interest events: the gearhead at the car show (S)
+- [ ] 🟠 **i42-b13** Interests can be picked up later (S)
+- [ ] 🔴 **i42-b14** Your motto, picked or written at the start (S)
+- [ ] 🟠 **i42-b15** Did you live your motto? (M)
+- [ ] 🟡 **i42-b16** The motto speaks up when you drift (S)
+- [ ] 🔴 **i42-b17** How you see yourself vs how the town sees you (M)
+- [ ] 🟠 **i42-b18** When the gap gets big, you can change (S)
+- [ ] 🟠 **i42-b19** Traits soften and grow with age (M)
+- [ ] 🟠 **i42-b20** Life changes you: a trait earned from a big moment (M)
+- [ ] 🔴 **i42-b21** Character card on the Life tab (M)
+- [ ] 🟡 **i42-b22** The card keeps a short life line (S)
+- [ ] 🟡 **i42-b23** Traits and interests in the Tattler (S)
+- [ ] 🟠 **i42-b24** Pick traits by tapping a few questions (S)
+- [ ] 🟡 **i42-b25** Random traits for a surprise life (S)
+- [ ] 🟠 **i42-b26** No traits is a fine choice (S)
+- [ ] 🟠 **i42-b27** People react to your traits (M)
+- [ ] 🟡 **i42-b28** A partner whose traits fit or rub (M)
+- [ ] 🟡 **i42-b29** Kids pick up one of your traits (S)
+- [ ] 🟡 **i42-b30** The heir keeps the motto, not the traits (S)
+- [ ] 🟠 **i42-b31** End screen: who you were (S)
+- [ ] 🟡 **i42-b32** Trait help page in plain words (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
