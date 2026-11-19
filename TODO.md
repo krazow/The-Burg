@@ -1553,6 +1553,80 @@ old ones.
 
 </details>
 
+## Ideas round 15 (pick on the build board)
+
+60 ideas. Details: [docs/ideas/round-15.md](docs/ideas/round-15.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 15: Playtest of a long game</b> (27 ideas)</summary>
+
+- [ ] 🔴 **i15-a01** Community counts your average, not the last week (S)
+- [ ] 🔴 **i15-a02** Out and about gains taper off in the 80s, like Rest (S)
+- [ ] 🔴 **i15-a03** Windstorm: a storm season and a real choice (S)
+- [ ] 🔴 **i15-a04** A business that earns nothing says so (S)
+- [ ] 🔴 **i15-a05** Sandbagging leads into the levee story too (S)
+- [ ] 🟡 **i15-a06** "Truck trouble" names what you actually drive (S)
+- [ ] 🟠 **i15-a07** Story steps are marked on event buttons (S)
+- [ ] 🟠 **i15-a08** The wheat lease pays its own farming costs (S)
+- [ ] 🟠 **i15-a09** Buy the wheat ground outright (M)
+- [ ] 🟠 **i15-a10** A family can start inside a 5-year life (S)
+- [ ] 🟠 **i15-a11** The dealer sheet shows the 5-year total (S)
+- [ ] 🟠 **i15-a12** Overtime most weeks counts as a rut (S)
+- [ ] 🟠 **i15-a13** Year in review: one lever, one leak (S)
+- [ ] 🟠 **i15-a14** A work calendar: four sure beats a year (M)
+- [ ] 🟠 **i15-a15** Standing trips and visits that keep running during skips (S)
+- [ ] 🟠 **i15-a16** Long commutes use up your evenings (S)
+- [ ] 🟡 **i15-a17** A friend's tip is for a job you would take (S)
+- [ ] 🟠 **i15-a18** Score so far shows what is maxed and what can still grow (S)
+- [ ] 🟠 **i15-a19** Main Street specials of the week (M)
+- [ ] 🟡 **i15-a20** Dealership events skip a nearly new vehicle (S)
+- [ ] 🟠 **i15-a21** Events for the business you own (M)
+- [ ] 🟡 **i15-a22** Events that fit a comfortable life (M)
+- [ ] 🟠 **i15-a23** Where your money came from (S)
+- [ ] 🟠 **i15-a24** Long-game checks in the balance sim (S)
+- [ ] 🟡 **i15-a25** A 15% 401(k) step (S)
+- [ ] 🟡 **i15-a26** A turned-down story comes back once (S)
+- [ ] 🟡 **i15-a27** The jam's boost fades after a few in a season (S)
+
+</details>
+
+<details><summary><b>Ideas 15: Planning tools and info</b> (33 ideas)</summary>
+
+- [ ] 🔴 **i15-b01** Keep a small weekly history of money and the four stats (S)
+- [ ] 🔴 **i15-b02** Tiny trend lines in the stat sheets (S)
+- [ ] 🔴 **i15-b03** Money over time: cash and net worth on one chart (M)
+- [ ] 🟠 **i15-b04** An on-pace mark for the net worth target (S)
+- [ ] 🔴 **i15-b05** Where the money went: the last 4 weeks by kind (M)
+- [ ] 🔴 **i15-b06** Up next: dated things in the next 8 weeks (M)
+- [ ] 🟡 **i15-b07** A month view for the Journal (M)
+- [ ] 🔴 **i15-b08** Compare two jobs side by side (M)
+- [ ] 🟡 **i15-b09** Compare two rides on your own commute (S)
+- [ ] 🟠 **i15-b10** Cushion: how many weeks of bills your cash covers (S)
+- [ ] 🟠 **i15-b11** Payback time for classes (S)
+- [ ] 🟠 **i15-b12** Progress bars for pinned life goals and challenges (S)
+- [ ] 🟠 **i15-b13** How many weeks until you can afford it (S)
+- [ ] 🟠 **i15-b14** Debt-free dates on every loan (S)
+- [ ] 🟡 **i15-b15** Retirement check for Lifetime games (M)
+- [ ] 🟠 **i15-b16** Month-end digest in the Journal (S)
+- [ ] 🟠 **i15-b17** A notepad in the Journal (S)
+- [ ] 🟠 **i15-b18** Remind me in a few weeks (S)
+- [ ] 🟠 **i15-b19** Old Journal lines fold into month summaries (M)
+- [ ] 🟡 **i15-b20** Star a Journal entry to keep it (S)
+- [ ] 🟡 **i15-b21** Search the Journal (S)
+- [ ] 🟡 **i15-b22** Journal sections by year (S)
+- [ ] 🟡 **i15-b23** Copy the Journal as text (S)
+- [ ] 🟠 **i15-b24** A table behind every chart (S)
+- [ ] 🟠 **i15-b25** Year-to-date totals (M)
+- [ ] 🟡 **i15-b26** Hours and miles behind the wheel (S)
+- [ ] 🟠 **i15-b27** A job wishlist that says what's missing (S)
+- [ ] 🟡 **i15-b28** 'Last time you picked this' on repeat events (S)
+- [ ] 🟡 **i15-b29** Show money per week or per month (S)
+- [ ] 🟡 **i15-b30** Side-hustle seasons at a glance (S)
+- [ ] 🟠 **i15-b31** The Planner: everything on one screen (L)
+- [ ] 🟡 **i15-b32** Compare two lives from the title screen (M)
+- [ ] 🟡 **i15-b33** Big moments marked on the charts (M)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
