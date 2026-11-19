@@ -5043,6 +5043,155 @@ old ones.
 
 </details>
 
+## Ideas round 61 (pick on the build board)
+
+63 ideas. Details: [docs/ideas/round-61.md](docs/ideas/round-61.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 61: Bundles part 8 and v1.2</b> (31 ideas)</summary>
+
+- [ ] 🔴 **i61-a01** Bundle: Backups checked before they land (M)
+- [ ] 🔴 **i61-a02** Bundle: Saves that can't be lost (M)
+- [ ] 🔴 **i61-a03** Bundle: Plain text everywhere (M)
+- [ ] 🟠 **i61-a04** Bundle: A locked-down page and safe player characters (M)
+- [ ] 🔴 **i61-a05** Bundle: Open-bug repros that stay quiet until fixed (M)
+- [ ] 🔴 **i61-a06** Bundle: Reach tests and edge-case bots (M)
+- [ ] 🟠 **i61-a07** Bundle: Old saves, long lives and odd settings (M)
+- [ ] 🔴 **i61-a08** Bundle: Feels like an app: Back, touch and scroll (M)
+- [ ] 🟠 **i61-a09** Bundle: Feels like an app: typing, screens and icons (M)
+- [ ] 🟠 **i61-a10** Bundle: Feels like an app: Android, Windows and sharing (M)
+- [ ] 🟠 **i61-a11** Bundle: Playtest fixes: the retiree (M)
+- [ ] 🟠 **i61-a12** Bundle: Playtest fixes: the parent and the strategist (M)
+- [ ] 🔴 **i61-a13** Bundle: Balance pass part 2: trips, hustles and Out and about (M)
+- [ ] 🔴 **i61-a14** Bundle: Balance sim: what each choice is worth (M)
+- [ ] 🔴 **i61-a15** Bundle: Tell us: one feedback sheet and an outbox (M)
+- [ ] 🟠 **i61-a16** Bundle: Closing the loop with players (M)
+- [ ] 🟠 **i61-a17** Bundle: Report it where you see it (M)
+- [ ] 🟠 **i61-a18** Bundle: Answers for strangers and skeptics (M)
+- [ ] 🔴 **i61-a19** Bundle: A job board that moves with the years (M)
+- [ ] 🟠 **i61-a20** Bundle: New trades on the wheat hills (M)
+- [ ] 🟠 **i61-a21** Bundle: Hanford winds down; care, remote and Main Street jobs grow (M)
+- [ ] 🔴 **i61-a22** Bundle: Signature scenes: the frame and the first set (L)
+- [ ] 🟠 **i61-a23** Bundle: Signature scenes: kids, home and the farm (M)
+- [ ] 🟠 **i61-a24** Bundle: Signature scenes: farewells and full circles (M)
+- [ ] 🟠 **i61-a25** Bundle: The Growing up prologue (L)
+- [ ] 🟠 **i61-a26** Bundle: Childhood scenes: ages 5 to 13 (M)
+- [ ] 🟠 **i61-a27** Bundle: Teen years and what they echo (M)
+- [ ] 🟠 **i61-a28** Bundle: The five-year plan (M)
+- [ ] 🟠 **i61-a29** Bundle: Bucket list and promises out loud (M)
+- [ ] 🟠 **i61-a30** Bundle: Plans that show up at work and at the end (M)
+- [ ] 🔴 **i61-a31** Release plan: v1.2 — Safe to keep, feels like an app (L)
+
+</details>
+
+<details><summary><b>Ideas 61: Spanish and bilingual play</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i61-b01** Events keyed by an id, not their English title (M)
+- [ ] 🔴 **i61-b02** A t() lookup that falls back to English, never a blank (S)
+- [ ] 🔴 **i61-b03** A script that pulls every player-facing line out of js/ and index.html (M)
+- [ ] 🔴 **i61-b04** Translation files as plain script files that work offline (S)
+- [ ] 🟠 **i61-b05** Flag Spanish lines that are older than the English (S)
+- [ ] 🔴 **i61-b06** Money in US Spanish style: $1,250, not 1.250 $ (S)
+- [ ] 🟠 **i61-b07** Dates and months that read right in Spanish (S)
+- [ ] 🔴 **i61-b08** Plurals from a rule, not n === 1 ? '' : 's' (S)
+- [ ] 🟠 **i61-b09** Spanish that never has to guess your gender (M)
+- [ ] 🟠 **i61-b10** Places carry their article: el río, la biblioteca (S)
+- [ ] 🔴 **i61-b11** A phone-width check for longer Spanish event text (M)
+- [ ] 🟠 **i61-b12** Short labels for choice buttons (S)
+- [ ] 🔴 **i61-b13** English · Español switch on the title screen and in the Menu (S)
+- [ ] 🟠 **i61-b14** The Journal re-reads in your current language (M)
+- [ ] 🔴 **i61-b15** The tutorial finds pins by id, not English labels (S)
+- [ ] 🟠 **i61-b16** Screen reader text in Spanish, with lang tags on mixed lines (S)
+- [ ] 🟠 **i61-b17** A glossary: what stays in English and what doesn't (S)
+- [ ] 🔴 **i61-b18** Valley Spanish, not textbook Spanish (S)
+- [ ] 🔴 **i61-b19** Native-speaker review with a sheet and screenshots (M)
+- [ ] 🟡 **i61-b20** Suggest a better translation from inside the game (S)
+- [ ] 🔴 **i61-b21** Screens test in both languages (M)
+- [ ] 🟠 **i61-b22** A stretched fake language for finding missed strings (S)
+- [ ] 🔴 **i61-b23** A lint that stops new hard-coded text (S)
+- [ ] 🟠 **i61-b24** New events can ship before their Spanish (S)
+- [ ] 🔴 **i61-b25** Ship Spanish in three waves, marked beta (S)
+- [ ] 🔴 **i61-b26** Same seed, same score in both languages (S)
+- [ ] 🟠 **i61-b27** Neighbors who switch languages mid-sentence (M)
+- [ ] 🟠 **i61-b28** Grew up bilingual: a start option (M)
+- [ ] 🟡 **i61-b29** Your kid translates at the doctor (S)
+- [ ] 🟡 **i61-b30** Read-aloud picks a Spanish voice (S)
+- [ ] 🟡 **i61-b31** Accents and ñ everywhere, and lists sorted in Spanish (S)
+- [ ] 🟡 **i61-b32** An install name and store listing in Spanish (S)
+
+</details>
+
+## Ideas round 62 (pick on the build board)
+
+58 ideas. Details: [docs/ideas/round-62.md](docs/ideas/round-62.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 62: Playtest of live 0.2.0</b> (26 ideas)</summary>
+
+- [ ] 🔴 **i62-a01** Broken backup codes say plain words, not "Failed to fetch" (S)
+- [ ] 🔴 **i62-a02** Restoring the same backup twice makes twin lives (S)
+- [ ] 🔴 **i62-a03** Back up from the title screen, records and badges included (S)
+- [ ] 🔴 **i62-a04** A life that never worked scores 57: debt should cost points (M)
+- [ ] 🟠 **i62-a05** The year in review comes back after closing the app (S)
+- [ ] 🟠 **i62-a06** A pasted code with words or quotes around it still restores (S)
+- [ ] 🟠 **i62-a07** The restore preview lists records and badges, not just lives (S)
+- [ ] 🟡 **i62-a08** After a restore, open the life you brought back (S)
+- [ ] 🟡 **i62-a09** The restore preview says which slot each life will land in (S)
+- [ ] 🟡 **i62-a10** Backups carry your settings and the tips you have seen (S)
+- [ ] 🟡 **i62-a11** Backup file names say who is inside and use your local date (S)
+- [ ] 🟡 **i62-a12** Enter in the name box starts the life (S)
+- [ ] 🟡 **i62-a13** Finishing the tutorial marks its matching tips as seen (S)
+- [ ] 🟡 **i62-a14** The tutorial ring stays inside the screen on tab steps (S)
+- [ ] 🟡 **i62-a15** Long names fit on the score card (S)
+- [ ] 🟠 **i62-a16** The long-shot horse loses money on average (S)
+- [ ] 🟠 **i62-a17** Hunting fills the freezer, not your wallet (S)
+- [ ] 🟠 **i62-a18** Snapping back at a rude customer costs something (S)
+- [ ] 🟠 **i62-a19** Mandatory overtime means it: refusing has a real cost (S)
+- [ ] 🟡 **i62-a20** Snow day: the unpaid day shouldn't win every way (S)
+- [ ] 🟠 **i62-a21** A test that flags event choices that beat the others on everything (M)
+- [ ] 🟠 **i62-a22** A broken-backup test: damaged codes all get plain messages (S)
+- [ ] 🟡 **i62-a23** A two-phone test: finish, reload, back up, restore in a clean browser (M)
+- [ ] 🟠 **i62-a24** The end screen offers to back up your records (S)
+- [ ] 🔴 **i62-a25** Bundle: Backups that forgive mistakes (M)
+- [ ] 🟠 **i62-a26** Bundle: Event choices with honest odds (M)
+
+</details>
+
+<details><summary><b>Ideas 62: Humor and charm</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i62-b01** Vern's '79 Ford tries to start (a running gag) (M)
+- [ ] 🔴 **i62-b02** Gerald the rooster weighs in on big choices (S)
+- [ ] 🔴 **i62-b03** The Tattler's correction that needs its own correction (S)
+- [ ] 🔴 **i62-b04** Callbacks: the third time, the game notices (M)
+- [ ] 🟠 **i62-b05** Your phone number used to be the feed store's (M)
+- [ ] 🟠 **i62-b06** Earl's knee forecast in the Tattler (S)
+- [ ] 🔴 **i62-b07** Funny result lines for Out and about visits (M)
+- [ ] 🟠 **i62-b08** Norman the garden gnome is on tour (M)
+- [ ] 🟡 **i62-b09** The lost and found box at City Hall (S)
+- [ ] 🟠 **i62-b10** Dueling church reader boards (S)
+- [ ] 🔴 **i62-b11** Silly numbers in the year in review (S)
+- [ ] 🟠 **i62-b12** The fish that grows every time you tell it (M)
+- [ ] 🟠 **i62-b13** The fruitcake that will not die (S)
+- [ ] 🟠 **i62-b14** New folks say "Touch-et" (S)
+- [ ] 🟡 **i62-b15** Doris the deer eats only your tulips (M)
+- [ ] 🟠 **i62-b16** Stand-in business names with gentle wordplay (S)
+- [ ] 🟡 **i62-b17** The council cat abstains (S)
+- [ ] 🟡 **i62-b18** Loading lines when a new life starts (S)
+- [ ] 🟠 **i62-b19** The BUMP sign on Highway 12 (S)
+- [ ] 🟠 **i62-b20** The concrete goose on 3rd Street dresses for the season (S)
+- [ ] 🟡 **i62-b21** Rare: the great tumbleweed drift (S)
+- [ ] 🟡 **i62-b22** Rare: the parade goes the wrong way (S)
+- [ ] 🟡 **i62-b23** Rare: onions on Highway 12 (S)
+- [ ] 🟠 **i62-b24** The harvest pageant: your kid is Potato #2 (S)
+- [ ] 🔴 **i62-b25** Classified ads that make you smile (S)
+- [ ] 🟠 **i62-b26** The check-engine light you've learned to ignore (S)
+- [ ] 🟠 **i62-b27** The long goodbye (S)
+- [ ] 🔴 **i62-b28** A gag tracker so running jokes pace and land (M)
+- [ ] 🟡 **i62-b29** The dog's monthly crimes report (S)
+- [ ] 🔴 **i62-b30** This week in 1952: the crosswalk debate (S)
+- [ ] 🟠 **i62-b31** Each focus gets its own funny result lines (M)
+- [ ] 🟠 **i62-b32** The old-timer's one joke at the hardware counter (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
