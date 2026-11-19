@@ -5661,6 +5661,77 @@ old ones.
 
 </details>
 
+## Ideas round 69 (pick on the build board)
+
+57 ideas. Details: [docs/ideas/round-69.md](docs/ideas/round-69.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 69: 0.2.1 release readiness</b> (27 ideas)</summary>
+
+- [ ] 🔴 **i69-a01** Add the 0.2.1 What's new list (12 entries) to js/ui.js (S)
+- [ ] 🔴 **i69-a02** Turn the 0.2.1 changelog into a full release entry (S)
+- [ ] 🔴 **i69-a03** Short player-facing release note for 0.2.1 (S)
+- [ ] 🟠 **i69-a04** Show 0.2.0's list too for players who skipped it (S)
+- [ ] 🟡 **i69-a05** Don't burn the What's new card when a sheet is already open (S)
+- [ ] 🔴 **i69-a06** First property tax bill warns before it lands on an old save (S)
+- [ ] 🔴 **i69-a07** Truckers from old saves keep their CDL (S)
+- [ ] 🟠 **i69-a08** One-time note when union dues start on an existing job (S)
+- [ ] 🟠 **i69-a09** Life story falls back to the Journal for years before 0.2.1 (S)
+- [ ] 🟠 **i69-a10** Spot-check Social Security on migrated retirees (S)
+- [ ] 🟠 **i69-a11** Warn when a backup is from a newer version (S)
+- [ ] 🟡 **i69-a12** First-week-back money re-roll check (S)
+- [ ] 🟡 **i69-a13** Long-time workers get credit toward the first promotion step (S)
+- [ ] 🟡 **i69-a14** Say that night theme now follows the phone (S)
+- [ ] 🔴 **i69-a15** Rebase #162, #163 and #164 and settle the overlaps (M)
+- [ ] 🔴 **i69-a16** One combined balance run on the final main (S)
+- [ ] 🔴 **i69-a17** Back up a live 0.2.0 save and restore it into the 0.2.1 beta (M)
+- [ ] 🔴 **i69-a18** Phone pass: update over 0.2.0 and play 10 weeks (M)
+- [ ] 🟠 **i69-a19** Phone pass: settings and feel (S)
+- [ ] 🟠 **i69-a20** Phone pass: End Week controls (S)
+- [ ] 🟠 **i69-a21** Balance spot checks by hand (M)
+- [ ] 🟠 **i69-a22** Check the What's new card on an upgraded save (S)
+- [ ] 🔴 **i69-a23** Pull the backup escaping fix (i64-a04/a05) into 0.2.1 (S)
+- [ ] 🟠 **i69-a24** Hold #162 (jobs and school) to 0.2.2 if it isn't green by cut (S)
+- [ ] 🟡 **i69-a25** Hold "Previously in the Burg" if the recap fights What's new (S)
+- [ ] 🟡 **i69-a26** Cut a 0.2.1 beta first, then promote (S)
+- [ ] 🟠 **i69-a27** Old Bluewood lift workers aren't laid off on the first summer week (S)
+
+</details>
+
+<details><summary><b>Ideas 69: Ten neighbors, ten stories</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i69-b01** Edna Harlow farms the home place alone (M)
+- [ ] 🔴 **i69-b02** Cal and Becca sign a lease on Main Street (M)
+- [ ] 🟠 **i69-b03** Danny Ruiz comes home from the Army (M)
+- [ ] 🔴 **i69-b04** Kayla Moss counts the days until she leaves (M)
+- [ ] 🟠 **i69-b05** Mrs. Albee, forty years of fourth grade, starts to forget (M)
+- [ ] 🟠 **i69-b06** The Medinas open a bakery on Main (M)
+- [ ] 🟠 **i69-b07** Hollis won't buy a scan tool (M)
+- [ ] 🟡 **i69-b08** Gus, the fire chief nobody will replace (M)
+- [ ] 🟡 **i69-b09** Morgan moves from Seattle with big plans (M)
+- [ ] 🟠 **i69-b10** Tess works nights and studies to be a nurse (M)
+- [ ] 🔴 **i69-b11** One neighbors table runs every arc (L)
+- [ ] 🔴 **i69-b12** Arcs stretch or squeeze to fit the game length (M)
+- [ ] 🔴 **i69-b13** Only one neighbor beat at a time (S)
+- [ ] 🟠 **i69-b14** Warmth: how close you are to each neighbor (M)
+- [ ] 🔴 **i69-b15** Helping a neighbor costs something real (S)
+- [ ] 🟠 **i69-b16** Skipped weeks don't lose a story (S)
+- [ ] 🔴 **i69-b17** How their stories ended, on the end screen (S)
+- [ ] 🟠 **i69-b18** Who's who: neighbor cards on the Life tab (M)
+- [ ] 🟠 **i69-b19** Neighbors fill in for 'a friend' in old events (M)
+- [ ] 🟡 **i69-b20** When two neighbors' stories cross (M)
+- [ ] 🟡 **i69-b21** Each neighbor has a spot on the town map (S)
+- [ ] 🟡 **i69-b22** Tap a name in the Journal to read their whole story (S)
+- [ ] 🟡 **i69-b23** When one story ends, a new neighbor moves in (M)
+- [ ] 🟡 **i69-b24** Neighbor stories: full, fewer or off (S)
+- [ ] 🟠 **i69-b25** Neighbor stories save safely and survive updates (S)
+- [ ] 🟠 **i69-b26** A test that walks every neighbor to every ending (M)
+- [ ] 🔴 **i69-b27** Sim check: neighbor stories don't reward idle play (S)
+- [ ] 🟡 **i69-b28** Help: your neighbors, in plain words (S)
+- [ ] 🟡 **i69-b29** Player-made characters fit the same arc shape (M)
+- [ ] 🟡 **i69-b30** Stand-in names in one list, shuffled each life (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
