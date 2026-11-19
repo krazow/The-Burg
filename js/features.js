@@ -463,7 +463,7 @@ function cattleWeek(lines, notes){
     B.cows--; notes.push(`🐄 Nobody had checked the herd in weeks, and a cow went missing in the foothills. ${B.cows} left.`); log('Lost a cow in the foothills.');
   }
   if (mo === 9 && B.soldYear !== y && B.calves) {
-    B.soldYear = y; const price = 0.75 + Math.random() * 0.5, v = cost(CALF_PRICE) * B.calves * price;
+    B.soldYear = y; const price = 0.75 + Math.random() * 0.5, v = cost(CALF_PRICE) * B.calves * price * (B.thin === y ? 0.9 : 1);   // i75-a16: thin calves after an ice storm
     lines.push([`🐄 ${B.calves} calves sold at auction`, v]); B.earned += v; B.calves = 0;
     notes.push(`🐄 Sale day at the livestock auction: calves went ${price >= 1.1 ? 'high' : price <= 0.9 ? 'cheap' : 'about average'} and you brought home ${fmt(v)}.`);
   }

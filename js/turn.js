@@ -88,6 +88,14 @@ function runChips(){
   return `<span class="delta ${dm>=0?'up':'down'}">${dm>=0?'+':''}${fmt(dm)}</span>` +
     d.map(([ic,v]) => `<span class="delta ${Math.abs(v) < 0.5 ? 'flat' : v>0?'up':'down'}">${ic} ${Math.abs(v) < 0.5 ? '±0' : (v>0?'▲':'▼') + Math.abs(Math.round(v))}</span>`).join('');
 }
+// i75-a22: weather events sit together on one storm card, with what the weather cost in one number
+function happenedRows(list){
+  const row = h => `<div class="kv"><span>${h.ic} ${esc(h.title)}</span><span style="color:${h.money<0?'var(--down)':'var(--up)'}">${h.money ? (h.money>0?'+':'') + fmt(h.money) : ''}</span></div>`;
+  const wx = list.filter(h => h.wx), rest = list.filter(h => !h.wx);
+  if (!wx.length) return rest.map(row).join('');
+  const sum = wx.reduce((a, h) => a + (h.money || 0), 0);
+  return `<div class="card wxcard" role="group" aria-label="Weather: ${wx.length} event${wx.length > 1 ? 's' : ''}${sum ? `, ${sum < 0 ? 'cost' : 'brought in'} ${fmt(Math.abs(sum))}` : ''}"><div class="kv"><span><b>🌦️ Weather</b></span><span style="color:${sum<0?'var(--down)':'var(--up)'}"><b>${sum ? (sum>0?'+':'') + fmt(sum) : '±$0'}</b></span></div>${wx.map(row).join('')}</div>${rest.map(row).join('')}`;
+}
 function showRunDetails(){
   const r = S.run; if (!r) return;
   const dm = S.money - r.money;
@@ -97,7 +105,7 @@ function showRunDetails(){
       ? `<button class="kv whyrow" aria-expanded="false" aria-controls="why${i}" data-why="${i}"><span>${l} <span class="info" aria-hidden="true">ⓘ</span></span><span style="color:${v<0?'var(--down)':'var(--up)'}">${v>0?'+':''}${fmt(v)}</span></button><div class="whytext hidden" id="why${i}">${why}</div>`
       : `<div class="kv"><span>${l}</span><span style="color:${v<0?'var(--down)':'var(--up)'}">${v>0?'+':''}${fmt(v)}</span></div>`).join('')}
       <div class="kv"><span><b>Paychecks and bills</b></span><span><b>${S.last.net>=0?'+':''}${fmt(S.last.net)}</b></span></div>` : ''}
-    ${r.happened.length ? `<h3 style="margin-top:12px">What happened</h3>${r.happened.map(h => `<div class="kv"><span>${h.ic} ${esc(h.title)}</span><span style="color:${h.money<0?'var(--down)':'var(--up)'}">${h.money ? (h.money>0?'+':'') + fmt(h.money) : ''}</span></div>`).join('')}` : ''}
+    ${r.happened.length ? `<h3 style="margin-top:12px">What happened</h3>${happenedRows(r.happened)}` : ''}
     <div class="kv"><span><b>Total change in cash</b></span><span><b>${dm>=0?'+':''}${fmt(dm)}</b></span></div>${tattlerLine()}
     ${S.last && S.last.why && S.last.why.length ? `<h3 style="margin-top:12px">Why your stats moved${r.weeks > 1 ? ' last week' : ''}</h3>${S.last.why.map(w => `<div class="logitem">${w}</div>`).join('')}` : ''}
     ${S.practice ? '' : '<button class="btn ghost" id="outlook">📅 Money outlook: next 13 weeks</button>'}
@@ -174,6 +182,7 @@ function showReview(rv){
     <p class="muted" style="text-align:center">${esc(S.name)} is ${age()} now.</p>
     ${row('Net worth', rv.start.nw, rv.end.nw, true)}${row('Happiness', rv.start.happy, rv.end.happy)}${row('Health', rv.start.health, rv.end.health)}${row('Community', rv.start.community, rv.end.community)}
     ${rv.milestones.length ? `<h3 style="margin-top:12px">Milestones</h3>${rv.milestones.map(m => `<div class="logitem">${esc(m)}</div>`).join('')}` : '<p class="muted">A quiet year.</p>'}
+    ${rv.wx && (rv.wx.cost >= 1 || rv.wx.saved >= 1) ? `<h3 style="margin-top:12px">🌦️ What the weather cost you</h3><div class="kv"><span>Storms, floods, heat and hard winters</span><span style="color:var(--down)">${fmt(rv.wx.cost)}</span></div>${rv.wx.saved >= 1 ? `<div class="kv"><span>What getting ready saved you</span><span style="color:var(--up)">${fmt(rv.wx.saved)}</span></div>` : ''}` : ''}
     <p class="muted">${rv.events} event${rv.events===1?'':'s'} this year.</p>
     <button class="btn primary" id="ok">On to ${rv.year + 1}</button>`);
   $('#ok').onclick = () => { closeSheet(); render(); };
@@ -253,7 +262,7 @@ function weekTick(auto){
     if (pensionVested()) { const p = pensionPay()*m; gross += p; lines.push(['Pension', p]); }
     if (S.k401 > 0) { const w = Math.min(S.k401, S.k401 * 0.04 * m / 12); S.k401 -= w; gross += w; lines.push(['401(k) withdrawal', w]); }
   }
-  else if (j) gross = jobPay(j, payNow(j) * m * (f.payMult||1), lines, f);   // i3: strikes, furloughs, clearances, union dues
+  else if (j) gross = jobPay(j, payNow(j) * m * (f.payMult||1) * wxPayF(j), lines, f);   // i75-a29: a short pack season in a dry year   // i3: strikes, furloughs, clearances, union dues
   gross += furloughBackPay(lines);
   if (j) workYear(j, m);                           // i3-a24/a25: years worked count toward Social Security and a public pension
   let k401 = 0;

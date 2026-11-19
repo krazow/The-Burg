@@ -132,7 +132,7 @@ const EVENTS = [
     text:'Snowmelt and rain have the river climbing. Neighbors are filling sandbags.',
     choices:() => [
       {label:'Help sandbag', go:() => { adj({community:6, health:-2, happy:2}); S.highWater = null; return 'Muddy, cold and proud. The town held the line.'; }},
-      {label:'Stay dry', go:() => { S.highWater = S.turn; if (S.home==='fixer' && chance(.4)) { adj({money:-cost(2500), happy:-6}); return `Water got in your basement. Cleanup cost ${fmtc(2500)}.`; } adj({community:-2}); return 'The water stayed in its banks this time.'; }}
+      {label:'Stay dry', go:() => { S.highWater = S.turn; if (S.home==='fixer' && chance(.4)) { const h = helpCut(floodBill(cost(2500))); adj({money:-h.c, happy:-6}); return `Water got in your basement. Cleanup cost ${fmt(h.c)}.${h.line}`; } adj({community:-2}); return 'The water stayed in its banks this time.'; }}
     ]},
   { ic:'🍷', title:'Wine country weekend', w:3, when:() => age() >= 21,
     text:'Friends are heading to Walla Walla tasting rooms on Saturday.',
@@ -155,7 +155,7 @@ const EVENTS = [
   { ic:'📈', title:'A raise', w:3, when:() => job() && !S.retired && S.jobMonths >= 12 && S.raise < 1.5,
     text:() => `Your boss at the ${job().title.toLowerCase()} job calls you in.`,
     choices:() => [{label:'Hear them out', go:() => { S.raise = Math.min(1.5, S.raise * 1.06); S.jobMonths = 0; adj({happy:5}); return `A 6% raise! You now make ${wk(payNow(job()))}.`; }}]},
-  { ic:'📉', title:'Layoffs', yr:1, w:() => 0.8 * (LAYOFF_RISK[S.jobId] ?? .5) * (mode() === 'hard' ? 1.6 : 1) * (job() && job().union ? 0.5 : 1), when:() => job() && !S.retired && S.jobMonths >= 9,
+  { ic:'📉', title:'Layoffs', yr:1, w:() => 0.8 * (LAYOFF_RISK[S.jobId] ?? .5) * (mode() === 'hard' ? 1.6 : 1) * (job() && job().union ? 0.5 : 1) * wxLayoffF(), when:() => job() && !S.retired && S.jobMonths >= 9,
     text:() => `Business is slow and cuts are coming at your ${job().title.toLowerCase()} job.`,
     choices:() => [
       {label:'Ask to stay on', go:() => { if (chance(.5 + S.community*0.003)) { adj({happy:-2}); return 'They kept you on. Phew.'; } const t = job().title; leaveJob('laid'); S.ui = 6; adj({happy:-10}); return `You were let go from your ${t.toLowerCase()} job. Check the job board.`; }},
