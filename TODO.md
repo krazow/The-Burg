@@ -4603,6 +4603,81 @@ old ones.
 
 </details>
 
+## Ideas round 55 (pick on the build board)
+
+61 ideas. Details: [docs/ideas/round-55.md](docs/ideas/round-55.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 55: Bundles part 7 and v1.1</b> (31 ideas)</summary>
+
+- [ ] 🔴 **i55-a01** Bundle: Bug-fix sweep: double taps, money and saving (M)
+- [ ] 🔴 **i55-a02** Bundle: Bug-fix sweep: keyboard focus after sheets (M)
+- [ ] 🔴 **i55-a03** Bundle: Bug-fix sweep: loading, backups and offline (M)
+- [ ] 🔴 **i55-a04** Bundle: Bug-fix sweep: the first hour (M)
+- [ ] 🔴 **i55-a05** Bundle: Round 50 cuts (M)
+- [ ] 🔴 **i55-a06** Bundle: One place for each thing (M)
+- [ ] 🟠 **i55-a07** Bundle: Plainer rules, shorter Help (M)
+- [ ] 🟠 **i55-a08** Bundle: Idea board prune (S)
+- [ ] 🔴 **i55-a09** Bundle: Golden path for a first life (L)
+- [ ] 🔴 **i55-a10** Bundle: Five moments every life has (M)
+- [ ] 🔴 **i55-a11** Bundle: Signature five and one word per thing (M)
+- [ ] 🟠 **i55-a12** Bundle: Numbers that read at a glance (M)
+- [ ] 🔴 **i55-a13** Bundle: Quality bar checks (M)
+- [ ] 🟠 **i55-a14** Bundle: First hour: jobs, rejections and early bills (M)
+- [ ] 🟠 **i55-a15** Bundle: First hour: a kinder first year (M)
+- [ ] 🟠 **i55-a16** Bundle: First-life check-ins (M)
+- [ ] 🔴 **i55-a17** Bundle: Ten-minute session: fewer taps per week (M)
+- [ ] 🟠 **i55-a18** Bundle: Ten-minute session: stop and pick up (M)
+- [ ] 🔴 **i55-a19** Bundle: Small towns: pins, via-stops and the rules (L)
+- [ ] 🔴 **i55-a20** Bundle: Friction threads that end in peace (L)
+- [ ] 🔴 **i55-a21** Bundle: Evenings: the night shift and the drive home (L)
+- [ ] 🟠 **i55-a22** Bundle: Evenings: daylight, Main Street at night and the sky (L)
+- [ ] 🔴 **i55-a23** Bundle: Clubs: join up and show up (L)
+- [ ] 🟠 **i55-a24** Bundle: Clubs: big events, doors and limits (L)
+- [ ] 🔴 **i55-a25** Bundle: Money as story: firsts and lean weeks (M)
+- [ ] 🟠 **i55-a26** Bundle: Money with neighbors: gifts, IOUs and tabs (M)
+- [ ] 🔴 **i55-a27** Bundle: Decade grades (M)
+- [ ] 🔴 **i55-a28** Bundle: Decade turns: the pressure points (M)
+- [ ] 🔴 **i55-a29** Bundle: Mentors: the old-timer who shows you the ropes (M)
+- [ ] 🔴 **i55-a30** Bundle: Mentors: passing it on (L)
+- [ ] 🔴 **i55-a31** Release plan: v1.1 — Easy to start, easy to come back to (L)
+
+</details>
+
+<details><summary><b>Ideas 55: The valley's changing work</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i55-b01** Jobs open and close with the game year (M)
+- [ ] 🔴 **i55-b02** 'New this year' tag on the job board (S)
+- [ ] 🔴 **i55-b03** A shrinking job warns you three years out (M)
+- [ ] 🟠 **i55-b04** Each field's pay grows at its own pace (M)
+- [ ] 🔴 **i55-b05** Solar installer crews in the wheat hills (M)
+- [ ] 🟠 **i55-b06** Drone spray pilot for the spring fields (M)
+- [ ] 🟠 **i55-b07** EV and hybrid tech in Walla Walla (S)
+- [ ] 🟠 **i55-b08** Battery yard technician by the substation (M)
+- [ ] 🔴 **i55-b09** Hanford winds down over the decades (M)
+- [ ] 🟠 **i55-b10** The last shift at Hanford (S)
+- [ ] 🔴 **i55-b11** Care work grows as the valley ages (M)
+- [ ] 🟠 **i55-b12** Home health aide on the farm roads (S)
+- [ ] 🟠 **i55-b13** Sorting robots come to the packing shed (M)
+- [ ] 🟠 **i55-b14** Office remote days grow with the years (S)
+- [ ] 🟠 **i55-b15** A coworking room above Main Street (M)
+- [ ] 🔴 **i55-b16** Evening bridge course before your job fades (M)
+- [ ] 🟠 **i55-b17** Boom jobs with an end date: the power line crew (M)
+- [ ] 🟠 **i55-b18** A new inn on Main Street hires a front desk (S)
+- [ ] 🟠 **i55-b19** Short-stay turnover: a tourism side gig (S)
+- [ ] 🟠 **i55-b20** Help lists when each job opened and when it fades (S)
+- [ ] 🔴 **i55-b21** Year in review: a 'Work in the valley' line (S)
+- [ ] 🟠 **i55-b22** The paper prints next year's hiring a year early (M)
+- [ ] 🟠 **i55-b23** A solar lease offer on your wheat ground (M)
+- [ ] 🟡 **i55-b24** Gone from the valley: jobs you outlived (S)
+- [ ] 🟡 **i55-b25** Farm equipment tech at the implement dealer (M)
+- [ ] 🟠 **i55-b26** Mentor pay: train the new trade late in your career (S)
+- [ ] 🟡 **i55-b27** Main Street jobs that thin out (S)
+- [ ] 🟡 **i55-b28** Vineyard irrigation tech as water gets tight (S)
+- [ ] 🟡 **i55-b29** Your kid's first job didn't exist when you were 18 (S)
+- [ ] 🔴 **i55-b30** Sim check: sixty years of the job board (M)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
