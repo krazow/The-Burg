@@ -3616,6 +3616,150 @@ old ones.
 
 </details>
 
+## Ideas round 42 (pick on the build board)
+
+62 ideas. Details: [docs/ideas/round-42.md](docs/ideas/round-42.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 42: Playtest of trips and commutes</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i42-a01** Trips in overtime and hustle weeks cost no time (S)
+- [ ] 🔴 **i42-a02** Errands in your work town aren't free fun (S)
+- [ ] 🔴 **i42-a03** The same stop every week stops being special (S)
+- [ ] 🟠 **i42-a04** Trip fun tops out like Rest does (S)
+- [ ] 🔴 **i42-a05** Walla Walla and Tri-Cities road events on a Dayton trip (S)
+- [ ] 🔴 **i42-a06** Carpool savings show up on every far job's gas (S)
+- [ ] 🟠 **i42-a07** The region map's town card shows the gas you really pay (S)
+- [ ] 🟡 **i42-a08** A trip's free gas changes when your job changes (S)
+- [ ] 🟠 **i42-a09** Road events follow the miles you drive (M)
+- [ ] 🟠 **i42-a10** Stop cards say how big the lift is (S)
+- [ ] 🟡 **i42-a11** The stock-up run says what it saves (S)
+- [ ] 🟠 **i42-a12** Stops you went to lately say so (S)
+- [ ] 🟠 **i42-a13** A trip receipt in the week strip (S)
+- [ ] 🟠 **i42-a14** Winter stops so Pasco isn't a one-taco town (M)
+- [ ] 🟡 **i42-a15** The carpool follows the town, not the job (S)
+- [ ] 🟠 **i42-a16** Dayton commuters can carpool too (S)
+- [ ] 🟠 **i42-a17** A Tri-Cities vanpool (M)
+- [ ] 🟡 **i42-a18** Gas as a share of pay on far job rows (S)
+- [ ] 🟡 **i42-a19** A crash pad night in the Tri-Cities (M)
+- [ ] 🟠 **i42-a20** Ask for another remote day (M)
+- [ ] 🟡 **i42-a21** Know the region counts towns you've worked in (S)
+- [ ] 🟠 **i42-a22** A trip away uses one Out and about visit (S)
+- [ ] 🟡 **i42-a23** Bring someone along (M)
+- [ ] 🟠 **i42-a24** An errand list that picks the town (M)
+- [ ] 🟠 **i42-a25** Your planned trip on the region map (S)
+- [ ] 🟡 **i42-a26** Town pins show what's in season (S)
+- [ ] 🟠 **i42-a27** The town card lists its stops, not just a count (S)
+- [ ] 🟡 **i42-a28** The truck shows your carpool and remote days (S)
+- [ ] 🟡 **i42-a29** This week's gas price on the region map (S)
+- [ ] 🔴 **i42-a30** Sim bots that test trip exploits (S)
+
+</details>
+
+<details><summary><b>Ideas 42: Who you are</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i42-b01** Early bird: first in, first tired (S)
+- [ ] 🟠 **i42-b02** Homebody: home is the best week (S)
+- [ ] 🟠 **i42-b03** Handy: fix it, but you can't leave it alone (S)
+- [ ] 🟠 **i42-b04** Chatty: everybody knows you, everybody talks (S)
+- [ ] 🔴 **i42-b05** Frugal: tight with a dollar (S)
+- [ ] 🔴 **i42-b06** A trait has two sides, shown on one line (S)
+- [ ] 🔴 **i42-b07** Traits come in pairs that pull apart (M)
+- [ ] 🔴 **i42-b08** The balance sim plays every trait pair (M)
+- [ ] 🟠 **i42-b09** Traits only pay when you lean into them (S)
+- [ ] 🔴 **i42-b10** Pick your interests: two things you care about (M)
+- [ ] 🟠 **i42-b11** Interest events: the history buff's walk (M)
+- [ ] 🟡 **i42-b12** Interest events: the gearhead at the car show (S)
+- [ ] 🟠 **i42-b13** Interests can be picked up later (S)
+- [ ] 🔴 **i42-b14** Your motto, picked or written at the start (S)
+- [ ] 🟠 **i42-b15** Did you live your motto? (M)
+- [ ] 🟡 **i42-b16** The motto speaks up when you drift (S)
+- [ ] 🔴 **i42-b17** How you see yourself vs how the town sees you (M)
+- [ ] 🟠 **i42-b18** When the gap gets big, you can change (S)
+- [ ] 🟠 **i42-b19** Traits soften and grow with age (M)
+- [ ] 🟠 **i42-b20** Life changes you: a trait earned from a big moment (M)
+- [ ] 🔴 **i42-b21** Character card on the Life tab (M)
+- [ ] 🟡 **i42-b22** The card keeps a short life line (S)
+- [ ] 🟡 **i42-b23** Traits and interests in the Tattler (S)
+- [ ] 🟠 **i42-b24** Pick traits by tapping a few questions (S)
+- [ ] 🟡 **i42-b25** Random traits for a surprise life (S)
+- [ ] 🟠 **i42-b26** No traits is a fine choice (S)
+- [ ] 🟠 **i42-b27** People react to your traits (M)
+- [ ] 🟡 **i42-b28** A partner whose traits fit or rub (M)
+- [ ] 🟡 **i42-b29** Kids pick up one of your traits (S)
+- [ ] 🟡 **i42-b30** The heir keeps the motto, not the traits (S)
+- [ ] 🟠 **i42-b31** End screen: who you were (S)
+- [ ] 🟡 **i42-b32** Trait help page in plain words (S)
+
+</details>
+
+## Ideas round 43 (pick on the build board)
+
+54 ideas. Details: [docs/ideas/round-43.md](docs/ideas/round-43.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 43: Accessibility audit</b> (29 ideas)</summary>
+
+- [ ] 🔴 **i43-a01** [Home] Week strip says its numbers, not just "details" (S)
+- [ ] 🔴 **i43-a02** [Event] Event text is read when the sheet opens (S)
+- [ ] 🔴 **i43-a03** [Event] The result sheet is named for the event, not "Message" (S)
+- [ ] 🔴 **i43-a04** [Home] Tabbed-to buttons scroll clear of the bottom bars (S)
+- [ ] 🔴 **i43-a05** [Tutorial] Tab stays inside the coach bubble and the lit spot (S)
+- [ ] 🟠 **i43-a06** [Tutorial] The coach bubble is read once, with a name (S)
+- [ ] 🟠 **i43-a07** [All] Toasts are announced once, not twice (S)
+- [ ] 🔴 **i43-a08** [All] Control borders reach 3:1 contrast (S)
+- [ ] 🟠 **i43-a09** [Title] The name box shows the blue focus ring (S)
+- [ ] 🟠 **i43-a10** [Life] The school progress bar is a real progress bar (S)
+- [ ] 🟠 **i43-a11** [Home] Stat buttons drop the <label> inside them (S)
+- [ ] 🟠 **i43-a12** [Title] Game length, Start and Mode are named groups (S)
+- [ ] 🟠 **i43-a13** [Help] "Back to contents" buttons say which section they leave (S)
+- [ ] 🟠 **i43-a14** [Sheets] The game behind a sheet or Help is inert (S)
+- [ ] 🟠 **i43-a15** [All] One h1 per screen and tab titles as h2 (S)
+- [ ] 🟡 **i43-a16** [Sheets] Dialog names skip the leading emoji (S)
+- [ ] 🟡 **i43-a17** [All] Decorative emoji are hidden from screen readers (M)
+- [ ] 🟠 **i43-a18** [Home] End Week says what it will do in plain words (S)
+- [ ] 🔴 **i43-a19** [Home] At 200% zoom the week strip no longer sits on End Week (M)
+- [ ] 🔴 **i43-a20** [Header] The header stops sticking when the screen is short (S)
+- [ ] 🟠 **i43-a21** [Header] Name and cash wrap instead of running together (S)
+- [ ] 🟠 **i43-a22** [Home] Stat cards go to one column when zoomed (S)
+- [ ] 🟡 **i43-a23** [Help] The contents list is one column on narrow screens (S)
+- [ ] 🟡 **i43-a24** [Sheets] Sheets appear without sliding when Reduce Motion is on (S)
+- [ ] 🟠 **i43-a25** [End] Read-heavy sheets put focus on the heading (S)
+- [ ] 🟠 **i43-a26** [Trip] Full or blocked stops can still be focused to hear why (S)
+- [ ] 🟠 **i43-a27** [Maps] Arrow keys move between map pins (M)
+- [ ] 🟡 **i43-a28** [Home] A skip link to End Week (S)
+- [ ] 🟠 **i43-a29** [Tests] Add these checks to the screen test (M)
+
+</details>
+
+<details><summary><b>Ideas 43: Performance audit</b> (25 ideas)</summary>
+
+- [ ] 🔴 **i43-b01** Save only the life you're playing (M)
+- [ ] 🔴 **i43-b02** Stop re-downloading the game on every launch (M)
+- [ ] 🔴 **i43-b03** Open Help without building the whole guide (M)
+- [ ] 🟠 **i43-b04** Empty the Help screen when it closes (S)
+- [ ] 🟠 **i43-b05** First visit downloads each file once, not twice (M)
+- [ ] 🟠 **i43-b06** Minify the scripts in the release kit (M)
+- [ ] 🟠 **i43-b07** Load Help and the tutorial on first tap (S)
+- [ ] 🟠 **i43-b08** Paint the title screen before the big event tables (M)
+- [ ] 🟠 **i43-b09** Event Journal lines save their kind (S)
+- [ ] 🟠 **i43-b10** Journal lines keep the week number, not the date text (S)
+- [ ] 🟠 **i43-b11** Cap what one End Week remembers (S)
+- [ ] 🟠 **i43-b12** Switching tabs redraws only the tab (M)
+- [ ] 🟠 **i43-b13** One save and one redraw per event week (S)
+- [ ] 🟠 **i43-b14** A tiny slot list for the title screen (S)
+- [ ] 🟡 **i43-b15** Forget event cooldowns that ran out (S)
+- [ ] 🟡 **i43-b16** Build the region map's rivers once (S)
+- [ ] 🟡 **i43-b17** Cache the Help guide text by version (S)
+- [ ] 🟡 **i43-b18** Let the browser skip off-screen Journal lines (S)
+- [ ] 🟡 **i43-b19** Jobs tab works out take-home pay once a week (M)
+- [ ] 🟡 **i43-b20** Copy a life without the JSON round-trip (S)
+- [ ] 🟡 **i43-b21** Keep the save small as features grow: a save-size line in the sim (S)
+- [ ] 🟡 **i43-b22** Cache index.html once, not twice (S)
+- [ ] 🟠 **i43-b23** A backup file that's 7 KB, not 125 KB (S)
+- [ ] 🟡 **i43-b24** Build the Jobs list while the phone is idle (S)
+- [ ] 🟡 **i43-b25** Run the old-save move once, not on every save (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
