@@ -184,7 +184,7 @@ await t.check('every event\'s every choice works and shows a result', async () =
   }
   assert(tried >= titles.length, `only ${tried} choices across ${titles.length} events`);
   const cats = await page.evaluate(() => ['road', 'work'].map(c => EVENTS.filter(e => e.cat === c).length));
-  assert(cats[0] === 31 && cats[1] === 34, `expected 31 road and 34 work events (with the contract vote, the federal shutdown, a personal day and desk stiffness), got ${cats}`);
+  assert(cats[0] === 32 && cats[1] === 37, `expected 32 road and 37 work events (with the contract vote, the federal shutdown, a personal day, desk stiffness and round 75's wind on Highway 12, smoke rule, de-icing and Hanford heat), got ${cats}`);
   console.log(`     (${tried} choices across ${titles.length} events)`);
 });
 
@@ -232,7 +232,7 @@ await t.check('W8 and W14 keep what you chose: a generator stops later outages, 
     const lab = EVENTS.find(e => e.title === 'Ice storm knocks out power').choices().filter(c => !c.if || c.if()).map(c => c.label);
     return { gen: S.generator, cat: S.cat, res, kept: S.money === m && S.happy === h, lab, bill: billLines().some(([l]) => l === 'Cat food') }; });
   assert(r.gen && r.cat && r.kept && /generator/.test(r.res), JSON.stringify(r));
-  assert(r.lab.length === 2 && /generator/.test(r.lab[1]), `the ice storm still offers a generator: ${r.lab}`);
+  assert(/generator/.test(r.lab[1]) && !r.lab.some(l => /Buy a generator/.test(l)), `the ice storm runs the generator instead of offering one: ${r.lab}`);
   assert(r.bill, 'no cat food on the weekly bills');
   await page.click('[data-tab=life]');
   const txt = await page.textContent('#main');

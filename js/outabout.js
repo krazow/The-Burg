@@ -287,9 +287,9 @@ JOBS.push(
   {id:'grocer',    city:'waitsburg', title:'Grocery clerk',     where:'Burg Basket Grocery', place:'basket',  pay:3100, edu:0, stress:.3, wear:.4},
   {id:'reporter',  city:'waitsburg', title:'Reporter',          where:'The Touchet Tattler', place:'tattler', pay:3150, edu:0, stress:.6, wear:.1},
   {id:'teller',    city:'waitsburg', title:'Bank teller',       where:'Standard Bearer Bank',place:'bank',    pay:3250, edu:0, stress:.5, wear:0},
-  {id:'apprentice',city:'waitsburg', title:'Trades apprentice', where:'Sharp Point Builders',place:'trades',  pay:3400, edu:0, stress:.4, wear:1.0},
+  {id:'apprentice',city:'waitsburg', title:'Trades apprentice', where:'Sharp Point Builders',place:'trades',  pay:3400, edu:0, stress:.4, wear:1.0, outdoor:1},
   {id:'medasst',   city:'waitsburg', title:'Medical assistant', where:'The Burg Clinic',     place:'clinic',  pay:3300, edu:1, stress:.5, wear:.3},
-  {id:'agtech',    city:'waitsburg', title:'Ag technician',     where:'McGrub & Grain Co.',  place:'mcgrub',  pay:3600, edu:1, stress:.4, wear:.5}
+  {id:'agtech',    city:'waitsburg', title:'Ag technician',     where:'McGrub & Grain Co.',  place:'mcgrub',  pay:3600, edu:1, stress:.4, wear:.5, outdoor:1}
 );
 Object.assign(LAYOFF_RISK, { barista:1, grocer:.5, reporter:1, teller:.5, apprentice:1, medasst:.2, agtech:.5 });
 // where each Waitsburg job is on the town map (its spot becomes the "Work extra hours" place)

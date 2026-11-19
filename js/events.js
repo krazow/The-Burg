@@ -210,11 +210,10 @@ const EVENTS = [
       {label:`Emergency dentist in Walla Walla (-${fmtc(650)})`, go:() => { adj({money:-Math.round(cost(650)), health:-1}); S.dentist = S.turn; return 'A root canal later, you can chew again. A yearly checkup would have caught it.'; }},
       {label:'Tough it out', go:() => { adj({health:-4, happy:-4}); return 'Ice packs and ibuprofen. It still hurts.'; }}
     ]},
+  // i75-a12: owners lose shingles, and every roofer in the valley is booked for weeks (windChoices, below)
   { ic:'🌬️', title:'Windstorm', w:2,
-    text:'A big wind tears through the valley overnight.',
-    choices:() => [{label:'Check the damage', go:() => {
-      if (HOMES[S.home].own) { const c = Math.round(cost(1200) * (1 - skillLv('handy') * 0.15)), p = youPay('home', c); adj({money:-p, happy:-3}); practice('handy', 1); return `You lost shingles. Sharp Point Builders fixed the roof: ${fmt(c)}${skillLv('handy') ? ' (you did part of it yourself)' : ''}.${covered(c, p)}`; }
-      if (S.generator) return 'Power was out a day, but your generator kept the fridge cold.'; adj({money:-cost(60), happy:-1}); return 'Power was out a day and the fridge food spoiled.'; }}]},
+    text:() => `A big wind tears through the valley overnight.${HOMES[S.home].own ? ' Shingles are scattered across the yard, and every roofer in the valley is suddenly booked.' : ''}`,
+    choices:() => windChoices() },
   { ic:'🧅', title:'Walla Walla Sweets are in', yr:1, w:3, when:m => inM(m,5,6),
     text:'The sweet onion harvest is here.',
     choices:() => [
@@ -308,7 +307,7 @@ const EVENTS = [
   { ic:'🌫️', title:'Wildfire smoke over the valley', yr:1, w:4, when:m => inM(m,7,8) && S.smoke === new Date(S.date).getFullYear(),
     text:() => `Fires in the Cascades sent smoke over the whole valley. The sky is orange, and the winemakers are worried about this year's grapes${(S.wine || []).length ? '' : ' (and this fall\'s wine futures)'}.`,
     choices:() => [
-      {label:'Stay inside with the windows shut', go:() => { adj({happy:-2}); return 'A week of board games and a box fan.'; }},
+      {label:'Stay inside with the windows shut', go:() => { if (airFilterOn()) { adj({happy:-2}); return 'A week of board games, and the box-fan filter kept the air inside clean.'; } adj({happy:-2, health:-2}); return 'A week of board games, a scratchy throat and a headache by Friday.'; }},
       {label:`Drive up to Bluewood for clean air (-${fmtc(40)})`, go:() => { adj({money:-cr(40), happy:2, health:1}); return 'Blue sky above the smoke line.'; }}
     ]},
   { ic:'🏀', title:'Friday night game', w:2, when:m => inM(m,0,1,2,8,9,10,11),
@@ -326,7 +325,10 @@ const EVENTS = [
    ============================================================ */
 // small state these events keep (new lives get it in newGame, older saves in migrate)
 const EVENT_STATE = () => ({ roadTo:null, healthPlan:null, skiPass:null, snowChains:null, gasFriend:false, applyBoost:0, hireBy:-1,
-  tradeBy:-1, raiseBoost:0, promoBoost:0, promo:null, danceBoost:false, ...townStateA() });   // danceBoost: W27
+  tradeBy:-1, raiseBoost:0, promoBoost:0, promo:null, danceBoost:false, ...townStateA(),   // danceBoost: W27
+  // round 75 weather, part 2: the smoke rule at work, the air filter, a roof on the waiting list, the raised furnace,
+  // a vacation day spent on an outage, the neighbor's walk, and the block captain's storm plan
+  smokeRule:null, airFilter:null, roofWait:null, floodAsk:null, vacDay:null, walk:false, walkWinter:null, walkWinters:0, walkPie:false, captain:null });
 // the doc's job groups, mapped to every job in JOBS
 const JOB_GROUP = { farmhand:'field', cellar:'field', onion:'field', foodplant:'field', hanford:'field', lift:'field', airport:'field', agtech:'field',
   insure:'office', clerk:'office', loan:'office', labadmin:'office', prof:'office', scientist:'office', teller:'office', reporter:'office',
@@ -891,3 +893,157 @@ Object.assign(EVENT_PLACE, {
   "Neighbor's tree takes out your fence":['T','home'], 'Barn dance at the fairgrounds':['T','fair'], 'Wild turkeys strut down Main Street':['T','mainst'],
   'Graduation party invitations':['T','school'], 'Rattlesnake in the woodpile':['T','home']
 });
+
+/* ============================================================
+   🌦️ WEATHER AND HARD YEARS, part 2 (ideas round 75): smoke at work and at home, roofs and deductibles after a
+   windstorm, the furnace after a flood, the power going out, snow on the neighbor's walk, wind on Highway 12,
+   winter and summer work scenes, and a block captain's storm plan. The Life tab's weather card is in features.js.
+   ============================================================ */
+// they read the shared weather year (weather.js: wxSmoke, wxHeat, wxHard, wxMild, thisYear, winterYear)
+const smokeYear = () => wxSmoke();
+const heatYear = () => wxHeat();
+const SMOKE_RULE_MONTHS = [6, 7];                     // July and August
+const outdoorJob = () => working() && !!job().outdoor;
+const smokeRuleWeek = () => SMOKE_RULE_MONTHS.includes(curMonth()) && outdoorJob() && smokeYear();   // cheap checks first: no weather roll for others
+const pushingSmoke = () => !!(S.smokeRule && S.smokeRule.y === thisYear() && S.smokeRule.push);
+// i75-a07: in a smoke week outdoor crews work shorter days (pay ×0.9, wear ×0.5), unless you chose to push through
+const SMOKE_PAY = 0.9, SMOKE_WEAR = 0.5, SMOKE_SICK = 0.08;
+const smokePayMult = () => smokeRuleWeek() && !pushingSmoke() ? SMOKE_PAY : 1;
+const smokeWearMult = () => smokeRuleWeek() && !pushingSmoke() ? SMOKE_WEAR : 1;
+const airFilterOn = () => S.airFilter === thisYear();           // i75-a08: good for this year's smoke
+const isCaptain = () => !!S.captain;                            // i75-a33
+const peopleHome = () => !!(S.partner || kidsAtHome() || S.community >= 30);
+const FLOOD_PROOF_OFF = 0.8;                                    // i75-a14: a raised furnace cuts flood cleanup 80%
+const ROOF_RUSH = 0.3, ROOF_WAIT = [4, 8], ROOF_LEAK = 0.05;    // i75-a12
+// i75-a33: running the block's storm plan takes an evening and keeps the street together
+function runPlan(what){
+  S.captain.runs = (S.captain.runs || 0) + 1; adj({community:3, happy:-1}); helpOut();   // i75-a18: the street remembers
+  return `You worked the phone tree, checked on the neighbors who live alone and lent out the generator after ${what}. ${S.captain.runs > 1 ? `That's ${S.captain.runs} storms your street has come through together.` : 'Your street came through it together.'}`;
+}
+function roofWaitList(c){
+  S.roofWait = { at: S.turn + ri(ROOF_WAIT[0], ROOF_WAIT[1]), c };
+  return `Sharp Point Builders can come in about ${S.roofWait.at - S.turn} weeks. A blue tarp will have to do until then.`;
+}
+// i75-a12/a13: the windstorm's choices. Owners pick how the roof gets fixed; renters lose a day of power.
+function windChoices(){
+  const own = !!HOMES[S.home].own;
+  const plan = isCaptain() ? [{label:own ? 'Run the block\'s storm plan, and get on a roofer\'s list' : 'Run the block\'s storm plan (an evening)',
+    go:() => runPlan('the windstorm') + (own ? ' ' + roofWaitList(roofCost()) : '')}] : [];
+  if (!own) return outageChoices('Check the damage', () => { if (S.generator) return 'Power was out a day, but your generator kept the fridge cold.'; adj({money:-cost(60), happy:-1}); return 'Power was out a day and the fridge food spoiled.'; }, 'the windstorm');
+  const c = roofCost(), p = youPay('home', c, 'wind'), rush = Math.round(c * ROOF_RUSH), diy = Math.round(c * 0.5);
+  return [...plan,
+    {label:`Get on a roofer's list (you pay ${fmt(p)} when they come)`, go:() => { adj({happy:-1}); return roofWaitList(c); }},
+    {label:`Pay a crew from out of town to come now (${fmt(p + rush)})`, go:() => { const h = helpCut(c), p2 = youPay('home', h.c, 'wind'); adj({money:-(p2 + rush), happy:-1});
+      return `A crew from Spokane had it done by Saturday: ${fmt(h.c)} of work, plus ${fmt(rush)} extra to jump the line that insurance won't cover.${h.line}${covered(h.c, p2)}`; }},
+    {label:`Fix it yourself (${fmt(diy)} in shingles)`, if:() => skillLv('handy') >= 1, go:() => { adj({money:-diy}); practice('handy', 2);
+      if (chance(0.12)) { const b = Math.round(medBill(150)); adj({money:-b, health:-5, happy:-2}); return `The roof is fixed, but you slipped on the ladder and wrenched a shoulder. Urgent care cost ${fmt(b)}.`; }
+      adj({happy:2}); return 'Two days on the roof with a nail gun. It\'s tight again, and it cost half what a roofer charges.'; }}
+  ];
+}
+const roofCost = () => Math.round(cost(ri(1000, 4000)) * (1 - skillLv('handy') * 0.15));
+
+// i75-a19/a26/a33: an outage's choices. The outage's own cost (base) always happens; remote workers also decide about the
+// work day, people at home can make an evening of it, and a block captain runs the plan.
+function outageChoices(label, base, what){
+  const remote = working() && !!job().remote, g = Math.round(tripGas('wallawalla')), day = Math.round(dayPay()), list = [];
+  const both = extra => () => `${base()} ${extra()}`;
+  if (isCaptain()) list.push({label:'Run the block\'s storm plan (an evening)', go:both(() => runPlan(what))});
+  if (remote) {
+    list.push({label:`Work from the library in Walla Walla (gas about ${fmt(g)})`, go:both(() => { adj({money:-g, happy:-1}); return 'You worked from a table by the outlets at the Walla Walla library, with half the valley\'s remote workers.'; })});
+    if (S.vacDay !== thisYear()) list.push({label:'Take a vacation day', go:both(() => { S.vacDay = thisYear(); return 'You used a vacation day and read by the window. The boss understood.'; })});
+    list.push({label:`Miss the work day (-${fmt(day)})`, go:both(() => { adj({money:-day}); return `No power, no internet, no remote day: ${fmt(day)} of pay.`; })});
+  } else list.push({label, go:base});
+  if (peopleHome()) list.push({label:remote ? `Call it a day: cards by lantern (-${fmt(day)})` : 'Cards by lantern', go:both(() => { if (remote) adj({money:-day}); adj({happy:3, community:1});
+    return `Then rummy by lantern light with ${S.partner || kidsAtHome() ? 'the family' : 'the neighbors'}. Nobody wanted the power back.`; })});
+  return list;
+}
+
+const WX2_EVENTS = [
+  // i75-a07: Washington's wildfire-smoke rule for outdoor workers, in plain terms
+  { ic:'😷', title:'The smoke rule at work', wx:1, cat:'work', yr:1, w:6, when:() => smokeRuleWeek() && !(S.smokeRule && S.smokeRule.y === thisYear()),
+    text:'The air quality reading is in the unhealthy range again. State rules say outdoor crews get masks, more breaks and shorter days when the smoke is this thick.',
+    choices:() => [
+      {label:'Wear the mask and go home early (10% less pay, half the wear)', go:() => { S.smokeRule = { y: thisYear(), push:false }; return 'A mask, water breaks in the shade and home by two. The paychecks run a little light until the smoke clears.'; }},
+      {label:'Push through for full pay', go:() => { S.smokeRule = { y: thisYear(), push:true }; adj({happy:1}); return 'Full days in the haze. Your throat is scratchy by quitting time.'; }}
+    ]},
+  // i75-a09: a cough, a rescue inhaler, a better week after
+  { ic:'🫁', title:'A cough in a smoke week', wx:1, yr:1, w:4, when:m => inM(m,6,7,8) && kidsAtHome() > 0 && smokeYear(),
+    text:() => `The smoke is thick again, and your ${kidsAtHome() > 1 ? 'youngest' : 'kid'} has a tight, wheezy cough that won't quit.${airFilterOn() ? ' The box-fan filter is humming in the living room.' : ''}`,
+    choices:() => { const clinic = Math.round(medBill(120) + dayPay() / 2); return [
+      {label:`Take them to The Burg Clinic (-${fmt(clinic)}, half a day)`, go:() => { adj({money:-clinic}); return 'A rescue inhaler and a plan for smoky days. By the weekend the cough was easing.'; }},
+      {label:'Keep everyone inside this week', go:() => { if (airFilterOn()) return 'Windows shut and the filter humming. Board games all week, and the cough settled down.';
+        adj({happy:-1}); return 'Windows shut and a stuffy house. Cabin fever for you, but the cough settled down.'; }},
+      {label:'Send them to day camp anyway', go:() => { if (chance(airFilterOn() ? 0.2 : 0.4)) { const b = Math.round(medBill(450)); adj({money:-b, happy:-3});
+        return `The cough got worse at camp. Urgent care in Walla Walla and a breathing treatment cost ${fmt(b)}. They were fine by morning.`; }
+        adj({happy:1}); return 'They came home dusty and happy, and coughing less than you feared.'; }}
+    ]; }},
+  // i75-a14: after the flood, raise the furnace and water heater off the basement floor
+  { ic:'🔧', title:'After the flood: the furnace', w:6, when:() => !!(S.chains && S.chains.levee) && S.floodAsk !== S.home && (S.home === 'fixer' || !HOMES[S.home].own),
+    text:() => HOMES[S.home].own ? 'Everyone who got water in the basement is saying the same thing: raise the furnace and the water heater up on blocks before the river comes up again.'
+      : 'Everyone who got water in the basement is saying the same thing: raise the furnace and the water heater up on blocks before the river comes up again. It\'s not your furnace, though.',
+    choices:() => HOMES[S.home].own ? [
+      {label:`Raise them up (-${fmt(cost(HOMES[S.home].cost))})`, go:() => { S.floodAsk = S.home; adj({money:-Math.round(cost(HOMES[S.home].cost))}); S.floodProof = S.home; practice('handy', 1); return `A plumber and a pallet of blocks. If the Touchet gets in again, the cleanup will cost about ${FLOOD_PROOF_OFF * 100}% less.`; }},
+      {label:'Leave them where they are', go:() => { S.floodAsk = S.home; return 'The furnace stays on the floor. Here\'s hoping the levee holds.'; }}
+    ] : [{label:'Mention it to your landlord', go:() => { S.floodAsk = S.home; adj({community:1}); return 'Your landlord said they\'d look into it. It\'s their furnace, after all.'; }}]},
+  // i75-a25: high wind closes Highway 12 to trucks
+  { ic:'🚛', title:'High wind closes Highway 12 to trucks', wx:1, cat:'road', yr:1, w:2, when:m => inM(m,2,3,4,9,10),
+    text:() => S.jobId === 'trucker' && working() ? 'Gusts over 50 near Wallula. The state closed US-12 to high-profile trucks, and your load is due today.'
+      : 'Gusts over 50 on the open stretch of US-12. Trucks are parked on the shoulder, and the crosswind is shoving cars around.',
+    choices:() => S.jobId === 'trucker' && working() ? [
+      {label:`Park the rig and wait it out (-${fmt(dayPay())})`, go:() => { const p = Math.round(dayPay()); adj({money:-p, happy:-1}); return `A day in the truck stop with coffee and the weather radio: ${fmt(p)} of pay.`; }},
+      {label:`Take the long way around (gas about ${fmtc(70)}, a long day)`, go:() => { adj({money:-cr(70), health:-2}); return 'Three extra hours behind the wheel, but the load got there.'; }}
+    ] : [
+      {label:'Slow down and keep both hands on the wheel', go:() => { adj({happy:-1}); return 'Forty-five miles an hour the whole way, and you got there late.'; }},
+      {label:'Keep up your speed', go:() => { if (chance(0.12)) { const c = cr(1100), p = youPay('auto', c); adj({money:-p, health:-1, happy:-2}); return `A gust pushed you onto the shoulder and into a road sign. The repair ran ${fmt(c)}.${covered(c, p)}`; }
+        return 'White knuckles, but you made it on time.'; }}
+    ]},
+  // i75-a27: freezing fog off the river near Wallula, and planes to de-ice before the first flights
+  { ic:'🛫', title:'De-icing planes at 5 a.m.', wx:1, cat:'work', yr:1, w:5, when:m => working() && S.jobId === 'airport' && inM(m,11,0,1),
+    text:'Freezing fog rolled in off the Columbia near Wallula overnight, and every plane at the Pasco airport needs de-icing before the first flights. The lead wants volunteers at 4:30.',
+    choices:() => [
+      {label:`Take the early shifts this week (+${fmt(weekPay() * 0.25)})`, go:() => { const v = Math.round(weekPay() * 0.25); adj({money:v, health:-3, happy:-1}); return `Glycol spray in the dark and frozen fingers, and ${fmt(v)} of overtime.`; }},
+      {label:'Regular hours', go:() => { adj({happy:1}); return 'You came in at seven. The early crew looked frozen.'; }}
+    ]},
+  // i75-a28: summer heat in the protective suit at Hanford
+  { ic:'🥵', title:'Heat limits in the suit at Hanford', wx:1, cat:'work', yr:1, w:5, when:m => working() && S.jobId === 'hanford' && inM(m,6,7) && heatYear(),
+    text:'It\'s over 100 out on the site, and inside the protective suit it\'s worse. Safety has set short stay times and long cool-down breaks.',
+    choices:() => [
+      {label:`Follow the stay times (-${fmt(dayPay())} this week)`, go:() => { const p = Math.round(dayPay()); adj({money:-p, health:1}); return `Short shifts and cold water in the shade. A little less pay (${fmt(p)}), and you felt fine.`; }},
+      {label:`Push for the overtime (+${fmt(weekPay() * 0.2)})`, go:() => { const v = Math.round(weekPay() * 0.2); adj({money:v, health:-3});
+        if (chance(0.25)) { const p = Math.round(dayPay()); adj({money:-p, health:-3}); return `You got dizzy in the suit on Thursday and spent a day home recovering. ${fmt(v - p)} extra after the lost day.`; }
+        return `Long, hot shifts and ${fmt(v)} of overtime.`; }}
+    ]}
+];
+EVENTS.push(...WX2_EVENTS);
+Object.assign(EVENT_PLACE, { 'The smoke rule at work':'work', 'A cough in a smoke week':['T','home'], 'After the flood: the furnace':['T','home'],
+'High wind closes Highway 12 to trucks':'road', 'De-icing planes at 5 a.m.':'work', 'Heat limits in the suit at Hanford':'work' });
+
+// each week (turn.js): the smoke rule's sick days, the roof on the waiting list, the raised furnace and the neighbor's walk
+function weatherLines(lines, notes){
+  if (smokeRuleWeek() && pushingSmoke() && chance(SMOKE_SICK)) {
+    const p = Math.round(dayPay() * 3); wxCostAdd(p); lines.push(['Sick days (smoke)', -p, 'Three days home with a smoke cough after pushing through full shifts in the haze.']);
+    adj({health:-5, happy:-2}); notes.push(`😷 Full days in the smoke caught up with you: three days home sick with a cough (${fmt(p)} of pay).`); log('Missed three days of work with a smoke cough.');
+  }
+  if (S.floodProof && S.floodProof !== S.home) S.floodProof = null;          // the blocks stay with the house you sold
+  if (S.roofWait) {
+    if (!HOMES[S.home].own) S.roofWait = null;                                // sold: the buyer deals with the roof
+    else if (S.turn >= S.roofWait.at) {
+      const h = helpCut(S.roofWait.c), c = h.c, p = youPay('home', c, 'wind'); S.roofWait = null; wxCostAdd(p);
+      lines.push(['Roof repair (after the windstorm)', -p, `Sharp Point Builders replaced the shingles: ${fmt(c)} of work.${covered(c, p)}`]);
+      notes.push(`🏠 The roofer finally came: the roof is fixed. You paid ${fmt(p)}.${h.line}${covered(c, p)}`); log('The roof is fixed after the windstorm.');
+    } else {
+      adj({happy:-1});
+      if (inM(curMonth(), 9, 10, 11, 0, 1, 2, 3, 4) && !S.roofWait.leak && chance(ROOF_LEAK)) {
+        const d = cr(700), p = youPay('home', d); S.roofWait.leak = true; wxCostAdd(p);
+        lines.push(['Water damage under the tarp', -p]); notes.push(`💧 Rain got under the tarp and stained the bedroom ceiling: ${fmt(p)}.`);
+      }
+    }
+  }
+  // i75-a21: a snowy week (about one in three December to March; half in a hard winter, one in seven in a mild one)
+  if (S.walk && inM(curMonth(), 11, 0, 1, 2) && chance(wxHard() ? 0.5 : wxMild() ? 0.15 : 0.35)) {
+    adj({health:isCaptain() ? -0.5 : -1, community:1});
+    if (S.walkWinter !== winterYear()) { S.walkWinter = winterYear(); S.walkWinters = (S.walkWinters || 0) + 1;
+      notes.push(`❄️ First snow of the winter: you cleared Edna's walk next door before breakfast${isCaptain() ? ', and the block\'s shovel crew took the rest' : ''}.`); }
+    if (S.walkWinters >= 3 && !S.walkPie) { S.walkPie = true; adj({happy:3, community:2}); helpOut();   /* she's one of your storm debts now */ notes.push('🥧 A pie on the porch: Edna next door says thank you for three winters of a clear walk.'); log('Edna next door left a pie on the porch for three winters of shoveling.'); }
+  }
+}

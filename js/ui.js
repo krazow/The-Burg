@@ -559,7 +559,7 @@ function renderHome(){
     ${prefs().mapView ? previewLine(S.focus) : ''}
     ${planLine()}
     ${outButton()}
-  </div></div>
+  </div>${walkCard()}</div>
   <aside class="hside" aria-label="At a glance">
   <div class="card sumrow">
     <button class="sumchip" data-go="jobs">${work}</button>
@@ -574,6 +574,7 @@ function renderHome(){
   $('#outbtn').onclick = outSheet;
   document.querySelectorAll('#main .fbtn[data-f]').forEach(b => b.onclick = () => { handFocus(b.dataset.f); const n = document.querySelector(`.fbtn[data-f="${S.focus}"]`); if (n) n.focus({ preventScroll: true }); const p = $('#fprev'); if (p) announce(p.textContent.replace(/\s+/g, ' ').trim()); });
   $('#planbtn').onclick = planSheet;
+  walkWire();
   document.querySelectorAll('[data-stat]').forEach(b => b.onclick = () => showStatInfo(b.dataset.stat));
   if ($('#scorenow')) $('#scorenow').onclick = showScoreNow;
   document.querySelectorAll('[data-sugg]').forEach(b => b.onclick = () => handFocus(b.dataset.sugg, true));
@@ -846,6 +847,7 @@ ${S.edu < 3 ? firstTime('school') : ''}${eduCard()}
     <div class="kv"><span><b>Total</b></span><span><b>${wk(cost(insMonthly()))}</b></span></div>
     <button class="sm alt" id="inssheet">Change coverage</button>
   </div>
+  ${S.practice ? '' : weatherCard()}
   ${S.practice ? '' : investCard()}
   <div class="card"><h3>🛻 Ride</h3>
     ${Object.entries(CARS).map(([k,c]) => {
@@ -891,6 +893,7 @@ ${S.edu < 3 ? firstTime('school') : ''}${eduCard()}
   document.querySelectorAll('[data-k401]').forEach(b => b.onclick = () => { S.k401rate = +b.dataset.k401; save(); renderLife(); toast(`Saving ${K401[S.k401rate]*100}% of each paycheck`); });
   // round 3: insurance, the house, crop and herd, investing
   if ($('#inssheet')) $('#inssheet').onclick = () => insSheet();
+  weatherWire();
   if ($('#refi')) $('#refi').onclick = () => { sheet(`<h2>📉 Refinance?</h2><p>Standard Bearer Bank would redo your mortgage at ${S.rate.toFixed(2)}%: ${wk(S.mortgage)} becomes ${wk(refiPay())}. Closing costs are ${fmt(refiFee())}, paid now.</p>
       <p class="muted">It pays for itself in about ${Math.ceil(refiFee() / Math.max(1, S.mortgage - refiPay()))} months, so it's worth it if you'll stay a while.</p><button class="btn primary" id="y">Refinance</button><button class="btn ghost" id="no">Not now</button>`);
     $('#y').onclick = () => { if (refinance()) { closeSheet(); save(); render(); toast('📉 Refinanced'); } }; $('#no').onclick = closeSheet; };
