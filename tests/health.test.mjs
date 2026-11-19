@@ -88,10 +88,10 @@ await t.check('i74-a04 + a08: dental and the ambulance district are on the insur
     S.ins.dental = true; const free = stopCost(stopById('dentist'));
     return { base, noAmb, amb, withAll, crown, crownNo, free, note: res.notes.join(' ') };
   });
-  assert(near(r.base, 160), `defaults unchanged ${r.base}`);
+  assert(near(r.base, 220), `defaults unchanged ($220 at Washington prices, i75-b26) ${r.base}`);
   assert(r.noAmb - r.amb > 1150 && r.noAmb - r.amb < 1250, `ride bill ${r.noAmb} vs ${r.amb}`);
   assert(/ambulance/.test(r.note), r.note);
-  assert(near(r.withAll, 160 + 28 + 5), `with dental and ambulance ${r.withAll}`);
+  assert(near(r.withAll, 220 + 28 + 5), `with dental and ambulance ${r.withAll}`);
   assert(near(r.crown, 400) && near(r.crownNo, 1400) && r.free === 0, JSON.stringify(r));
 });
 
