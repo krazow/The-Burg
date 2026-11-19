@@ -2545,6 +2545,82 @@ old ones.
 
 </details>
 
+## Ideas round 28 (pick on the build board)
+
+62 ideas. Details: [docs/ideas/round-28.md](docs/ideas/round-28.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 28: Sports and recreation</b> (30 ideas)</summary>
+
+- [ ] 🔴 **i28-a01** One Activities card for leagues and seasons (L)
+- [ ] 🔴 **i28-a02** Friday night home games at the school field (M)
+- [ ] 🔴 **i28-a03** Your kid plays Little League: fees, games and snack duty (M)
+- [ ] 🟠 **i28-a04** Saturday youth soccer: the drive to Walla Walla fields (M)
+- [ ] 🟠 **i28-a05** Kids' activities as a line on the monthly bills (S)
+- [ ] 🟠 **i28-a06** Pickleball at the park courts (M)
+- [ ] 🟠 **i28-a07** Nine holes on the Walla Walla city course (M)
+- [ ] 🟡 **i28-a08** Invited to the boss's charity scramble (S)
+- [ ] 🟠 **i28-a09** Kids' fishing derby at the stocked pond (S)
+- [ ] 🟡 **i28-a10** Opening day of trout season at the lakes (S)
+- [ ] 🟠 **i28-a11** Train for the Days fun run (M)
+- [ ] 🟡 **i28-a12** A gravel ride through the wheat hills (M)
+- [ ] 🟡 **i28-a13** Host a rest stop for a charity bike tour (S)
+- [ ] 🔴 **i28-a14** Sunday football at your place (M)
+- [ ] 🟡 **i28-a15** A friend has two tickets to a Seattle ballgame (S)
+- [ ] 🟡 **i28-a16** The ballgame on the radio on the drive home (S)
+- [ ] 🟠 **i28-a17** Lifeguard at the town pool: a summer gig (S)
+- [ ] 🟠 **i28-a18** Swim lessons for the kids (S)
+- [ ] 🟠 **i28-a19** Play hurt or sit out: rec-league sprains (M)
+- [ ] 🟠 **i28-a20** Ump Little League for spring weekend cash (S)
+- [ ] 🟠 **i28-a21** Tryouts: your teen makes the team, or doesn't (S)
+- [ ] 🟠 **i28-a22** Senior night: your kid's last home game (S)
+- [ ] 🟡 **i28-a23** The alumni game: suit up one more time (S)
+- [ ] 🟡 **i28-a24** The Days softball tournament (S)
+- [ ] 🟡 **i28-a25** A basketball hoop over the garage (S)
+- [ ] 🟡 **i28-a26** Sledding the hill by the school (S)
+- [ ] 🟡 **i28-a27** A disc golf round in Walla Walla (S)
+- [ ] 🟡 **i28-a28** Badges for a full season (S)
+- [ ] 🟠 **i28-a29** Talk sports at the coffee counter (S)
+- [ ] 🔴 **i28-a30** A sporty bot in the balance sim (S)
+
+</details>
+
+<details><summary><b>Ideas 28: Digital life in a small town</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i28-b01** Home internet: phone hotspot, tower wireless or satellite (M)
+- [ ] 🟠 **i28-b02** No bars at the farmhouse: the missed callback (S)
+- [ ] 🟠 **i28-b03** Study in the library parking lot (S)
+- [ ] 🔴 **i28-b04** Online classes or the drive to Walla Walla (M)
+- [ ] 🔴 **i28-b05** The town page: a weekly scroll of posts (L)
+- [ ] 🟠 **i28-b06** Wade into a comment fight on the town page (S)
+- [ ] 🟡 **i28-b07** Share the lost dog post (S)
+- [ ] 🟠 **i28-b08** Order it online or buy it on Main Street (S)
+- [ ] 🟡 **i28-b09** Packages wait at the post office (S)
+- [ ] 🔴 **i28-b10** Rest week: phone in a drawer or scrolling (M)
+- [ ] 🟡 **i28-b11** Phone-free month challenge (S)
+- [ ] 🔴 **i28-b12** Streaming subscriptions creep up (M)
+- [ ] 🟡 **i28-b13** Movie night at home instead of the drive (S)
+- [ ] 🟡 **i28-b14** The rivalry game cuts out in the snow (S)
+- [ ] 🔴 **i28-b15** Your kid's first phone (M)
+- [ ] 🟠 **i28-b16** The middle-school group chat drama (S)
+- [ ] 🟡 **i28-b17** Remote day bloopers (S)
+- [ ] 🟠 **i28-b18** The windstorm takes the internet too (S)
+- [ ] 🟡 **i28-b19** Prescriptions by mail (S)
+- [ ] 🟠 **i28-b20** A buyer overpays for your old truck (S)
+- [ ] 🟠 **i28-b21** Too-cheap firewood on the town page (S)
+- [ ] 🟠 **i28-b22** Neighbors post about your side hustle (M)
+- [ ] 🟡 **i28-b23** Sell the garage clutter on the swap page (S)
+- [ ] 🟡 **i28-b24** The Tattler moves mostly online (S)
+- [ ] 🟠 **i28-b25** Snow week: school sends kids home with laptops (S)
+- [ ] 🟡 **i28-b26** Late-night online games with old friends (S)
+- [ ] 🟡 **i28-b27** Post a Touchet sunset photo (S)
+- [ ] 🟡 **i28-b28** Screen time vs time outside on the end screen (S)
+- [ ] 🔴 **i28-b29** Sign up for county alert texts (S)
+- [ ] 🟠 **i28-b30** The cell tower vote (M)
+- [ ] 🔴 **i28-b31** Be the town's tech helper (M)
+- [ ] 🟡 **i28-b32** Help a parent with their tablet (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
