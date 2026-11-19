@@ -4214,6 +4214,86 @@ old ones.
 
 </details>
 
+## Ideas round 50 (pick on the build board)
+
+66 ideas. Details: [docs/ideas/round-50.md](docs/ideas/round-50.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 50: Cut, merge and simplify</b> (34 ideas)</summary>
+
+- [ ] 🔴 **i50-a01** Life goals fold into badges: no pinning, no bonus points (S)
+- [ ] 🔴 **i50-a02** One "Go somewhere" button: Out and about and trips merge (M)
+- [ ] 🔴 **i50-a03** Home shows one goal line, not two (S)
+- [ ] 🔴 **i50-a04** Life tab starts with your home, ride and money; Around town goes (S)
+- [ ] 🔴 **i50-a05** Title screen: weekly challenge and records join Challenges (S)
+- [ ] 🟠 **i50-a06** Restore from a backup becomes a small link (S)
+- [ ] 🟠 **i50-a07** Challenges become a goal on a starting background (M)
+- [ ] 🟠 **i50-a08** Hard becomes a challenge; the Mode picker and Relaxed go (M)
+- [ ] 🟠 **i50-a09** Two skills, not four: Cook and People go (M)
+- [ ] 🟠 **i50-a10** The food truck business goes (M)
+- [ ] 🟠 **i50-a11** Wheat lease without the renewal rule (S)
+- [ ] 🟡 **i50-a12** Businesses sell for half, with no yearly wear (S)
+- [ ] 🟠 **i50-a13** Out and about loses its hidden boosts (S)
+- [ ] 🔴 **i50-a14** Three skip buttons become two (S)
+- [ ] 🟠 **i50-a15** Home warnings collapse into one heads-up card (S)
+- [ ] 🟠 **i50-a16** The summary chip row on Home goes (S)
+- [ ] 🟠 **i50-a17** The report card log line goes; the score arrow compares to last year (S)
+- [ ] 🟠 **i50-a18** Score so far measures net worth against where you should be by now (S)
+- [ ] 🟡 **i50-a19** Household card drops the price index and empty council row (S)
+- [ ] 🟠 **i50-a20** Journal filters: All and Milestones only (S)
+- [ ] 🟠 **i50-a21** Menu: Save, Load and Back up merge into one "Your lives" sheet (S)
+- [ ] 🟠 **i50-a22** Jobs tab: one town picker, locked jobs tucked away (S)
+- [ ] 🟡 **i50-a23** Carpool turns on by itself (S)
+- [ ] 🟠 **i50-a24** Badges trimmed from 18 to 12 (S)
+- [ ] 🔴 **i50-a25** Help: 19 sections become 11 (M)
+- [ ] 🟠 **i50-a26** Help drops its data tables (S)
+- [ ] 🟡 **i50-a27** Story chains become an event field, not their own system (M)
+- [ ] 🔴 **i50-a28** Drop from the idea board: live-ops and seasonal content drops (S)
+- [ ] 🟠 **i50-a29** Drop from the idea board: deep finance sim (S)
+- [ ] 🟠 **i50-a30** Drop from the idea board: leaving the valley (S)
+- [ ] 🟠 **i50-a31** Drop from the idea board: farm-equipment sim (S)
+- [ ] 🟡 **i50-a32** Drop from the idea board: narrator voices and text engines (S)
+- [ ] 🟡 **i50-a33** Drop from the idea board: comparing and ranking players (S)
+- [ ] 🔴 **i50-a34** Drop from the idea board: reworded repeats (S)
+
+</details>
+
+<details><summary><b>Ideas 50: Small-town drama</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i50-b01** Friction threads: every small spat ends in peace (L)
+- [ ] 🔴 **i50-b02** The truce dinner: seat two feuding neighbors at your table (M)
+- [ ] 🔴 **i50-b03** The old-timers' bench at the grocery has a verdict (M)
+- [ ] 🟠 **i50-b04** The rumor mill decides you won the lottery (S)
+- [ ] 🟠 **i50-b05** Someone parks in front of your shop every single day (M)
+- [ ] 🟠 **i50-b06** The council meeting that won't end (S)
+- [ ] 🔴 **i50-b07** The newcomer who wants to change everything (L)
+- [ ] 🟡 **i50-b08** The casserole dish that went home with the wrong family (S)
+- [ ] 🟡 **i50-b09** Your mail keeps landing at the other 312 (S)
+- [ ] 🟠 **i50-b10** The Christmas lights arms race on your street (M)
+- [ ] 🟡 **i50-b11** The rooster next door starts at 4:40 (S)
+- [ ] 🟡 **i50-b12** Sunday morning leaf blowers (S)
+- [ ] 🟡 **i50-b13** The walnut tree that drops on two yards (M)
+- [ ] 🟠 **i50-b14** The firehouse chili feed cook-off (M)
+- [ ] 🟡 **i50-b15** The zucchini hot potato (S)
+- [ ] 🟠 **i50-b16** The biggest pumpkin weigh-off grudge (M)
+- [ ] 🟡 **i50-b17** Somebody sat in your booth at the café (S)
+- [ ] 🟡 **i50-b18** The loose cow on Main Street (S)
+- [ ] 🟡 **i50-b19** The town message board reply-all (S)
+- [ ] 🟡 **i50-b20** The ladder you lent three summers ago (S)
+- [ ] 🟡 **i50-b21** The reader board typo at the school (S)
+- [ ] 🟡 **i50-b22** The four-way stop debate (M)
+- [ ] 🟠 **i50-b23** Who leads the Celebration Days parade? (M)
+- [ ] 🟡 **i50-b24** Two bake sales on the same Saturday (S)
+- [ ] 🟡 **i50-b25** The newspaper prints a correction about you (S)
+- [ ] 🟡 **i50-b26** The mail carrier skips your box (S)
+- [ ] 🟡 **i50-b27** The lemonade stand price war (S)
+- [ ] 🟠 **i50-b28** The snowplow berm in your driveway (S)
+- [ ] 🟠 **i50-b29** The kerfuffle of the week (S)
+- [ ] 🟠 **i50-b30** Make-peace cards: the small things that fix a spat (M)
+- [ ] 🟡 **i50-b31** The garage sale where your old stuff comes back (S)
+- [ ] 🔴 **i50-b32** Peace at the street party: the year's frictions end together (M)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
