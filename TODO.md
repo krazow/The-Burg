@@ -5043,6 +5043,83 @@ old ones.
 
 </details>
 
+## Ideas round 61 (pick on the build board)
+
+63 ideas. Details: [docs/ideas/round-61.md](docs/ideas/round-61.md). 🔴 = recommended first.
+
+<details><summary><b>Ideas 61: Bundles part 8 and v1.2</b> (31 ideas)</summary>
+
+- [ ] 🔴 **i61-a01** Bundle: Backups checked before they land (M)
+- [ ] 🔴 **i61-a02** Bundle: Saves that can't be lost (M)
+- [ ] 🔴 **i61-a03** Bundle: Plain text everywhere (M)
+- [ ] 🟠 **i61-a04** Bundle: A locked-down page and safe player characters (M)
+- [ ] 🔴 **i61-a05** Bundle: Open-bug repros that stay quiet until fixed (M)
+- [ ] 🔴 **i61-a06** Bundle: Reach tests and edge-case bots (M)
+- [ ] 🟠 **i61-a07** Bundle: Old saves, long lives and odd settings (M)
+- [ ] 🔴 **i61-a08** Bundle: Feels like an app: Back, touch and scroll (M)
+- [ ] 🟠 **i61-a09** Bundle: Feels like an app: typing, screens and icons (M)
+- [ ] 🟠 **i61-a10** Bundle: Feels like an app: Android, Windows and sharing (M)
+- [ ] 🟠 **i61-a11** Bundle: Playtest fixes: the retiree (M)
+- [ ] 🟠 **i61-a12** Bundle: Playtest fixes: the parent and the strategist (M)
+- [ ] 🔴 **i61-a13** Bundle: Balance pass part 2: trips, hustles and Out and about (M)
+- [ ] 🔴 **i61-a14** Bundle: Balance sim: what each choice is worth (M)
+- [ ] 🔴 **i61-a15** Bundle: Tell us: one feedback sheet and an outbox (M)
+- [ ] 🟠 **i61-a16** Bundle: Closing the loop with players (M)
+- [ ] 🟠 **i61-a17** Bundle: Report it where you see it (M)
+- [ ] 🟠 **i61-a18** Bundle: Answers for strangers and skeptics (M)
+- [ ] 🔴 **i61-a19** Bundle: A job board that moves with the years (M)
+- [ ] 🟠 **i61-a20** Bundle: New trades on the wheat hills (M)
+- [ ] 🟠 **i61-a21** Bundle: Hanford winds down; care, remote and Main Street jobs grow (M)
+- [ ] 🔴 **i61-a22** Bundle: Signature scenes: the frame and the first set (L)
+- [ ] 🟠 **i61-a23** Bundle: Signature scenes: kids, home and the farm (M)
+- [ ] 🟠 **i61-a24** Bundle: Signature scenes: farewells and full circles (M)
+- [ ] 🟠 **i61-a25** Bundle: The Growing up prologue (L)
+- [ ] 🟠 **i61-a26** Bundle: Childhood scenes: ages 5 to 13 (M)
+- [ ] 🟠 **i61-a27** Bundle: Teen years and what they echo (M)
+- [ ] 🟠 **i61-a28** Bundle: The five-year plan (M)
+- [ ] 🟠 **i61-a29** Bundle: Bucket list and promises out loud (M)
+- [ ] 🟠 **i61-a30** Bundle: Plans that show up at work and at the end (M)
+- [ ] 🔴 **i61-a31** Release plan: v1.2 — Safe to keep, feels like an app (L)
+
+</details>
+
+<details><summary><b>Ideas 61: Spanish and bilingual play</b> (32 ideas)</summary>
+
+- [ ] 🔴 **i61-b01** Events keyed by an id, not their English title (M)
+- [ ] 🔴 **i61-b02** A t() lookup that falls back to English, never a blank (S)
+- [ ] 🔴 **i61-b03** A script that pulls every player-facing line out of js/ and index.html (M)
+- [ ] 🔴 **i61-b04** Translation files as plain script files that work offline (S)
+- [ ] 🟠 **i61-b05** Flag Spanish lines that are older than the English (S)
+- [ ] 🔴 **i61-b06** Money in US Spanish style: $1,250, not 1.250 $ (S)
+- [ ] 🟠 **i61-b07** Dates and months that read right in Spanish (S)
+- [ ] 🔴 **i61-b08** Plurals from a rule, not n === 1 ? '' : 's' (S)
+- [ ] 🟠 **i61-b09** Spanish that never has to guess your gender (M)
+- [ ] 🟠 **i61-b10** Places carry their article: el río, la biblioteca (S)
+- [ ] 🔴 **i61-b11** A phone-width check for longer Spanish event text (M)
+- [ ] 🟠 **i61-b12** Short labels for choice buttons (S)
+- [ ] 🔴 **i61-b13** English · Español switch on the title screen and in the Menu (S)
+- [ ] 🟠 **i61-b14** The Journal re-reads in your current language (M)
+- [ ] 🔴 **i61-b15** The tutorial finds pins by id, not English labels (S)
+- [ ] 🟠 **i61-b16** Screen reader text in Spanish, with lang tags on mixed lines (S)
+- [ ] 🟠 **i61-b17** A glossary: what stays in English and what doesn't (S)
+- [ ] 🔴 **i61-b18** Valley Spanish, not textbook Spanish (S)
+- [ ] 🔴 **i61-b19** Native-speaker review with a sheet and screenshots (M)
+- [ ] 🟡 **i61-b20** Suggest a better translation from inside the game (S)
+- [ ] 🔴 **i61-b21** Screens test in both languages (M)
+- [ ] 🟠 **i61-b22** A stretched fake language for finding missed strings (S)
+- [ ] 🔴 **i61-b23** A lint that stops new hard-coded text (S)
+- [ ] 🟠 **i61-b24** New events can ship before their Spanish (S)
+- [ ] 🔴 **i61-b25** Ship Spanish in three waves, marked beta (S)
+- [ ] 🔴 **i61-b26** Same seed, same score in both languages (S)
+- [ ] 🟠 **i61-b27** Neighbors who switch languages mid-sentence (M)
+- [ ] 🟠 **i61-b28** Grew up bilingual: a start option (M)
+- [ ] 🟡 **i61-b29** Your kid translates at the doctor (S)
+- [ ] 🟡 **i61-b30** Read-aloud picks a Spanish voice (S)
+- [ ] 🟡 **i61-b31** Accents and ñ everywhere, and lists sorted in Spanish (S)
+- [ ] 🟡 **i61-b32** An install name and store listing in Spanish (S)
+
+</details>
+
 ## Later: P3
 
 - [ ] **More local content:** town-specific events, seasonal jobs (mostly covered by Out and about) — [#11](https://github.com/krazow/The-Burg/issues/11)
