@@ -216,7 +216,7 @@ await t.check("the tutorial's touch highlights work at every screen size, and no
       await page.waitForTimeout(430);
       const st = await page.evaluate(() => {
         if (!TUT) return null;
-        const s = TSTEPS[TUT.i], el = s.sel && document.querySelector(s.sel), r = el && el.getBoundingClientRect();
+        const s = tsteps()[TUT.i], el = s.sel && document.querySelector(s.sel), r = el && el.getBoundingClientRect();
         const x = r && r.left + r.width / 2, y = r && r.top + r.height / 2, hit = r && document.elementFromPoint(x, y);
         return { i: TUT.i, sel: s.sel || null, tap: !!s.tap, skipped: [...TUT.skipped], shown: !document.querySelector('#coach').classList.contains('hidden'),
           reach: !!(hit && el.contains(hit)), inView: !r || (r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth), x, y };
@@ -230,7 +230,7 @@ await t.check("the tutorial's touch highlights work at every screen size, and no
       if (st.tap) { if (w < 900) await page.touchscreen.tap(st.x, st.y); else await page.mouse.click(st.x, st.y); }
       else await page.click('#cnext');
     }
-    const total = await page.evaluate(() => TSTEPS.length);
+    const total = await page.evaluate(() => LAST_TUT_N);
     if (steps !== total) bad.push(`${label}: reached step ${steps} of ${total}`);
     if (skipped.length) bad.push(`${label}: skipped steps ${skipped.map(i => i + 1).join(', ')}`);
     await ctx.close();
@@ -311,7 +311,7 @@ await t.check("the tutorial's touch highlights work at every screen size, and no
       steps = Math.max(steps, st.i + 1);
       await page.keyboard.press('Enter');
     }
-    const total = await page.evaluate(() => TSTEPS.length), skipped = await page.evaluate(() => typeof LAST_TUT_SKIPPED === 'undefined' ? [] : LAST_TUT_SKIPPED);
+    const total = await page.evaluate(() => LAST_TUT_N), skipped = await page.evaluate(() => typeof LAST_TUT_SKIPPED === 'undefined' ? [] : LAST_TUT_SKIPPED);
     assert(steps === total, `reached step ${steps} of ${total} with the keyboard`);
     assert(!skipped.length, `steps skipped with the keyboard: ${skipped.join(', ')}`);
   });
@@ -431,12 +431,12 @@ await t.check("the tutorial's touch highlights work at every screen size, and no
       await page.waitForTimeout(100);
       for (let i = 0; i < 6; i++) {
         await page.keyboard.press('Tab');
-        const ok = await page.evaluate(() => { const a = document.activeElement, st = TSTEPS[TUT.i], el = st.tap && st.sel && document.querySelector(st.sel);
+        const ok = await page.evaluate(() => { const a = document.activeElement, st = tsteps()[TUT.i], el = st.tap && st.sel && document.querySelector(st.sel);
           return !!a && (!!a.closest('#coach .cbubble') || !!(el && el.contains(a))); });
         if (!ok) { bad.push(`step ${await page.evaluate(() => TUT.i + 1)}: Tab left the tutorial`); break; }
       }
-      const tap = await page.evaluate(() => !!TSTEPS[TUT.i].tap);
-      if (tap) await page.evaluate(() => { const el = document.querySelector(TSTEPS[TUT.i].sel); el.click(); });
+      const tap = await page.evaluate(() => !!tsteps()[TUT.i].tap);
+      if (tap) await page.evaluate(() => { const el = document.querySelector(tsteps()[TUT.i].sel); el.click(); });
       else await page.click('#cnext');
       await page.waitForTimeout(450);
     }
