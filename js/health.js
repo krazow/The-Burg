@@ -215,7 +215,8 @@ Object.assign(evByTitle('Flu going around'), {
 // a08: dental coverage makes the emergency dentist cheaper
 { const e = evByTitle('Toothache');
   e.choices = () => [
-    {label:`Emergency dentist in Walla Walla (-${fmtc(dentalOn() ? TOOTH_EMERG_DENTAL : 650)})`, go:() => { adj({money:-Math.round(cost(dentalOn() ? TOOTH_EMERG_DENTAL : 650)), health:-1}); S.dentist = S.turn; return `A root canal later, you can chew again.${dentalOn() ? ' Dental coverage paid most of it.' : ''} A yearly checkup would have caught it.`; }},
+    // i66-b15: the better health plan halves this too
+    {label:`Emergency dentist in Walla Walla (-${fmt(Math.round(medBill(dentalOn() ? TOOTH_EMERG_DENTAL : 650)))})`, go:() => { adj({money:-Math.round(medBill(dentalOn() ? TOOTH_EMERG_DENTAL : 650)), health:-1}); S.dentist = S.turn; return `A root canal later, you can chew again.${dentalOn() ? ' Dental coverage paid most of it.' : ''} A yearly checkup would have caught it.`; }},
     {label:'Tough it out', go:() => { adj({health:-4, happy:-4}); return 'Ice packs and ibuprofen. It still hurts.'; }}
   ]; }
 // a09: skiing wants a fair health score; otherwise ride up for the view
