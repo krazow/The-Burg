@@ -2642,7 +2642,7 @@ await t.check('i63-a10: the score sheet shows a red Debt line with what climbing
 
 await t.check('i63-a20: a life that climbed out says "Came back from $X in debt." on the end sheet and in records', async () => {
   const r = await ev(() => { localStorage.clear(); fresh('two', { jobId: 'farmhand' }); S.debtLow = -11437; S.money = 5000; const line = comebackLine();
-    finish('Test.'); const txt = document.querySelector('#sheet').textContent; closeSheet(); recordsSheet(); const rec = document.querySelector('#sheet').textContent; closeSheet();
+    finish('Test.'); const txt = document.querySelector('#sheet').textContent; closeSheet(); challengesSheet(); const rec = document.querySelector('#sheet').textContent; closeSheet();
     fresh('two'); S.debtLow = -11437; S.money = -50; const still = comebackLine(); return { line, txt, rec, still }; });
   assert(r.line === 'Came back from $11,400 in debt.' && r.txt.includes(r.line) && r.rec.includes(r.line) && r.still === '', JSON.stringify(r).slice(0, 300));
 });
