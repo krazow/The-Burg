@@ -16,7 +16,7 @@ await page.evaluate(() => {
   // a quiet life in difficulty d (overrides: a marked life with these device switches)
   window.life = (d, extra = {}, flags = null, opts = {}) => {
     localStorage.clear(); if (flags) localStorage.setItem(DIFF_FLAGS_KEY, JSON.stringify(flags));
-    newGame('C', 'two', 0, { diff: d, ...opts }); S.noEvents = true; if (flags) S.flagsEdited = true; Object.assign(S, extra); return S;
+    newGame('C', 'two', 0, { diff: d, ...opts }); S.unlockMode = 'all'; S.noEvents = true; if (flags) S.flagsEdited = true; Object.assign(S, extra); return S;
   };
   window.byTitle = t => EVENTS.find(e => e.title === t) || DUE_EVENTS.find(e => e.title === t);
   window.anyMonth = e => [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].some(m => { try { return !!e.when(m); } catch (x) { return false; } });
