@@ -95,7 +95,7 @@ for (const { len, strat, g, opts, label, tier } of JOBS_LIST) {
         const bad = [], events = {}, choiceFx = {};
         const best = () => JOBS.filter(x => x.edu <= S.edu).sort((a, b) =>
           (b.pay - commuteCost(CITIES[b.city].miles) * (strat === 'homebody' ? 4 : 1)) - (a.pay - commuteCost(CITIES[a.city].miles) * (strat === 'homebody' ? 4 : 1)))[0];
-        let ending = null, weeks = 0, nw65 = null, climbed = false;
+        let ending = null, weeks = 0, nw65 = null, climbed = false, lastTrip = -99;
         // i75-b30: where the money came from, in 2027 dollars
         const src = { pay: 0, overtime: 0, hustle: 0, business: 0, retirement: 0, k401: 0, market: 0, equity: 0 }, bizIc = Object.values(BIZ).map(b => b.ic);
         while (!ending && weeks < 6000) {
@@ -142,9 +142,11 @@ for (const { len, strat, g, opts, label, tier } of JOBS_LIST) {
           if (strat === 'planner' && S.biz && S.biz.type === 'wheat') S.biz.ins = true;          // i75-a31: the planner gets ready for weather (crop insurance; prep choices come first in weather cards)
           if (!S.biz && strat === 'homebody' && S.money > cost(12000)) startBiz('shop');       // a homebody opens a woodshop ($6,000, i75-b15)
           // trips around the region: the planner shops and keeps up car care monthly; the tripper goes out every week
-          if (strat === 'planner' && weeks % 4 === 0 && S.money > 300) {
+          if (strat === 'planner' && weeks - lastTrip >= 4 && S.focus !== 'work' && S.money > 300) {   // i42-a01: about monthly, never in an overtime week
+            lastTrip = weeks;
             const ids = ['stock']; if (S.turn - S.svc > 22) ids.push('oil'); else if (S.turn - S.dentist > 45) ids.push('dentist');
-            else { const f = weeks % 8 === 0 ? 'movies' : 'college'; ids.push(stopBlocked(STOPS.find(x => x.id === f)) ? 'bistro' : f); }   // i42-a03: a good player varies the fun stop, so it isn't a repeat
+            else { const f = weeks % 8 < 4 ? 'movies' : 'college'; ids.push(stopBlocked(STOPS.find(x => x.id === f)) ? 'bistro' : f); }
+            if (S.happy < 75 && !ids.includes('bistro')) ids.push('bistro');   // i42-a03: a good player varies the fun stop, so it isn't a repeat
             planTrip('wallawalla', ids);
           }
           if (strat === 'tripper') {
