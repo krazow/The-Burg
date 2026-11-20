@@ -935,7 +935,9 @@ function startLegacy(parent, name = heirName(parent.name)){
   newGame(name, 'life', slot, { bg:'fresh', mode:parent.mode, aim:parent.aim });
   S.line = Array.isArray(parent.line) ? parent.line.slice(-40) : [];   // i73-b25
   S.gen = (parent.gen || 1) + 1; S.community = clamp(Math.round(parent.community / 2) + 15);
-  S.date = parent.date; S.col = parent.col; S.wage = parent.wage; S.tabsYear = new Date(S.date).getFullYear();
+  // i8-a01: the grandkid is 18 about 60 years after the grandparent was born (never earlier than the day the life ended)
+  const born = Number.isFinite(parent.ageMonths) ? new Date(parent.date).getFullYear() - Math.floor(parent.ageMonths / 12) : null;
+  S.date = born == null ? parent.date : Math.max(parent.date, new Date(born + 60, 0, 4).getTime()); S.col = parent.col; S.wage = parent.wage; S.tabsYear = new Date(S.date).getFullYear();
   S.carValue = cost(2500);                         // i30-b01: the old pickup is worth a starter truck in today's dollars
   if (inh.will) {
     S.money = inh.now;
@@ -1249,7 +1251,7 @@ function finish(reason, opts = {}){
   const heir = heirOK(opts), stub = endStub(reason, { score, title, parts });
   // i73-b25: the family line so far, carried into the grandkid's save
   const line = [...(S.line || []), { name:S.name, years:`${stub.from}–${stub.to}`, job:stub.job, home:stub.home, score, title, epitaph:stub.cause }].slice(-40);
-  const parent = { id:S.lifeId, name:S.name, nw:netWorth(), community:S.community, slot:S.slot === WEEKLY_SLOT ? 0 : S.slot, mode:mode(), aim:S.aim, gen:S.gen || 1, date:S.date, col:S.col, wage:S.wage,
+  const parent = { id:S.lifeId, name:S.name, nw:netWorth(), community:S.community, slot:S.slot === WEEKLY_SLOT ? 0 : S.slot, mode:mode(), aim:S.aim, gen:S.gen || 1, date:S.date, ageMonths:S.ageMonths, col:S.col, wage:S.wage,
     will:hasWill(), home:S.home, equity:S.equity, mortgage:S.mortgage, line };
   if (!S.practice) {
     addEnd(stub);
@@ -1282,9 +1284,11 @@ function finish(reason, opts = {}){
     ${pensionVested() ? `<div class="kv"><span>🏛️ Public pension</span><span>${Math.floor(S.pensionYears)} years</span></div>` : ''}
     ${heir ? `<div class="kv"><span>📜 Will</span><span>${hasWill() ? 'On file' : 'None: probate will take a share'}</span></div>` : ''}
     ${!S.practice ? '<button class="btn ghost" id="share">📤 Share score card</button>' : ''}
+    ${!S.practice ? '<button class="btn ghost" id="endbackup">💾 Back up your records</button>' : ''}
     ${heir ? `<button class="btn primary" id="legacy">🌳 Continue as your grandkid</button>` : ''}
     <button class="btn ${heir ? 'ghost' : 'primary'}" id="again">Play again</button>`);
   if ($('#share')) $('#share').onclick = shareCard;
+  if ($('#endbackup')) $('#endbackup').onclick = () => backupSheet(() => { S = null; useDice(); renderTitle(); });   // i62-a24: closing it goes on to the title screen
   if ($('#skipstory')) $('#skipstory').onclick = () => { $('#story').remove(); const f = $('#finalscore'); f.scrollIntoView({ block: 'start' }); f.focus({ preventScroll: true }); };
   if ($('#legacy')) $('#legacy').onclick = () => legacySheet(parent);
   $('#again').onclick = () => { closeSheet(); S = null; useDice(); renderTitle(); };
