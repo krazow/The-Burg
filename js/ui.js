@@ -95,7 +95,9 @@ function renderTitle(){
   document.querySelectorAll('[data-bg]').forEach(b => b.onclick = () => { bg = b.dataset.bg;
     document.querySelectorAll('[data-bg]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#bgdesc').innerHTML = `${BACKGROUNDS[bg].desc} <b>${BACKGROUNDS[bg].hint}.</b>`; moreSum(); });
   document.querySelectorAll('[data-diff]').forEach(b => b.onclick = () => { dif = b.dataset.diff;   // to-do 2 D1
-    document.querySelectorAll('[data-diff]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); moreSum(); });
+    document.querySelectorAll('[data-diff]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
+    const pc = document.querySelector('[data-bg="parent"]'); if (pc) { pc.hidden = !on('family.kids', { diff: dif }); if (pc.hidden && bg === 'parent') document.querySelector('[data-bg="fresh"]').click(); }   // to-do 2: no kids in Easy
+    moreSum(); });
   document.querySelectorAll('[data-aim]').forEach(b => b.onclick = () => { aim = b.dataset.aim;   // i20-b01
     document.querySelectorAll('[data-aim]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#aimdesc').textContent = aimDesc(aim); moreSum(); });
   $('#rulesbtn').onclick = () => rulesSheet(rules, { bg, mode: md() }, r => { rules = r; moreSum(); });   // i19-b02
@@ -713,6 +715,7 @@ function newGame(name, len, slot = 0, opts = {}){
   // to-do 2 D1: the difficulty sets the mode's numbers (Easy plays Relaxed's); an heir of a Classic life stays Classic
   if (opts.classic) { S.diff = 'hard'; S.classic = true; S.mode = MODES[opts.mode] ? opts.mode : 'normal'; }
   else { S.diff = DIFFS[opts.diff] ? opts.diff : MODE_DIFF[opts.mode] || 'normal'; S.mode = DIFF_MODE[S.diff]; }
+  if (S.bg === 'parent' && !on('family.kids')) S.bg = 'fresh';   // to-do 2: the Young parent start needs kids (Normal and up)
   if (BACKGROUNDS[S.bg].set) BACKGROUNDS[S.bg].set(S);
   // i19-b01/b28: custom rules, except in weekly challenges, scenarios and practice, where everyone plays Normal rules
   S.rules = opts.weekly || SCENARIOS[opts.scenario] || opts.practice ? {} : cleanRules(opts.rules); S.tier0 = recordTier(S.rules);
@@ -1284,7 +1287,7 @@ function eduCard(){
 }
 function renderLife(){
   const h = HOMES[S.home], u = undoTop();
-  const homeCard = `${h.own ? firstTime('ptax') : ''}<div class="card"><h3>🏡 Home in Waitsburg</h3>
+  const homeCard = `${h.own && on('home.propertyTax') ? firstTime('ptax') : ''}<div class="card"><h3>🏡 Home in Waitsburg</h3>
     ${Object.entries(HOMES).map(([k,x]) => {
       const cur = S.home === k;
       let btn = cur ? '<span class="tag cur">Home</span>' : x.own ? `<button class="sm buy2" data-home="${k}" aria-label="Buy the ${esc(x.name.toLowerCase())}: ${fmt(homeDown(k))} down">Buy<small>${fmt(homeDown(k))} down</small></button>` : `<button class="sm alt buy2" data-home="${k}">Move</button>`;   // i20-a14
@@ -1306,7 +1309,7 @@ function renderLife(){
       return `<div class="kv job"><div><div class="t">${c.name}</div><div class="s">${c.mpg} mpg${c.pay?` · ${wk(cur && S.loanPay ? S.loanPay : cost(c.pay))} for 5 years`:''}</div></div>${btn}</div>`;
     }).join('')}
     <p class="muted">Trade-in value of your ride: ${fmt(S.carValue)}${tradeBonus() ? ` (+${fmt(tradeBonus())} dealer bonus this week)` : ''}${S.loanLeft>0?` · ${Math.ceil(S.loanLeft/W)} weekly payments left`:''}</p>
-    <p class="muted">🔧 ${S.turn - (S.svc ?? 0) <= 26 ? 'Oil changed recently: fewer breakdowns.' : S.turn - (S.svc ?? 0) <= 52 ? `Last oil change ${S.turn - (S.svc ?? 0)} weeks ago.` : 'Overdue for an oil change: breakdowns are more likely.'} ${S.tires === S.car ? '❄️ Winter tires on.' : ''} Get car care on a trip to Dayton, Walla Walla or the Tri-Cities.</p>
+    ${on('car.upkeep') ? `<p class="muted">🔧 ${S.turn - (S.svc ?? 0) <= 26 ? 'Oil changed recently: fewer breakdowns.' : S.turn - (S.svc ?? 0) <= 52 ? `Last oil change ${S.turn - (S.svc ?? 0)} weeks ago.` : 'Overdue for an oil change: breakdowns are more likely.'} ${S.tires === S.car ? '❄️ Winter tires on.' : ''} Get car care on a trip to Dayton, Walla Walla or the Tri-Cities.</p>` : ''}
   </div>`;
   const k401Card = `${S.retired ? '' : firstTime('k401')}<div class="card"><h3>🏦 Retirement savings (${term('k401')})</h3>
     <div class="kv"><span>Balance</span><span><b>${fmt(S.k401)}</b></span></div>
@@ -1324,9 +1327,9 @@ function renderLife(){
     <div class="kv"><span>Partner</span><span>${S.partner ? 'Together 💕' : 'Single'}</span></div>
     <div class="kv"><span>Dog</span><span>${S.dog ? 'One good dog 🐕' : 'None'}</span></div>
     ${S.cat ? '<div class="kv"><span>Cat</span><span>A barn cat 🐈</span></div>' : ''}${S.generator ? '<div class="kv"><span>Generator</span><span>Ready for outages ⚡</span></div>' : ''}
-    <div class="kv"><span>Kids</span><span>${S.kids.length ? S.kids.map(kidAge).map(a => a < 18 ? `age ${a}` : 'grown').join(', ') : 'None'}</span></div>
+    ${on('family.kids') ? `<div class="kv"><span>Kids</span><span>${S.kids.length ? S.kids.map(kidAge).map(a => a < 18 ? `age ${a}` : 'grown').join(', ') : 'None'}</span></div>` : ''}
     <div class="kv"><span>Prices since 2027</span><span>${S.col > 1.005 ? `+${Math.round((S.col-1)*100)}%` : 'Same'}</span></div>
-    <div class="kv"><span>Town council</span><span>${S.council ? 'Council member' : '—'}</span></div>
+    ${on('family.council') ? `<div class="kv"><span>Town council</span><span>${S.council ? 'Council member' : '—'}</span></div>` : ''}
   </div>`;
   if (!S.practice) { $('#main').insertAdjacentHTML('beforeend', rulesCard()); document.querySelectorAll('[data-assistoff]').forEach(b => b.onclick = () => assistOffSheet(b.dataset.assistoff)); }   // i19-b19
   if ($('#goals')) $('#goals').onclick = goalsSheet;
@@ -1449,7 +1452,7 @@ function buyCar(k){
     lines: [`💵 Cash: ${fmt(S.money)} → ${fmt(S.money - price)}`,
       ...(c.pay ? [`🧾 A payment of ${wk(cost(c.pay))} every week for 5 years`] : []),
       `⛽ Gas: about ${fmt(g0)}/wk → ${fmt(g1)}/wk (${c.mpg} mpg instead of ${CARS[S.car].mpg})`,
-      `🔧 Breakdowns get ${c.breakdown < CARS[S.car].breakdown ? 'less' : 'more'} likely`,
+      ...(on('car.upkeep') ? [`🔧 Breakdowns get ${c.breakdown < CARS[S.car].breakdown ? 'less' : 'more'} likely`] : []),
       '😊 Happiness +5',
       `💰 ${term('networth', 'Net worth')}: ${dNw >= 0 ? '+' : '−'}${fmt(Math.abs(dNw))}${dNw < 0 ? ' (a vehicle loses value once you drive it home' + (loan ? ', and the loan counts against you' : '') + ')' : ''}`],
     onYes: () => {

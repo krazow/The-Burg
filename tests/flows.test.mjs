@@ -1154,7 +1154,7 @@ await t.check('i3-a19: the insurance sheet changes coverage and the weekly bill'
 });
 
 await t.check('i3-a21/a22/a23: the home card shows the market and rates; refinancing and borrowing against the house work', async () => {
-  await life({ jobId: 'farmhand', money: 20000, homeGrow: 0.07 }, 'life');
+  await life({ jobId: 'farmhand', money: 20000, homeGrow: 0.07, diff: 'hard' }, 'life');
   assert(/Hot/.test(await page.textContent('#main')), 'a hot market should show');
   await page.click('[data-home="fixer"]');
   assert(/hot/.test(await page.textContent('#sheet')), 'the buy sheet shows the market');
