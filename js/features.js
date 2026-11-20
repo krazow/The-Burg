@@ -540,7 +540,7 @@ function startBiz(k){
 }
 function sellBiz(){
   sellStoredWheat(' with the lease');
-  const v = bizValue(), b = BIZ[S.biz.type]; S.money += v; log(`Sold the ${b.name.toLowerCase()} for ${fmt(v)}.`, 'money'); S.biz = null; save(); render(); toast(`Sold for ${fmt(v)}`);
+  const v = bizValue(), b = BIZ[S.biz.type]; S.money += v; log(`Sold the ${b.name.toLowerCase()} for ${fmt(v)}.`, 'money'); S.biz = null; S.bizSold = true; save(); render(); toast(`Sold for ${fmt(v)}`);
 }
 
 /* ============================================================
@@ -828,9 +828,12 @@ function scoreCard(){
   g.fillStyle = '#3d2b1f'; g.font = '600 52px system-ui, sans-serif'; g.fillText(`${S.name}'s life in Waitsburg`, 540, 380);
   g.font = '40px system-ui, sans-serif'; g.fillStyle = '#6b5b4e';
   g.fillText(`${LENGTHS[S.len].label}${S.weekly ? ` · Weekly challenge ${S.weekly}` : ''}${mode() !== 'normal' ? ` · ${MODES[mode()].name} mode` : ''}`, 540, 450);
-  g.fillStyle = '#9b2f1f'; g.font = 'bold 300px Georgia, serif'; g.fillText(String(score), 540, 800);
+  g.fillStyle = '#9b2f1f'; g.font = 'bold 300px Georgia, serif'; g.fillText(String(score), 540, 810);
   g.fillStyle = '#3d2b1f'; g.font = '600 60px system-ui, sans-serif'; g.fillText(mode() !== 'normal' ? `${title} (${MODES[mode()].name})` : title, 540, 900);
   g.font = '40px system-ui, sans-serif'; g.fillStyle = '#6b5b4e';
+  { const back = comebackLine(), a = AIMS[S.aim] || AIMS.all;   // i63-a20 the comeback, i20-b01 the aim, i20-b05 good weeks
+    g.font = 'italic 38px Georgia, serif'; if (back) g.fillText(back, 540, 955);
+    g.font = '36px system-ui, sans-serif'; g.fillText(`${a.ic} ${a.name} · ${S.goodWeeks || 0} of ${tallyWeeks()} good weeks`, 540, 510); g.font = '40px system-ui, sans-serif'; }
   const bs = BADGES.filter(b => S.badges && S.badges[b.id]).map(b => b.ic).join(' ');
   if (bs) g.fillText(bs, 540, 1010);
   g.fillText(`Age ${age()} · ${EDU[S.edu]} · ${fmt(netWorth())}`, 540, 1100);
@@ -887,7 +890,7 @@ function legacySheet(parent){
 function startLegacy(parent, name = heirName(parent.name)){
   const inh = inheritance(parent);                 // i3-a33: the will decides how (and when) the family's money arrives
   name = String(name).slice(0, 20);
-  newGame(name, 'life', parent.slot ?? 0, { bg:'fresh', mode:parent.mode });
+  newGame(name, 'life', parent.slot ?? 0, { bg:'fresh', mode:parent.mode, aim:parent.aim });
   S.gen = (parent.gen || 1) + 1; S.community = clamp(Math.round(parent.community / 2) + 15);
   S.date = parent.date; S.col = parent.col; S.wage = parent.wage; S.tabsYear = new Date(S.date).getFullYear();
   S.carValue = cost(2500);                         // i30-b01: the old pickup is worth a starter truck in today's dollars
@@ -922,30 +925,50 @@ function wealthTrack(real){
 function scoreButton(){
   if (S.practice) return '';
   const sc = lifeScore(), d = S.scoreQ == null ? 0 : sc.score - S.scoreQ;
-  return `<button class="scorebtn" id="scorenow" aria-label="Life Score so far ${sc.score}, ${sc.title}: see how it adds up">
-    <span>🏆 Life Score so far</span><span><b>${sc.score}</b> ${sc.title}${S.scoreQ != null && d ? ` <span class="delta ${d>0?'up':'down'}">${d>0?'▲':'▼'}${Math.abs(d)}</span>` : ''} ›</span></button>`;
+  const title = S.turn < 4 ? 'Just getting started' : sc.title;   // i5-a02: no verdict in the first weeks
+  return `<button class="scorebtn" id="scorenow" aria-label="Life Score so far ${sc.score}, ${title}: see how it adds up">
+    <span>🏆 Life Score so far</span><span><b>${sc.score}</b> ${title}${S.scoreQ != null && d ? ` <span class="delta ${d>0?'up':'down'}">${d>0?'▲':'▼'}${Math.abs(d)}</span>` : ''} ›</span></button>`;
 }
 const SCORE_TIPS = {
   happy:'Happiness is your weakest part. Rest, Get outside and trips with friends help; long commutes, overtime and debt hurt.',
   health:'Health is your weakest part. Rest, Get outside and a doctor checkup help; physical jobs and overtime wear you down.',
   community:'Community is your weakest part. Show up for town, help in events, work in Waitsburg, or join a carpool.',
-  wealth:'Net worth is your weakest part. A better-paying job, the 401(k), owning a home and stock-up grocery runs add up.'
+  wealth:'Net worth is your weakest part. A better-paying job, the 401(k), owning a home and stock-up grocery runs add up.',
+  debt:'Debt is costing you the most. Every week below -$1,000 counts against you, and getting back to $0 by the end wins most of it back: steady work, fewer trips and paying down the card come first.'
 };
+const PART_NAMES = { happy:'Happiness', health:'Health', community:'Community', wealth:'Net worth' };
+// i20-b05: the good-weeks line, shown under the score
+const goodLine = () => `${S.goodWeeks || 0} of ${tallyWeeks()} weeks were good ones`;
+// the lines of "How the score adds up", shared by Life Score so far and the end sheet. end: the life is over
+function scoreLines(sc, end){
+  const L = LENGTHS[S.len], w = sc.w;
+  const part = (l, sub, v, wt) => `<div class="kv"><span>${l}<br><small class="muted">${sub}</small></span><span><b>${v}</b>/100 × ${wt}% = <b>${Math.round(v * wt / 100)}</b></span></div>`;
+  const so = end ? '' : ' so far', dc = debtCost(sc);
+  const sh = sc.aimShares, aims = Object.keys(sh).filter(k => k !== 'all');
+  return `${part('Happiness', `average ${Math.round(sc.avgH)}${so}${end ? ' (30 → 0, 90 → 100)' : ''}`, sc.parts.happy, w.happy)}
+    ${part('Health', `average ${Math.round(sc.avgHe)}${so}${end ? ' (40 → 0, 95 → 100)' : ''}`, sc.parts.health, w.health)}
+    ${part('Community', `average ${Math.round(sc.avgC)}${so}${end ? ' (10 → 0, 90 → 100)' : `, now ${Math.round(S.community)}`}`, sc.parts.community, w.community)}
+    ${part('Net worth', `${fmt(sc.nw)}${S.col > 1.05 ? ` (${fmt(sc.real)} in 2027 dollars)` : ''} of ${fmt(L.target)}${end ? '' : ' by the end'}${S.sloanLeft > 0 ? '; student loans count at half' : ''}`, Math.max(0, sc.parts.wealth), Math.round(w.wealth))}
+    ${w.aim > 0 ? part(aims.length === 1 ? `${AIMS[aims[0]].ic} ${AIMS[aims[0]].name}` : '🧭 Your aims', `your life aim${aims.length > 1 ? `s, by the weeks you held each (${aims.map(k => `${AIMS[k].name} ${Math.round(sh[k] * 100)}%`).join(', ')})` : ''}`, Math.round(sc.aim), Math.round(w.aim)) : ''}
+    ${dc ? `<div class="kv debt"><span>💳 Debt<br><small>${dc.cost ? `Debt is costing you ${dc.cost} point${dc.cost === 1 ? '' : 's'}.` : 'Debt costs you nothing more right now.'}${!end && dc.back ? ` Back to $0 by the end wins back ${dc.back}.` : ''}${sc.drag ? ` ${S.deepWeeks} week${S.deepWeeks === 1 ? '' : 's'} below ${fmtc(-DEEP_DEBT)}.` : ''}</small></span><span><b>−${dc.cost}</b></span></div>` : ''}
+    <div class="kv"><span>⚖️ Weakest part: ${PART_NAMES[weakestPart(sc)]}<br><small class="muted">A balanced life counts more: the weakest part counts ${WEAK_SHARE * 100}% on its own</small></span><span><b>${Math.round(sc.weakest)}</b>/100</span></div>
+    ${sc.cardAvg != null ? `<div class="kv"><span>📋 Report-card average ${sc.cardAvg}, ending ${sc.snap}<br><small class="muted">${sc.cards} report card${sc.cards === 1 ? '' : 's'} count ${CARD_SHARE * 100}%, ${end ? 'the ending' : 'today'} ${Math.round((1 - CARD_SHARE) * 100)}%</small></span><span><b>${Math.round(sc.cardAvg * CARD_SHARE + sc.snap * (1 - CARD_SHARE))}</b></span></div>` : ''}
+    ${sc.bonus ? `<div class="kv"><span>🎯 Life goals reached</span><span><b>+${sc.bonus}</b></span></div>` : ''}
+    ${sc.bk ? `<div class="kv debt"><span>⚖️ Bankruptcy</span><span><b>−${sc.bk}</b></span></div>` : ''}`;
+}
+const weakestPart = sc => Object.entries(sc.parts).sort((a, b) => a[1] - b[1])[0][0];
 function showScoreNow(){
-  const { score, title, avgH, avgHe, nw, real, parts } = lifeScore(), L = LENGTHS[S.len];
-  const part = (l, sub, v, w) => `<div class="kv"><span>${l}<br><small class="muted">${sub}</small></span><span><b>${v}</b>/100 × ${w}% = <b>${Math.round(v * w / 100)}</b></span></div>`;
-  const weakest = Object.entries(parts).sort((a, b) => a[1] - b[1])[0][0];
-  sheet(`<h2>🏆 Life Score so far: ${score}</h2>
-    <p class="muted">${title}${mode() !== 'normal' ? ` (${MODES[mode()].name})` : ''}. This is the ${term('lifescore')} you'd get if the game ended today.${S.scoreQ != null ? ` Last report card: ${S.scoreQ}.` : ''}</p>
-    ${part('Happiness', `average ${Math.round(avgH)} so far`, parts.happy, 30)}
-    ${part('Health', `average ${Math.round(avgHe)} so far`, parts.health, 20)}
-    ${part('Community', `now ${Math.round(S.community)}`, parts.community, 20)}
-    ${part('Net worth', `${fmt(nw)}${S.col > 1.05 ? ` (${fmt(real)} in 2027 dollars)` : ''} of ${fmt(L.target)} by the end`, parts.wealth, 30)}
-    ${wealthTrack(real)}
-    ${goalBonus() ? `<div class="kv"><span>🎯 Life goals reached</span><span><b>+${goalBonus()}</b></span></div>` : ''}
+  const sc = lifeScore(), dc = debtCost(sc);
+  const tip = dc && dc.cost >= 3 ? 'debt' : weakestPart(sc);
+  const title = S.turn < 4 ? 'Just getting started' : sc.title;
+  sheet(`<h2>🏆 Life Score so far: ${sc.score}</h2>
+    <p class="muted">${title}${mode() !== 'normal' ? ` (${MODES[mode()].name})` : ''} · aim: ${aimLabel()}. This is the ${term('lifescore')} you'd get if the game ended today.${S.scoreQ != null ? ` At the last report card it was ${S.scoreQ}.` : ''}</p>
+    <p class="muted">☀️ ${goodLine()} so far.</p>
+    ${scoreLines(sc, false)}
+    ${wealthTrack(sc.real)}
     ${modeScoreNote()}
-    <div class="card tip" style="margin-top:10px"><div>💡 ${SCORE_TIPS[weakest]}</div></div>
-    <p class="muted">A report card goes in your Journal every 13 weeks.</p>
+    <div class="card tip" style="margin-top:10px"><div>💡 ${SCORE_TIPS[tip]}</div></div>
+    <p class="muted">A report card goes in your Journal every 13 weeks, and the report cards count for ${CARD_SHARE * 100}% of the final score.</p>
     <button class="btn primary" id="ok">Close</button>`);
   $('#ok').onclick = closeSheet;
 }
@@ -1005,30 +1028,168 @@ function storyHTML(){
 }
 EVENTS.push(...STORY_EVENTS);
 /* ---------- ending ---------- */
-// Life Score: average happiness 30%, average health 20%, community 20%, net worth vs. the length's target 30%
-function lifeScore(){
-  const L = LENGTHS[S.len];
-  const mp = Math.max(1, S.monthsPlayed);
-  const avgH = S.happySum ? S.happySum/mp : S.happy, avgHe = S.healthSum ? S.healthSum/mp : S.health;
-  // each part maps to 0–100 so that a middling life lands in the middle: happiness 30→0 and 90→100,
-  // health 40→0 and 95→100, community 10→0 and 90→100, and net worth (in 2027 dollars) against the length's target
-  const nw = netWorth(), real = nw / (S.col || 1), wealth = clamp(real / L.target * 100);
-  const hp = clamp((avgH - 30) / 60 * 100), he = clamp((avgHe - 40) / 55 * 100), cm = clamp((S.community - 10) / 80 * 100);
+/* ---- Life Score (wave 1 score API) ----
+   Parts are 0–100: average happiness, health and community over the life (i15-a01), net worth against the length's target
+   (it goes below 0 in debt: i62-a04, i63-a01, i63-a02) and the life aim's measure (i20-b01, i20-b06).
+   scoreSnap(o) is one snapshot: 85% the weighted parts + 15% the weakest part (i20-b13). A report card every 13 weeks stores a
+   snapshot against targets scaled by progress (i20-b14). lifeScore() = 60% report-card average + 40% ending snapshot,
+   plus life goals, minus a bankruptcy and the debt drag (i63-a03, i63-a04). Later balance work tunes these constants. */
+const SCORE_W = { happy:30, health:20, community:20, wealth:30 };   // All-around weights (points out of 100)
+const AIM_W = 15;                       // i20-b01: points of the wealth weight a life aim moves to its own measure
+const WEAK_SHARE = 0.15, CARD_SHARE = 0.6, CARD_EVERY = 13, CARD_POW = 1.5;   // savings compound, so a report card's net-worth target grows as progress^1.5
+const DEBT_SCALE = 90000, DEBT_FLOOR = { relaxed:-20, normal:-33, hard:-33 }, SLOAN_SCORE = 0.5;   // student loans count at half
+const DEEP_DEBT = 1000, DRAG_PTS = { relaxed:3, normal:6, hard:6 };   // weeks below -$1,000 (2027 dollars) cost up to 6 points
+const GOOD_MIN = 60, CONTENT_FULL = 0.9;                             // i20-b05: a good week; 90% good weeks is a full Contentment part
+const AIM_CHANGE_WEEKS = 52;                                         // i20-b06: an aim can change once a year
+const tallyWeeks = () => Math.max(1, S.turn - (S.tallyFrom || 0));
+const goodShare = () => S.turn - (S.tallyFrom || 0) > 0 ? (S.goodWeeks || 0) / tallyWeeks() : 0;
+const share = (n, full) => Math.min(1, (n || 0) / tallyWeeks() / full);
+// i20-b01: what each aim plays for. Each measure counts things you do (rates or firsts), so idle weeks don't build it.
+// count: built from one-time things (Legacy), so report cards count net worth in its place.
+const AIMS = {
+  all:       { ic:'✨', name:'All-around', line:'The classic Life Score: happiness, health, community and net worth.', what:'Net worth' },
+  content:   { ic:'☀️', name:'Contentment', line:'Good weeks count: happiness and health both 60+ and no bills on the card.', what:'Good weeks',
+    measure:() => clamp(goodShare() / CONTENT_FULL * 100),
+    parts:() => [['Good weeks', `${S.goodWeeks || 0} of ${tallyWeeks()}`, Math.round(clamp(goodShare() / CONTENT_FULL * 100))]] },
+  roots:     { ic:'🏡', name:'Roots', line:'Grow in: Show up for town, be a regular around town, own a home here and finish town goals.', what:'Roots',
+    parts:() => { const yrs = Math.max(0.5, tallyWeeks() / 52);
+      return [['Weeks showing up for town', `${S.townWeeks || 0}`, Math.round(share(S.townWeeks, 0.4) * 45)],
+        ['Visits around town', `${(S.out && S.out.visits) || 0}`, Math.round(share(S.out && S.out.visits, 1) * 20)],
+        ['A home of your own here', HOMES[S.home].own ? 'yes' : 'not yet', HOMES[S.home].own ? 15 : 0],
+        ['Town goals finished', `${S.seasonWins || 0}`, Math.round(Math.min(1, (S.seasonWins || 0) / yrs) * 20)]]; } },
+  adventure: { ic:'🧭', name:'Adventure', line:'New things count: trips around the region, new towns, new places in town and time outside.', what:'Adventure',
+    parts:() => [['Trips taken', `${S.tripsN || 0}`, Math.round(share(S.tripsN, 0.25) * 35)],
+      ['Towns visited', `${Object.keys(S.towns || {}).length} of 5`, Math.round(Math.min(1, Object.keys(S.towns || {}).length / 5) * 25)],
+      ['Places tried in town', `${Object.keys((S.out && S.out.last) || {}).length}`, Math.round(Math.min(1, Object.keys((S.out && S.out.last) || {}).length / 20) * 20)],
+      ['Weeks outside', `${S.outWeeks || 0}`, Math.round(share(S.outWeeks, 0.4) * 20)]] },
+  legacy:    { ic:'🌱', name:'Legacy', line:'What outlasts you: kids raised, a business built, town stories seen through, a council seat, a scholarship.', what:'Legacy',
+    parts:() => [['Kids', `${(S.kids || []).length}`, Math.min(2, (S.kids || []).length) * 20],
+      ['A business built', S.biz || S.bizSold ? 'yes' : 'no', S.biz || S.bizSold ? 25 : 0],
+      ['Years running it', `${Math.floor((S.bizWeeks || 0) / 52)}`, Math.round(Math.min(1, (S.bizWeeks || 0) / 104) * 25)],
+      ['Town stories seen through', `${S.storiesDone || 0}`, Math.min(3, S.storiesDone || 0) * 12],
+      ['Town council', S.council ? 'yes' : 'no', S.council ? 20 : 0],
+      ['A scholarship in your name', S.scholar ? 'yes' : 'no', S.scholar ? 10 : 0]], count:true }
+};
+function aimMeasure(k){
+  const a = AIMS[k]; if (!a || !a.parts && !a.measure) return 0;
+  return clamp(a.measure ? a.measure() : a.parts().reduce((t, x) => t + x[2], 0));
+}
+// i20-b06: each aim's share of the weeks it was held (the current aim counts from its last change)
+function aimShares(){
+  const w = { ...(S.aimWeeks || {}) }, tot = Object.values(w).reduce((a, v) => a + v, 0);
+  if (!tot) return { [AIMS[S.aim] ? S.aim : 'all']: 1 };
+  return Object.fromEntries(Object.entries(w).filter(([k, v]) => v > 0 && AIMS[k]).map(([k, v]) => [k, v / tot]));
+}
+const canChangeAim = () => S.turn - (S.aimAt ?? -AIM_CHANGE_WEEKS) >= AIM_CHANGE_WEEKS;
+const aimNextDate = () => new Date(S.date + Math.max(0, AIM_CHANGE_WEEKS - (S.turn - (S.aimAt ?? -AIM_CHANGE_WEEKS))) * 7 * 864e5);
+function setAim(k){
+  if (!AIMS[k] || k === S.aim || !canChangeAim()) return false;
+  S.aim = k; S.aimAt = S.turn; log(`Changed my life aim to ${AIMS[k].name}.`, 'mile'); return true;
+}
+const aimDesc = k => `${AIMS[k].line}${k === 'all' ? '' : ` It takes ${AIM_W} of net worth's ${SCORE_W.wealth} points for its own measure.`} You can change it once a year.`;
+const monthYear = d => d.toLocaleDateString('en-US', { month:'long', year:'numeric' });
+// i20-b06: the Life tab's aim card: change once a year; the score blends each aim by the weeks you held it
+function aimCard(){
+  const a = AIMS[S.aim] || AIMS.all, ok = canChangeAim(), sh = aimShares();
+  const held = Object.keys(sh).length > 1 ? `<p class="muted">So far: ${Object.entries(sh).map(([k, v]) => `${AIMS[k].name} ${Math.round(v * 100)}%`).join(', ')} of your weeks.</p>` : '';
+  return `<div class="card" id="aimcard"><h3>🧭 Life aim: ${a.ic} ${a.name}</h3>
+    <p class="muted">${a.line}${S.aim !== 'all' ? ` Measure so far: <b>${Math.round(aimMeasure(S.aim))}</b>/100.` : ''}</p>${held}
+    <div class="bgs" role="group" aria-label="Change your life aim">${Object.entries(AIMS).map(([k, x]) => `<button class="chip${k === S.aim ? ' on' : ''}" data-setaim="${k}" aria-pressed="${k === S.aim}"${!ok && k !== S.aim ? ' disabled' : ''}>${x.ic} ${x.name}</button>`).join('')}</div>
+    <p class="muted">${ok ? 'You can change your aim now. Each aim counts by the weeks you hold it, so a late switch counts for little.' : `Next change: ${monthYear(aimNextDate())}.`}</p></div>`;
+}
+function wireAimCard(){
+  document.querySelectorAll('[data-setaim]').forEach(b => b.onclick = () => {
+    const k = b.dataset.setaim; if (k === S.aim) return;
+    if (setAim(k)) { save(); render(); announce(`Life aim changed to ${AIMS[k].name}. Next change in a year.`); toast(`${AIMS[k].ic} Now playing for ${AIMS[k].name}`); }
+  });
+}
+// net worth as the score counts it: 2027 dollars, with student loans at half (i62-a04)
+function scoredReal(){
+  const sl = S.sloanLeft > 0 ? S.sloanLeft * S.sloanPay * 0.85 : 0;
+  return (netWorth() + sl * SLOAN_SCORE) / (S.col || 1);
+}
+const debtFloor = () => DEBT_FLOOR[mode()] ?? -33;
+// one snapshot of the parts. o.p: a report card's progress (the net-worth target scales with it);
+// o.real: a what-if net worth (the debt line asks "what if you were back at $0?")
+function scoreSnap(o = {}){
+  const L = LENGTHS[S.len], mp = S.monthsPlayed || 0, p = o.p == null ? 1 : Math.max(0.1, o.p);
+  const avg = (sum, now) => mp > 0 && sum != null ? sum / mp : now;   // i5-a02: over the months actually played
+  const avgH = avg(S.happySum, S.happy), avgHe = avg(S.healthSum, S.health), avgC = avg(S.commSum, S.community);
+  const real = o.real ?? scoredReal(), scale = real < 0 ? Math.min(L.target, DEBT_SCALE) : L.target * Math.pow(p, CARD_POW);
+  const wealth = clamp(real / scale * 100, debtFloor(), 100);
+  const hp = clamp((avgH - 30) / 60 * 100), he = clamp((avgHe - 40) / 55 * 100), cm = clamp((avgC - 10) / 80 * 100);
+  const sh = aimShares(), allShare = sh.all || 0, aimW = AIM_W * (1 - allShare);
+  // a report card judges Legacy (things that build late) as net worth; the ending counts it in full
+  const am = k => o.p != null && AIMS[k].count ? Math.max(0, wealth) : aimMeasure(k);
+  const aim = aimW > 0 ? Object.entries(sh).filter(([k]) => k !== 'all').reduce((t, [k, v]) => t + am(k) * v, 0) / (1 - allShare) : 0;
+  const w = { ...SCORE_W, wealth: SCORE_W.wealth - aimW, aim: aimW };
+  const weighted = (hp * w.happy + he * w.health + cm * w.community + wealth * w.wealth + aim * w.aim) / 100;
+  const weakest = Math.max(0, Math.min(hp, he, cm, wealth));
+  return { base: weighted * (1 - WEAK_SHARE) + weakest * WEAK_SHARE, weighted, weakest, w, avgH, avgHe, avgC, real, wealth, aim,
+    parts: { happy: Math.round(hp), health: Math.round(he), community: Math.round(cm), wealth: Math.round(wealth) } };
+}
+// i63-a03: the share of weeks spent below -$1,000 (2027 dollars), up to 6 points (3 on Relaxed); climb out and it's a third (i63-a04)
+function debtDrag(o = {}){
+  const n = S.deepWeeks || 0; if (!n || !S.turn) return 0;
+  const d = Math.round(Math.min(1, n / S.turn) * (DRAG_PTS[mode()] ?? 6)), cash = o.cash ?? S.money, real = o.real ?? scoredReal();
+  return cash >= 0 && real >= 0 ? Math.floor(d / 3) : d;
+}
+// i20-b14: a report card's score (a snapshot against progress-scaled targets), stored every 13 weeks in turn.js
+const cardScore = () => scoreSnap({ p: gameProgress() }).base;
+function addReportCard(){
+  const c = cardScore(), n = Math.floor(S.turn / CARD_EVERY);
+  if (S.cardSeed) { S.cardSeed = false; S.cardCount = Math.max(0, n - 1); S.cardSum = c * S.cardCount; }   // an older save: earlier cards count as this one
+  S.cardSum += c; S.cardCount++;
+  return Math.round(c);
+}
+const SCORE_TITLES = [[85, 'Legend of the Burg'], [70, 'Pillar of the Community'], [55, 'Solid Waitsburger'], [40, 'Getting By on Main Street'], [-1, 'Tumbleweed']];
+const scoreTitle = sc => (SCORE_TITLES.find(([n]) => sc >= n) || SCORE_TITLES[SCORE_TITLES.length - 1])[1];
+// The Life Score. o: what-ifs for the debt line (real, cash). Returns the score and everything the sheets show.
+function lifeScore(o = {}){
+  const snap = scoreSnap(o), n = S.cardCount || 0, cardAvg = n ? (S.cardSum || 0) / n : null;
+  const blended = cardAvg == null ? snap.base : cardAvg * CARD_SHARE + snap.base * (1 - CARD_SHARE);
   const bonus = goalBonus();                      // pinned life goals reached (#66)
   const bk = S.bk != null ? BK_PENALTY : 0;       // i3-a27: a bankruptcy costs a fixed number of points
-  const score = clamp(Math.min(100, Math.round(hp*0.3 + he*0.2 + cm*0.2 + wealth*0.3) + bonus) - bk, 0, 100);
-  const title = score >= 85 ? 'Legend of the Burg' : score >= 70 ? 'Pillar of the Community' : score >= 55 ? 'Solid Waitsburger' : score >= 40 ? 'Getting By on Main Street' : 'Tumbleweed';
-  return { score, title, avgH, avgHe, nw, real, wealth, bonus, bk, parts: { happy: Math.round(hp), health: Math.round(he), community: Math.round(cm), wealth: Math.round(wealth) } };
+  const drag = o.noDrag ? 0 : debtDrag(o);
+  const score = clamp(Math.min(100, Math.round(blended) + bonus) - bk - drag, 0, 100);
+  const nw = netWorth();
+  return { score, title: scoreTitle(score), avgH: snap.avgH, avgHe: snap.avgHe, avgC: snap.avgC, nw, real: snap.real, wealth: snap.wealth, bonus, bk, drag,
+    snap: Math.round(snap.base), cardAvg: cardAvg == null ? null : Math.round(cardAvg), cards: n, weighted: snap.weighted, weakest: snap.weakest,
+    w: snap.w, aim: snap.aim, aimShares: aimShares(), parts: snap.parts };
 }
+// i63-a10: what debt costs now, and what getting back to $0 by the end would win back
+function debtCost(sc = lifeScore()){
+  if (!(sc.real < 0 || sc.drag > 0)) return null;
+  const free = lifeScore({ real: Math.max(0, sc.real), noDrag: true });   // no debt part and no drag at all
+  const back = lifeScore({ real: Math.max(0, sc.real), cash: Math.max(0, S.money) });
+  return { cost: Math.max(0, free.score - sc.score), back: Math.max(0, back.score - sc.score) };
+}
+// called once per week played (skips too) from weekTick, before the week number moves on
+function scoreWeek(trip){
+  const c = S.col || 1;
+  if (S.happy >= GOOD_MIN && S.health >= GOOD_MIN && S.money >= 0) S.goodWeeks = (S.goodWeeks || 0) + 1;   // i20-b05
+  if (S.money < -DEEP_DEBT * c) S.deepWeeks = (S.deepWeeks || 0) + 1;                                      // i63-a03
+  S.debtLow = Math.min(S.debtLow || 0, S.money / c);                                                      // i63-a20
+  const a = AIMS[S.aim] ? S.aim : 'all'; (S.aimWeeks = S.aimWeeks || {})[a] = (S.aimWeeks[a] || 0) + 1;  // i20-b06
+  if (S.focus === 'community') S.townWeeks = (S.townWeeks || 0) + 1;
+  if (S.focus === 'outdoors') S.outWeeks = (S.outWeeks || 0) + 1;
+  if (trip) S.tripsN = (S.tripsN || 0) + 1;
+  if (S.biz) S.bizWeeks = (S.bizWeeks || 0) + 1;
+}
+// i63-a20: a life that climbed out of real debt says so under its title
+function comebackLine(){
+  const low = S.debtLow || 0;
+  return low <= -DEEP_DEBT && S.money >= 0 && scoredReal() >= 0 ? `Came back from ${fmt(Math.round(-low / 100) * 100)} in debt.` : '';
+}
+const aimLabel = () => { const a = AIMS[S.aim] || AIMS.all; return `${a.ic} ${a.name}`; };
 function finish(reason){
-  const { score, title, avgH, avgHe, nw, real, wealth, parts, bonus, bk: bkPts } = lifeScore();
-  const part = (l, sub, v, w) => `<div class="kv"><span>${l}<br><small class="muted">${sub}</small></span><span><b>${v}</b>/100 × ${w}% = <b>${Math.round(v * w / 100)}</b></span></div>`;
+  const scr = lifeScore(), { score, title } = scr, back = comebackLine();
   const sc = SCENARIOS[S.scenario], scWin = sc ? (S.scWon || sc.win()) : false;
   if (sc && scWin) markChallenge(S.scenario);
   const best = store.get(BEST_KEY) || {};
   const bk = sc ? `sc-${S.scenario}` : S.weekly ? `wk-${S.weekly}` : bestKey(S.len, mode());
   const isBest = !best[bk] || score > best[bk];
-  if (isBest && !S.practice) { best[bk] = score; store.set(BEST_KEY, best); }
+  if (isBest && !S.practice) { best[bk] = score; store.set(BEST_KEY, best); const nt = store.get(BEST_NOTE_KEY) || {}; if (back) nt[bk] = back; else delete nt[bk]; store.set(BEST_NOTE_KEY, nt); }
   if (!S.practice) writeSlot(S.slot ?? 0, null);
   S.over = true;
   sheet(`<h2 style="text-align:center">${esc(S.name)}'s life in the Burg</h2>
@@ -1037,14 +1198,11 @@ function finish(reason){
     ${S.bg !== 'fresh' || mode() !== 'normal' ? `<p class="muted" style="text-align:center">${BACKGROUNDS[S.bg].ic} ${BACKGROUNDS[S.bg].name} · ${MODES[mode()].ic} ${MODES[mode()].name}</p>` : ''}
     <div class="score" id="finalscore" tabindex="-1" aria-label="Life Score ${score}">${score}</div>
     <p style="text-align:center;margin-top:0"><b>${title}</b>${mode() !== 'normal' ? ` <span class="tag">${MODES[mode()].ic} ${MODES[mode()].name} score</span>` : ''}${isBest ? ` · <span class="tag cur">New best${mode() !== 'normal' ? ` (${MODES[mode()].name})` : ''}!</span>` : ''}</p>
+    ${back ? `<p class="comeback" style="text-align:center;margin-top:-6px">${back}</p>` : ''}
+    <p class="goodweeks" style="text-align:center"><b>☀️ ${goodLine()}.</b><br><span class="muted">Played for: ${aimLabel()}</span></p>
     ${modeScoreNote()}
     <h3 style="margin-top:10px">How the score adds up</h3>
-    ${part('Happiness', `average ${Math.round(avgH)} (30 → 0, 90 → 100)`, parts.happy, 30)}
-    ${part('Health', `average ${Math.round(avgHe)} (40 → 0, 95 → 100)`, parts.health, 20)}
-    ${part('Community', `ended at ${Math.round(S.community)} (10 → 0, 90 → 100)`, parts.community, 20)}
-    ${part('Net worth', `${fmt(nw)}${S.col > 1.05 ? ` (${fmt(real)} in 2027 dollars)` : ''} of ${fmt(LENGTHS[S.len].target)}`, parts.wealth, 30)}
-    ${bonus ? `<div class="kv"><span>🎯 Life goals reached</span><span><b>+${bonus}</b></span></div>` : ''}
-    ${bkPts ? `<div class="kv"><span>⚖️ Bankruptcy</span><span><b>−${bkPts}</b></span></div>` : ''}
+    ${scoreLines(scr, true)}
     ${sc ? `<div class="card ${scWin ? 'tip' : 'warn'}" style="margin-top:10px">${sc.ic} <b>${scWin ? 'Challenge complete!' : 'Challenge not met this time.'}</b> ${sc.name}: ${sc.desc}</div>` : ''}
     ${Object.keys(S.badges || {}).length ? `<h3 style="margin-top:10px">Badges</h3><p>${BADGES.filter(b => S.badges[b.id]).map(b => `${b.ic} ${b.name}`).join(' · ')}</p>` : ''}
     <h3 style="margin-top:10px">Your life</h3>
@@ -1059,7 +1217,7 @@ function finish(reason){
     ${!S.practice ? '<button class="btn ghost" id="share">📤 Share score card</button>' : ''}
     ${LENGTHS[S.len].turns === Infinity && (S.kids || []).length && !S.practice ? `<button class="btn primary" id="legacy">🌳 Continue as your grandkid</button>` : ''}
     <button class="btn ${LENGTHS[S.len].turns === Infinity && (S.kids || []).length && !S.practice ? 'ghost' : 'primary'}" id="again">Play again</button>`);
-  const parent = { name:S.name, nw:netWorth(), community:S.community, slot:S.slot, mode:mode(), gen:S.gen || 1, date:S.date, col:S.col, wage:S.wage,
+  const parent = { name:S.name, nw:netWorth(), community:S.community, slot:S.slot, mode:mode(), aim:S.aim, gen:S.gen || 1, date:S.date, col:S.col, wage:S.wage,
     will:hasWill(), home:S.home, equity:S.equity, mortgage:S.mortgage };
   if ($('#share')) $('#share').onclick = shareCard;
   if ($('#skipstory')) $('#skipstory').onclick = () => { $('#story').remove(); const f = $('#finalscore'); f.scrollIntoView({ block: 'start' }); f.focus({ preventScroll: true }); };
