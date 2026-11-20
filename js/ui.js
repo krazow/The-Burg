@@ -924,7 +924,7 @@ function render(){
   </header>
   <main id="main"></main>
   ${tab==='home' ? `${S.run ? `<button class="weekstrip" id="strip" aria-label="${esc(runWords())}. Details"><span class="wl">${S.run.weeks > 1 ? `Last ${S.run.weeks} wks` : 'Last week'}</span><span class="wc">${runChips()}</span><span class="more">›</span></button>` : ''}
-    <div class="endbar${ROLL ? ' rolling' : ''}">${ROLL ? `<button class="btn primary" id="stoproll">⏹ Stop<small>${S.run.weeks} of up to ${ROLL.n} weeks</small></button>`
+    <div class="endbar${ROLL && S.run ? ' rolling' : ''}">${ROLL && S.run ? `<button class="btn primary" id="stoproll">⏹ Stop<small>${S.run.weeks} of up to ${ROLL.n} weeks</small></button>`
       : `<div class="endwrap"><button class="btn primary" id="end" aria-keyshortcuts="Shift+Enter" aria-description="Press and hold, or Shift+Enter, for more ways to skip ahead">End Week →<small>${FOCUS_SHORT[S.focus]}${S.trip && CITIES[S.trip.city] ? ` + 🚗 ${CITIES[S.trip.city].name}` : ''}</small></button><button class="endf" id="endf" aria-expanded="${FOCUS_ROW}" aria-controls="focusrow" aria-label="Change this week's focus, now ${FOCUS_SHORT[S.focus]}"><span aria-hidden="true">${FOCUS[S.focus].ic}</span><span class="caret" aria-hidden="true">${FOCUS_ROW ? '▴' : '▾'}</span></button></div>
     ${on('ui.auto') ? `<button class="btn ghost${nar}" id="ff4" aria-label="Skip 4 weeks">⏩ 4</button><button class="btn ghost" id="auto" aria-label="Auto: play until ${autoUntil() === 'event' ? 'something needs you' : AUTO_UNTIL[autoUntil()].short + ' or something needs you'}. Press and hold for options">⏭ Auto</button>` : ''}`}</div>${FOCUS_ROW && !ROLL ? focusRow() : ''}` : ''}
   <nav><div class="in">
