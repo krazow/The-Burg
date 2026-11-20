@@ -405,6 +405,55 @@ await t.check('the title screen starts a life with a background and a mode', asy
   assert(/Hard/.test(await page.textContent('header.top')), 'the header should show the mode');
 });
 
+await t.check('i19-b02..b05: Change the rules on the start sheet: grouped knobs with Normal values, a live preview and a record badge', async () => {
+  await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); renderTitle(); });
+  await page.click('#moreopts');
+  assert(/Normal rules/.test(await page.textContent('#rulesum')), await page.textContent('#rulesum'));
+  await page.click('#rulesbtn');
+  const groups = await page.$$eval(`${open} h3`, hs => hs.map(h => h.textContent));
+  assert(JSON.stringify(groups) === '["Money","Events","Assists"]', JSON.stringify(groups));
+  assert((await page.textContent('#rl-start')) === 'Starting money: $1,500 (Normal)', await page.textContent('#rl-start'));
+  assert(/normal records/.test(await page.textContent('#tierbadge')), await page.textContent('#tierbadge'));
+  await page.click('[data-rule="start"][data-opt="comfy"]');
+  assert(/\$6,500 · Normal is \$1,500/.test(await page.textContent('#rl-start')) && /about 43 weeks of rent/.test(await page.textContent('#rp-start')), await page.textContent('#rp-start'));
+  assert(/Custom shelf/.test(await page.textContent('#tierbadge')) && (await page.getAttribute('[data-rule="start"][data-opt="comfy"]', 'aria-pressed')) === 'true', 'badge or pressed state did not follow');
+  await page.click('[data-rule="events"][data-opt="none"]');
+  assert(/never recorded/i.test(await page.textContent('#tierbadge')), await page.textContent('#tierbadge'));
+  await page.click('#rnormal');
+  assert(/normal records/.test(await page.textContent('#tierbadge')) && /\(Normal\)/.test(await page.textContent('#rl-events')), 'Back to Normal did not reset');
+  await page.click('[data-rule="start"][data-opt="comfy"]'); await page.click('[data-rule="routine"][data-opt="on"]');
+  await page.click('#rdone');
+  assert(/Custom rules/.test(await page.textContent('#moresum')) && /Comfortable/.test(await page.textContent('#rulesum')), await page.textContent('#rulesum'));
+  await page.fill('#nm', 'Rulz'); await page.click('#start');
+  const s = await S();
+  assert(s.money === 6500 && JSON.stringify(s.rules) === '{"start":"comfy","routine":"on"}' && s.tier0 === 'custom', JSON.stringify({ m: s.money, r: s.rules, t: s.tier0 }));
+});
+
+await t.check('i19-b19: a "Rules for this life" card on the Life tab: read-only, assists can only be turned off, with a confirm naming the shelf', async () => {
+  await setup(() => { closeSheet(); S.noEvents = true; tab = 'life'; render(); });
+  const card = await page.textContent('#rulescard');
+  assert(/Custom shelf/.test(card) && /Starting money: \$6,500 · Normal is \$1,500/.test(card) && /Handle the routine stuff for me: On/.test(card), card);
+  assert((await page.$$('#rulescard [data-assistoff]')).length === 1, 'only the assist should have a switch');
+  await page.click('[data-assistoff="routine"]');
+  assert(/stays on the Custom shelf/.test(await page.textContent(`${open}`)) && /can't turn it back on/.test(await page.textContent(`${open}`)), await page.textContent(`${open}`));
+  await page.click(`${open} #y`);
+  const s = await S();
+  assert(JSON.stringify(s.rules) === '{"start":"comfy"}' && !(await page.$('[data-assistoff]')), JSON.stringify(s.rules));
+  await life({}, 'life');
+  assert(!(await page.$('#rulescard')), 'a Normal-rules life should not show the rules card');
+});
+
+await t.check('i19-b28: the weekly challenge says everyone plays with the same rules', async () => {
+  await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); renderTitle(); });
+  await page.click('#chal');                                      // i50-a05: the weekly challenge lives in Challenges
+  assert(/Everyone plays it with Normal rules/.test(await page.textContent(open)), await page.textContent(open));
+  await page.evaluate(() => { newGame('Wk', 'half', WEEKLY_SLOT, { weekly: isoWeek() }); save(); S = null; closeSheet(); renderTitle(); });
+  await page.click('#chal'); await page.click(`${open} #weekly`);   // one in progress: the weekly sheet offers Continue
+  assert(/Everyone plays the weekly with the same rules/.test(await page.textContent(open)) && await page.$(`${open} #wcont`), await page.textContent(open));
+  await page.click(`${open} #n`);
+  await page.evaluate(() => { localStorage.clear(); renderTitle(); });
+});
+
 await t.check('pick life goals on the Life tab, and start a challenge from the title screen', async () => {
   await life({ jobId: 'farmhand' }, 'life');
   await page.click('#goals');
@@ -579,7 +628,8 @@ await t.check('H2: End this life now asks first, and Escape keeps playing', asyn
   await page.waitForSelector(`${open} #yes`);
   const txt = await page.textContent('#sheet');
   assert(/Life Score so far: \d+/.test(txt) && /Keep playing/.test(txt), `confirm sheet: ${txt}`);
-  assert(await page.evaluate(() => document.activeElement && document.activeElement.id === 'no' || document.querySelector('#sheet button').id === 'no'), 'Keep playing should be the default');
+  // i70-b17: Keep playing is now the bottom button; it still gets the first focus
+  assert(await page.waitForFunction(() => document.activeElement && document.activeElement.id === 'no', null, { timeout: 2000 }).then(() => true, () => false), 'Keep playing should be the default');
   await page.keyboard.press('Escape');
   const r = await page.evaluate(() => ({ open: !document.querySelector('#modal').classList.contains('hidden'), slot: slots()[0] && slots()[0].name, over: S.over }));
   assert(!r.open && r.slot === 'Flow' && !r.over, JSON.stringify(r));
@@ -1168,7 +1218,7 @@ await t.check('i3-a33/a28: the Life tab writes a will, opens the 13-week money o
   assert(/next 13 weeks/.test(txt) && /On track|dips below zero/.test(txt) && (await page.$$('#sheet tbody tr')).length === 13, txt.slice(0, 200));
   await page.keyboard.press('Escape');
   assert(!(await page.$(open)), 'Escape closes the outlook');
-  await setup(() => { S.kids = [S.ageMonths - 240]; S.money = 300000; finish('done'); });
+  await setup(() => { S.ageMonths = 72 * 12; S.kids = [S.ageMonths - 240]; S.money = 300000; finish('done'); });
   await page.click('#legacy');
   assert((await page.textContent('#sheet')).includes('left a will'), 'legacy sheet should say a will was left');
   await page.click(`${open} #heirgo`);
@@ -1390,6 +1440,201 @@ await t.check('the heir sheet keeps the will line in one block (no narrow column
   const w = await page.evaluate(() => { const c = document.querySelector('#sheet .card.tip'); return [c.getBoundingClientRect().width, c.firstElementChild.getBoundingClientRect().width, c.children.length]; });
   assert(w[2] === 1 && w[1] > w[0] * 0.7, JSON.stringify(w));
   await page.evaluate(() => { closeSheet(); S = null; renderTitle(); });
+});
+
+/* ---------- wave 1, batch C: backups, moving phones and the offline shell ---------- */
+await t.check('i63-b08: the week 4 weeks before the end offers a backup; closing it carries on with the week', async () => {
+  await life({ jobId: 'farmhand' }, 'home', 'two');
+  await page.evaluate(() => { S.turn = 99; save(); render(); });
+  await page.click('#end');
+  await page.waitForSelector(`${open} #nudgebk`);
+  assert((await page.textContent('#sheet')).includes('Your ending is 4 weeks away'), 'no nudge line');
+  await page.click('#nudgebk');
+  await page.waitForSelector(`${open} #bkfile`);
+  assert(!(await page.$(`${open} #bkrestore`)), 'restore should not be offered mid-week');
+  await page.click(`${open} #no`);
+  await clearSheets();
+  await page.evaluate(() => { S.turn = 99; S.noEvents = true; save(); render(); });
+  await page.click('#end');
+  assert(!(await page.$(`${open} #nudgebk`)), 'the nudge came twice');
+  await clearSheets();
+  const s = await S();
+  assert(s.backupNudged && s.turn === 100, `nudged ${s.backupNudged} turn ${s.turn}`);
+  assert(!(await page.$(`${open} #nudgebk`)), 'the nudge came twice');
+});
+
+await t.check('i63-b15: Moving to a new phone is a two-step guide: send yourself the code, then paste it on the new phone', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => { S.turn = 30; save(); const c = clone(S); c.slot = 1; c.name = 'Copy1'; c.lid = 'x1'; writeSlot(1, c); });
+  await page.click('[data-tab=menu]'); await page.click('#movephone');
+  await page.waitForSelector(`${open} #mvcode`);
+  assert((await page.textContent('#sheet')).includes('Step 1 of 2'), 'step 1 missing');
+  await page.click('#mvcode');
+  await page.waitForSelector('#mvcodetext');
+  const code = await page.inputValue('#mvcodetext');
+  assert(code.startsWith('BURG2:'), `code ${code.slice(0, 10)}`);
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#mvfile')]);
+  assert(/\.json$/.test(dl.suggestedFilename()), dl.suggestedFilename());
+  await page.click('#mvnext');
+  await page.waitForSelector(`${open} ol.steps`);
+  assert((await page.textContent('#sheet')).includes("I'm the new phone"), 'step 2 should name the title button');
+  await page.click('#back'); await page.waitForSelector('#mvcode');
+  await page.click(`${open} #close`);
+  // the new phone
+  await page.evaluate(() => { localStorage.clear(); S = null; renderTitle(); });
+  await page.click('#newphone');
+  await page.waitForSelector(`${open} #rscode`);
+  assert(!(await page.$('#npscan, video')), 'no camera on the new-phone sheet');
+  await page.fill('#rscode', code.slice(0, -25));
+  await page.click('#rscheck');
+  await page.waitForSelector('#rsout .warnline');
+  assert((await page.textContent('#rsout')).includes('last part'), await page.textContent('#rsout'));
+  await page.fill('#rscode', code); await page.click('#rscheck');
+  await page.waitForSelector('#rsadd'); await page.click('#rsadd');
+  const names = await page.evaluate(() => slots().map(g => g && g.name).join());
+  assert(names === 'Flow,Copy1,,,', `new phone has ${names}`);
+});
+
+await t.check('i63-b02: a backup from a newer Burg offers Check for an update', async () => {
+  await page.click('#restore');
+  await page.fill('#rscode', JSON.stringify({ app: 'theburg', v: 5, minReader: 5, slots: [{ name: 'Later', len: 'two' }] }));
+  await page.click('#rscheck');
+  await page.waitForSelector('#rsupd');
+  assert((await page.textContent('#rsout')).includes('newer Burg'), await page.textContent('#rsout'));
+  await page.click('#rsupd');
+  await page.waitForFunction(() => /internet|newer version|update/i.test(document.querySelector('#rsupdout').textContent));
+  await page.click(`${open} #no`);
+});
+
+await t.check('i63-b22: restoring an older week of a life here asks first and marks it rewound', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => { S.turn = 5; save(); });
+  const code = await page.evaluate(() => backupCode(backupData()));
+  await page.evaluate(() => { S.turn = 40; save(); S = null; renderTitle(); });
+  await page.click('#restore'); await page.fill('#rscode', code); await page.click('#rscheck');
+  await page.waitForSelector('#rsadd'); await page.click('#rsadd');
+  await page.waitForSelector('#rsrw');
+  const txt = await page.textContent('#rsout');
+  assert(txt.includes('older copy') && txt.includes('week 5') && txt.includes('week 40'), txt);
+  await page.click('#rsback'); await page.waitForSelector('#rsadd');
+  await page.click('#rsadd'); await page.click('#rsrw');
+  const sl = await page.evaluate(() => slots().map(g => g && [g.turn, !!g.rewound]));
+  assert(JSON.stringify(sl.slice(0, 2)) === '[[40,false],[5,true]]', JSON.stringify(sl));
+});
+
+await t.check('i63-b05: lives cleared from localStorage (but not the flag) show a note on the title screen', async () => {
+  const c2 = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  const p2 = await c2.newPage(); p2.on('pageerror', e => errors.push(String(e)));
+  try {
+    await p2.goto(srv.url, { waitUntil: 'load' });
+    assert(!(await p2.$('#tn-cleared')), 'a first visit should not say anything was cleared');
+    await p2.evaluate(async () => { newGame('Kept', 'two', 0); save(); await playedFlag(true); });
+    await p2.evaluate(() => { S = null; localStorage.clear(); });   // the browser wipes localStorage only (S = null: the pagehide save must not write it back)
+    await p2.reload({ waitUntil: 'load' });
+    await p2.waitForSelector('#tn-cleared');
+    assert((await p2.textContent('#tn-cleared')).includes('cleared from this browser'), 'note text');
+    await p2.click('#tn-cleared [data-tn=restore]');
+    await p2.waitForSelector('#modal:not(.hidden) #rscode');
+  } finally { await c2.close(); }
+});
+
+await t.check('i73-b12: a private window (small quota, no persisted) gets a calm warning on the title and once on Home', async () => {
+  const mk = async sign2 => {
+    const c2 = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+    await c2.addInitScript(s2 => { navigator.storage.estimate = async () => ({ quota: 80 * 1024 * 1024, usage: 0 }); if (s2) delete StorageManager.prototype.persisted; }, sign2);
+    const p2 = await c2.newPage(); p2.on('pageerror', e => errors.push(String(e)));
+    await p2.goto(srv.url, { waitUntil: 'load' }); await p2.waitForSelector('#tn-private');
+    return [c2, p2];
+  };
+  const [c1, p1] = await mk(true), [c2, p2] = await mk(false);
+  try {
+    assert((await p1.textContent('#tn-private')).includes('This window forgets your lives'), await p1.textContent('#tn-private'));
+    assert((await p2.textContent('#tn-private')).includes('may forget'), await p2.textContent('#tn-private'));
+    await p1.fill('#nm', 'Priv'); await p1.click('#start'); await p1.evaluate(() => { tab = 'home'; render(); });
+    await p1.waitForSelector('#privcard');
+    await p1.click('#privok');
+    await p1.evaluate(() => render());
+    assert(!(await p1.$('#privcard')), 'the Home card came back after Got it');
+  } finally { await c1.close(); await c2.close(); }
+  assert(!(await page.$('#tn-private')), 'a normal window was warned');
+});
+
+await t.check('i73-b13 + i63-b04: iPhone Safari tab warns about 7 days; the home-screen app with no lives offers to bring them over', async () => {
+  const ios = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
+  const c2 = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block', userAgent: ios });
+  const p2 = await c2.newPage(); p2.on('pageerror', e => errors.push(String(e)));
+  try {
+    await p2.goto(srv.url, { waitUntil: 'load' });
+    assert(!(await p2.$('#tn-ios')), 'no lives yet: nothing to lose');
+    await p2.evaluate(() => { newGame('Tab', 'two', 0); save(); S = null; renderTitle(); });
+    await p2.waitForSelector('#tn-ios');
+    assert((await p2.textContent('#tn-ios')).includes('Add to Home Screen'), 'steps missing');
+    await p2.click('#tn-ios [data-tn=iosok]');
+    await p2.reload({ waitUntil: 'load' }); await p2.waitForTimeout(300);
+    assert(!(await p2.$('#tn-ios')), 'Got it should hide it on the next visit');
+    await p2.evaluate(() => setPref('lastSeen', Date.now() - 5 * 864e5));
+    await p2.reload({ waitUntil: 'load' }); await p2.waitForSelector('#tn-ios');   // away more than 4 days: it's back
+    await p2.click('#tn-ios [data-tn=backup]');
+    await p2.waitForSelector('#modal:not(.hidden) #bkcode');
+  } finally { await c2.close(); }
+  // the installed app (standalone) on iPhone, with an empty storage
+  const c3 = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block', userAgent: ios });
+  await c3.addInitScript(() => { Object.defineProperty(navigator, 'standalone', { value: true }); });
+  const p3 = await c3.newPage(); p3.on('pageerror', e => errors.push(String(e)));
+  try {
+    await p3.goto(srv.url, { waitUntil: 'load' });
+    await p3.waitForSelector('#tn-safari');
+    assert((await p3.textContent('#tn-safari')).includes('Played in Safari before?'), 'Safari note text');
+    assert(!(await p3.$('#tn-ios')), 'the installed app should not get the Safari-tab warning');
+  } finally { await c3.close(); }
+});
+
+await t.check('i73-b18: where a picture can\'t be shared, the score card downloads and offers to copy its text', async () => {
+  await life({ jobId: 'farmhand' }, 'home', 'half');
+  await page.evaluate(() => { S.turn = 26; finish('done'); });
+  await page.waitForSelector(`${open} #share`);
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#share')]);
+  assert(/\.png$/.test(dl.suggestedFilename()), dl.suggestedFilename());
+  await page.waitForSelector('#sharetext');
+  await page.click('#sharetext');
+  await page.waitForSelector('#sharetextout:not(.hidden)');
+  assert((await page.textContent('#sharetextout')).includes('in a 6-month life in The Burg'), await page.textContent('#sharetextout'));
+  await page.evaluate(() => { closeSheet(); S = null; renderTitle(); });
+});
+
+await t.check('i57-a23: Help says what the game keeps on this device, and Erase everything (typed) clears only this game', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => { store.set(BEST_KEY, { two: 55 }); localStorage.setItem('otherapp.data', 'keep me'); S = null; renderTitle(); });
+  await page.click('#how');
+  await page.waitForSelector('#g-device');
+  const txt = await page.textContent('#g-device');
+  assert(txt.includes('Nothing is sent anywhere') && /1 of 5 slots/.test(txt) && /about \d+ KB/.test(txt), txt);
+  await page.click('[data-call=helpgo][data-arg=device]');
+  await page.click('#eraseall');
+  await page.waitForSelector(`${open} #erasetype`);
+  assert(await page.isDisabled('#yes'), 'Erase should wait for the typed word');
+  await page.fill('#erasetype', 'erase');
+  await page.click('#yes');
+  await page.waitForSelector('.title h1');
+  const left = await page.evaluate(() => Object.keys(localStorage).sort().join());
+  assert(left === 'otherapp.data', `left behind: ${left}`);
+  await page.evaluate(() => localStorage.removeItem('otherapp.data'));
+});
+
+await t.check('i57-a10: the page has a content security policy, and map pins work by tap and keyboard without inline handlers', async () => {
+  const csp = await page.getAttribute('meta[http-equiv="Content-Security-Policy"]', 'content');
+  assert(/script-src 'self'(;|$)/.test(csp) && /object-src 'none'/.test(csp), csp);
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => { setPref('mapView', false); render(); });
+  await page.click('[data-call=MAPPREF][data-arg="1"]');
+  await page.waitForSelector('.mpin[data-call=MAPTAP]');
+  const k = await page.getAttribute('.mpin[data-call=MAPTAP]', 'data-arg');
+  await page.click(`.mpin[data-arg="${k}"]`);
+  assert(await page.evaluate(() => MAPSEL) === k, 'tap did not select the pin');
+  await page.focus(`.mpin[data-arg="${k}"]`); await page.keyboard.press('Enter');
+  assert(await page.evaluate(() => MAPSEL) === null, 'Enter on a pin did nothing');
+  assert(await page.evaluate(() => document.querySelectorAll('[onclick],[onkeydown]').length) === 0, 'inline handlers left in the page');
+  await page.evaluate(() => { setPref('mapView', false); render(); });
 });
 
 /* ---------- Wave 1, B-sheets-focus: Back button, tap guard, focus return, filters, scroll lock, money, Help ---------- */
