@@ -2077,6 +2077,43 @@ await t.check('i56-b16: reach table: every event can happen under some setup, an
   assert(!r.missing.length && r.reached === r.n, `no setup makes these events happen (add a REACH row): ${r.missing.join('; ')}`);
 });
 
+// i56-b23: real saves from every tagged version (tests/fixtures/saves, made by tools/save-fixtures.mjs) load in this
+// version, continue, play 52 more weeks and open every tab without errors, NaN or undefined on screen
+await t.check('i56-b23: saves from every tagged version load, continue, play 52 weeks and open every tab', async () => {
+  const fs = await import('node:fs');
+  const files = fs.readdirSync('tests/fixtures/saves').filter(f => f.endsWith('.json')).sort();
+  assert(files.length >= 12, `only ${files.length} save fixtures`);
+  const bad = [];
+  for (const f of files) {
+    const fx = JSON.parse(fs.readFileSync('tests/fixtures/saves/' + f, 'utf8'));
+    const c = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+    await c.addInitScript(seedScript(2323));
+    await c.addInitScript(keys => { if (!sessionStorage.getItem('fx')) { sessionStorage.setItem('fx', '1'); for (const [k, v] of Object.entries(keys)) localStorage.setItem(k, v); } }, fx.storage);
+    const p = await c.newPage(); const errs = [];
+    p.on('pageerror', e => errs.push(String(e)));
+    await p.goto(srv.url, { waitUntil: 'load' });
+    const r = await p.evaluate(() => {
+      const sl = slots(); if (!sl[0]) return { missing: true };
+      loadSlot(0); closeSheet(); const t0 = S.turn, name = S.name; let ending = null;
+      for (let w = 0; w < 52 && !ending; w++) { const res = weekTick(false); if (res.ev) { const ch = res.ev.choices().filter(c => !c.if || c.if()); if (ch.length) ch[0].go(); } ending = res.ending; }
+      save(); return { t0, turn: S.turn, name, ending, money: S.money };
+    });
+    if (r.missing) { bad.push(`${fx.tag}: no life in slot 1`); await c.close(); continue; }
+    const shown = [];
+    for (const tb of ['home', 'jobs', 'life', 'log', 'menu']) {
+      await p.evaluate(() => closeSheet());
+      await p.click(`[data-tab=${tb}]`); await p.waitForTimeout(50);
+      const txt = await p.evaluate(() => document.querySelector('#app').innerText + (document.querySelector('#modal:not(.hidden)') ? document.querySelector('#modal').innerText : ''));
+      if (/NaN|undefined|\[object/.test(txt)) shown.push(tb);
+    }
+    if (errs.length) bad.push(`${fx.tag}: ${errs[0]}`);
+    if (shown.length) bad.push(`${fx.tag}: NaN or undefined on ${shown.join(', ')}`);
+    if (r.t0 !== fx.weeks || r.turn !== r.t0 + 52 || r.ending || !Number.isFinite(r.money) || !/^Saved in/.test(r.name)) bad.push(`${fx.tag}: ${JSON.stringify(r)}`);
+    await c.close();
+  }
+  assert(!bad.length, bad.join('; '));
+});
+
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });
 
 await browser.close();
