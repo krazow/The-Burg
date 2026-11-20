@@ -2,11 +2,11 @@
 /* ---------- events ---------- */
 // G5: events are paced by category so new ones don't crowd out the old. Each week one roll decides which category
 // (if any) gets an event: town 14%, road 8% (only in weeks you commute 20+ miles each way or take a trip),
-// work 8% (only with a job). At most one event a week; Hard mode adds 25% to each.
+// work 8% (only with a job). At most one event a week; Hard mode adds 25% to each, and the events rule (i19-b01) scales them all.
 const EVENT_ODDS = { town: 0.14, road: 0.08, work: 0.08 };
 const evCat = e => e.cat || 'town';
 function eventOdds(trip){
-  const hard = mode() === 'hard' ? 1.25 : 1, hasJob = !!job() && !S.retired;
+  const hard = (mode() === 'hard' ? 1.25 : 1) * rule('evMult'), hasJob = !!job() && !S.retired;
   return { town: EVENT_ODDS.town * hard, road: trip || commuteOneWay() >= 20 ? EVENT_ODDS.road * hard : 0, work: hasJob ? EVENT_ODDS.work * hard : 0 };
 }
 function rollEvent(month, trip){
@@ -24,24 +24,43 @@ function rollEvent(month, trip){
 // and for sure in the month's last week if they haven't come yet (an event's yearly cooldown says it already came)
 function fixedEvent(month){
   const last = new Date(S.date + 7 * 864e5).getMonth() !== month;
-  const e = EVENTS.find(x => x.fixed && !(S.evCd[x.title] > S.turn) && (!x.when || x.when(month)));
+  const e = EVENTS.find(x => x.fixed && evOn(x) && !(S.evCd[x.title] > S.turn) && (!x.when || x.when(month)));
   return e && (last || chance(0.5)) ? e : null;
 }
 // i46-a02/a03: kids by birth order, and the one (if any) who turns 18 this week without a send-off yet
 const kidOrder = i => { const n = (S.kids || []).length; return n <= 1 ? 'Your kid' : i === 0 ? 'Your oldest' : i === n - 1 ? 'Your youngest' : 'Your middle one'; };
 const kidTurning18 = () => (S.kids || []).findIndex((b, i) => !(S.kidSent || []).includes(i) && yrsOf(S.ageMonths + W - b) >= 18 && kidAge(b) < 19
   && (kidAge(b) < 18 || !(S.evCd['A kid heads off to college'] > S.turn)));   // an older save's kid who already had the old random send-off
-function kidSendOff(){ return kidTurning18() >= 0 ? EVENTS.find(e => e.title === 'A kid heads off to college') : null; }
+function kidSendOff(){ const e = kidTurning18() >= 0 ? EVENTS.find(e => e.title === 'A kid heads off to college') : null; return e && evOn(e) ? e : null; }
 // each week (after birthdays): a kid who just turned 18 graduates and moves out, in the Journal and the year in review (i46-a04)
 function kidBirthdays(m){
   (S.kids || []).forEach((b, i) => { if (kidAge(b) >= 18 && yrsOf(S.ageMonths - m - b) < 18) log(`${kidOrder(i)} graduated from Waitsburg High and moved out.`, 'mile', 1); });
 }
 function pickEvent(month, cat = 'town'){
   const wt = e => typeof e.w === 'function' ? e.w() : (e.w || 1);
-  const ok = EVENTS.filter(e => evCat(e) === cat && !(S.evCd[e.title] > S.turn) && !(e.once && S.evDone[e.title]) && (!e.when || e.when(month)) && !(e.big && wxCapped()) && wt(e) > 0);   // i75-a23: at most 2 big weather hits a year
-  const total = ok.reduce((a,e) => a + wt(e), 0);
+  // to-do 2 D4: only events at or below this life's difficulty can come up
+  let ok = EVENTS.filter(e => evCat(e) === cat && evOn(e) && !(S.evCd[e.title] > S.turn) && !(e.once && S.evDone[e.title]) && (!e.when || e.when(month)) && !(e.big && wxCapped()) && wt(e) > 0);   // i75-a23: at most 2 big weather hits a year
+  // i52-a10: no repeats in the first year: events already seen this life sit out until week 52 (unless nothing else is left)
+  if (S.turn < 52 && S.evSeen) { const fresh = ok.filter(e => !S.evSeen[e.title]); if (fresh.length) ok = fresh; }
+  // to-do 2 D4: on Easy, events that cost money or stats keep only part of their weight; the rest is a quiet week
+  const ew = e => wt(e) * evDiffW(e), quiet = ok.reduce((a, e) => a + wt(e) - ew(e), 0);
+  const total = ok.reduce((a,e) => a + ew(e), 0) + quiet;
   let r = Math.random() * total;
-  for (const e of ok) { r -= wt(e); if (r <= 0) return e; }
+  for (const e of ok) { r -= ew(e); if (r <= 0) return e; }
+  return null;
+}
+// i19-b15: routine events and the choice a careful player makes (first label found among the choices you have)
+const ROUTINE = {
+  'Flat tire on US-12': ['Change it yourself', 'Call a tow'], 'Stuck behind a wheat truck': ['Wait it out'], 'Train crossing in Pasco': ['Wait'],
+  'Fog in the Touchet Valley': ['Drive slow'], 'Speeding ticket': ['Traffic school'], 'Road-construction detour': ['Take the long way'],
+  'Pothole season': ['Swerve and slow down'], 'Wrong pump at the gas station': ['Drain and refill'], 'Payroll error: a late paycheck': ['Wait it out'],
+  'Safety inspection': ['Prep the crew'], 'New software rollout': ['Learn it early'], 'Mice in the walls': ['Set traps'],
+  'Frozen pipes': ['Fix it yourself', 'Call a plumber', 'Call the landlord']
+};
+function routinePick(ev){
+  const want = ROUTINE[ev.title]; if (!want) return null;
+  const ch = ev.choices().filter(c => !c.if || c.if());
+  for (const w of want) { const c = ch.find(x => String(x.label).startsWith(w)); if (c) return c; }
   return null;
 }
 // i71-b03: one way to settle an event, for a tapped choice and for one resolved on its own during a skip: the choice,
@@ -67,19 +86,19 @@ const RULE_NO = new Set(['Someone catches your eye', 'A rough patch', 'A friendl
 const ruleOK = ev => !!ev && !ev.once && !ev.big && !ev.fixed && !RULE_NO.has(ev.title);
 const ruleKey = label => noTags(label).replace(/[-−+]?\$[\d,.]+/g, '$').replace(/\d+/g, '#').replace(/\s+/g, ' ').trim();
 function ruleChoice(ev, choices){
-  const r = S.rules && S.rules[ev.title]; if (!r || !ruleOK(ev)) return null;
+  const r = S.ansRules && S.ansRules[ev.title]; if (!r || !ruleOK(ev)) return null;
   return choices.find(c => ruleKey(c.label) === r.k) || null;
 }
-function rulesSheet(){
-  const list = Object.entries(S.rules || {});
+function ansRulesSheet(){
+  const list = Object.entries(S.ansRules || {});
   sheet(`<h2>🔁 Answer rules</h2>
     <p class="muted">These small events answer themselves while you skip ahead with ⏩ or Auto. On a plain End Week they still ask you.</p>
     ${list.length ? list.map(([t, r]) => `<div class="kv job"><div><div class="t">${esc(t)}</div><div class="s">${esc(r.l)}</div></div><button class="sm alt" data-unrule="${esc(t)}" aria-label="Turn off the rule for ${esc(t)}">Turn off</button></div>`).join('')
       : '<p>No rules yet. After a small event you\'ve seen before, tick <b>Next time, answer the same way</b>.</p>'}
     ${list.length > 1 ? '<button class="btn ghost" id="unall">Turn all rules off</button>' : ''}
     <button class="btn ghost" id="back">← Back to Menu</button>`);
-  document.querySelectorAll('#sheet [data-unrule]').forEach(b => b.onclick = () => { delete S.rules[b.dataset.unrule]; save(); rulesSheet(); announce('Rule turned off'); });
-  if ($('#unall')) $('#unall').onclick = () => { S.rules = {}; save(); rulesSheet(); announce('All rules turned off'); };
+  document.querySelectorAll('#sheet [data-unrule]').forEach(b => b.onclick = () => { delete S.ansRules[b.dataset.unrule]; save(); ansRulesSheet(); announce('Rule turned off'); });
+  if ($('#unall')) $('#unall').onclick = () => { S.ansRules = {}; save(); ansRulesSheet(); announce('All rules turned off'); };
   $('#back').onclick = showMenu;
 }
 function showEvent(ev, then = null, pre = []){
@@ -87,8 +106,9 @@ function showEvent(ev, then = null, pre = []){
   const choices = ev.choices().filter(c => !c.if || c.if());
   const seen = S.evCd[ev.title] != null && ruleOK(ev) && choices.length > 1;   // i49-a11: seen before, so a rule can be set
   const pin = S.evPins && S.evPins[0] && S.evPins[0].t === ev.title ? [S.evPins[0].m, S.evPins[0].k] : eventPlace(ev);
-  sheet(`<div class="big">${ev.ic}</div><h2 style="text-align:center">${ev.title}</h2><p class="evplace">📍 ${esc(placeName(pin))}${pin[0] === 'R' ? ' · on the region map' : ''}</p><p>${typeof ev.text==='function'?ev.text():ev.text}</p>
-    <div class="evchoices">${choices.map((c,i) => `<button class="btn ${i===0?'primary':'ghost'}" data-i="${i}">${c.label}</button>`).join('')}</div>`);
+  const hints = choices.length > 1 ? choiceHints(choices) : [];   // i2-a01
+  sheet(`<div class="big">${ev.ic}</div><h2 style="text-align:center">${ev.title}</h2><p class="evplace">📍 ${esc(placeName(pin))}${pin[0] === 'R' ? ' · on the region map' : ''}</p><p id="evtext" data-desc>${typeof ev.text==='function'?ev.text():ev.text}</p>
+    <div class="evchoices">${choices.map((c,i) => `<button class="btn ${i===0?'primary':'ghost'}" data-i="${i}">${c.label}${hints[i] ? `<small class="hint">${hints[i]}</small>` : ''}</button>`).join('')}</div>`);
   $('#sheet').classList.add('ev');            // i2-a24: the choices sit at the bottom of the pop-up, in thumb reach
   if (pre && pre.length && $('#sheet .big')) $('#sheet .big').insertAdjacentHTML('beforebegin', rideHTML(pre));   // i49-a03
   sfx('event'); buzz('event');
@@ -98,20 +118,77 @@ function showEvent(ev, then = null, pre = []){
     const st = ['happy', 'health', 'community'].reduce((a, k) => a + S[k] - before[k], 0);
     sfx(dm < 0 || st < -1 ? 'bad' : dm > 0 || st > 1 ? 'good' : 'tap');
     if (choices.length === 1) { closeSheet(); render(); toast(`${ev.ic} ${result}${dm ? ` (${dm>0?'+':''}${fmt(dm)})` : ''}`); if (then) showReview(then); return; }
-    const c = choices[+b.dataset.i], had = !!(S.rules && S.rules[ev.title] && S.rules[ev.title].k === ruleKey(c.label));
+    const c = choices[+b.dataset.i], had = !!(S.ansRules && S.ansRules[ev.title] && S.ansRules[ev.title].k === ruleKey(c.label));
     const next = !then && !S.over && !S.endPending;   // i49-a02: straight on to next week, when nothing else is waiting
-    sheet(`<div class="big">${ev.ic}</div><p>${result}</p>
+    sheet(`<div class="big">${ev.ic}</div><h2 style="text-align:center">${ev.title}: how it went</h2><p id="evresult" data-desc>${result}</p>
       <p>${dm ? `<span class="delta ${dm>0?'up':'down'}">${dm>0?'+':''}${fmt(dm)}</span>` : ''}${deltaChips(before)}</p>
       ${seen ? `<label class="rulechk"><input type="checkbox" id="always"${had ? ' checked' : ''}> Next time, answer the same way<small>While you skip ahead. Turn it off in the Menu.</small></label>` : ''}
       <div class="evchoices${next ? ' two' : ''}"><button class="btn primary" id="ok">${next ? 'OK' : 'Continue'}</button>${next ? `<button class="btn ghost" id="nextwk" aria-label="Next week: end the week with the same focus, ${esc(FOCUS[S.focus].name)}">Next week →<small>${FOCUS[S.focus].ic} ${FOCUS_SHORT[S.focus]}</small></button>` : ''}</div>`);
     $('#sheet').classList.add('ev');          // the result keeps the same layout, so Continue is where the choice was
     const keepRule = () => { if (!$('#always')) return;
-      if ($('#always').checked) S.rules = { ...(S.rules || {}), [ev.title]: { k: ruleKey(c.label), l: noTags(c.label).slice(0, 120) } };
-      else if (S.rules && S.rules[ev.title]) delete S.rules[ev.title];
+      if ($('#always').checked) S.ansRules = { ...(S.ansRules || {}), [ev.title]: { k: ruleKey(c.label), l: noTags(c.label).slice(0, 120) } };
+      else if (S.ansRules && S.ansRules[ev.title]) delete S.ansRules[ev.title];
       save(); };
     $('#ok').onclick = () => { keepRule(); closeSheet(); render(); if (then) showReview(then); };
     if ($('#nextwk')) $('#nextwk').onclick = () => { keepRule(); closeSheet(); render(); endTurn(); };
   });
+}
+/* ---------- i2-a01: what each choice does, in small text under it ----------
+   Direction and rough cost, never the dice roll, so surprises stay. A choice can carry its own `hint` (text, or a
+   function that returns it). Otherwise the hint is worked out by trying the choice a few times on a throwaway copy
+   of the life with practice dice: nothing from those tries is kept (the life, the dice, storage and the screen are
+   all put back), so what really happens is still decided when you tap. */
+const HINT_TRIES = 8;
+const HINT_STATS = [['happy', 'happiness'], ['health', 'health'], ['community', 'community']];
+const HINT_QUIET = ['sheet', 'closeSheet', 'toast', 'render', 'renderHome', 'announce', 'sfx', 'buzz', 'showEvent', 'showReview', 'save', 'celebrate'];
+const roughMoney = v => fmt(v >= 1000 ? Math.round(v / 50) * 50 : v >= 100 ? Math.round(v / 10) * 10 : Math.round(v));
+function choiceHints(choices){
+  const own = choices.map(c => { try { return typeof c.hint === 'function' ? c.hint() : c.hint; } catch (e) { return ''; } });
+  if (own.every(Boolean)) return own;
+  const real = S, rnd = Math.random, set = store.set, del = store.del, tab0 = typeof tab !== 'undefined' ? tab : null;
+  const snap = JSON.stringify(real), quiet = HINT_QUIET.filter(n => typeof window[n] === 'function').map(n => [n, window[n]]);
+  const rest = x => JSON.stringify({ ...x, log: 0, money: 0, happy: 0, health: 0, community: 0, rng: 0, rngEv: 0, evPins: 0, savedAt: 0 });
+  const base = rest(real);
+  store.set = () => {}; store.del = () => {}; quiet.forEach(([n]) => { window[n] = () => {}; });
+  const out = [];
+  try {
+    for (let i = 0; i < choices.length; i++) {
+      if (own[i]) { out.push(own[i]); continue; }
+      const runs = [];
+      for (let t = 0; t < HINT_TRIES; t++) {
+        let a = (0x9E3779B9 * (t + 1)) | 0;
+        Math.random = () => { const [n, v] = diceStep(a); a = n; return v; };
+        S = JSON.parse(snap);
+        try { choices[i].go(); runs.push({ money: S.money - real.money, happy: S.happy - real.happy, health: S.health - real.health, community: S.community - real.community, later: rest(S) !== base }); }
+        catch (e) {}
+      }
+      out.push(hintWords(runs, choices[i].label));
+    }
+  } finally {
+    S = real; Math.random = rnd; store.set = set; store.del = del; quiet.forEach(([n, f]) => { window[n] = f; });
+    if (tab0 != null) tab = tab0;
+  }
+  return out;
+}
+function hintWords(runs, label){
+  if (!runs.length) return '';
+  const n = runs.length, parts = [], avg = k => runs.reduce((a, r) => a + r[k], 0) / n;
+  const ms = runs.map(r => r.money), lo = ms.filter(v => v <= -1), hi = ms.filter(v => v >= 1);
+  if (!/\$/.test(String(label))) {            // a price already in the label isn't repeated
+    if (lo.length && hi.length) parts.push('💵 could cost or pay');
+    else if (lo.length === n) parts.push(`💵 costs about ${roughMoney(-avg('money'))}`);
+    else if (lo.length) parts.push(`💵 may cost up to ${roughMoney(-Math.min(...lo))}`);
+    else if (hi.length === n) parts.push(`💵 brings in about ${roughMoney(avg('money'))}`);
+    else if (hi.length) parts.push(`💵 may bring in up to ${roughMoney(Math.max(...hi))}`);
+  }
+  for (const [k, w] of HINT_STATS) {
+    const ds = runs.map(r => r[k]), up = ds.some(d => d >= 0.5), down = ds.some(d => d <= -0.5), a = avg(k);
+    if (up && down) parts.push(`▲▼ ${w}`);
+    else if (up) parts.push(`${a >= 6 ? '▲▲' : '▲'} ${w}`);
+    else if (down) parts.push(`${a <= -6 ? '▼▼' : '▼'} ${w}`);
+  }
+  if (!parts.length) return runs.some(r => r.later) ? 'Plays out later' : (/\$/.test(String(label)) ? 'Just the price' : 'Nothing changes');
+  return parts.join(' · ');
 }
 // where each event happens: ['T', place] on the Waitsburg map or ['R', town or landmark] on the region map;
 // 'work' means wherever you work
@@ -853,7 +930,7 @@ const TODDLER_EVENTS = [
       {label:'Back off for a month', go:() => { adj({happy:-1}); return 'Diapers for a while longer. They\'ll get there.'; }}
     ]},
   { ic:'📚', title:'Story time at the library', yr:1, w:3, when:() => toddlerHome(),
-    text:'The Weller Public Library has toddler story time on Wednesday mornings: songs, a puppet and a pile of picture books.',
+    text:'The Weller Public Library has story time for small kids each Wednesday. There are songs, a puppet and a big pile of books.',
     choices:() => [
       {label:working() ? `Go every Wednesday this month (-${fmt(dayPay() * 2)} in missed work)` : 'Go every Wednesday this month', go:() => { adj({money:-Math.round(dayPay() * 2), happy:2, community:3}); return 'Your toddler knows every song now, and you know every parent in town.'; }},
       {label:'Read at home instead', go:() => { adj({happy:1}); return 'The same dinosaur book, eleven nights in a row.'; }}

@@ -5,6 +5,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' blob: data:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#9b2f1f">
+<meta name="color-scheme" content="only light">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="The Burg">
 <title>The Burg</title>
@@ -16,6 +17,8 @@
   --barn:#9b2f1f; --barn-d:#6f1f14; --wheat:#e9c46a; --wheat-d:#c99a3b;
   --cream:#fbf6ea; --paper:#fffdf7; --soil:#3d2b1f; --muted:#6b5b4e;
   --sage:#4a7340; --sky:#7fb3d5; --line:#e7dcc4;
+  /* i43-a08: control edges reach 3:1 on cream, paper and card; i74-b15 / i7-a03: stat bar fills reach 3:1 on their track */
+  --edge:#8f7d63; --bar-good:#4a7340; --bar-ok:#9a6c14; --bar-low:#9b2f1f; --bar-sky:#3f7fae; --notch:rgba(61,43,31,.55);
   --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
   /* i2-a07: every surface and text colour is a variable, so the night theme only swaps this set */
   --card:#fff; --pale:#fffaf0; --track:#efe6d2; --hl:#f6efdf; --press:#f3ead6; --tint:#fbe9e4; --warnline:#efc2b8;
@@ -27,13 +30,17 @@
   --map-trail:rgba(61,43,31,.6); --map-pin-on:#fbe9e4; --map-pin-off:#efe6d2;
 }
 /* i2-a06: text size (Menu → Settings); everything is sized in rem */
-html{font-size:16px}html.ts-l{font-size:18px}html.ts-xl{font-size:20px}
+/* i74-b04: starts from the phone's own text setting (100% = its default size) */
+html{font-size:100%;color-scheme:only light}html.ts-l{font-size:112.5%}html.ts-xl{font-size:125%}
+/* i43-a04: tabbing never leaves a button under the header or the bars at the bottom (tabs, End Week, week strip, toast) */
+html{scroll-padding-top:7rem;scroll-padding-bottom:calc(var(--safe-b) + 36px + 12.5rem)}
 /* i2-a07: night theme (follows the phone's dark mode unless Settings says otherwise) */
 html.night{color-scheme:dark;
   --cream:#17120e; --paper:#221a14; --soil:#f1e6d4; --muted:#c4b4a1; --line:#4a3b2e; --barn:#8f2a1b; --barn-d:#5a170e;
   --card:#2b221b; --pale:#261e17; --track:#3a2e24; --hl:#33281f; --press:#3a2e24; --tint:#40231c; --warnline:#6b3328;
   --tipbg:#1d2a1a; --tipline:#3b5233; --up:#a6d494; --up-bg:#22351e; --down:#f4a593; --down-bg:#40221c;
   --off:#4a3f35; --dash:#6b5a49; --focus:#8ab4f8; --accent:#f4a593; --accent-d:#f7c2b5;
+  --edge:#8a7862; --bar-good:#86c26f; --bar-ok:#e8b84f; --bar-low:#f08a72; --bar-sky:#7fb3d5; --notch:rgba(23,18,14,.6);
   --map-land:#4a4231; --map-land2:#544a33; --map-hill:#3f5236; --map-town-bg:#5c4b28; --map-field:#4d3d1d; --map-block:#3a3226;
   --map-water:#3f7896; --map-road:#a89a80; --map-pin:#f1e6d4; --map-pin2:#e8dcc6; --map-ink:#2a1e15;
   --map-lbl:#e6d8c2; --map-wlbl:#a9d2ea; --map-town:#fff6e6; --map-halo:#2a2118;
@@ -56,19 +63,23 @@ h1,h2,h3{font-family:Georgia,"Times New Roman",serif;margin:0}
 .title h1{font-size:2.875rem;letter-spacing:1px;color:var(--accent);margin-top:6px}
 .title .sub{color:var(--muted);margin:4px 0 20px}
 .field{display:block;text-align:left;margin:14px 0 6px;font-weight:600;font-size:0.875rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-input[type=text]{width:100%;padding:14px;border:2px solid var(--line);border-radius:12px;font:inherit;background:var(--paper)}
+input[type=text]{width:100%;padding:14px;border:2px solid var(--edge);border-radius:12px;font:inherit;background:var(--paper)}
 input[type=text]:focus{outline:none;border-color:var(--wheat-d)}
 .lengths{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.len{padding:14px 6px;border-radius:12px;border:2px solid var(--line);background:var(--paper)}
+.len{padding:14px 6px;border-radius:12px;border:2px solid var(--edge);background:var(--paper)}
 .len b{display:block;font-size:1.0625rem}.len span{font-size:0.75rem;color:var(--muted)}
 .len.on{border-color:var(--barn);background:var(--tint)}
+.diffs{display:grid;gap:8px}
+.dcard{padding:10px 12px;border-radius:12px;border:2px solid var(--edge);background:var(--paper);text-align:left;color:inherit;font:inherit}
+.dcard b{display:block;font-size:1.0625rem}.dcard span{display:block;font-size:0.8125rem;color:var(--muted);margin-top:2px}
+.dcard.on{border-color:var(--barn);background:var(--tint)}
 .btn{display:block;width:100%;padding:15px;border-radius:14px;font-weight:700;font-size:1.0625rem;margin-top:12px}
 .btn.primary{background:var(--barn);color:#fff;box-shadow:0 3px 0 var(--barn-d)}
 .btn.primary:active{transform:translateY(2px);box-shadow:0 1px 0 var(--barn-d)}
-.btn.ghost{border:2px solid var(--line);background:var(--paper)}
+.btn.ghost{border:2px solid var(--edge);background:var(--paper)}
 .btn[disabled]{opacity:.45;pointer-events:none}
 .btn.bigstart{padding:18px;font-size:1.1875rem;margin-top:16px}
-.moreopts{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;margin-top:12px;padding:10px 14px;border:2px dashed var(--line);border-radius:14px;background:var(--paper);text-align:left;min-height:48px}
+.moreopts{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;margin-top:12px;padding:10px 14px;border:2px dashed var(--edge);border-radius:14px;background:var(--paper);text-align:left;min-height:48px}
 .moreopts .s{display:block;font-size:0.8125rem;color:var(--muted);font-weight:400;margin-top:2px}.moreopts .caret{font-size:1.125rem;color:var(--muted)}
 .morepanel{border:1.5px solid var(--line);border-top:0;border-radius:0 0 14px 14px;padding:0 10px 10px;margin-top:-6px;background:var(--pale)}
 .rec{width:100%;border-collapse:collapse;font-size:0.875rem;margin:6px 0;background:var(--card);border-radius:10px;overflow:hidden}
@@ -82,55 +93,77 @@ input[type=text]:focus{outline:none;border-color:var(--wheat-d)}
 /* Game header */
 .top{background:var(--barn);color:#fff;padding:calc(var(--safe-t) + 12px) 16px 12px;position:sticky;top:0;z-index:5}
 .top .row{display:flex;justify-content:space-between;align-items:baseline}
-.top h2{font-size:20px}
-.top .money{font-weight:800;font-size:20px}
-.top .meta{font-size:13px;opacity:.85;margin-top:2px;display:flex;justify-content:space-between}
+.top h2{font-size:1.25rem}
+.top .money{font-weight:800;font-size:1.25rem;color:inherit;background:none;border:0;padding:0 4px;min-height:44px;min-width:44px;border-bottom:2px dotted rgba(255,255,255,.6);border-radius:0;font-family:inherit}
+.top .meta{font-size:0.8125rem;opacity:.85;margin-top:2px;display:flex;justify-content:space-between}
 .progress{height:4px;background:rgba(255,255,255,.25);border-radius:2px;margin-top:8px;overflow:hidden}
 .progress i{display:block;height:100%;background:var(--wheat)}
-main{flex:1;padding:14px 14px calc(var(--safe-b) + 200px)}
+main{flex:1;padding:14px 14px calc(var(--safe-b) + 32px + 10.5rem)}
 .card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
 .card.wxcard{padding:8px 10px;margin:6px 0;border-left:4px solid #4f7da8}
 .card h3{font-size:1.0625rem;margin-bottom:8px}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
 .stat label{font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:flex;justify-content:space-between}
 .bar{height:10px;background:var(--track);border-radius:6px;overflow:hidden;margin-top:4px}
+/* i7-a03: notches where a stat moves to the next word (35 OK, 60 Good, 80 Great), so the bar reads without colour */
+.bar.notched{position:relative}.bar.notched::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(to right,transparent calc(35% - 1px),var(--notch) calc(35% - 1px),var(--notch) calc(35% + 1px),transparent calc(35% + 1px),transparent calc(60% - 1px),var(--notch) calc(60% - 1px),var(--notch) calc(60% + 1px),transparent calc(60% + 1px),transparent calc(80% - 1px),var(--notch) calc(80% - 1px),var(--notch) calc(80% + 1px),transparent calc(80% + 1px))}
 .bar i{display:block;height:100%;border-radius:6px;transition:width .4s}
 .ladder{list-style:none;margin:0.25rem 0;padding:0;font-size:0.875rem}.ladder li{padding:0.125rem 0}
 .kv{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line);font-size:0.9375rem}
 .kv:last-child{border-bottom:0}.kv span:first-child{color:var(--muted)}
 .focus{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.fbtn{text-align:left;padding:10px;border-radius:12px;border:2px solid var(--line);background:var(--card);min-height:74px}
+.fbtn{text-align:left;padding:10px;border-radius:12px;border:2px solid var(--edge);background:var(--card);min-height:74px}
 .fbtn .ic{font-size:1.375rem}.fbtn b{display:block;font-size:0.875rem;margin-top:2px}.fbtn small{color:var(--muted);font-size:0.75rem;line-height:1.25;display:block}
 .fbtn.on{border-color:var(--barn);background:var(--tint)}
 .fbtn[disabled]{opacity:.4}
-.endbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--safe-b) + 66px);width:min(492px,calc(100% - 28px));z-index:6;display:flex;gap:8px}
-.endbar .btn{margin-top:0;padding:10px 6px;font-size:16px;min-height:56px}.endbar #end{flex:2.2;line-height:1.15}.endbar #end small{display:block;font-size:12.5px;font-weight:600;opacity:.9;margin-top:2px}
-.endbar .ghost{flex:1;font-size:14px;padding:10px 2px}
-.weekstrip{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--safe-b) + 130px);width:min(492px,calc(100% - 28px));z-index:6;
-  display:flex;align-items:center;gap:6px;background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:7px 10px;box-shadow:0 2px 10px rgba(61,43,31,.12);text-align:left}
-.weekstrip .wl{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap}.weekstrip .wc{flex:1;display:flex;flex-wrap:wrap;gap:2px}
-.weekstrip .delta{margin:0;font-size:12.5px;padding:2px 6px}.weekstrip .more{font-size:22px;color:var(--muted);line-height:1}
+.endbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--safe-b) + 18px + 3rem);width:min(492px,calc(100% - 28px));z-index:6;display:flex;gap:8px}
+.endbar .btn{margin-top:0;padding:10px 6px;font-size:1rem;min-height:3.5rem}.endbar #end{flex:2.2;line-height:1.15}.endbar #end small{display:block;font-size:0.78125rem;font-weight:600;opacity:.9;margin-top:2px}
+.endbar .ghost{flex:1;font-size:0.875rem;padding:10px 2px}
+.weekstrip{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--safe-b) + 26px + 6.5rem);width:min(492px,calc(100% - 28px));z-index:6;
+  display:flex;align-items:center;gap:6px;background:var(--paper);border:1.5px solid var(--edge);border-radius:14px;padding:7px 10px;box-shadow:0 2px 10px rgba(61,43,31,.12);text-align:left}
+.weekstrip .wl{font-size:0.75rem;font-weight:700;color:var(--muted);white-space:nowrap}.weekstrip .wc{flex:1;display:flex;flex-wrap:wrap;gap:2px}
+.weekstrip .delta{margin:0;font-size:0.78125rem;padding:2px 6px}.weekstrip .more{font-size:1.375rem;color:var(--muted);line-height:1}
 .fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .fgrid .fbtn{min-height:64px;text-align:center;padding:8px 4px}.fgrid .fbtn b{font-size:0.8438rem}
 .fdesc{font-size:0.875rem;margin-top:10px;line-height:1.35}.fdesc .s{font-size:0.8125rem;color:var(--accent-d);margin-top:4px}
 .statbtn{text-align:left;padding:4px 2px;border-radius:10px;width:100%}.statbtn:active{background:var(--press)}.statbtn label{cursor:pointer}
 .info{font-size:0.6875rem;color:var(--muted)}
-.sumrow{display:flex;flex-wrap:wrap;gap:6px;padding:10px}.sumchip{border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:8px 12px;font-size:0.8438rem;min-height:40px}
+.sumrow{display:flex;flex-wrap:wrap;gap:6px;padding:10px}.sumchip{border:1.5px solid var(--edge);background:var(--card);border-radius:999px;padding:8px 12px;font-size:0.8438rem;min-height:40px}
 .tip{display:flex;gap:10px;align-items:center;background:var(--tipbg);border-color:var(--tipline);font-size:0.875rem}
 .warn .sm{margin-left:6px;margin-top:6px}
 .sm.locked{background:var(--card);color:var(--muted);border:1.5px dashed var(--dash)}.lockedrow .t{color:var(--muted)}
 .job > div:last-child .s{white-space:nowrap}.upt{color:var(--up);font-weight:700}.downt{color:var(--accent);font-weight:700}.chip.ok.on{background:var(--sage);border-color:var(--sage)}
 .warn{background:var(--tint);border-color:var(--warnline);color:var(--accent-d);font-size:0.875rem;font-weight:600}
 .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px;scrollbar-width:none}
-.chip{white-space:nowrap;padding:7px 12px;border-radius:20px;border:1.5px solid var(--line);background:var(--card);font-size:0.875rem}
+.chip{white-space:nowrap;padding:7px 12px;border-radius:20px;border:1.5px solid var(--edge);background:var(--card);font-size:0.875rem}
 .chip.on{background:var(--soil);color:var(--paper);border-color:var(--soil)}
+/* i20-a01/a02: chips keep their words and the row scrolls, with a soft fade while there's more to the right */
+.chips .chip{flex-shrink:0}
+.chips.more{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 32px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 32px),transparent)}
+.chip .n{display:inline-block;margin-left:5px;font-size:0.75rem;font-weight:800;opacity:.8}
+/* i20-a09: job board sections */
+.boardh{margin:14px 0 2px;font-size:0.9375rem;display:flex;align-items:center;gap:6px}.boardh:first-of-type{margin-top:6px}
+/* i20-a14: Buy over the down payment, the same width on every row */
+.sm.buy2{width:8.25em;white-space:normal;line-height:1.15;padding:6px 8px;text-align:center;flex-shrink:0}.sm.buy2 small{display:block;font-weight:600;font-size:0.75rem}
+/* i20-a23: a slim header that stays at the top of a long sheet */
+.sheethead{position:sticky;top:0;z-index:2;background:var(--paper);margin:-8px -18px 6px;padding:8px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.sheethead h2{font-size:1.125rem;margin:0;flex:1;min-width:0}.sheethead .cnt{font-size:0.8125rem;font-weight:700;color:var(--muted);white-space:nowrap}.sheethead .sm{flex-shrink:0}
+/* i20-a28: the end screen's score math */
+.rec.scoremath td,.rec.scoremath th{padding:7px 4px}.rec.scoremath th[scope=row]{font-weight:700}.rec.scoremath th[scope=row] small{display:block;font-weight:400;font-size:0.75rem;color:var(--muted)}
+.rec.scoremath td:last-child{font-weight:800}
+/* i20-a30: challenge rows put Start under the description */
+.chrow{padding:10px 0;border-bottom:1px dashed var(--line)}.chrow .t{font-weight:700}.chrow .s{font-size:0.8125rem;color:var(--muted);margin:2px 0 6px}.chrow .sm{width:100%}
+/* i2-a01: what an event choice does, under its label */
+.evchoices .btn small.hint{display:block;font-weight:500;font-size:0.8125rem;margin-top:2px}
 .job{display:flex;justify-content:space-between;gap:10px;align-items:center}
 .job .t{font-weight:700}.job .s{font-size:0.8125rem;color:var(--muted)}
 .job .pay{font-weight:800;color:var(--up);white-space:nowrap}
 .job > .sm,.tip > .sm{flex-shrink:0}
 .maptog.wrap{flex-wrap:wrap}.maptog.wrap button{min-width:calc(50% - 3px)}
+.rulerow{margin:4px 0 12px}.rulerow .t{font-weight:700;margin-bottom:4px}.rulerow .rp{font-size:0.8125rem}
 .sm{padding:8px 12px;border-radius:10px;font-weight:700;font-size:0.875rem;background:var(--barn);color:#fff;white-space:nowrap}
-.sm.alt{background:var(--card);border:1.5px solid var(--line);color:var(--soil)}
+.sm.alt{background:var(--card);border:1.5px solid var(--edge);color:var(--soil)}
 .sm[disabled]{background:var(--off);color:#fff;pointer-events:none}
 .tag{display:inline-block;font-size:0.6875rem;font-weight:700;padding:2px 7px;border-radius:8px;background:var(--track);color:var(--muted);margin-left:4px;vertical-align:middle}
 .tag.cur{background:var(--sage);color:#fff}
@@ -142,8 +175,8 @@ main{flex:1;padding:14px 14px calc(var(--safe-b) + 200px)}
 #app > nav{position:fixed;bottom:0;left:0;right:0;background:var(--paper);border-top:1px solid var(--line);
   display:flex;justify-content:center;padding-bottom:var(--safe-b);z-index:7}
 #app > nav .in{display:flex;width:100%;max-width:520px}
-#app > nav button{flex:1;padding:8px 0 10px;font-size:12px;color:var(--muted);font-weight:600}
-#app > nav button .ic{display:block;font-size:20px}
+#app > nav button{flex:1;padding:8px 0 10px;font-size:0.75rem;color:var(--muted);font-weight:600}
+#app > nav button .ic{display:block;font-size:1.25rem}
 #app > nav button.on{color:var(--accent)}
 
 /* Modal */
@@ -156,10 +189,10 @@ main{flex:1;padding:14px 14px calc(var(--safe-b) + 200px)}
 .delta.up{background:var(--up-bg);color:var(--up)}.delta.flat{background:var(--track);color:var(--muted)}.delta.down{background:var(--down-bg);color:var(--down)}
 @keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
 @keyframes fade{from{opacity:0}to{opacity:1}}
-.toast{position:fixed;left:50%;bottom:calc(var(--safe-b) + 196px);transform:translateX(-50%);background:var(--soil);color:var(--paper);padding:10px 16px;border-radius:12px;z-index:30;font-size:0.875rem;max-width:90%;text-align:center}
+.toast{position:fixed;left:50%;bottom:calc(var(--safe-b) + 32px + 10.25rem);transform:translateX(-50%);background:var(--soil);color:var(--paper);padding:10px 16px;border-radius:12px;z-index:30;font-size:0.875rem;max-width:90%;text-align:center}
 .maptog{display:flex;gap:6px;margin:2px 0 10px}.maptog button{flex:1;border:1.5px solid var(--barn);background:var(--card);color:var(--accent);border-radius:999px;padding:7px 10px;font-size:0.875rem;font-weight:700}
 .maptog button.on{background:var(--barn);color:#fff}
-.maptabs{display:flex;gap:6px;margin-bottom:6px}.maptabs button{flex:1;border:1.5px solid var(--line);background:var(--card);border-radius:10px;padding:7px 4px;font-size:0.8125rem;font-weight:700;color:var(--muted)}
+.maptabs{display:flex;gap:6px;margin-bottom:6px}.maptabs button{flex:1;border:1.5px solid var(--edge);background:var(--card);border-radius:10px;padding:7px 4px;font-size:0.8125rem;font-weight:700;color:var(--muted)}
 .maptabs button.on{border-color:var(--soil);color:var(--soil);background:var(--hl)}
 .mapsvg{display:block;width:100%;height:auto;border-radius:12px;border:1.5px solid var(--line);touch-action:manipulation}
 .mapsvg .mlbl{font-size:9px;fill:var(--map-lbl);font-style:italic}.mapsvg .mwlbl text{font-size:9px;fill:var(--map-wlbl);font-style:italic}
@@ -180,7 +213,7 @@ main{flex:1;padding:14px 14px calc(var(--safe-b) + 200px)}
 .guide h2{font-size:1.25rem;color:var(--accent);margin:24px 0 8px}.guide .gt{margin-top:8px}
 .guide section{scroll-margin-top:70px;content-visibility:auto;contain-intrinsic-size:auto 900px}.guide.full section{content-visibility:visible}.guide p{margin:8px 0;line-height:1.45}
 .toc{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.toc button{text-align:left;border:1.5px solid var(--line);background:var(--card);border-radius:10px;padding:9px 10px;font-size:0.875rem;min-height:44px}
+.toc button{text-align:left;border:1.5px solid var(--edge);background:var(--card);border-radius:10px;padding:9px 10px;font-size:0.875rem;min-height:44px}
 .guide table{width:100%;border-collapse:collapse;font-size:0.8438rem;margin:8px 0;background:var(--paper);border-radius:10px;overflow:hidden}
 .guide th,.guide td{border-bottom:1px solid var(--line);padding:6px;text-align:left;vertical-align:top}
 .guide th{font-size:0.7188rem;text-transform:uppercase;color:var(--muted);letter-spacing:.3px}
@@ -202,7 +235,7 @@ main{flex:1;padding:14px 14px calc(var(--safe-b) + 200px)}
 /* i2-a23: narrow phones keep End Week and Auto; the ⏩ skips live behind a long press */
 @media (max-width: 400px){.endbar .skipx{display:none}}
 .endbar #end,.endbar #auto{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
-.endbar.rolling #stoproll{flex:1;line-height:1.15}.endbar #stoproll small{display:block;font-size:12.5px;font-weight:600;opacity:.9;margin-top:2px}
+.endbar.rolling #stoproll{flex:1;line-height:1.15}.endbar #stoproll small{display:block;font-size:0.78125rem;font-weight:600;opacity:.9;margin-top:2px}
 .skiprow{display:flex;gap:8px}.skiprow .btn{flex:1}
 .btn.opt{text-align:left;font-size:0.96875rem;padding:11px 14px;margin-top:8px;min-height:48px}.btn.opt.on{border-color:var(--barn);background:var(--tint)}
 .focushead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}.focushead h3{margin:0}
@@ -211,14 +244,14 @@ main{flex:1;padding:14px 14px calc(var(--safe-b) + 200px)}
 .undo{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .sm,.chip{min-width:44px}.slotbtns .sm{min-width:48px}
 .triph{margin:12px 0 4px;font-size:0.9375rem}
-.stopbtn{display:block;width:100%;text-align:left;border:2px solid var(--line);background:var(--card);border-radius:12px;padding:9px 12px;margin:6px 0;min-height:48px}
+.stopbtn{display:block;width:100%;text-align:left;border:2px solid var(--edge);background:var(--card);border-radius:12px;padding:9px 12px;margin:6px 0;min-height:48px}
 .stopbtn .t{display:block;font-weight:700;font-size:0.9375rem}.stopbtn .s{display:block;font-size:0.8125rem;color:var(--muted);margin-top:2px}
 .stopbtn.on{border-color:var(--barn);background:var(--tint)}.stopbtn:disabled{opacity:.6}
 .tripsum{font-weight:700;margin:10px 0 0}
 .sumchip.on{border-color:var(--barn);background:var(--tint)}
 .bgs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}.bgs .chip{min-height:44px}.chip:disabled{opacity:.55}.kv.debt span,.kv.debt small{color:var(--down)}.comeback{font-style:italic}.bgdesc{font-size:0.8438rem;margin:6px 4px 0;min-height:36px}
 .sgoal{font-size:0.8438rem;background:var(--pale);border:1.5px dashed var(--line);border-radius:10px;padding:8px 10px;margin:0 0 10px}
-.scorebtn{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;margin-top:10px;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:var(--pale);font-size:0.9062rem;min-height:44px;text-align:left}.scorebtn b{font-size:1.0625rem;color:var(--accent)}
+.scorebtn{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;margin-top:10px;padding:10px 12px;border:1.5px solid var(--edge);border-radius:12px;background:var(--pale);font-size:0.9062rem;min-height:44px;text-align:left}.scorebtn b{font-size:1.0625rem;color:var(--accent)}
 .tripto{width:100%;text-align:left;background:var(--card);border:0;border-bottom:1px dashed var(--line);min-height:52px;font:inherit;color:inherit;cursor:pointer}.tripto > span:first-child{display:flex;flex-direction:column}
 #helpbtn{width:44px;height:44px}
 :focus-visible{outline:3px solid var(--focus);outline-offset:2px}
@@ -240,28 +273,40 @@ main{flex:1;padding:14px 14px calc(var(--safe-b) + 200px)}
 .cmpsel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0}.cmpsel select{width:100%;min-height:44px;font:inherit}
 .cmpgrid{width:100%;border-collapse:collapse;font-size:0.875rem}.cmpgrid th,.cmpgrid td{padding:7px 4px;border-bottom:1px dashed var(--line);vertical-align:top;text-align:left}.cmpgrid th[scope=row]{width:28%;color:var(--muted);font-weight:600}
 @media (orientation: landscape) and (max-height: 520px){
-  .top{padding:calc(var(--safe-t) + 4px) 16px 4px}.top h2{font-size:16px}.top .money{font-size:17px}
-  .top .meta{font-size:12px;margin-top:0}.top .progress{margin-top:3px}
-  #app > nav button{padding:2px 0;font-size:11.5px;min-height:44px}#app > nav button .ic{display:inline;font-size:16px;margin-right:4px}
+  .top{padding:calc(var(--safe-t) + 4px) 16px 4px}.top h2{font-size:1rem}.top .money{font-size:1.0625rem}
+  .top .meta{font-size:0.75rem;margin-top:0}.top .progress{margin-top:3px}
+  #app > nav button{padding:2px 0;font-size:0.71875rem;min-height:44px}#app > nav button .ic{display:inline;font-size:1rem;margin-right:4px}
   .endbar{left:auto;right:14px;transform:none;width:calc(58% - 21px);bottom:calc(var(--safe-b) + 50px)}
   .endbar .btn{min-height:50px;padding:4px}
   .weekstrip{left:14px;transform:none;width:calc(42% - 21px);bottom:calc(var(--safe-b) + 50px);min-height:50px}
   main{padding-bottom:calc(var(--safe-b) + 116px)}
   .toast{bottom:calc(var(--safe-b) + 112px)}
+  html{scroll-padding-top:4rem;scroll-padding-bottom:calc(var(--safe-b) + 116px)}
 }
+/* i70-b01: on a short phone held upright, the header and bottom bars grow with Text size only up to Large, so the page keeps room */
+@media (max-height: 640px) and (orientation: portrait){
+  .top h2,.top .money{font-size:min(1.25rem,22.5px)}.top .meta{font-size:min(0.8125rem,14.625px)}
+  .endbar .btn{font-size:min(1rem,18px)}.endbar #end small,.endbar #stoproll small,.weekstrip .delta{font-size:min(0.78125rem,14px)}.endbar .ghost{font-size:min(0.875rem,15.75px)}
+  .weekstrip .wl{font-size:min(0.75rem,13.5px)}#app > nav button{font-size:min(0.75rem,13.5px)}#app > nav button .ic{font-size:min(1.25rem,22.5px)}
+  .endbar{bottom:calc(var(--safe-b) + 18px + min(3rem,54px))}.endbar .btn{min-height:min(3.5rem,63px)}
+  .weekstrip{bottom:calc(var(--safe-b) + 26px + min(6.5rem,117px))}
+}
+@media (max-width: 359px){.weekstrip .wl{display:none}}
+/* i43-a20: on a very short screen (big zoom, phone sideways) the header scrolls away instead of covering the page */
+@media (max-height: 300px){.top{position:static}html{scroll-padding-top:0}}
 .evplace{text-align:center;color:var(--muted);font-size:0.875rem;margin:0 0 6px}
 .recent{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);font-size:0.875rem}.recent .s{margin-top:4px}
 .evbadge.fresh circle{animation:evpulse 1.6s ease-in-out 3}
 @keyframes evpulse{50%{stroke-width:5;stroke:#ffd166}}
 @media (prefers-reduced-motion: reduce){.evbadge.fresh circle{animation:none}}
-.code{width:100%;font:.75rem/1.35 ui-monospace,Menlo,Consolas,monospace;border:2px solid var(--line);border-radius:10px;padding:8px;background:var(--card);color:var(--soil);word-break:break-all;resize:vertical}
+.code{width:100%;font:.75rem/1.35 ui-monospace,Menlo,Consolas,monospace;border:2px solid var(--edge);border-radius:10px;padding:8px;background:var(--card);color:var(--soil);word-break:break-all;resize:vertical}
 .warnline{color:var(--accent-d);font-weight:600}
 .outbtn{margin-top:10px;padding:10px 12px}.outbtn small{display:block;font-size:0.8125rem;font-weight:600;margin-top:2px}
 /* i2-a03: Settings */
 .setrow{margin:12px 0;padding-bottom:12px;border-bottom:1px dashed var(--line)}
 .setl{font-weight:700;margin-bottom:6px}.setrow .s{font-size:.8125rem;color:var(--muted);margin-top:6px}
 .seg{display:flex;flex-wrap:wrap;gap:6px}
-.seg button{flex:1 1 auto;min-height:44px;min-width:44px;padding:8px 10px;border:1.5px solid var(--line);background:var(--card);border-radius:10px;font-size:.9375rem;font-weight:600}
+.seg button{flex:1 1 auto;min-height:44px;min-width:44px;padding:8px 10px;border:1.5px solid var(--edge);background:var(--card);border-radius:10px;font-size:.9375rem;font-weight:600}
 .seg button.on{border-color:var(--barn);background:var(--tint);color:var(--accent-d)}
 /* i2-a22: swipes. Sideways moves on the page are ours; up and down still scroll */
 main{touch-action:pan-y pinch-zoom}
@@ -293,7 +338,7 @@ main.slide-l{animation:slidel .18s ease-out}main.slide-r{animation:slider .18s e
 html.ts-l .sm,html.ts-xl .sm{white-space:normal;max-width:100%}
 html.ts-l .job,html.ts-xl .job{flex-wrap:wrap}.job > div:first-child{min-width:0}
 .score{font-size:4rem;font-weight:800;text-align:center;color:var(--accent);font-family:Georgia,serif}
-.code{width:100%;font:12px/1.35 ui-monospace,Menlo,Consolas,monospace;border:2px solid var(--line);border-radius:10px;padding:8px;background:#fff;color:var(--soil);word-break:break-all;resize:vertical}
+.code{width:100%;font:12px/1.35 ui-monospace,Menlo,Consolas,monospace;border:2px solid var(--edge);border-radius:10px;padding:8px;background:#fff;color:var(--soil);word-break:break-all;resize:vertical}
 .warnline{color:var(--barn-d);font-weight:600}
 .steps li{margin:6px 0}.tnote{margin-top:12px;text-align:left}
 .outbtn{margin-top:10px;padding:10px 12px}.outbtn small{display:block;font-size:13px;font-weight:600;margin-top:2px}
@@ -301,6 +346,11 @@ html.ts-l .job,html.ts-xl .job{flex-wrap:wrap}.job > div:first-child{min-width:0
 /* i2 clarity: focus preview, why lines, celebrations, checklist, next step, glossary, confirmations, life story */
 .preview{font-size:0.84375rem;margin-top:8px;padding:8px 10px;background:var(--pale);border:1px solid var(--line);border-radius:10px;color:var(--soil);line-height:1.4}
 .preview .s,.fdesc .preview .s{display:block;color:var(--muted);font-size:0.78125rem;margin-top:2px}
+.otnote{font-size:0.84375rem;margin:8px 0 0;padding:8px 10px;background:var(--tint);border:1px solid var(--warnline);border-radius:10px;color:var(--soil);line-height:1.4}
+.nopay .cashline{margin:6px 0;font-weight:500;color:var(--soil)}.nopay .cashline.low{color:var(--barn-d);font-weight:700}
+.len small{display:block;font-size:0.6875rem;color:var(--muted);margin-top:2px}
+.newq .maptog{margin-bottom:6px}
+.goodjob{color:var(--accent-d);font-weight:700}
 .fbtn small.fade{color:var(--barn-d);font-weight:700;font-size:0.75rem;display:block}
 .kv.whyrow{width:100%;text-align:left;align-items:center;min-height:44px;font-size:0.9375rem}
 .whytext{font-size:0.84375rem;color:var(--soil);background:var(--pale);border-left:3px solid var(--wheat-d);padding:6px 8px;margin:2px 0 6px}
@@ -330,6 +380,7 @@ ol.storyl{list-style:none;padding:0;margin:6px 0}ol.storyl li{padding:6px 0;bord
 <div id="helpview" class="helpview hidden" role="dialog" aria-label="Help"></div>
 
 <script src="js/state.js"></script>
+<script src="js/difficulty.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/turn.js"></script>
 <script src="js/events.js"></script>

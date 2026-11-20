@@ -145,8 +145,8 @@ await t.check('i74-a09: Get outside reads by age; skiing Bluewood wants a fair h
 });
 
 await t.check('i74-a10: the senior center shows from 65 with a capped chair class', async () => {
-  const r = await ev(() => {
-    fresh('life', { money: 500, ageMonths: 40 * 12 }); render(); outSheet(); const before = !!document.querySelector('[data-place="senior"]'); closeSheet();
+  const r = await ev(() => {   // i38-a11: visits add health only under 70
+    fresh('life', { money: 500, ageMonths: 40 * 12, health: 60 }); render(); outSheet(); const before = !!document.querySelector('[data-place="senior"]'); closeSheet();
     S.ageMonths = 66 * 12; outSheet(); const after = !!document.querySelector('[data-place="senior"]'); closeSheet();
     const h = S.health, c = S.community; const res = visit('senior', 'chair');
     return { before, after, res: res.msg, dh: S.health - h, dc: S.community - c };

@@ -40,6 +40,7 @@ await t.check('after a reload the service worker controls the page', async () =>
 });
 
 await t.check('a life started online can be continued and played offline', async () => {
+  await page.evaluate(() => setPref('newHere', 1));            // skip the first-start practice offer (i23-a01)
   await page.fill('#nm', 'Offline');
   await page.click('[data-len=two]');
   await page.click('#start');
