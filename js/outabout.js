@@ -328,7 +328,7 @@ const OUT_EVENTS = [
     ]},
   // i26-b05: the same band plays an early all-ages set, so under-21s get music night too
   { ic:'🎸', title:'All-ages show at The Royal Brick', biz:'brick', w:2, when:() => age() < 21,
-    text:'A band from Walla Walla is playing an early all-ages set at The Royal Brick before the bar opens on Saturday.',
+    text:'A band from Walla Walla plays an early show at The Royal Brick on Saturday. It\'s for all ages, and it ends before the bar opens.',
     choices:() => [
       {label:`Go (-${fmtc(12)})`, go:() => { adj({money:-cost(12), happy:4, community:2}); return 'You stood up front, and the drummer tossed you a broken stick.'; }},
       {label:'Early night', go:() => 'You slept well, at least.'}

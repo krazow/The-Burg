@@ -62,7 +62,7 @@ function showEvent(ev, then = null){
   const before = {happy:S.happy, health:S.health, community:S.community};
   const choices = ev.choices().filter(c => !c.if || c.if());
   const pin = S.evPins && S.evPins[0] && S.evPins[0].t === ev.title ? [S.evPins[0].m, S.evPins[0].k] : eventPlace(ev);
-  sheet(`<div class="big">${ev.ic}</div><h2 style="text-align:center">${ev.title}</h2><p class="evplace">📍 ${esc(placeName(pin))}${pin[0] === 'R' ? ' · on the region map' : ''}</p><p>${typeof ev.text==='function'?ev.text():ev.text}</p>
+  sheet(`<div class="big">${ev.ic}</div><h2 style="text-align:center">${ev.title}</h2><p class="evplace">📍 ${esc(placeName(pin))}${pin[0] === 'R' ? ' · on the region map' : ''}</p><p id="evtext" data-desc>${typeof ev.text==='function'?ev.text():ev.text}</p>
     <div class="evchoices">${choices.map((c,i) => `<button class="btn ${i===0?'primary':'ghost'}" data-i="${i}">${c.label}</button>`).join('')}</div>`);
   $('#sheet').classList.add('ev');            // i2-a24: the choices sit at the bottom of the pop-up, in thumb reach
   sfx('event'); buzz('event');
@@ -72,7 +72,7 @@ function showEvent(ev, then = null){
     const st = ['happy', 'health', 'community'].reduce((a, k) => a + S[k] - before[k], 0);
     sfx(dm < 0 || st < -1 ? 'bad' : dm > 0 || st > 1 ? 'good' : 'tap');
     if (choices.length === 1) { closeSheet(); render(); toast(`${ev.ic} ${result}${dm ? ` (${dm>0?'+':''}${fmt(dm)})` : ''}`); if (then) showReview(then); return; }
-    sheet(`<div class="big">${ev.ic}</div><p>${result}</p>
+    sheet(`<div class="big">${ev.ic}</div><h2 style="text-align:center">${ev.title}: how it went</h2><p id="evresult" data-desc>${result}</p>
       <p>${dm ? `<span class="delta ${dm>0?'up':'down'}">${dm>0?'+':''}${fmt(dm)}</span>` : ''}${deltaChips(before)}</p>
       <div class="evchoices"><button class="btn primary" id="ok">Continue</button></div>`);
     $('#sheet').classList.add('ev');          // the result keeps the same layout, so Continue is where the choice was
@@ -819,7 +819,7 @@ const TODDLER_EVENTS = [
       {label:'Back off for a month', go:() => { adj({happy:-1}); return 'Diapers for a while longer. They\'ll get there.'; }}
     ]},
   { ic:'📚', title:'Story time at the library', yr:1, w:3, when:() => toddlerHome(),
-    text:'The Weller Public Library has toddler story time on Wednesday mornings: songs, a puppet and a pile of picture books.',
+    text:'The Weller Public Library has story time for small kids each Wednesday. There are songs, a puppet and a big pile of books.',
     choices:() => [
       {label:working() ? `Go every Wednesday this month (-${fmt(dayPay() * 2)} in missed work)` : 'Go every Wednesday this month', go:() => { adj({money:-Math.round(dayPay() * 2), happy:2, community:3}); return 'Your toddler knows every song now, and you know every parent in town.'; }},
       {label:'Read at home instead', go:() => { adj({happy:1}); return 'The same dinosaur book, eleven nights in a row.'; }}
