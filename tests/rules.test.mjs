@@ -141,7 +141,7 @@ await t.check('events follow their rules: seasons, cooldowns, once-only, and job
 });
 
 await t.check('at 0 health you go to the hospital (outside Lifetime), with a bill', async () => {
-  const r = await ev(() => { fresh('two', { health: -5, jobId: 'hanford', focus: 'work', diff: 'hard' });   // to-do 2: the ambulance bill is Hard only const m = S.money; const res = week(); return { note: res.notes.join(' '), health: S.health, paid: -(res.lines['🏥 Hospital bill'] || 0) }; });   // i71-b05: the bill is a money line now
+  const r = await ev(() => { fresh('two', { health: -5, jobId: 'hanford', focus: 'work', diff: 'hard' }); const m = S.money; const res = week(); return { note: res.notes.join(' '), health: S.health, paid: -(res.lines['🏥 Hospital bill'] || 0) }; });   // i71-b05: the bill is a money line now
   assert(r.note.includes('hospital') && r.health === 30 && near(r.paid, 6500 + 1200, 0.02), JSON.stringify(r));   // i74-a04: plus the ambulance ride (no membership)
 });
 
