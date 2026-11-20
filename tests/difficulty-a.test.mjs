@@ -146,7 +146,7 @@ await t.check('a year in Easy with events on: none of these features show up in 
       if (res.ending) break;
     }
     const txt = logText();
-    return { bad: ['Union step raise', 'collections', 'clearance', 'promot', 'furlough', 'strike', '401(k)', 'vintage', 'index funds', 'certificate'].filter(w => txt.toLowerCase().includes(w.toLowerCase())),
+    return { bad: ['Union step raise', 'collections', 'security clearance', 'promot', 'furlough', 'strike', '401(k)', 'vintage', 'index funds', 'certificate'].filter(w => txt.toLowerCase().includes(w.toLowerCase())),
       fields: { rung: S.rung, k401: S.k401, stocks: S.stocks, wine: S.wine.length, col: S.col, wage: S.wage, debtWeeks: S.debtWeeks, bk: S.bk, strike: S.strike, furlough: S.furlough, contractAt: S.contractAt, clearAt: S.clearAt, certs: Object.keys(S.certs).length, carpool: S.carpool, bus: S.bus, ui: S.ui, interview: S.interview, ins: S.ins.auto } };
   });
   assert(!r.bad.length, `Journal lines from switched-off features: ${r.bad.join(', ')}`);

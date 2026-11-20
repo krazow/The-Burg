@@ -47,28 +47,30 @@ const bodyOf = (j = job()) => (j && BODY[j.body]) ? j.body : 'back';
 
 /* ---- a02: sick hours ---- */
 const sickHrs = () => Math.floor((S && S.sickHrs) || 0);
-const canSick = (h = SICK_DAY) => working() && sickHrs() >= h;
+const canSick = (h = SICK_DAY) => on('health.sickHours') && working() && sickHrs() >= h;   // to-do 2: sick hours are Normal and up
 function useSick(h){ if (!canSick(h)) return false; S.sickHrs -= h; return true; }
 
 /* ---- a04 / a08: insurance extras ---- */
-const dentalOn = () => !!(S && S.ins && S.ins.dental);
-const ambOn = () => !!(S && S.ins && S.ins.amb);
+// to-do 2: dental and the ambulance district are Hard only (the standard plan has neither, and the ride is part of the hospital bill)
+const dentalOn = () => !!(S && S.ins && S.ins.dental) && on('health.coverage');
+const ambOn = () => !!(S && S.ins && S.ins.amb) && on('health.coverage');
 function insExtras(){
   const i = (S && S.ins) || {}, out = [];
+  if (!on('health.coverage')) return out;
   if (i.dental) out.push(['🦷 Dental', DENTAL]);
   if (i.amb) out.push(['🚑 Ambulance district membership', AMB_YEAR / 12]);
   return out;
 }
-const ambRide = () => ambOn() ? 0 : Math.round(cost(AMB_RIDE));
+const ambRide = () => ambOn() || !on('health.coverage') ? 0 : Math.round(cost(AMB_RIDE));
 
 /* ---- a11: grown-up shots ---- */
-const hasShot = k => !!S && !!S.shots && S.shots[k] != null;
-const shotDue = () => !!S && ((age() >= 50 && !hasShot('shingles')) || (age() >= 65 && !hasShot('pneu')));
+const hasShot = k => !!S && !!S.shots && S.shots[k] != null && on('health.careStops');
+const shotDue = () => !!S && on('health.careStops') && ((age() >= 50 && !hasShot('shingles')) || (age() >= 65 && !hasShot('pneu')));
 const shotsHad = () => hasShot('shingles') || hasShot('pneu');
 const shotWhy = () => age() < 50 ? 'From age 50' : 'Up to date';
 
 /* ---- a05: the county medical van ---- */
-const vanOK = () => !!S && (age() >= VAN_AGE || !S.car);
+const vanOK = () => !!S && on('health.careStops') && (age() >= VAN_AGE || !S.car);
 const vanFits = (city, ids) => city === 'wallawalla' && vanOK() && ids.length > 0 && ids.every(id => { const s = stopById(id); return s && s.kind === 'appt'; });
 const vanTrip = t => !!(t && t.van && vanFits(t.city, t.stops));
 
@@ -89,8 +91,8 @@ const DAD_WAYS = {
   leave: { ic:'🏡', name:'Take paid family leave and do it yourself', bill:0, drives:4, happy:-0.4, health:0, comm:0.2,
     desc:`Washington's paid leave covers caring for a parent: up to ${LEAVE_WEEKS} weeks at most of your pay, with your job waiting for you.` }
 };
-const caring = () => !!(S && S.parent && !S.parent.done && DAD_WAYS[S.parent.who]);
-const onLeave = () => !!(caring() && S.parent.who === 'leave' && S.turn < (S.parent.leaveEnd ?? -1) && working());
+const caring = () => !!(S && S.parent && !S.parent.done && DAD_WAYS[S.parent.who]) && on('family.dadCare');   // to-do 2: Hard only
+const onLeave = () => !!(caring() && on('health.paidLeave') && S.parent.who === 'leave' && S.turn < (S.parent.leaveEnd ?? -1) && working());
 const careWay = () => !caring() ? null : S.parent.who === 'leave' && !onLeave() ? DAD_WAYS.you : DAD_WAYS[S.parent.who];
 const respiteOK = () => caring() && S.parent.who !== 'pay' && ((S.parent.drain || {}).happy > 0.5 || (S.parent.drain || {}).health > 0.5);
 const leavePayMonthly = j => Math.min(payNow(j) * LEAVE_RATE, LEAVE_CAP * S.wage);
@@ -112,15 +114,15 @@ function dadChoices(leaveOK){
     { label: lab('share'), go: pick('share') },
     { label: lab('pay'), go: pick('pay') },
     { label: lab('you'), go: pick('you') },
-    { label: lab('leave'), if: () => leaveOK() && working() && !(S.parent && S.parent.leaveUsed), go: pick('leave') }
+    { label: lab('leave'), if: () => on('health.paidLeave') && leaveOK() && working() && !(S.parent && S.parent.leaveUsed), go: pick('leave') }
   ];
 }
 
 /* ---- the week: sick hours, therapy, Dad's care (runs in weekTick's money step) ---- */
 function healthWeek(lines, notes, j, gross){
-  if (j && gross > 0 && !onLeave()) S.sickHrs = Math.min(SICK_CAP, (S.sickHrs || 0) + 1);   // one hour per 40 worked
+  if (j && gross > 0 && !onLeave() && on('health.sickHours')) S.sickHrs = Math.min(SICK_CAP, (S.sickHrs || 0) + 1);   // one hour per 40 worked
   const inj = S.injury;
-  if (inj && inj.pt != null) {
+  if (inj && inj.pt != null && on('health.injuries')) {
     lines.push(['Physical therapy (2 visits)', -ptWeekCost(), `Six weeks of therapy in Walla Walla for your ${BODY[inj.part] ? BODY[inj.part].name : 'injury'}: two copays${wwGas(2) ? ' and the gas' : ''}.`]);
     adj({ happy: -0.3 });                                  // two afternoons a week in the car and the waiting room
     if (S.turn + 1 >= inj.pt) {
@@ -143,8 +145,8 @@ function healthWeek(lines, notes, j, gross){
 // monthly drift from the body and from caregiving; adds plain reasons to the week's "why"
 function bodyDrift(a, j, why){
   const d = { dh:0, dH:0, dc:0 };
-  if (j && !j.wear && a >= DESK_AGE && !S.deskHabit && !onLeave()) { d.dH -= DESK_WEAR; why.push('💺 Long days at a desk after 40, a stiff back and tired eyes: ▼ health a little.'); }
-  if (S.injury && S.injury.linger) { d.dH -= LINGER; why.push(`🩹 Your ${BODY[S.injury.part] ? BODY[S.injury.part].name : 'injury'} never fully healed: ▼ health a little. Physical therapy in Walla Walla can still help.`); }
+  if (j && !j.wear && a >= DESK_AGE && !S.deskHabit && !onLeave() && on('health.agingDrift')) { d.dH -= DESK_WEAR; why.push('💺 Long days at a desk after 40, a stiff back and tired eyes: ▼ health a little.'); }
+  if (S.injury && S.injury.linger && on('health.injuries')) { d.dH -= LINGER; why.push(`🩹 Your ${BODY[S.injury.part] ? BODY[S.injury.part].name : 'injury'} never fully healed: ▼ health a little. Physical therapy in Walla Walla can still help.`); }
   const w = careWay();
   if (w) {
     d.dh += w.happy; d.dH += w.health; d.dc += w.comm;
@@ -157,7 +159,7 @@ function bodyDrift(a, j, why){
 // a trip stop's own effects (a07, a11, a13); fx is the trip's stat change
 function stopDone(s, fx){
   if (s.id === 'shots') { S.shots = S.shots || {}; if (age() >= 50) S.shots.shingles = S.turn; if (age() >= 65) S.shots.pneu = S.turn; }
-  if (s.id === 'pt' && S.injury) startPT(S.injury.part);
+  if (s.id === 'pt' && S.injury && on('health.injuries')) startPT(S.injury.part);
   if (s.id === 'respite' && caring()) {
     const dr = S.parent.drain || { happy:0, health:0 };
     const h = Math.min(RESPITE_HAPPY, dr.happy), H = Math.min(RESPITE_HEALTH, dr.health);   // only gives back what caregiving took
@@ -167,16 +169,16 @@ function stopDone(s, fx){
 
 /* ---- trip stops ---- */
 STOPS.push(
-  { id:'shots', kind:'appt', ic:'💉', name:'Grown-up shots at the pharmacy', towns:['dayton','wallawalla'], cost:SHOT_COST, ok:shotDue, okWhy:shotWhy,
+  { id:'shots', feat:'health.careStops', kind:'appt', ic:'💉', name:'Grown-up shots at the pharmacy', towns:['dayton','wallawalla'], cost:SHOT_COST, ok:shotDue, okWhy:shotWhy,
     note:'Shingles at 50, pneumonia at 65. A later flu week is shorter and milder.' },
-  { id:'pt', kind:'appt', ic:'🩹', name:'Start physical therapy', towns:['wallawalla'], cost:0, ok:() => !!(S.injury && S.injury.linger), okWhy:() => 'For an old work injury',
+  { id:'pt', feat:'health.injuries', kind:'appt', ic:'🩹', name:'Start physical therapy', towns:['wallawalla'], cost:0, ok:() => !!(S.injury && S.injury.linger), okWhy:() => 'For an old work injury',
     note:`Six weeks, twice a week (about ${fmtc(PT_COPAY * 2)} a week in copays, plus gas). Clears an injury that never healed.` },
-  { id:'respite', kind:'appt', ic:'🌿', name:'A respite weekend (adult day program)', towns:['wallawalla'], cost:RESPITE_COST, ok:respiteOK, okWhy:() => caring() ? 'Nothing to recover yet' : 'While you\'re caring for Dad',
+  { id:'respite', feat:'health.careStops', kind:'appt', ic:'🌿', name:'A respite weekend (adult day program)', towns:['wallawalla'], cost:RESPITE_COST, ok:respiteOK, okWhy:() => caring() ? 'Nothing to recover yet' : 'While you\'re caring for Dad',
     note:'The adult day program looks after Dad for a weekend. Gives back health and happiness caregiving took, never more.' }
 );
 
 /* ---- a10: the senior center ---- */
-PLACES.push({ id:'senior', name:'Touchet Valley Senior Center', ic:'🪑', lb:'Seniors', addr:'Waitsburg', st:'town', kind:'Senior center', hide:() => age() < CHAIR_AGE,
+PLACES.push({ id:'senior', name:'Touchet Valley Senior Center', ic:'🪑', lb:'Seniors', addr:'Waitsburg', st:'town', kind:'Senior center', hide:() => age() < CHAIR_AGE || !on('health.agingDrift'),
   desc:'Morning chair exercise, a hot lunch on weekdays, and people who notice when you don\'t come in.', hours:'Weekday mornings',
   acts:[{ id:'chair', ic:'🪑', name:'Chair exercise class', cost:3, fx:{health:3, community:2, happy:1}, minAge:CHAIR_AGE, note:'Gentle movement for 65 and up, and someone always asks how you are.' }] });
 
@@ -273,17 +275,33 @@ Object.assign(EVENT_PLACE, { 'A personal day':['T','home'], 'Stiff after a long 
 
 /* ---- the Life tab card ---- */
 function healthCard(){
-  const j = working() ? job() : null, a0 = age(), row = (l, v) => `<div class="kv"><span>${l}</span><span>${v}</span></div>`, inj = S.injury;
-  const shots = a0 >= 50 ? [hasShot('shingles') ? 'shingles ✓' : 'shingles due', ...(a0 >= 65 ? [hasShot('pneu') ? 'pneumonia ✓' : 'pneumonia due'] : [])].join(' · ') : '';
+  const j = working() ? job() : null, a0 = age(), inj = on('health.injuries') ? S.injury : null, sick = on('health.sickHours'), cov = on('health.coverage'), row = (l, v) => `<div class="kv"><span>${l}</span><span>${v}</span></div>`; 
+  const shots = a0 >= 50 && on('health.careStops') ? [hasShot('shingles') ? 'shingles ✓' : 'shingles due', ...(a0 >= 65 ? [hasShot('pneu') ? 'pneumonia ✓' : 'pneumonia due'] : [])].join(' · ') : '';
   const w = careWay();
   return `<div class="card" id="healthcard"><h3>🩺 Health and body</h3>
-    ${j ? row(`${BODY[bodyOf(j)].ic} Your job wears on your`, BODY[bodyOf(j)].name) : ''}
-    ${j || S.sickHrs ? row('🤒 Sick hours', `${sickHrs()} of ${SICK_CAP}`) : ''}
+    ${j && on('health.injuries') ? row(`${BODY[bodyOf(j)].ic} Your job wears on your`, BODY[bodyOf(j)].name) : ''}
+    ${sick && (j || S.sickHrs) ? row('🤒 Sick hours', `${sickHrs()} of ${SICK_CAP}`) : ''}
     ${inj ? row('🩹 Work injury', inj.pt != null ? `therapy, ${Math.max(0, inj.pt - S.turn)} weeks left` : inj.linger ? `your ${BODY[inj.part].name} still aches` : 'healing') : ''}
-    ${j && !j.wear && a0 >= DESK_AGE ? row('💺 Desk days', S.deskHabit ? 'you walk at lunch ✓' : 'stiff by afternoon') : ''}
+    ${j && !j.wear && a0 >= DESK_AGE && on('health.agingDrift') ? row('💺 Desk days', S.deskHabit ? 'you walk at lunch ✓' : 'stiff by afternoon') : ''}
     ${shots ? row('💉 Grown-up shots', shots) : ''}
-    ${row('🩺 Medical plan', healthMonthly() ? `${wk(cost(healthMonthly()))} (Health care bill)` : 'Apple Health, $0')}${row('🦷 Dental', dentalOn() ? 'covered' : 'not covered')}${row('🚑 Ambulance district', ambOn() ? 'member' : 'not a member')}
+    ${row('🩺 Medical plan', healthMonthly() ? `${wk(cost(healthMonthly()))} (Health care bill)` : 'Apple Health, $0')}${cov ? row('🦷 Dental', dentalOn() ? 'covered' : 'not covered') + row('🚑 Ambulance district', ambOn() ? 'member' : 'not a member') : ''}
     ${w ? row('🧓 Dad\'s appointments', `${w.ic} ${w.name}${onLeave() ? ` · leave, ${S.parent.leaveEnd - S.turn} weeks left` : ''}`) : ''}
-    <p class="muted" style="margin:6px 0">${j ? 'Jobs earn an hour of sick time for every 40 worked (up to 40). They cover sick days, so the week isn\'t unpaid. ' : ''}${inj && inj.linger ? 'Physical therapy is a stop on a Walla Walla trip. ' : ''}${w && S.parent.who !== 'pay' ? 'A respite weekend in Walla Walla gives back what caregiving takes. ' : ''}${a0 >= VAN_AGE ? 'The county medical van can take you to Walla Walla appointments for ' + fmtc(VAN_FARE) + '. ' : ''}Dental and the ambulance district are on the insurance sheet.</p>
+    <p class="muted" style="margin:6px 0">${j && sick ? 'Jobs earn an hour of sick time for every 40 worked (up to 40). They cover sick days, so the week isn\'t unpaid. ' : ''}${inj && inj.linger ? 'Physical therapy is a stop on a Walla Walla trip. ' : ''}${w && S.parent.who !== 'pay' ? 'A respite weekend in Walla Walla gives back what caregiving takes. ' : ''}${a0 >= VAN_AGE && vanOK() ? 'The county medical van can take you to Walla Walla appointments for ' + fmtc(VAN_FARE) + '. ' : ''}${cov ? 'Dental and the ambulance district are on the insurance sheet.' : ''}</p>
   </div>`;
+}
+
+/* ---- to-do 2 (D2 + D3, area B): events that belong to a feature come up only while it's on ---- */
+// (a feature's tier sits on top of the event's own tier, so a Hard feature's event never comes up in Normal either)
+const FEATURE_EVENTS = {
+  'Starting a family?':'family.kids', 'A kid heads off to college':'family.kids', 'Run for town council?':'family.council',
+  'Truck trouble':'car.upkeep', 'Hurt on the job':'health.injuries', 'Physical therapy, or tough it out?':'health.injuries',
+  'A cracked tooth':'health.coverage', 'A personal day':'health.events', 'Flu going around':'health.events', 'Toothache':'health.events',
+  'Flu season in town':'health.careStops', 'Stiff after a long day at the desk':'health.agingDrift',
+  'Who drives Dad to Walla Walla?':'family.dadCare', 'Family leave is ending':'family.dadCare',
+  'Long-term care insurance':'health.lateCare', 'Who will care for you?':'health.lateCare',
+  ...Object.fromEntries(TODDLER_EVENTS.map(e => [e.title, 'family.kids']))
+};
+for (const e of [...EVENTS, ...PLAN_DUE, ...DUE_EVENTS]) {
+  const k = FEATURE_EVENTS[e.title]; if (!k || e.feat) continue;
+  const w = e.when; e.feat = k; e.when = m => on(k) && (!w || w(m));
 }

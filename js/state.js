@@ -270,7 +270,7 @@ const SCORE_STATE = () => ({ commSum:0, cardSum:0, cardCount:0, cardSeed:false, 
 const yrsOf = mo => Math.floor(mo / 12 + 1e-6);
 const age = () => yrsOf(S.ageMonths);
 const kidAge = b => yrsOf(S.ageMonths - b);
-const kidsAtHome = () => (S.kids || []).filter(b => kidAge(b) < 18).length;
+const kidsAtHome = () => on('family.kids') ? (S.kids || []).filter(b => kidAge(b) < 18).length : 0;   // to-do 2: kids are Normal and up
 // fill in fields that older saves don't have
 // H1: a fresh life's fields, used by newGame and to repair damaged saves
 // i63-b22: every life gets an id, so a restored backup can tell an older copy of the same life (no Math.random: the dice stay put)
@@ -446,7 +446,7 @@ function adj(o){
   if (o.health > 0) S.health = Math.min(S.health, Math.max(maxHealth(), S.health - o.health));   // i30-b03: gains stop at the age cap
 }
 // i30-b03: health's ceiling comes down with age: 100 until 55, about 75 at 85, 60 past 100
-const maxHealth = (a = age()) => clamp(100 - Math.max(0, a - 55) * 25 / 30, 60, 100);
+const maxHealth = (a = age()) => on('health.agingDrift') ? clamp(100 - Math.max(0, a - 55) * 25 / 30, 60, 100) : 100;   // to-do 2: no age cap in Easy
 // i35-b05/i37-b06: where happiness and community drift back to, and where Rest and Get outside top out
 const happyRest = () => mode() === 'hard' ? 48 : 52;
 const commRest = () => { const base = mode() === 'hard' ? 20 : 25; return S.bgRest != null && S.turn < BG_REST_WEEKS ? Math.min(base, S.bgRest) : base; };
