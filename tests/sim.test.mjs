@@ -26,6 +26,8 @@ const results = [];
 const VARIANTS = (process.env.SIM_ONLY || process.env.SIM_LEN) && !process.env.SIM_VARIANTS ? [] : [
   ...['farm', 'grad', 'transplant', 'parent'].flatMap(bg => ['planner', 'careless'].map(strat => ({ len: 'two', strat, opts: { bg }, label: bg }))),
   ...['relaxed', 'hard'].flatMap(mode => ['planner', 'careless', 'idle'].map(strat => ({ len: 'two', strat, opts: { mode }, label: mode }))),
+  // i31-b20/b33: the 'Everything open' start setting (normal games play 'Open as I go'); same dice, so scores must match
+  ...['planner', 'careless', 'idle'].map(strat => ({ len: 'two', strat, opts: { unlock: 'all' }, label: 'allopen' })),
   // i35-b06: 5-year games on Hard and the same dice on Normal, so good play on Hard can be held below Normal
   ...['hard', 'normal'].flatMap(mode => ['planner', 'careless'].map(strat => ({ len: 'five', strat, opts: { mode }, label: `${mode}-5y`, n: strat === 'planner' ? 3 : 2 }))),
   // i75-b21: a broke start: -$5,000 and the farm hand job, played sensibly (the struggler) and idle, 8 games each
@@ -181,9 +183,10 @@ for (const { len, strat, g, opts, label, tier } of JOBS_LIST) {
         return { weeks, ending, bad, events, score: sc.score, parts: sc.parts, cardAvg: sc.cardAvg, snap: sc.snap, aimPart: Math.round(sc.aim), drag: sc.drag, good: S.goodWeeks, nw: Math.round(sc.real), age: age(), edu: S.edu, kids: S.kids.length,
                  debt: /debt/.test(ending || ''), endedOk: !!ending, cash: Math.round(S.money), bk: S.bk != null, climbed, nw65,
                  src: Object.fromEntries(Object.entries(src).map(([k, v]) => [k, Math.round(v)])),
-                 choiceFx, wxCost: Math.round((S.wxLife || {}).cost || 0), wxSaved: Math.round((S.wxLife || {}).saved || 0), yrs: Math.max(0.5, S.turn / 52) };
+                 choiceFx, wxCost: Math.round((S.wxLife || {}).cost || 0), wxSaved: Math.round((S.wxLife || {}).saved || 0), yrs: Math.max(0.5, S.turn / 52),
+                 opened: Object.fromEntries(Object.entries(S.opened || {}).map(([k, v]) => [k, v.how])) };
       }, [len, strat, opts]);
-      r.len = len; r.strat = strat; r.errors = errors; r.label = label; r.tier = tier;
+      r.len = len; r.strat = strat; r.errors = errors; r.label = label; r.g = g; r.tier = tier;
       results.push(r);
       await ctx.close();
     }
@@ -228,6 +231,10 @@ if (VARIANTS.length) {
     md += `| ${lab} | ${strat} | ${rs.length} | ${med(rs.map(r => r.score))} | ${money(med(rs.map(r => r.nw)))} | ${rs.filter(r => r.debt).length} |\n`;
   }
 }
+// i31-b33: which systems opened during normal ('Open as I go') games, and how (moment, deadline, start or used)
+{ const n = {}, how = {}; const rs = results.filter(r => r.label === 'normal');
+  for (const r of rs) for (const [k, h] of Object.entries(r.opened || {})) { n[k] = (n[k] || 0) + 1; how[k] = how[k] || {}; how[k][h] = (how[k][h] || 0) + 1; }
+  md += `\n**Systems opened** (normal games, of ${rs.length}):\n\n` + Object.entries(n).map(([k, v]) => `- ${k}: ${v} (${Object.entries(how[k]).map(([h, c]) => `${h} ${c}`).join(', ')})`).join('\n') + '\n'; }
 const ev = {}; let weeks = 0;
 for (const r of results) { weeks += r.weeks; for (const [k, v] of Object.entries(r.events)) ev[k] = (ev[k] || 0) + v; }
 md += `\n**Events per 100 weeks played** (${weeks.toLocaleString()} weeks in total):\n\n` +
@@ -323,6 +330,17 @@ if (VARIANTS.length) {
       const rs = results.filter(r => r.label === bg && r.strat === 'planner'); if (!rs.length) continue;
       const inDebt = rs.filter(r => r.debt || r.cash < 0).length, nw = med(rs.map(r => r.nw));
       if (inDebt > rs.length / 4 || nw < 0) bad.push(`${bg}: ${inDebt} of ${rs.length} in debt, median net worth ${money(nw)}`);
+    }
+    if (bad.length) throw new Error(bad.join('; '));
+  });
+  // i31-b20/b33: opening everything at the start is UI only: the same dice score within noise of 'Open as I go'
+  await t.check('Everything open scores the same as Open as I go (within 3 points per strategy)', async () => {
+    const bad = [];
+    for (const strat of ['planner', 'careless', 'idle']) {
+      const b = results.filter(r => r.label === 'normal' && r.len === 'two' && r.strat === strat), a = results.filter(r => r.label === 'allopen' && r.strat === strat && b.some(x => x.g === r.g));   // the same dice
+      if (!a.length || !b.length) continue;
+      const d = med(a.map(r => r.score)) - med(b.map(r => r.score));
+      if (Math.abs(d) > 3) bad.push(`${strat}: ${med(a.map(r => r.score))} vs ${med(b.map(r => r.score))}`);
     }
     if (bad.length) throw new Error(bad.join('; '));
   });

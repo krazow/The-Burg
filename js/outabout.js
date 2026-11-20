@@ -196,9 +196,10 @@ function placeLine(p){
 }
 function outButton(){
   const n = visitsLeft();
-  return `<button class="btn ghost outbtn" id="outbtn">🛍️ Out and about<small>${n ? `Visits left this week: ${n} of ${OUT_MAX}` : 'No visits left this week'}</small></button>`;
+  return `<button class="btn ghost outbtn" id="outbtn">🛍️ Out and about${newTag('out')}<small>${n ? `Visits left this week: ${n} of ${OUT_MAX}` : 'No visits left this week'}</small></button>`;
 }
 function outSheet(){
+  openSystem('out', { quiet:true, how:'used' });   // i31: using it from anywhere (the checklist) opens it
   const grp = (title, list) => `<h3 class="triph">${title}</h3>` + list.map(p => `<button class="kv job tripto" data-place="${p.id}"><span><span class="t">${p.ic} ${esc(p.name)}</span><span class="s">${esc(p.addr)} · ${placeLine(p)}</span></span><span aria-hidden="true">›</span></button>`).join('');
   sheet(`<h2>🛍️ Out and about</h2>
     <p class="muted">Quick visits around town, on top of your week's focus: up to ${OUT_MAX} a week, one per place. ${visitsLeft()} left this week. Going back within ${OUT_REPEAT} weeks is half as special, and visits do less as a stat climbs past 80.</p>
