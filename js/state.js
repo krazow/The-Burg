@@ -110,11 +110,15 @@ function focusEffect(f = S.focus, n = S.streakF === f ? S.streakN : 1){ return f
 const wk = v => fmt(v*W) + '/wk';
 const LENGTHS = {
   // i49-a01: mins is a real-time guess from timed phone play (390×844, ⏩ where it helps)
-  half: { label:'6 Months', sub:'26 weeks',  turns:26,       target:16000,   mins:'about 4 min' },
-  two:  { label:'2 Years',  sub:'104 weeks', turns:104,      target:90000,   mins:'about 11 min (7 with ⏩)' },
-  five: { label:'5 Years',  sub:'260 weeks', turns:260,      target:400000,  mins:'about 25 min' },   // B1: raised so careless long games don't coast on pay growth
+  // target: net worth for full points on Normal and Hard; easy: on Easy (to-do 2 D7, fitted to Easy sim runs: no investing,
+  // no price growth, no business, no report cards). Easy has no Lifetime.
+  half: { label:'6 Months', sub:'26 weeks',  turns:26,       target:16000,   easy:14000,  mins:'about 4 min' },
+  two:  { label:'2 Years',  sub:'104 weeks', turns:104,      target:90000,   easy:80000,  mins:'about 11 min (7 with ⏩)' },
+  five: { label:'5 Years',  sub:'260 weeks', turns:260,      target:400000,  easy:475000, mins:'about 25 min' },   // B1: raised so careless long games don't coast on pay growth
   life: { label:'Lifetime', sub:'18 to the end', turns:Infinity, target:4000000, mins:'about 4 hours, over many sittings' }
 };
+// to-do 2 D7: the net worth for full points in this length on this difficulty (Classic lives play Hard, so they keep the old targets)
+const lenTarget = (len = S && S.len, d = typeof diff === 'function' ? diff() : 'hard') => { const L = LENGTHS[len] || LENGTHS.two; return d === 'easy' && L.easy ? L.easy : L.target; };
 
 const CITIES = {
   waitsburg: { name:'Waitsburg',   miles:0,  blurb:'Home. Main Street, the Touchet River, and everybody knows your truck.' },
@@ -523,8 +527,35 @@ const isLife = g => !!g && typeof g === 'object' && !Array.isArray(g) && typeof 
 // writes one life (null deletes it); false when the write failed
 function writeSlot(i, game){
   if (i !== WEEKLY_SLOT && rawGet(SLOTS_KEY) != null) importLegacy();
-  if (!game) { store.del(slotKey(i)); return true; }
+  if (!game) { store.del(slotKey(i)); store.del(prevKey(i)); return true; }
+  keepPrev(i, game);
   return store.set(slotKey(i), game);
+}
+// i3-b04: each slot also keeps last week's save. When a new week is written, the save it replaces becomes the
+// copy; a different life in the slot drops the old copy. If the copy can't fit, it goes, never the life itself.
+const prevKey = i => slotKey(i) + '.prev';
+function keepPrev(i, game){
+  const raw = rawGet(slotKey(i)); if (!raw) return;
+  let old; try { old = JSON.parse(raw); } catch(e){ return; }
+  if (!isLife(old)) return;
+  if (old.lifeId !== game.lifeId) { store.del(prevKey(i)); return; }
+  if (old.turn === game.turn) return;
+  try { localStorage.setItem(prevKey(i), raw); } catch(e){ store.del(prevKey(i)); }
+}
+// the copy from a week earlier, or null
+function prevLife(i){
+  const raw = rawGet(prevKey(i)); if (!raw) return null;
+  try { const g = JSON.parse(raw); return isLife(g) ? g : null; } catch(e){ return null; }
+}
+// i3-b03: ask the browser to keep this game's storage, so a phone low on space doesn't clear the lives.
+// PERSIST: true (kept), false (the phone said no) or null (not asked yet, or the browser can't say)
+let PERSIST = null;
+function askPersist(){
+  if (askPersist.done) return; askPersist.done = true;
+  try {
+    const st = navigator.storage; if (!st || !st.persist) return;
+    Promise.resolve(st.persisted ? st.persisted() : false).then(p => p || st.persist()).then(p => { PERSIST = !!p; }).catch(() => {});
+  } catch(e){}
 }
 // all five at once (restoring a backup); true only if every life landed
 function writeSlots(a){ let ok = true; for (let i = 0; i < SLOT_COUNT; i++) ok = writeSlot(i, a[i] || null) && ok; return ok; }
@@ -562,9 +593,9 @@ function save(){
 /* ---------- i73-b01: a finished life leaves a small stub, so it outlasts "Play again" ---------- */
 const ENDS_KEY = KEY_PREFIX + 'ends.v1', ENDS_MAX = 100;
 const ends = () => { const a = store.get(ENDS_KEY); return Array.isArray(a) ? a.filter(e => e && typeof e === 'object' && typeof e.name === 'string' && Number.isFinite(e.score)) : []; };
-// newest first; past ENDS_MAX the oldest go, but never the ten best
+// newest first; past ENDS_MAX the oldest go, but never the ten best of a difficulty
 function keepEnds(list){
-  const top = new Set(list.slice().sort((a, b) => b.score - a.score).slice(0, 10)), out = list.slice();
+  const top = new Set(SHELVES.flatMap(sh => list.filter(e => endShelf(e) === sh).sort((a, b) => b.score - a.score).slice(0, 10))), out = list.slice();   // D7: the ten best on each shelf
   for (let i = out.length - 1; out.length > ENDS_MAX && i >= 0; i--) if (!top.has(out[i])) out.splice(i, 1);
   return out;
 }
@@ -656,7 +687,37 @@ function sfx(name){
     }
   } catch(e){}
 }
-function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.remove('hidden'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.add('hidden'), 2200); }
+// i20-a03: a toast sits just above the bars at the bottom (never on them), and fades out after 2.5 seconds.
+// i20-a04: while an event is open, toasts wait and show after it closes, so they never cover the event.
+// toast(msg, true) shows at once, even over an event (Pick one to go on).
+const TOAST_MS = 2500, TOAST_Q = [];
+const evOpen = () => { const m = $('#modal'), sh = $('#sheet'); return !!(m && sh && !m.classList.contains('hidden') && sh.classList.contains('ev')); };
+function placeToast(t){
+  let top = Infinity;
+  for (const q of ['#strip', '.endbar', '.focusrow', '#app > nav']) {
+    const e = document.querySelector(q); if (!e) continue;
+    const r = e.getBoundingClientRect(); if (r.height > 0 && r.top < top) top = r.top;
+  }
+  t.style.bottom = top < Infinity && top > 120 ? `${Math.round(innerHeight - top + 8)}px` : '';
+}
+function toast(msg, now){
+  const t = $('#toast'); if (!t) return;
+  if (!now && evOpen()) { if (!TOAST_Q.includes(msg)) TOAST_Q.push(msg); if (TOAST_Q.length > 3) TOAST_Q.shift(); return; }
+  placeToast(t);
+  t.textContent = msg; t.classList.remove('hidden', 'out'); clearTimeout(toast.t); clearTimeout(toast.f);
+  toast.t = setTimeout(() => { t.classList.add('out'); toast.f = setTimeout(() => { t.classList.add('hidden'); t.classList.remove('out'); flushToasts(); }, 300); }, TOAST_MS);
+}
+// an event just opened: a toast already showing waits for it too
+function holdToast(){
+  const t = $('#toast'); if (!t || t.classList.contains('hidden') || !t.textContent) return;
+  clearTimeout(toast.t); clearTimeout(toast.f); t.classList.add('hidden'); t.classList.remove('out');
+  if (!TOAST_Q.includes(t.textContent)) TOAST_Q.unshift(t.textContent);
+}
+function flushToasts(){
+  const t = $('#toast');
+  if (!TOAST_Q.length || !t || !t.classList.contains('hidden') || evOpen()) return;
+  toast(TOAST_Q.shift());
+}
 
 /* ============================================================
    🎬 HOW A LIFE BEGINS (#69) and 🎚️ MODES (#73)
@@ -761,7 +822,34 @@ const rulesSummary = r => { const ch = Object.keys(cleanRules(r)); return ch.len
 // i22-a19: how far through a Lifetime you are (age 18 to 65): the header bar and the score's on-track target share it
 const lifeProgress = () => clamp((S.ageMonths / 12 - 18) / (65 - 18), 0, 1);
 const bestKey = (len, m) => m && m !== 'normal' ? `${len}-${m}` : len;
-const bestLabel = k => { if (k.startsWith('cu-')) { const b = bestLabel(k.slice(3)); return b ? `🎛️ ${b} · Custom rules` : null; } if (k.startsWith('wk-'))return `📅 ${k.slice(3)}`; if (k.startsWith('sc-')) { const sc = SCENARIOS[k.slice(3)]; return sc ? `${sc.ic} ${sc.name}` : null; } const [len, m] = k.split('-'); return LENGTHS[len] ? `${LENGTHS[len].label}${m && MODES[m] ? ` (${MODES[m].name})` : ''}` : null; };
+/* ---------- to-do 2 D7: records are kept per difficulty ----------
+   Each best score sits on a shelf: Easy, Normal, Hard, or Classic for lives from before difficulty modes.
+   A difficulty's key starts with its name ("easy.two", "hard.sc-farm", "normal.wk-2026-W47", "cu-easy.two");
+   every key stored before then has no such start, so it reads as Classic and keeps its old form ("two-relaxed", "sc-farm"). */
+const SHELVES = ['easy', 'normal', 'hard', 'classic'];
+const shelfOf = (s = S) => !s || s.classic || !DIFFS[s.diff] ? 'classic' : s.diff;
+const endShelf = e => !e || e.classic || !DIFFS[e.diff] ? 'classic' : e.diff;
+const shelfName = sh => sh === 'classic' ? '🏛️ Classic' : `${DIFFS[sh].ic} ${DIFFS[sh].label}`;
+const recKey = (sh, rest) => sh === 'classic' ? rest : `${sh}.${rest}`;
+function parseRecKey(k){
+  const cu = k.startsWith('cu-'), b = cu ? k.slice(3) : k, m = /^(easy|normal|hard)\.(.+)$/.exec(b);
+  return { cu, shelf: m ? m[1] : 'classic', rest: m ? m[2] : b };
+}
+// what a key holds, without its shelf: "2 Years", "6 Months (Relaxed)" (Classic), a challenge or a week
+function restLabel(r){
+  if (r.startsWith('wk-')) return `📅 ${r.slice(3)}`;
+  if (r.startsWith('sc-')) { const sc = SCENARIOS[r.slice(3)]; return sc ? `${sc.ic} ${sc.name}` : null; }
+  const [len, m] = r.split('-'); return LENGTHS[len] ? `${LENGTHS[len].label}${m && MODES[m] ? ` (${MODES[m].name})` : ''}` : null;
+}
+const bestLabel = k => { const p = parseRecKey(k), b = restLabel(p.rest); return b ? `${p.cu ? '🎛️ ' : ''}${shelfName(p.shelf)} · ${b}${p.cu ? ' · Custom rules' : ''}` : null; };
+// a life's difficulty for the end screen and records: "🌱 Easy", or "🏛️ Classic (Relaxed)" for an older life
+const lifeDiffLabel = (s = S) => shelfOf(s) === 'classic' ? `🏛️ Classic${s && s.mode && s.mode !== 'normal' && MODES[s.mode] ? ` (${MODES[s.mode].name})` : ''}` : shelfName(shelfOf(s));
+// boot and restore: a finished life stored before difficulty modes is marked Classic (best scores need no change: see above)
+function migrateRecords(){
+  const a = store.get(ENDS_KEY); if (!Array.isArray(a)) return;
+  let n = 0; for (const e of a) if (e && typeof e === 'object' && !DIFFS[e.diff] && !e.classic) { e.classic = true; n++; }
+  if (n) store.set(ENDS_KEY, a);
+}
 
 /* ============================================================
    🌸 SEASON GOALS IN TOWN (#77): one town goal a season, worked toward with your weekly focus
