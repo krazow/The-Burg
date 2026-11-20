@@ -2472,6 +2472,108 @@ await t.check('i71-b04: promotion stress counts in weeks with events off', async
   assert(near(r.base - r.promo, 0.6 * W, 0.01), JSON.stringify(r));
 });
 
+// ---- i19: custom rules and assists ----
+await t.check('i19-b01: one rules object: missing or unknown knobs fall back to Normal, and old saves load with Normal rules', async () => {
+  const r = await ev(() => {
+    const def = { col: rule('col', {}), wage: rule('wage', {}), ev: rule('evMult', {}), debt: rule('debtEnd', {}), add: rule('startAdd', {}), routine: rule('routine', {}) };
+    const junk = { col: rule('col', { prices: 'hyper', events: 7 }), clean: cleanRules({ prices: 'hyper', events: 'calm', start: 'std', x: 1 }) };
+    const old = blankLife('Old', 'two'); delete old.rules; delete old.tier0; migrate(old);
+    const bad = blankLife('Bad', 'two'); bad.rules = { prices: 'nope', events: 'busy' }; bad.tier0 = 'gold'; migrate(bad);
+    return { def, junk, old: [old.rules, old.tier0], bad: [bad.rules, bad.tier0] };
+  });
+  assert(r.def.col === 0.03 && r.def.wage === 0.025 && r.def.ev === 1 && r.def.debt === null && r.def.add === 0 && r.def.routine === false, JSON.stringify(r.def));
+  assert(r.junk.col === 0.03 && JSON.stringify(r.junk.clean) === '{"events":"calm"}', JSON.stringify(r.junk));
+  assert(JSON.stringify(r.old) === '[{},"standard"]', JSON.stringify(r.old));
+  assert(JSON.stringify(r.bad) === '[{"events":"busy"},"custom"]', JSON.stringify(r.bad));
+});
+
+await t.check('i19-b01: the knobs reach prices, pay, debt, event odds and starting money', async () => {
+  const r = await ev(() => {
+    const yr = rules => { newGame('R', 'two', 0, { rules }); S.noEvents = true; weeks(52); return { col: S.col, wage: S.wage }; };
+    const odds = rules => { newGame('R', 'two', 0, { rules }); S.jobId = 'farmhand'; return eventOdds(null).town; };
+    const money = (rules, bg) => { newGame('R', 'two', 0, { rules, bg }); return S.money; };
+    const debt = (rules, mode) => { newGame('R', 'two', 0, { rules, mode }); return debtLimit(); };
+    return { usual: yr({}), frozen: yr({ prices: 'frozen' }), fast: yr({ prices: 'fast' }), calm: odds({ events: 'calm' }), busy: odds({ events: 'busy' }), none: odds({ events: 'none' }), normalOdds: odds({}),
+      broke: money({ start: 'broke' }), comfy: money({ start: 'comfy' }), comfyFarm: money({ start: 'comfy' }, 'farm'), std: money({}),
+      tight: debt({ debt: 'tight' }), deep: debt({ debt: 'deep' }, 'relaxed'), modeLine: debt({}, 'hard') };
+  });
+  assert(near(r.usual.col, 1.03, 0.002) && near(r.usual.wage, 1.025, 0.002), JSON.stringify(r.usual));
+  assert(r.frozen.col === 1 && r.frozen.wage === 1, JSON.stringify(r.frozen));
+  assert(near(r.fast.col, 1.07, 0.002) && near(r.fast.wage, 1.055, 0.002), JSON.stringify(r.fast));
+  assert(near(r.calm, 0.07) && near(r.busy, 0.21) && r.none === 0 && near(r.normalOdds, 0.14), JSON.stringify(r));
+  assert(r.broke === 0 && r.comfy === 6500 && r.comfyFarm === 5300 && r.std === 1500, JSON.stringify(r));
+  assert(r.tight === -15000 && r.deep === -80000 && r.modeLine === -25000, JSON.stringify(r));
+});
+
+await t.check('i19-b09 (scaled down): a Comfortable start\'s extra $5,000 does not count toward the score', async () => {
+  const r = await ev(() => { newGame('R', 'two', 0, {}); const a = scoredReal(); newGame('R', 'two', 0, { rules: { start: 'comfy' } }); return { a, b: scoredReal() }; });
+  assert(near(r.a, r.b), JSON.stringify(r));
+});
+
+await t.check('i19-b03: recordTier: Normal rules and the routine assist are Standard, changed knobs Custom, no events Sandbox', async () => {
+  const r = await ev(() => [recordTier({}), recordTier({ routine: 'on' }), recordTier({ start: 'comfy' }), recordTier({ start: 'broke', events: 'none' }), recordTier({ prices: 'bogus' })]);
+  assert(JSON.stringify(r) === '["standard","standard","custom","sandbox","standard"]', JSON.stringify(r));
+});
+
+await t.check('i19-b03: the end screen puts Custom lives on their own shelf and never records a sandbox life', async () => {
+  const r = await ev(() => {
+    const end = rules => { localStorage.clear(); newGame('R', 'half', 0, { rules }); S.noEvents = true; finish('Done.'); closeSheet(); return { best: store.get(BEST_KEY) || {}, note: '' }; };
+    const std = end({}), cu = end({ start: 'comfy' });
+    const cuNote = (() => { localStorage.clear(); newGame('R', 'half', 0, { rules: { start: 'comfy' } }); S.noEvents = true; finish('Done.'); const n = document.querySelector('#tiernote'); const t = n ? n.textContent : ''; closeSheet(); return t; })();
+    const sb = end({ events: 'none' });
+    return { std: Object.keys(std.best), cu: Object.keys(cu.best), sb: Object.keys(sb.best), cuNote, label: bestLabel('cu-half') };
+  });
+  assert(JSON.stringify(r.std) === '["half"]' && JSON.stringify(r.cu) === '["cu-half"]' && r.sb.length === 0, JSON.stringify(r));
+  assert(/Custom shelf/.test(r.cuNote) && /Starting money: Comfortable/.test(r.cuNote), r.cuNote);
+  assert(/6 Months/.test(r.label) && /Custom rules/.test(r.label), r.label);
+});
+
+await t.check('i19-b04/b05: every knob shows its Normal value and a plain dollar preview', async () => {
+  const r = await ev(() => ({ std: ruleLabel('start', 'std', { bg: 'fresh' }), comfy: ruleLabel('start', 'comfy', { bg: 'fresh' }), debt: ruleLabel('debt', 'mode', { mode: 'relaxed' }),
+    pStart: rulePreview('start', 'std', { bg: 'fresh' }), pBroke: rulePreview('start', 'broke', {}), pPrices: rulePreview('prices', 'fast', {}), pFrozen: rulePreview('prices', 'frozen', {}),
+    pEv: [rulePreview('events', 'usual', {}), rulePreview('events', 'calm', {}), rulePreview('events', 'none', {})], pDebt: rulePreview('debt', 'mode', { mode: 'normal' }) }));
+  assert(r.std === 'Starting money: $1,500 (Normal)', r.std);
+  assert(r.comfy === 'Starting money: $6,500 · Normal is $1,500', r.comfy);
+  assert(/never/.test(r.debt) && /\(Normal\)/.test(r.debt), r.debt);
+  assert(/about 10 weeks of rent/.test(r.pStart) && /Nothing in the bank/.test(r.pBroke), r.pStart + ' / ' + r.pBroke);
+  assert(/\$150 a week now and about \$295 in 10 years/.test(r.pPrices) && /\$150 a week now and about \$150 in 10 years/.test(r.pFrozen), r.pPrices + ' / ' + r.pFrozen);
+  assert(/About 11 surprises/.test(r.pEv[0]) && /About 6 surprises/.test(r.pEv[1]) && /Never recorded/.test(r.pEv[2]), r.pEv.join(' / '));
+  assert(/about 267 weeks of rent/.test(r.pDebt), r.pDebt);
+});
+
+await t.check('i19-b15: with the routine assist, routine events take the careful choice and show as "Taken care of"; off, they still ask', async () => {
+  const r = await ev(() => {
+    const run = rules => { newGame('R', 'two', 0, { rules }); S.jobId = 'foodplant';
+      const ev = EVENTS.find(e => e.title === 'Speeding ticket'); const orig = rollEvent; rollEvent = () => ev;
+      const m0 = S.money; S.run = { weeks: 0, money: S.money, happy: S.happy, health: S.health, community: S.community, happened: [] };
+      const res = weekTick(false); rollEvent = orig; return { ev: res.ev && res.ev.title, line: careLine(), log: S.log.map(e => e.m).join(' | ') }; };
+    const pick = t => { const c = routinePick(EVENTS.find(e => e.title === t)); return c && c.label; };
+    newGame('R', 'two', 0, {});
+    return { on: run({ routine: 'on' }), off: run({}), picks: Object.keys(ROUTINE).map(t => [t, !!EVENTS.find(e => e.title === t), pick(t)]) };
+  });
+  assert(r.on.ev == null && /Taken care of: Speeding ticket \(-\$60\)/.test(r.on.line) && /Speeding ticket: An evening of videos/.test(r.on.log), JSON.stringify(r.on));
+  assert(r.off.ev === 'Speeding ticket' && r.off.line === '', JSON.stringify(r.off));
+  const miss = r.picks.filter(([, found, label]) => !found || !label);
+  assert(!miss.length, `routine events without an event or a default choice: ${JSON.stringify(miss)}`);
+});
+
+await t.check('i19-b19: turning an assist off keeps the life on the shelf it started on', async () => {
+  const r = await ev(() => { newGame('R', 'two', 0, { rules: { start: 'comfy', routine: 'on' } }); const before = lifeTier();
+    S.rules = cleanRules({ ...S.rules, routine: 'off' }); const a = lifeTier();
+    S.rules = {}; return { before, a, b: lifeTier(), tier0: S.tier0 }; });
+  assert(r.before === 'custom' && r.a === 'custom' && r.b === 'custom' && r.tier0 === 'custom', JSON.stringify(r));
+});
+
+await t.check('i19-b28: weekly challenges, scenarios and practice lives ignore custom rules', async () => {
+  const r = await ev(() => { const opts = { rules: { start: 'comfy', events: 'none' } };
+    newGame('R', 'half', 0, { ...opts, weekly: '2027-W01' }); const wk = [S.rules, S.tier0, S.money];
+    newGame('R', SCENARIOS[Object.keys(SCENARIOS)[0]].len, 0, { ...opts, scenario: Object.keys(SCENARIOS)[0] }); const sc = [S.rules, S.tier0];
+    newGame('R', 'half', 0, { ...opts, practice: true }); const pr = [S.rules];
+    return { wk, sc, pr }; });
+  assert(JSON.stringify(r.wk.slice(0, 2)) === '[{},"standard"]' && r.wk[2] < 6000, JSON.stringify(r.wk));
+  assert(JSON.stringify(r.sc) === '[{},"standard"]' && JSON.stringify(r.pr) === '[{}]', JSON.stringify(r));
+});
+
 // ---- wave 1: Life Score formula and aims ----
 await t.check('i5-a02: Life Score so far is right in the first month, with a friendly title until week 4', async () => {
   const r = await ev(() => { fresh('two', { jobId: 'farmhand' }); tab = 'home';
