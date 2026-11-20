@@ -36,6 +36,7 @@ function scene(m = new Date().getMonth()){
 const titleMonth = () => { const g = slots().filter(Boolean).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0], m = g && g.date ? new Date(g.date).getMonth() : NaN; return Number.isInteger(m) ? m : new Date().getMonth(); };
 
 function renderTitle(){
+  histSync();
   const all = slots(), used = all.filter(Boolean).length;
   const more = !!prefs().moreOpts;
   let len = 'half';
@@ -179,7 +180,7 @@ function whatsNew(){
 function loadSlot(i){
   const g = slots()[i]; if (!g) return;
   if (S && !S.over && S.slot !== i) save();
-  LIFE_UNDO = []; S = migrate(clone(g)); S.slot = i; tab = 'home'; MAPSIDE = null; MAPSEL = null; useDice();
+  LIFE_UNDO = []; S = migrate(clone(g)); S.slot = i; tab = 'home'; MAPSIDE = null; MAPSEL = null; useDice(); resetFilters();
   closeSheet(); render(); window.scrollTo(0,0);
   if (g.savedAt && Date.now() - g.savedAt >= RECAP_AFTER && S.recapAt !== g.savedAt && !S.practice) recapSheet(g.savedAt);
 }
@@ -384,8 +385,10 @@ function loadSheet(){
   document.querySelectorAll('[data-load]').forEach(b => b.onclick = () => { loadSlot(+b.dataset.load); toast(`Loaded ${S.name}'s life`); });
   $('#no').onclick = closeSheet;
 }
+// i54-a08: the Journal and job filters belong to one life, so loading or starting another starts them fresh
+function resetFilters(){ logFilter = 'all'; jobCity = 'all'; }
 function newGame(name, len, slot = 0, opts = {}){
-  LIFE_UNDO = []; PLAY_AT = -1e9;
+  LIFE_UNDO = []; PLAY_AT = -1e9; resetFilters();
   S = blankLife(name, len, slot);                 // road and work events (health plan, ski pass, job-hunt help and more) included
   S.bg = BACKGROUNDS[opts.bg] ? opts.bg : 'fresh'; S.mode = MODES[opts.mode] ? opts.mode : 'normal';
   if (BACKGROUNDS[S.bg].set) BACKGROUNDS[S.bg].set(S);
@@ -441,6 +444,7 @@ function render(){
   if (COUNT_FROM) { const from = COUNT_FROM; COUNT_FROM = null; if (tab === 'home') animateStats(from); }
   document.querySelectorAll('[data-apply]').forEach(b => b.onclick = () => apply(b.dataset.apply));
   document.querySelectorAll('[data-locked]').forEach(b => b.onclick = () => explainLocked(b.dataset.locked));
+  histSync();
 }
 // i2-a23: press and hold (or right-click, or Shift+Enter) opens the skip options; the release after a hold isn't a tap
 function holdOpens(el, fn){
@@ -1077,24 +1081,90 @@ function confirmRetire(){
   $('#yes').onclick = () => { closeSheet(); finish('You chose to wrap things up.'); };
 }
 /* ---------- modal ---------- */
+// i54-a04: remember the element that opened a sheet (not just its id), plus a way to find its stand-in if a
+// re-render replaced it, and put focus back there on close
 let lastFocus = null;
+function focusKey(el){
+  if (!el || el === document.body || !el.getAttribute) return null;
+  if (el.id) return '#' + CSS.escape(el.id);
+  for (const a of el.getAttributeNames()) if (/^data-/.test(a)) return `${el.tagName.toLowerCase()}[${a}="${CSS.escape(el.getAttribute(a))}"]`;
+  const l = el.getAttribute('aria-label'); return l ? `${el.tagName.toLowerCase()}[aria-label="${CSS.escape(l)}"]` : null;
+}
+const opener = (el = document.activeElement) => el && el !== document.body ? { el, key: focusKey(el) } : null;
+function refocus(f){
+  if (!f) return;
+  const el = f.el && f.el.isConnected ? f.el : f.key && document.querySelector(f.key);
+  if (el && el.focus && !(typeof TUT !== 'undefined' && TUT)) el.focus({ preventScroll: true });
+}
+// i60-a09: the tap that opens a sheet can't land on its buttons, and the tap that closes one can't land on the page
+const TAP_OPEN_MS = 400, TAP_CLOSE_MS = 350;
+let SHEET_AT = -1e9, SHEET_SHUT = -1e9;
+const tapGuard = () => window.TAP_GUARD != null ? !!window.TAP_GUARD : !navigator.webdriver;   // automated tests opt in with TAP_GUARD
+document.addEventListener('click', e => {
+  if (!e.isTrusted || !e.detail || !tapGuard()) return;            // keyboard presses (detail 0) are always on purpose
+  const now = performance.now(), inSheet = e.target.closest && e.target.closest('#sheet');
+  const open = !$('#modal').classList.contains('hidden');
+  if ((open && inSheet && now - SHEET_AT < TAP_OPEN_MS) || (!inSheet && now - SHEET_SHUT < TAP_CLOSE_MS)) { e.preventDefault(); e.stopImmediatePropagation(); }
+}, true);
+// i54-a16: the page behind a sheet stays still
+let SHEET_Y = 0;
+function lockScroll(on){
+  const r = document.documentElement;
+  if (on) { SHEET_Y = window.scrollY; r.classList.add('sheetlock'); }
+  else { r.classList.remove('sheetlock'); if (window.scrollY !== SHEET_Y) window.scrollTo(0, SHEET_Y); }
+}
 function sheet(html){
   const wasOpen = !$('#modal').classList.contains('hidden');
-  if (!wasOpen) lastFocus = document.activeElement && document.activeElement.id ? document.activeElement.id : null;
+  if (!wasOpen) { lastFocus = opener(); lockScroll(true); }
+  SHEET_AT = performance.now();
   const sh = $('#sheet'); sh.className = 'sheet'; sh.style.transform = ''; sh.innerHTML = html; $('#modal').classList.remove('hidden'); sh.scrollTop = 0;
   if (sheetCloser(sh)) sh.insertAdjacentHTML('afterbegin', '<div class="grab" aria-hidden="true"><i></i></div>');   // i2-a22: a handle to swipe it away
   const h = sh.querySelector('h2'); sh.setAttribute('aria-label', h ? h.textContent : 'Message');
   const first = sh.querySelector('[data-i], button.primary, button');
   if (first && !(typeof TUT !== 'undefined' && TUT)) setTimeout(() => first.focus({ preventScroll: true }), 30);   // the tutorial places focus itself
+  histSync();
 }
 function closeSheet(){
   const wasOpen = !$('#modal').classList.contains('hidden');
   if (wasOpen && typeof PLAY_AT !== 'undefined') PLAY_AT = -1e9;   // a sheet in between means the next End Week tap is on purpose
   $('#modal').classList.add('hidden');
-  if (wasOpen) setTimeout(() => { const el = lastFocus && document.getElementById(lastFocus); if (el && !TUT) el.focus({ preventScroll: true }); }, 30);
+  if (wasOpen) { SHEET_SHUT = performance.now(); lockScroll(false); const f = lastFocus; lastFocus = null; setTimeout(() => refocus(f), 30); }
+  histSync();
 }
-// the button that closes the open sheet the safe way (Escape and a swipe down both use it); sheets that ask
-// for a choice (events with data-i buttons) have none, so they can't be swiped or escaped away
+// a sheet that asks you to choose (an event): Back and Escape keep it open
+const mustChoose = (sh = $('#sheet')) => !!sh.querySelector('[data-i]');
+function pickOne(){ toast('Pick one to go on'); announce('Pick one to go on'); }
+/* ---------- i64-a01: the phone's Back button closes the top thing (a sheet, Help, then a tab) and stays in the game ---------- */
+// One history entry per open layer; history.state.burg says how many are on the stack.
+let HIST_T = null, HIST_SKIP = 0;
+const histDepth = () => (S && !S.over && tab !== 'home' ? 1 : 0) + ($('#modal').classList.contains('hidden') ? 0 : 1)
+  + ($('#helpview') && !$('#helpview').classList.contains('hidden') ? 1 : 0);
+const histAt = () => (history.state && history.state.burg) || 0;
+function histSync(){
+  if (HIST_T) return;
+  HIST_T = setTimeout(() => {
+    HIST_T = null;
+    if (HIST_SKIP) return;
+    const want = histDepth(), cur = histAt();
+    try {
+      if (want > cur) for (let i = cur + 1; i <= want; i++) history.pushState({ burg: i }, '');
+      else if (want < cur) { HIST_SKIP++; history.go(want - cur); }
+    } catch(_){}
+  }, 0);
+}
+addEventListener('popstate', () => {
+  if (HIST_SKIP) { HIST_SKIP--; return histSync(); }
+  if (histDepth() <= histAt()) return histSync();
+  const coach = document.querySelector('#coach:not(.hidden)');
+  if (coach || (typeof TUT !== 'undefined' && TUT)) endTutorial(false);
+  else if (!$('#modal').classList.contains('hidden')) {
+    const b = mustChoose() ? null : ['#no', '#n', '#close', '#back', '#ok'].map(q => $('#sheet ' + q)).find(Boolean);
+    if (b) b.click(); else pickOne();
+  }
+  else if (!$('#helpview').classList.contains('hidden')) closeHelp();
+  else if (S && tab !== 'home') { tab = 'home'; MAPSIDE = null; MAPSEL = null; render(); window.scrollTo(0, 0); announce('Home tab'); }
+  histSync();
+});
 const sheetCloser = (sh = $('#sheet')) => sh.querySelector('[data-i]') ? null : ['#no', '#close', '#back', '#ok'].map(q => sh.querySelector(q)).find(Boolean) || null;
 const focusables = root => [...root.querySelectorAll('button:not([disabled]), [tabindex="0"], input, a[href]')].filter(e => e.offsetParent !== null || e.closest('svg'));
 // say something to screen readers without showing it
@@ -1105,7 +1175,7 @@ document.addEventListener('keydown', e => {
   const root = coach ? null : modalOpen ? $('#sheet') : helpOpen ? $('#helpview') : null;
   if (e.key === 'Escape') {
     if (coach) { e.preventDefault(); return endTutorial(false); }
-    if (modalOpen) { const b = ['#no', '#n', '#close', '#back', '#ok'].map(q => $('#sheet ' + q)).find(Boolean); if (b) { e.preventDefault(); b.click(); } return; }
+    if (modalOpen) { e.preventDefault(); if (mustChoose()) return pickOne(); const b = ['#no', '#n', '#close', '#back', '#ok'].map(q => $('#sheet ' + q)).find(Boolean); if (b) b.click(); return; }
     if (helpOpen) { e.preventDefault(); return closeHelp(); }
   }
   if (e.key === 'Tab' && root) {                               // keep Tab inside the open sheet or help page
