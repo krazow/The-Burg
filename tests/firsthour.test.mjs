@@ -87,7 +87,7 @@ await t.check('i44-b05: the tutorial opens the Life Score breakdown and points a
   // the score button shows in the practice life only while the tutorial runs
   await ev(() => { closeSheet(); startTutorial(); });
   await page.waitForTimeout(500);
-  assert(await ev(() => { TUT.i = TSTEPS.findIndex(s => /#scorenow/.test(s.sel || '')) - 1; tab = 'home'; render(); return !!document.querySelector('#scorenow'); }), 'no score button in the practice life');
+  assert(await ev(() => { TUT.i = tsteps().findIndex(s => /#scorenow/.test(s.sel || '')) - 1; tab = 'home'; render(); return !!document.querySelector('#scorenow'); }), 'no score button in the practice life');
   await ev(() => document.querySelector('#scorenow').click());
   await page.waitForSelector(`${open} .card.tip`);
   await ev(() => endTutorial(false));
