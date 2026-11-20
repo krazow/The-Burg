@@ -67,13 +67,13 @@ await t.check('i7-a06: Never played one of these? sets the length, mode and text
   await page.click('#newbie');
   await page.click(`${open} [data-nq="len"][data-v="two"]`);
   await page.click(`${open} [data-nq="text"][data-v="l"]`);
-  await page.click(`${open} [data-nq="easy"][data-v="relaxed"]`);
-  assert((await page.getAttribute(`${open} [data-nq="easy"][data-v="relaxed"]`, 'aria-pressed')) === 'true', 'the pick is not pressed');
+  await page.click(`${open} [data-nq="easy"][data-v="easy"]`);
+  assert((await page.getAttribute(`${open} [data-nq="easy"][data-v="easy"]`, 'aria-pressed')) === 'true', 'the pick is not pressed');
   await page.click(`${open} #yes`);
   assert(/All set/.test(await page.textContent('#sheet h2')) && /practice life/.test(await page.textContent('#sheet')), 'no practice offer at the end');
   await page.click(`${open} #jumpin`);
   const s = await S();
-  assert(s.len === 'two' && s.mode === 'relaxed' && s.name === 'Gentle', JSON.stringify({ l: s.len, m: s.mode, n: s.name }));
+  assert(s.len === 'two' && s.diff === 'easy' && s.mode === 'relaxed' && s.name === 'Gentle', JSON.stringify({ l: s.len, d: s.diff, m: s.mode, n: s.name }));
   assert(await ev(() => prefs().textSize === 'l' && document.documentElement.classList.contains('ts-l')), 'bigger text not set');
   assert(await ev(() => !!prefs().newHere), 'the New here offer should not come again');
   await ev(() => setPref('textSize', 'normal'));
@@ -213,9 +213,9 @@ await t.check('i68-b10/b11: first-time explainers for the jobs, school and money
     firstOn('offer', () => hired(jobById('cna')));
     firstOn('union', () => { startJob('rail'); tab = 'jobs'; render(); });
     firstOn('ladder', () => { tab = 'jobs'; render(); });
+    firstOn('invest', () => { closeSheet(); tab = 'life'; render(); });   // i50-a04: Home comes first on Life now, so Investing's explainer shows before the school one
     firstOn('program', () => { tab = 'life'; render(); });
     firstOn('cert', () => { tab = 'life'; render(); document.querySelector('[data-cert="cdl"]').click(); });
-    firstOn('invest', () => { closeSheet(); tab = 'life'; render(); });
     firstOn('ins', () => insSheet());
     firstOn('will', () => { S.ageMonths = 30 * 12; tab = 'life'; render(); });
     firstOn('ltc', () => { S.ageMonths = 56 * 12; tab = 'life'; render(); });

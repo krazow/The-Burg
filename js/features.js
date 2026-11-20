@@ -133,7 +133,7 @@ function tripSheet(city){
         <span class="t">${s.ic} ${s.name}</span><span class="s">${why ? why : what}${s.date && S.partner && !why ? ' · for two' : ''}</span>${s.note && !why ? `<span class="s">${s.note}</span>` : ''}</button>`;
     }).join('');
   }).join('');
-  sheet(`<h2>${TOWNIC[city]} Trip to ${c.name}</h2>
+  sheet(`<div class="sheethead"><h2>${TOWNIC[city]} <span class="sr-only">Trip to </span>${c.name}</h2><span class="cnt" id="tripcnt"></span><button class="sm alt" id="close">Close</button></div>
     <p class="muted">${c.miles} mi each way · ${gas ? `gas about ${fmt(gas)}. A trip takes part of your week: your focus works at ${TRIP_TIME*100}%.` : 'You work here, so you\'ll stop on the way home: no extra gas or time.'}</p>
     ${debtTripNote()}
     ${S.trip && S.trip.city !== city ? `<p class="muted">This replaces your trip to ${CITIES[S.trip.city].name}.</p>` : ''}
@@ -148,6 +148,7 @@ function tripSheet(city){
     if ($('#van')) { $('#van').classList.toggle('on', vanOn); $('#van').setAttribute('aria-pressed', vanOn); $('#van').disabled = !!sel.length && !vanFits(city, sel); }
     const total = (vanOn ? cost(VAN_FARE) : gas) + sel.reduce((a, id) => a + stopCost(stopById(id), city), 0);
     $('#tripsum').textContent = sel.length ? `${sel.length} of ${max} stop${max === 1 ? '' : 's'} · about ${fmt(total)} in all` : `Pick up to ${max} stop${max === 1 ? '' : 's'}.`;
+    $('#tripcnt').textContent = `${sel.length} of ${max} stop${max === 1 ? '' : 's'}`;   // i20-a23: the sticky header keeps the count in view
     $('#go').disabled = !sel.length;
     document.querySelectorAll('[data-stop]').forEach(b => {
       const s = stopById(b.dataset.stop), on = sel.includes(s.id);
@@ -161,10 +162,11 @@ function tripSheet(city){
   });
   $('#go').onclick = () => {
     const err = planTrip(city, sel, van); if (err) return toast(err);
-    save(); closeSheet(); render(); toast(`🚗 Trip to ${c.name} planned for this week`);
+    save(); closeSheet(); render(); announce(`Trip to ${c.name} planned for this week. End Week now shows it.`);   // i23-a04: the End Week button shows it, so no toast on top of it
   };
   if ($('#cancel')) $('#cancel').onclick = () => { S.trip = null; save(); closeSheet(); render(); toast('Trip canceled'); };
   $('#back').onclick = tripPicker;
+  $('#close').onclick = closeSheet;
   if ($('#van')) $('#van').onclick = () => { van = !van; sum(); };
   sum();
 }
@@ -373,12 +375,24 @@ function scenarioLine(){
   return `<div class="sgoal">${sc.ic} <b>Challenge:</b> ${sc.desc}${S.scWon ? ' ✅ Done!' : ''}
     ${p ? `<div class="scprog">${p.ok ? '✅' : p.lost ? '⚠️' : '⏳'} ${p.text} <b>${left} week${left === 1 ? '' : 's'} left.</b>${p.lost ? ' Out of reach now.' : ''}</div>` : ''}</div>`;
 }
+// i20-a30: Start sits under each description (no more clipping at 360 wide), with the length and your best as tags.
+// i50-a05: the weekly challenge and your records moved here from the title screen.
 function challengesSheet(){
-  const won = store.get(CHALLENGE_KEY) || {};
+  const won = store.get(CHALLENGE_KEY) || {}, best = store.get(BEST_KEY) || {}, wk = best[`wk-${isoWeek()}`];
+  const nWon = Object.keys(SCENARIOS).filter(k => won[k]).length;
+  const tags = (len, b) => `<span class="tag">${LENGTHS[len].label}</span>${b != null ? `<span class="tag">Your best ${b}</span>` : ''}`;
   sheet(`<h2>🏁 Challenges</h2>
     <p class="muted">Set-up stories with a goal. They use the name you typed, Normal mode and Normal rules.</p>
-    ${Object.entries(SCENARIOS).map(([k,sc]) => `<div class="kv job"><div><div class="t">${sc.ic} ${sc.name}${won[k] ? ' ✅' : ''}</div><div class="s">${sc.desc} ${LENGTHS[sc.len].label}.</div></div><button class="sm" data-sc="${k}">Start</button></div>`).join('')}
+    <div class="chrow"><div class="t">📅 Weekly challenge (${isoWeek()}) ${tags('half', wk)}</div>
+      <div class="s">A 6-month life where everyone gets the same events and dice this week. Play it, then share your score card and compare with friends. Everyone plays it with Normal rules.</div>
+      <button class="sm" id="weekly">Start the weekly challenge</button></div>
+    <h3 style="margin-top:14px">Story challenges <span class="tag">${nWon}/${Object.keys(SCENARIOS).length} completed</span></h3>
+    ${Object.entries(SCENARIOS).map(([k,sc]) => `<div class="chrow"><div class="t">${sc.ic} ${sc.name}${won[k] ? ' ✅' : ''} ${tags(sc.len, best['sc-' + k])}</div><div class="s">${sc.desc}</div><button class="sm" data-sc="${k}" aria-label="Start: ${esc(sc.name)}">Start</button></div>`).join('')}
+    ${hasRecords() ? `<h3 style="margin-top:14px">🏆 Your records</h3><p class="muted" style="margin:2px 0">Your best Life Scores on this device.</p>${recordsTable()}${customShelf()}${topLives()}` : ''}
+    ${badgeLine()}
     <button class="btn ghost" id="n">Close</button>`);
+  $('#weekly').onclick = () => { if (readSlot(WEEKLY_SLOT)) return weeklySheet(); const name = (($('#nm') && $('#nm').value.trim()) || 'Dusty').slice(0,20); closeSheet(); startWeekly(name); };
+  document.querySelectorAll('[data-end]').forEach(b => b.onclick = () => endSummary(top10()[+b.dataset.end]));   // i73-b02
   document.querySelectorAll('[data-sc]').forEach(b => b.onclick = () => {
     const sc = SCENARIOS[b.dataset.sc], name = (($('#nm') && $('#nm').value.trim()) || 'Dusty').slice(0,20), free = slots().indexOf(null);
     closeSheet();
@@ -925,7 +939,8 @@ function heirName(name){
 // i3-a33: what the will (or the lack of one) means for the grandkid
 function legacyWillLine(p){
   const inh = inheritance(p);
-  return inh.will ? `<div class="card tip">📜 <b>${esc(p.name)} left a will.</b> ${fmt(inh.now)} passes right away${inh.home ? `, and so does the ${HOMES[inh.home].name.toLowerCase()}` : ''}.</div>`
+  // the tip card is a flex row: one wrapper keeps the sentence in one block, so it doesn't wrap into a narrow column
+  return inh.will ? `<div class="card tip"><div>📜 <b>${esc(p.name)} left a will.</b> ${fmt(inh.now)} passes right away${inh.home ? `, and so does the ${HOMES[inh.home].name.toLowerCase()}` : ''}.</div></div>`
     : `<div class="card warn">⚖️ <b>No will.</b> ${inh.later > 0 ? `${HOMES[p.home] && HOMES[p.home].own ? 'The house is sold, and p' : 'P'}robate takes ${fmt(inh.cut)} and about 6 months: ${fmt(inh.later)} arrives after 26 weeks.` : 'There\'s nothing to pass on.'}</div>`;
 }
 // pick (or type) the grandkid's name before the next generation starts
@@ -947,10 +962,12 @@ function startLegacy(parent, name = heirName(parent.name)){
   const all = slots(), slot = all[parent.slot ?? 0] == null ? parent.slot ?? 0 : all.indexOf(null);
   if (slot < 0) { S = null; useDice(); renderTitle(); return toast(`All ${SLOT_COUNT} slots are full: delete a life first, and your grandkid is still waiting.`); }
   if (parent.id) setHeirs(heirs().filter(p => p.id !== parent.id));
-  newGame(name, 'life', slot, { bg:'fresh', mode:parent.mode, aim:parent.aim });
+  newGame(name, 'life', slot, { bg:'fresh', mode:parent.mode, diff:parent.diff, classic:parent.diff === undefined || !!parent.classic, aim:parent.aim });   // to-do 2 D1: the heir keeps the difficulty (Classic from an older record)
   S.line = Array.isArray(parent.line) ? parent.line.slice(-40) : [];   // i73-b25
   S.gen = (parent.gen || 1) + 1; S.community = clamp(Math.round(parent.community / 2) + 15);
-  S.date = parent.date; S.col = parent.col; S.wage = parent.wage; S.tabsYear = new Date(S.date).getFullYear();
+  // i8-a01: the grandkid is 18 about 60 years after the grandparent was born (never earlier than the day the life ended)
+  const born = Number.isFinite(parent.ageMonths) ? new Date(parent.date).getFullYear() - Math.floor(parent.ageMonths / 12) : null;
+  S.date = born == null ? parent.date : Math.max(parent.date, new Date(born + 60, 0, 4).getTime()); S.col = parent.col; S.wage = parent.wage; S.tabsYear = new Date(S.date).getFullYear();
   S.carValue = cost(2500);                         // i30-b01: the old pickup is worth a starter truck in today's dollars
   if (inh.will) {
     S.money = inh.now;
@@ -1000,14 +1017,17 @@ const goodLine = () => `${S.goodWeeks || 0} of ${tallyWeeks()} weeks were good o
 // the lines of "How the score adds up", shared by Life Score so far and the end sheet. end: the life is over
 function scoreLines(sc, end){
   const L = LENGTHS[S.len], w = sc.w;
-  const part = (l, sub, v, wt) => `<div class="kv"><span>${l}<br><small class="muted">${sub}</small></span><span><b>${v}</b>/100 × ${wt}% = <b>${Math.round(v * wt / 100)}</b></span></div>`;
+  // i20-a28: four tight columns (Stat · Score · Weight · Points), the range notes in small text under each stat
+  const part = (l, sub, v, wt) => `<tr><th scope="row">${l}<small>${sub}</small></th><td>${v}</td><td>${wt}%</td><td>${Math.round(v * wt / 100)}</td></tr>`;
   const so = end ? '' : ' so far', dc = debtCost(sc);
   const sh = sc.aimShares, aims = Object.keys(sh).filter(k => k !== 'all');
-  return `${part('Happiness', `average ${Math.round(sc.avgH)}${so}${end ? ' (30 → 0, 90 → 100)' : ''}`, sc.parts.happy, w.happy)}
+  return `<table class="rec scoremath"><caption class="sr-only">How the score adds up</caption>
+      <thead><tr><th scope="col">Stat</th><th scope="col">Score</th><th scope="col">Weight</th><th scope="col">Points</th></tr></thead><tbody>
+    ${part('Happiness', `average ${Math.round(sc.avgH)}${so}${end ? ' (30 → 0, 90 → 100)' : ''}`, sc.parts.happy, w.happy)}
     ${part('Health', `average ${Math.round(sc.avgHe)}${so}${end ? ' (40 → 0, 95 → 100)' : ''}`, sc.parts.health, w.health)}
     ${part('Community', `average ${Math.round(sc.avgC)}${so}${end ? ' (10 → 0, 90 → 100)' : `, now ${Math.round(S.community)}`}`, sc.parts.community, w.community)}
     ${part('Net worth', `${fmt(sc.nw)}${S.col > 1.05 ? ` (${fmt(sc.real)} in 2027 dollars)` : ''} of ${fmt(L.target)}${end ? '' : ' by the end'}${L.free ? `, counted from ${fmt(L.target * L.free)} (a paycheck alone gets you that far)` : ''}${S.sloanLeft > 0 ? '; student loans count at half' : ''}`, Math.max(0, sc.parts.wealth), Math.round(w.wealth))}
-    ${w.aim > 0 ? part(aims.length === 1 ? `${AIMS[aims[0]].ic} ${AIMS[aims[0]].name}` : '🧭 Your aims', `your life aim${aims.length > 1 ? `s, by the weeks you held each (${aims.map(k => `${AIMS[k].name} ${Math.round(sh[k] * 100)}%`).join(', ')})` : ''}`, Math.round(sc.aim), Math.round(w.aim)) : ''}
+    ${w.aim > 0 ? part(aims.length === 1 ? `${AIMS[aims[0]].ic} ${AIMS[aims[0]].name}` : '🧭 Your aims', `your life aim${aims.length > 1 ? `s, by the weeks you held each (${aims.map(k => `${AIMS[k].name} ${Math.round(sh[k] * 100)}%`).join(', ')})` : ''}`, Math.round(sc.aim), Math.round(w.aim)) : ''}</tbody></table>
     ${dc ? `<div class="kv debt"><span>💳 Debt<br><small>${dc.cost ? `Debt is costing you ${dc.cost} point${dc.cost === 1 ? '' : 's'}.` : 'Debt costs you nothing more right now.'}${!end && dc.back ? ` Back to $0 by the end wins back ${dc.back}.` : ''}${sc.drag ? ` ${S.deepWeeks} week${S.deepWeeks === 1 ? '' : 's'} below ${fmtc(-DEEP_DEBT)}.` : ''}</small></span><span><b>−${dc.cost}</b></span></div>` : ''}
     <div class="kv"><span>⚖️ Weakest part: ${PART_NAMES[weakestPart(sc)]}<br><small class="muted">A balanced life counts more: the weakest part counts ${WEAK_SHARE * 100}% on its own</small></span><span><b>${Math.round(sc.weakest)}</b>/100</span></div>
     ${sc.cardAvg != null ? `<div class="kv"><span>📋 Report-card average ${sc.cardAvg}, ending ${sc.snap}<br><small class="muted">${sc.cards} report card${sc.cards === 1 ? '' : 's'} count ${CARD_SHARE * 100}%, ${end ? 'the ending' : 'today'} ${Math.round((1 - CARD_SHARE) * 100)}%</small></span><span><b>${Math.round(sc.cardAvg * CARD_SHARE + sc.snap * (1 - CARD_SHARE))}</b></span></div>` : ''}
@@ -1221,7 +1241,7 @@ const heirOK = (opts = {}) => LENGTHS[S.len].turns === Infinity && (S.kids || []
 // i73-b01: what's kept of a finished life (about 1 KB)
 function endStub(reason, sc){
   const y1 = new Date(S.date).getFullYear(), y0 = new Date(S.date - (S.turn || 0) * 7 * 864e5).getFullYear(), j = S.retired ? null : job();
-  return { name:S.name, from:y0, to:y1, at:Date.now(), len:S.len, mode:mode(), bg:S.bg, score:sc.score, title:sc.title, parts:sc.parts, cause:String(reason).slice(0, 200),
+  return { name:S.name, from:y0, to:y1, at:Date.now(), len:S.len, mode:mode(), diff:diff(), classic:!!S.classic, bg:S.bg, score:sc.score, title:sc.title, parts:sc.parts, cause:String(reason).slice(0, 200),
     age:age(), job: S.retired ? 'Retired' : j ? jobTitle(j) : 'No job', home:HOMES[S.home].name, kids:(S.kids || []).length, gen:S.gen || 1,
     seed:S.weekly || null, scenario:S.scenario || null, nw:Math.round(netWorth()) };
 }
@@ -1262,7 +1282,7 @@ function finish(reason, opts = {}){
   const heir = heirOK(opts), stub = endStub(reason, { score, title, parts });
   // i73-b25: the family line so far, carried into the grandkid's save
   const line = [...(S.line || []), { name:S.name, years:`${stub.from}–${stub.to}`, job:stub.job, home:stub.home, score, title, epitaph:stub.cause }].slice(-40);
-  const parent = { id:S.lifeId, name:S.name, nw:netWorth(), community:S.community, slot:S.slot === WEEKLY_SLOT ? 0 : S.slot, mode:mode(), aim:S.aim, gen:S.gen || 1, date:S.date, col:S.col, wage:S.wage,
+  const parent = { id:S.lifeId, name:S.name, nw:netWorth(), community:S.community, slot:S.slot === WEEKLY_SLOT ? 0 : S.slot, mode:mode(), diff:diff(), classic:!!S.classic, aim:S.aim, gen:S.gen || 1, date:S.date, ageMonths:S.ageMonths, col:S.col, wage:S.wage,
     will:hasWill(), home:S.home, equity:S.equity, mortgage:S.mortgage, line };
   if (!S.practice) {
     addEnd(stub);
@@ -1295,9 +1315,11 @@ function finish(reason, opts = {}){
     ${pensionVested() ? `<div class="kv"><span>🏛️ Public pension</span><span>${Math.floor(S.pensionYears)} years</span></div>` : ''}
     ${heir ? `<div class="kv"><span>📜 Will</span><span>${hasWill() ? 'On file' : 'None: probate will take a share'}</span></div>` : ''}
     ${!S.practice ? '<button class="btn ghost" id="share">📤 Share score card</button>' : ''}
+    ${!S.practice ? '<button class="btn ghost" id="endbackup">💾 Back up your records</button>' : ''}
     ${heir ? `<button class="btn primary" id="legacy">🌳 Continue as your grandkid</button>` : ''}
     <button class="btn ${heir ? 'ghost' : 'primary'}" id="again">Play again</button>`);
   if ($('#share')) $('#share').onclick = shareCard;
+  if ($('#endbackup')) $('#endbackup').onclick = () => backupSheet(() => { S = null; useDice(); renderTitle(); });   // i62-a24: closing it goes on to the title screen
   if ($('#skipstory')) $('#skipstory').onclick = () => { $('#story').remove(); const f = $('#finalscore'); f.scrollIntoView({ block: 'start' }); f.focus({ preventScroll: true }); };
   if ($('#legacy')) $('#legacy').onclick = () => legacySheet(parent);
   $('#again').onclick = () => { closeSheet(); S = null; useDice(); renderTitle(); };

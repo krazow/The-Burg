@@ -24,26 +24,29 @@ function rollEvent(month, trip){
 // and for sure in the month's last week if they haven't come yet (an event's yearly cooldown says it already came)
 function fixedEvent(month){
   const last = new Date(S.date + 7 * 864e5).getMonth() !== month;
-  const e = EVENTS.find(x => x.fixed && !(S.evCd[x.title] > S.turn) && (!x.when || x.when(month)));
+  const e = EVENTS.find(x => x.fixed && evOn(x) && !(S.evCd[x.title] > S.turn) && (!x.when || x.when(month)));
   return e && (last || chance(0.5)) ? e : null;
 }
 // i46-a02/a03: kids by birth order, and the one (if any) who turns 18 this week without a send-off yet
 const kidOrder = i => { const n = (S.kids || []).length; return n <= 1 ? 'Your kid' : i === 0 ? 'Your oldest' : i === n - 1 ? 'Your youngest' : 'Your middle one'; };
 const kidTurning18 = () => (S.kids || []).findIndex((b, i) => !(S.kidSent || []).includes(i) && yrsOf(S.ageMonths + W - b) >= 18 && kidAge(b) < 19
   && (kidAge(b) < 18 || !(S.evCd['A kid heads off to college'] > S.turn)));   // an older save's kid who already had the old random send-off
-function kidSendOff(){ return kidTurning18() >= 0 ? EVENTS.find(e => e.title === 'A kid heads off to college') : null; }
+function kidSendOff(){ const e = kidTurning18() >= 0 ? EVENTS.find(e => e.title === 'A kid heads off to college') : null; return e && evOn(e) ? e : null; }
 // each week (after birthdays): a kid who just turned 18 graduates and moves out, in the Journal and the year in review (i46-a04)
 function kidBirthdays(m){
   (S.kids || []).forEach((b, i) => { if (kidAge(b) >= 18 && yrsOf(S.ageMonths - m - b) < 18) log(`${kidOrder(i)} graduated from Waitsburg High and moved out.`, 'mile', 1); });
 }
 function pickEvent(month, cat = 'town'){
   const wt = e => typeof e.w === 'function' ? e.w() : (e.w || 1);
-  let ok = EVENTS.filter(e => evCat(e) === cat && !(S.evCd[e.title] > S.turn) && !(e.once && S.evDone[e.title]) && (!e.when || e.when(month)) && !(e.big && wxCapped()) && wt(e) > 0);   // i75-a23: at most 2 big weather hits a year
+  // to-do 2 D4: only events at or below this life's difficulty can come up
+  let ok = EVENTS.filter(e => evCat(e) === cat && evOn(e) && !(S.evCd[e.title] > S.turn) && !(e.once && S.evDone[e.title]) && (!e.when || e.when(month)) && !(e.big && wxCapped()) && wt(e) > 0);   // i75-a23: at most 2 big weather hits a year
   // i52-a10: no repeats in the first year: events already seen this life sit out until week 52 (unless nothing else is left)
   if (S.turn < 52 && S.evSeen) { const fresh = ok.filter(e => !S.evSeen[e.title]); if (fresh.length) ok = fresh; }
-  const total = ok.reduce((a,e) => a + wt(e), 0);
+  // to-do 2 D4: on Easy, events that cost money or stats keep only part of their weight; the rest is a quiet week
+  const ew = e => wt(e) * evDiffW(e), quiet = ok.reduce((a, e) => a + wt(e) - ew(e), 0);
+  const total = ok.reduce((a,e) => a + ew(e), 0) + quiet;
   let r = Math.random() * total;
-  for (const e of ok) { r -= wt(e); if (r <= 0) return e; }
+  for (const e of ok) { r -= ew(e); if (r <= 0) return e; }
   return null;
 }
 // i19-b15: routine events and the choice a careful player makes (first label found among the choices you have)
@@ -78,8 +81,9 @@ function showEvent(ev, then = null){
   const before = {happy:S.happy, health:S.health, community:S.community};
   const choices = ev.choices().filter(c => !c.if || c.if());
   const pin = S.evPins && S.evPins[0] && S.evPins[0].t === ev.title ? [S.evPins[0].m, S.evPins[0].k] : eventPlace(ev);
+  const hints = choices.length > 1 ? choiceHints(choices) : [];   // i2-a01
   sheet(`<div class="big">${ev.ic}</div><h2 style="text-align:center">${ev.title}</h2><p class="evplace">📍 ${esc(placeName(pin))}${pin[0] === 'R' ? ' · on the region map' : ''}</p><p id="evtext" data-desc>${typeof ev.text==='function'?ev.text():ev.text}</p>
-    <div class="evchoices">${choices.map((c,i) => `<button class="btn ${i===0?'primary':'ghost'}" data-i="${i}">${c.label}</button>`).join('')}</div>`);
+    <div class="evchoices">${choices.map((c,i) => `<button class="btn ${i===0?'primary':'ghost'}" data-i="${i}">${c.label}${hints[i] ? `<small class="hint">${hints[i]}</small>` : ''}</button>`).join('')}</div>`);
   $('#sheet').classList.add('ev');            // i2-a24: the choices sit at the bottom of the pop-up, in thumb reach
   sfx('event'); buzz('event');
   document.querySelectorAll('#sheet [data-i]').forEach(b => b.onclick = () => {
@@ -94,6 +98,63 @@ function showEvent(ev, then = null){
     $('#sheet').classList.add('ev');          // the result keeps the same layout, so Continue is where the choice was
     $('#ok').onclick = () => { closeSheet(); render(); if (then) showReview(then); };
   });
+}
+/* ---------- i2-a01: what each choice does, in small text under it ----------
+   Direction and rough cost, never the dice roll, so surprises stay. A choice can carry its own `hint` (text, or a
+   function that returns it). Otherwise the hint is worked out by trying the choice a few times on a throwaway copy
+   of the life with practice dice: nothing from those tries is kept (the life, the dice, storage and the screen are
+   all put back), so what really happens is still decided when you tap. */
+const HINT_TRIES = 8;
+const HINT_STATS = [['happy', 'happiness'], ['health', 'health'], ['community', 'community']];
+const HINT_QUIET = ['sheet', 'closeSheet', 'toast', 'render', 'renderHome', 'announce', 'sfx', 'buzz', 'showEvent', 'showReview', 'save', 'celebrate'];
+const roughMoney = v => fmt(v >= 1000 ? Math.round(v / 50) * 50 : v >= 100 ? Math.round(v / 10) * 10 : Math.round(v));
+function choiceHints(choices){
+  const own = choices.map(c => { try { return typeof c.hint === 'function' ? c.hint() : c.hint; } catch (e) { return ''; } });
+  if (own.every(Boolean)) return own;
+  const real = S, rnd = Math.random, set = store.set, del = store.del, tab0 = typeof tab !== 'undefined' ? tab : null;
+  const snap = JSON.stringify(real), quiet = HINT_QUIET.filter(n => typeof window[n] === 'function').map(n => [n, window[n]]);
+  const rest = x => JSON.stringify({ ...x, log: 0, money: 0, happy: 0, health: 0, community: 0, rng: 0, rngEv: 0, evPins: 0, savedAt: 0 });
+  const base = rest(real);
+  store.set = () => {}; store.del = () => {}; quiet.forEach(([n]) => { window[n] = () => {}; });
+  const out = [];
+  try {
+    for (let i = 0; i < choices.length; i++) {
+      if (own[i]) { out.push(own[i]); continue; }
+      const runs = [];
+      for (let t = 0; t < HINT_TRIES; t++) {
+        let a = (0x9E3779B9 * (t + 1)) | 0;
+        Math.random = () => { const [n, v] = diceStep(a); a = n; return v; };
+        S = JSON.parse(snap);
+        try { choices[i].go(); runs.push({ money: S.money - real.money, happy: S.happy - real.happy, health: S.health - real.health, community: S.community - real.community, later: rest(S) !== base }); }
+        catch (e) {}
+      }
+      out.push(hintWords(runs, choices[i].label));
+    }
+  } finally {
+    S = real; Math.random = rnd; store.set = set; store.del = del; quiet.forEach(([n, f]) => { window[n] = f; });
+    if (tab0 != null) tab = tab0;
+  }
+  return out;
+}
+function hintWords(runs, label){
+  if (!runs.length) return '';
+  const n = runs.length, parts = [], avg = k => runs.reduce((a, r) => a + r[k], 0) / n;
+  const ms = runs.map(r => r.money), lo = ms.filter(v => v <= -1), hi = ms.filter(v => v >= 1);
+  if (!/\$/.test(String(label))) {            // a price already in the label isn't repeated
+    if (lo.length && hi.length) parts.push('💵 could cost or pay');
+    else if (lo.length === n) parts.push(`💵 costs about ${roughMoney(-avg('money'))}`);
+    else if (lo.length) parts.push(`💵 may cost up to ${roughMoney(-Math.min(...lo))}`);
+    else if (hi.length === n) parts.push(`💵 brings in about ${roughMoney(avg('money'))}`);
+    else if (hi.length) parts.push(`💵 may bring in up to ${roughMoney(Math.max(...hi))}`);
+  }
+  for (const [k, w] of HINT_STATS) {
+    const ds = runs.map(r => r[k]), up = ds.some(d => d >= 0.5), down = ds.some(d => d <= -0.5), a = avg(k);
+    if (up && down) parts.push(`▲▼ ${w}`);
+    else if (up) parts.push(`${a >= 6 ? '▲▲' : '▲'} ${w}`);
+    else if (down) parts.push(`${a <= -6 ? '▼▼' : '▼'} ${w}`);
+  }
+  if (!parts.length) return runs.some(r => r.later) ? 'Plays out later' : (/\$/.test(String(label)) ? 'Just the price' : 'Nothing changes');
+  return parts.join(' · ');
 }
 // where each event happens: ['T', place] on the Waitsburg map or ['R', town or landmark] on the region map;
 // 'work' means wherever you work

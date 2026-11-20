@@ -295,8 +295,9 @@ function blankLife(name, len, slot = 0){
     dog:false, partner:false, council:false,
     focus:'rest', applied:false, happySum:0, healthSum:0, monthsPlayed:0,
     log:[], over:false, cause:null, streakF:null, streakN:0, run:null, yearEvents:0,
-    trip:null, svc:0, tires:null, stockUntil:-1, dentist:0, stopLast:{}, tabsYear:2027, carpool:false, hustleWeeks:0, scoreQ:null,
-    bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0,
+    trip:null, svc:0, tires:null, stockUntil:-1, redLow:{}, moneyTalk:false, dentist:0, stopLast:{}, tabsYear:2027, carpool:false, hustleWeeks:0, scoreQ:null,
+    bg:'fresh', mode:'normal', diff:'normal', classic:false, flagsEdited:false, sloanLeft:0,   // to-do 2 D1: difficulty
+    sloanPay:0, sgoal:null, seasonWins:0,
     badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false,
     earnYears:0, earnSum:0, pensionYears:0, pensionPay:0, ltc:null, care:null, snowbird:null, scholar:null, will:false, probate:null, roomHost:false, hostLast:-99,
     skills:{}, biz:null, weekly:null, rng:null, rngEv:null, gen:1, goalAt:{}, carpoolJob:null, hustleLast:0, highWater:null, recentF:[], out:outDefault(), years:[],
@@ -326,6 +327,7 @@ function repairLife(s){
   if (!CARS[s.car]) s.car = 'beater';
   if (s.jobId != null && !jobById(s.jobId)) s.jobId = null;
   if (s.mode !== undefined && !MODES[s.mode]) s.mode = 'normal';
+  if (s.diff !== undefined && !(typeof DIFFS !== 'undefined' && DIFFS[s.diff])) s.diff = 'hard';   // to-do 2 D1: an unknown difficulty plays the full game
   if (s.bg !== undefined && !BACKGROUNDS[s.bg]) s.bg = 'fresh';
   if (!FOCUS[s.focus]) s.focus = 'rest';
   if (s.scenario != null && !(typeof SCENARIOS !== 'undefined' && SCENARIOS[s.scenario])) s.scenario = null;
@@ -367,6 +369,10 @@ function repairLife(s){
 const noTags = v => String(v == null ? '' : v).replace(/<[^>]*>?/g, '');
 function migrate(s){
   repairLife(s);
+  // to-do 2 D1: a life from before difficulties plays the full game (Hard content) with its own mode's numbers, labeled Classic
+  if (s.diff === undefined) { s.diff = 'hard'; s.classic = true; }
+  if (s.classic === undefined) s.classic = false;
+  if (s.flagsEdited === undefined) s.flagsEdited = false;
   const d = { slot:0, evPins:[], streakF:null, streakN:0, run:null, yearEvents:0, yearStart:null, evCd:{}, evDone:{}, evSeen:{}, seenOT:true, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, k401match:0, uiPay:null, mortgage:null, loanPay:0 };   // i75: an older 401(k) counts as vested; old benefits pay the floor
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
   s.rules = cleanRules(s.rules); if (!TIERS[s.tier0]) s.tier0 = recordTier(s.rules);   // i19-b01: unknown knobs fall back to Normal
@@ -387,7 +393,7 @@ function migrate(s){
   if (s.ptaxDone === undefined && HOMES[s.home] && HOMES[s.home].own) { const d = new Date(s.date); if ([3, 9].includes(d.getMonth())) s.ptaxDone = `${d.getFullYear()}-${d.getMonth()}`; }
   if (!s.lifeId) s.lifeId = `old-${s.savedAt || 0}-${(s.name || '').length}`;   // i54-a14: two windows opening the same old save agree on its id
   if (s.goals && !s.goalAt) s.goalAt = Object.fromEntries(s.goals.map(id => [id, 0]));
-  const r = { goalAt:{}, skills:{}, biz:null, weekly:null, rng:null, rngEv:null, carpoolJob:s.jobId ?? null, hustleLast:s.turn || 0, highWater:null, recentF:[], gen:1, badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false, bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0, carpool:false, hustleWeeks:0, scoreQ:null, trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, dentist:s.turn || 0, stopLast:{}, out:null, tabsYear:new Date(s.date || Date.now()).getFullYear(),
+  const r = { goalAt:{}, skills:{}, biz:null, weekly:null, rng:null, rngEv:null, carpoolJob:s.jobId ?? null, hustleLast:s.turn || 0, highWater:null, recentF:[], gen:1, badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false, bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0, carpool:false, hustleWeeks:0, scoreQ:null, trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, redLow:{}, moneyTalk:false, dentist:s.turn || 0, stopLast:{}, out:null, tabsYear:new Date(s.date || Date.now()).getFullYear(),
     startLater:null, jobSeed:Math.floor(hash01(String(s.lid || s.lifeId || s.name)) * 1e9), scWarned:false };   // i37-b05, i8-a06, i8-a05
   for (const k in r) if (s[k] === undefined) s[k] = r[k];
   // wave 1 score: an older life's averages and rates start from what it has now; earlier report cards are filled in at the next one
@@ -603,6 +609,7 @@ const SETTINGS = {
   sound:    { def:'off',    opts:[['off','🔇 Off'], ['soft','🔈 Soft'], ['normal','🔊 Normal']] },
   vibrate:  { def:'on',     opts:[['on','On'], ['off','Off']] },
   swipe:    { def:'on',     opts:[['on','On'], ['off','Off']] },
+  skipAsk:  { def:'on',     opts:[['on','On'], ['off','Off']] },   // i48-b06: the focus check before a long skip
   motion:   { def:'on',     opts:[['on','On'], ['off','Off']] },    // i2-a08/a10: moving bars, counting cash and confetti
   srWeek:   { def:'short',  opts:[['short','Short'], ['full','Full']] }   // i7-a02: what a screen reader hears after End Week
 };
@@ -797,5 +804,15 @@ function seasonLine(){
   const g = seasonGoal(); if (!g || S.practice) return '';
   const st = S.sgoal && S.sgoal.id === seasonId(g) ? S.sgoal : { prog:0, done:false };
   const end = MONTHS[g.months[g.months.length - 1]];
-  return `<div class="sgoal">${g.ic} <b>Town goal:</b> ${g.name} · ${st.done ? '✅ done!' : `${st.prog}/${g.need} weeks of ${g.what} (until the end of ${end})`}</div>`;
+  // i23-a05: what's left, how long there is, and what it pays
+  const more = g.need - st.prog, left = seasonWeeksLeft(g);
+  const reward = Object.entries(g.fx).map(([k, v]) => `▲${v} ${{ happy:'happiness', health:'health', community:'community' }[k]}`).join(' ');
+  return `<div class="sgoal">${g.ic} <b>Town goal:</b> ${g.name} · ${st.done ? '✅ done!' : `${st.prog}/${g.need} weeks of ${g.what} (until the end of ${end})
+    <br><small>${more} more needed · ${left} week${left === 1 ? '' : 's'} left${more > left ? ' (out of reach this time)' : ''} · reward ${reward}</small>`}</div>`;
+}
+// weeks still to play in this season, this one included
+function seasonWeeksLeft(g){
+  const d0 = new Date(S.date).getTime(); let n = 0;
+  while (n < 20 && g.months.includes(new Date(d0 + n * 7 * 864e5).getMonth())) n++;
+  return n;
 }
