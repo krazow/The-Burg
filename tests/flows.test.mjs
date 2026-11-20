@@ -456,6 +456,20 @@ await t.check('title screen: Start comes before a closed "More options" panel, w
   assert(await page.isHidden('#morepanel'), 'closed panel not remembered');
 });
 
+await t.check('i20-b01, i20-b06: pick a life aim at setup, see it on the Life tab, and change it only once a year', async () => {
+  await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); setPref('moreOpts', true); renderTitle(); });
+  await page.click('[data-aim="roots"]');
+  assert((await page.getAttribute('[data-aim="roots"]', 'aria-pressed')) === 'true' && /Roots/.test(await page.textContent('#moresum')) && /Show up for town/.test(await page.textContent('#aimdesc')), 'aim chip');
+  await page.fill('#nm', 'Aimee'); await page.click('#start');
+  const a = await page.evaluate(() => { S.noEvents = true; tab = 'life'; render(); return { aim: S.aim, dis: document.querySelectorAll('#aimcard [data-setaim]:disabled').length, txt: document.querySelector('#aimcard').textContent }; });
+  assert(a.aim === 'roots' && a.dis === 4 && /Next change/.test(a.txt), JSON.stringify(a));
+  await page.evaluate(() => { for (let i = 0; i < 52; i++) weekTick(false); tab = 'life'; render(); });
+  await page.click('#aimcard [data-setaim="adventure"]');
+  const b = await page.evaluate(() => ({ aim: S.aim, txt: document.querySelector('#aimcard').textContent, dis: document.querySelectorAll('#aimcard [data-setaim]:disabled').length }));
+  assert(b.aim === 'adventure' && b.dis === 4 && /Roots 100%|Adventure/.test(b.txt), JSON.stringify(b));
+  await page.evaluate(() => setPref('moreOpts', false));
+});
+
 await t.check('title screen: "Your records" shows best scores by length and mode, challenges, and only this week\'s weekly best', async () => {
   await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); renderTitle(); });
   assert(!(await page.$('#records')), 'no records button before any life is finished');

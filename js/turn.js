@@ -434,15 +434,16 @@ function weekTick(auto){
   }
 
   // ---- advance one week ----
-  S.happySum += S.happy * m; S.healthSum += S.health * m; S.monthsPlayed += m;
+  S.happySum += S.happy * m; S.healthSum += S.health * m; S.commSum = (S.commSum || 0) + S.community * m; S.monthsPlayed += m;   // i15-a01: community is a life average too
+  scoreWeek(trip);                                 // good weeks, debt weeks, aim weeks and the aim tallies (wave 1 score)
   const oldAge = age(), oldYear = new Date(S.date).getFullYear();
   jobWeekEnd(notes);                               // i3: months on the job, apprenticeships, clearances, strikes
   S.date += 7 * 864e5; S.ageMonths += m; S.turn++; S.jobMonths += m; S.applied = false;
   kidBirthdays(m);                                 // i46-a04: a kid turning 18 moves out, in the Journal
   if (age() > oldAge && age() % 10 === 0) notes.push(`🎂 Happy ${age()}th birthday!`);
-  if (S.turn % 13 === 0 && !S.practice) {          // a quarterly report card in the Journal (doesn't stop skips)
-    const sc = lifeScore().score, d = S.scoreQ == null ? null : sc - S.scoreQ;
-    log(`📋 Report card: Life Score ${sc}${d == null ? '' : ` (${d >= 0 ? '+' : ''}${d} since the last one)`}.`);
+  if (S.turn % CARD_EVERY === 0 && !S.practice) {  // a quarterly report card in the Journal (doesn't stop skips); i20-b14: it counts toward the final score
+    const c = addReportCard(), sc = lifeScore().score, d = S.scoreQ == null ? null : sc - S.scoreQ;
+    log(`📋 Report card: ${c} this quarter. Life Score so far ${sc}${d == null ? '' : ` (${d >= 0 ? '+' : ''}${d} since the last one)`}.`);
     S.scoreQ = sc;
   }
   if (S.focus === 'work' && !job()) S.focus = 'rest';
