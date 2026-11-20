@@ -243,11 +243,11 @@ function bankSheet(pid){
   const h = HOMES[S.home];
   sheet(`<h2>🏦 Standard Bearer Bank</h2><p class="evplace">📍 215 Main St.</p>
     <p>A banker walks you through where your money stands.</p>
-    ${row('Cash on hand', fmt(S.money))}${row('401(k) savings', `${fmt(S.k401 || 0)}${S.retired ? '' : ` · saving ${K401[S.k401rate || 0] * 100}%`}`)}
+    ${row('Cash on hand', fmt(S.money))}${on('money.k401') ? row('401(k) savings', `${fmt(S.k401 || 0)}${S.retired ? '' : ` · saving ${K401[S.k401rate || 0] * 100}%`}`) : ''}
     ${h.own ? (outright() ? row('Home loan (mortgage)', 'None: paid for') : row('Home loan (mortgage)', `${wk(S.mortgage || cost(h.cost))}, locked in`)) : row('Home', HOMES[S.home].folks ? 'At your folks\' place' : 'Renting')}
     ${S.loanLeft > 0 ? row('Truck loan', `${wk(S.loanPay || CARS.truck.pay)} · ${Math.ceil(S.loanLeft / W)} payments left`) : ''}
     ${S.sloanLeft > 0 ? row('Student loan', `${wk(S.sloanPay)} · ${Math.ceil(S.sloanLeft / W)} payments left`) : ''}
-    <p class="muted">${S.money < 0 ? 'You\'re overdrawn: debt costs about 1.5% a month in interest.' : 'Saving 5% or more in your 401(k) gets the 3% match.'} Change your 401(k) and buy a home or vehicle on the Life tab: the bank handles the loans.</p>
+    <p class="muted">${S.money < 0 ? 'You\'re overdrawn: debt costs about 1.5% a month in interest.' : on('money.k401') ? 'Saving 5% or more in your 401(k) gets the 3% match.' : 'Money in savings is safe here.'} ${on('money.k401') ? 'Change your 401(k) and buy' : 'Buy'} a home or vehicle on the Life tab: the bank handles the loans.</p>
     <button class="btn primary" id="back">Back</button><button class="btn ghost" id="no">Close</button>`);
   $('#back').onclick = () => bizSheet(pid, true); $('#no').onclick = closeSheet;
 }
