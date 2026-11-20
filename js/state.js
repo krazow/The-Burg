@@ -670,15 +670,16 @@ function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.rem
 /* ============================================================
    🎬 HOW A LIFE BEGINS (#69) and 🎚️ MODES (#73)
    ============================================================ */
+// i37-b02: hints follow the 2-year good-play medians after wave 1 (Farm 70, Fresh 66, Parent 64, Grad 58, Transplant 57)
 const BACKGROUNDS = {
   fresh:      { ic:'🌾', name:'Fresh start', hint:'Standard', desc:'18, a rented room above Main Street, $1,500 and the 1998 pickup. The classic start.' },
-  farm:       { ic:'🚜', name:'Farm kid', hint:'Standard', desc:'Raised in the wheat hills. You still live at your folks\' place and work on the family farm. Everybody knows you, but you have only $300.',
+  farm:       { ic:'🚜', name:'Farm kid', hint:'A little easier', desc:'Raised in the wheat hills. You still live at your folks\' place and work on the family farm. Everybody knows you, but you have only $300.',
     set:s => { s.money = 300; s.community = 42; s.health = 84; s.jobId = 'farmhand'; s.home = 'folks'; } },
-  grad:       { ic:'🎓', name:'Grad coming home', hint:'Head start, with debt', desc:'21, back from college with a trade certificate, 20 weeks of classes short of an associate degree, and $36,000 in student loans (about $380 a month for 10 years).',
+  grad:       { ic:'🎓', name:'Grad coming home', hint:'Harder: big student loans', desc:'21, back from college with a trade certificate, 20 weeks of classes short of an associate degree, and $36,000 in student loans (about $380 a month for 10 years).',
     set:s => { s.ageMonths = 21*12; s.edu = 1; s.studyProg = 20; s.money = 500; s.community = 20; s.happy = 56; s.sloanLeft = 120; s.sloanPay = 380; } },
-  transplant: { ic:'🏙️', name:'Seattle transplant', hint:'Money, but lonely', desc:'Moved over the mountains with $6,000 saved and a used sedan. Nobody in town knows you yet, and you miss the city.',
+  transplant: { ic:'🏙️', name:'Seattle transplant', hint:'Hardest: money, but lonely', desc:'Moved over the mountains with $6,000 saved and a used sedan. Nobody in town knows you yet, and you miss the city.',
     set:s => { s.money = 6000; s.community = 5; s.happy = 50; s.car = 'sedan'; s.carValue = 9000; s.ageMonths = 24*12; s.bgRest = 10; } },   // i37-b06: lonely for the first year
-  parent:     { ic:'👶', name:'Young parent', hint:'Tight money, full heart', desc:'20, with a two-year-old. Money is tight and every week counts, but the town looks out for you.',
+  parent:     { ic:'👶', name:'Young parent', hint:'A little harder', desc:'20, with a two-year-old. Money is tight and every week counts, but the town looks out for you.',
     set:s => { s.ageMonths = 20*12; s.kids = [s.ageMonths - 24]; s.money = 800; s.community = 36; s.happy = 64; } }
 };
 const MODES = {
