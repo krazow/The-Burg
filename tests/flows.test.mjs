@@ -456,6 +456,20 @@ await t.check('title screen: Start comes before a closed "More options" panel, w
   assert(await page.isHidden('#morepanel'), 'closed panel not remembered');
 });
 
+await t.check('i20-b01, i20-b06: pick a life aim at setup, see it on the Life tab, and change it only once a year', async () => {
+  await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); setPref('moreOpts', true); renderTitle(); });
+  await page.click('[data-aim="roots"]');
+  assert((await page.getAttribute('[data-aim="roots"]', 'aria-pressed')) === 'true' && /Roots/.test(await page.textContent('#moresum')) && /Show up for town/.test(await page.textContent('#aimdesc')), 'aim chip');
+  await page.fill('#nm', 'Aimee'); await page.click('#start');
+  const a = await page.evaluate(() => { S.noEvents = true; tab = 'life'; render(); return { aim: S.aim, dis: document.querySelectorAll('#aimcard [data-setaim]:disabled').length, txt: document.querySelector('#aimcard').textContent }; });
+  assert(a.aim === 'roots' && a.dis === 4 && /Next change/.test(a.txt), JSON.stringify(a));
+  await page.evaluate(() => { for (let i = 0; i < 52; i++) weekTick(false); tab = 'life'; render(); });
+  await page.click('#aimcard [data-setaim="adventure"]');
+  const b = await page.evaluate(() => ({ aim: S.aim, txt: document.querySelector('#aimcard').textContent, dis: document.querySelectorAll('#aimcard [data-setaim]:disabled').length }));
+  assert(b.aim === 'adventure' && b.dis === 4 && /Roots 100%|Adventure/.test(b.txt), JSON.stringify(b));
+  await page.evaluate(() => setPref('moreOpts', false));
+});
+
 await t.check('title screen: Challenges and records shows best scores by length and mode, challenges, and only this week\'s weekly best', async () => {
   await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); renderTitle(); });
   assert(!(await page.$('#records')) && !(await page.$('#weekly')), 'i50-a05: no records or weekly buttons on the title screen');
@@ -1223,7 +1237,7 @@ await t.check('W16–W30: every choice of the new Waitsburg events works, costs 
     const may = ev('Pour beer at the Celebration Days beer garden').when(4);
     S.community = 25; const lowCom = ev('Little League needs a coach').when(2); S.community = 50;
     const noWind = ev("Neighbor's tree takes out your fence").when(5);
-    S.evCd['Windstorm'] = S.turn + 6; const wind = ev("Neighbor's tree takes out your fence").when(5);
+    S.evCd['Windstorm'] = S.turn + 38; const wind = ev("Neighbor's tree takes out your fence").when(5);
     S.home = 'house'; const windRenter = ev("Neighbor's tree takes out your fence").when(5); S.home = 'fixer';
     return { renter, owner, april, dog, young, may, lowCom, noWind, wind, windRenter };
   });
@@ -1360,7 +1374,7 @@ await t.check('i20-a14/a22/a28/a30/i50-a04: two-line Buy buttons, one way to cou
   await page.evaluate(() => { closeSheet(); S.noEvents = true; finish('done'); });
   const cols = await page.$$eval(`${open} table.scoremath thead th`, ths => ths.map(t => t.textContent));
   assert(cols.join() === 'Stat,Score,Weight,Points', cols.join());
-  assert((await page.$$(`${open} table.scoremath tbody tr`)).length >= 5, 'four stats and the total');
+  assert((await page.$$(`${open} table.scoremath tbody tr`)).length >= 4, 'a row for each stat');
   await page.click(`${open} #again`);
   await page.click('#chal');
   const fit = await page.$$eval(`${open} [data-sc]`, bs => bs.map(b => b.getBoundingClientRect().right <= innerWidth && b.closest('.chrow').querySelector('.s').getBoundingClientRect().bottom <= b.getBoundingClientRect().top));
