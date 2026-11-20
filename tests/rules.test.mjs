@@ -2260,6 +2260,7 @@ await t.check('i56-b16: reach table: every event can happen under some setup, an
       'Wildfire smoke over the valley': [7, () => { S.smoke = thisYear(); }],
       'Your carpool buddy is always late': [4, () => { S.jobId = farJob(); S.edu = 3; S.carpool = true; }],
       'Chains required on the road to Bluewood': [0, () => { S.roadTo = 'dayton'; }],
+      'Classic car show in Dayton': [5, () => { S.roadTo = 'dayton'; }],   // i42-a05: only on a drive to Dayton
       "Neighbor's tree takes out your fence": [10, () => { S.home = 'fixer'; S.evCd['Windstorm'] = S.turn + 52; }],   // a windstorm two weeks ago (its cooldown runs a year)
       'A cough in a smoke week': [7, () => { S.kids = [S.ageMonths - 60]; S.wx.smoke = true; }],
       'After the flood: the furnace': [5, () => { S.home = 'fixer'; chainRow('levee', 2)(); S.floodAsk = null; }],
@@ -2756,6 +2757,106 @@ await t.check('i15-a02/i38-a11/i26-b02: visits taper in the 80s, no health at 70
     S.turn++; const b0 = S.community; visit('basket', 'shop'); const b1 = S.community; S.turn += 2; visit('basket', 'shop'); const b2 = S.community;
     return { yLow, yHi, taper, m: [m1 - 30, m2 - m1, m3 - m2], b: [b1 - b0, b2 - b1] }; });
   assert(r.yLow[0] > 60 && r.yHi === 75 && r.taper > 0 && r.taper < 6 * 0.28 * 0.5 && r.m[0] > 0 && r.m[1] === 0 && r.m[2] > 0 && r.b[0] > 0 && r.b[1] === 0, JSON.stringify(r));
+});
+
+// ---- wave 1: trips, commutes and childcare costs ----
+await t.check('i42-a01: a trip week pays 75% of the overtime bonus and of side-hustle pay', async () => {
+  const r = await ev(() => {
+    fresh('two', { jobId: 'farmhand', focus: 'work' }); planTrip('dayton', ['depot']); const ot = week().lines['Paycheck + overtime'];
+    fresh('two', { jobId: 'farmhand', focus: 'work' }); planTrip('wallawalla', ['movies']); const otVan = tripTimeF();
+    const gigWeek = trip => { fresh('two', { jobId: 'farmhand', focus: 'hustle', rng: 777 }); useDice(); const g = currentGig(); if (trip) planTrip('dayton', ['depot']);
+      const prev = focusPreview('hustle').cash[0][1]; const v = week().lines[`Side hustle: ${g.name}`]; S.rng = null; useDice(); return { prev, v }; };
+    const home = gigWeek(false), away = gigWeek(true);
+    return { ot, otVan, full: home.v, gig: away.v, prev: away.prev, prev0: home.prev };
+  });
+  assert(near(r.ot, 3100 * W * (1 + 0.35 * 0.75)), `trip-week overtime ${r.ot}`);
+  assert(r.otVan === 0.75, `trip time ${r.otVan}`);
+  assert(near(r.gig, r.full * 0.75) && near(r.prev, r.prev0 * 0.75), JSON.stringify(r));
+});
+
+await t.check('i42-a02: in your work town, eat and do stops count 60%; errands and checkups count in full', async () => {
+  const r = await ev(() => {
+    const fx = (jobId, ids) => { fresh('two', { jobId, happy: 50, health: 50 }); S.trip = { city: 'wallawalla', stops: ids }; return tripWeek([]).fx; };
+    return { funW: fx('cellar', ['movies']).happy, funT: fx('farmhand', ['movies']).happy, appW: fx('cellar', ['dentist']).health, appT: fx('farmhand', ['dentist']).health,
+      note: (fresh('two', { jobId: 'cellar' }), tripSheet('wallawalla'), /After work/.test(document.querySelector('.sheet').textContent)) };
+  });
+  await ev(() => closeSheet());
+  assert(near(r.funW, r.funT * 0.6) && r.funT > 0, `fun ${r.funW} vs ${r.funT}`);
+  assert(near(r.appW, r.appT) && r.appT > 0, `checkup ${r.appW} vs ${r.appT}`);
+  assert(r.note, 'the trip sheet should say fun stops do less after work');
+});
+
+await t.check('i42-a03: the same stop week after week does 100%, 50%, 30%, then 15%; 8+ weeks away resets it', async () => {
+  const r = await ev(() => {
+    fresh('two', { happy: 40 }); const out = [];
+    for (let i = 0; i < 5; i++) { S.tripTurns = []; S.trip = { city: 'dayton', stops: ['depot'] }; out.push(tripWeek([]).fx.happy); S.turn++; }
+    S.turn += 9; S.tripTurns = []; S.trip = { city: 'dayton', stops: ['depot'] }; out.push(tripWeek([]).fx.happy);
+    S.turn++; const label = (tripSheet('dayton'), document.querySelector('[data-stop="depot"]').textContent); closeSheet();
+    return { out, label, old: (S.stopRun = undefined, stopFresh('depot')) };
+  });
+  const [a, b, c, d, e, f] = r.out;
+  assert(near(b, a * 0.5) && near(c, a * 0.3) && near(d, a * 0.15) && near(e, a * 0.15) && near(f, a), JSON.stringify(r.out));
+  assert(/50% as fun/.test(r.label), `stop button ${r.label}`);
+  assert(r.old === 0.5, `a save without stopRun treats last week's stop as a first repeat: ${r.old}`);
+});
+
+await t.check('i58-b03: road-weary: each trip in the last 4 weeks cuts the next trip\'s happiness and health by a quarter', async () => {
+  const r = await ev(() => {
+    fresh('two', { happy: 40, health: 40 }); const out = [];
+    for (let i = 0; i < 5; i++) { S.stopLast = {}; S.stopRun = {}; S.trip = { city: 'dayton', stops: ['depot'] }; out.push(tripWeek([]).fx); S.turn++; }
+    const note = (tripPicker(), document.querySelector('.sheet').textContent); closeSheet();
+    S.turn += 4; const rested = wearyF();
+    return { h: out.map(x => x.happy), c: out.map(x => x.community), note, rested };
+  });
+  const [a, b, c, d, e] = r.h;
+  assert(near(b, a * 0.75) && near(c, a * 0.5) && near(d, a * 0.25) && near(e, a * 0.25), `happiness ${r.h}`);
+  assert(r.c.every(x => near(x, r.c[0])), `community is not cut ${r.c}`);
+  assert(/4th trip in a month/.test(r.note) && r.rested === 1, `${r.note.slice(0, 200)} ${r.rested}`);
+});
+
+await t.check('i42-a05: road events that name a town need that town to be this week\'s drive', async () => {
+  const r = await ev(() => {
+    fresh('two', { jobId: 'cellar', age: 30 });
+    const e = t => ROAD_EVENTS.find(x => x.title === t), m = 9;
+    const at = (town, t) => { S.roadTo = town; const x = e(t); return !x.when || !!x.when(m); };
+    return { hospWW: at('wallawalla', 'A friend is in the hospital in Walla Walla'), hospD: at('dayton', 'A friend is in the hospital in Walla Walla'),
+      walletD: at('dayton', 'A lost wallet in a Walla Walla parking lot'), flightW: (S.money = 5000, at('wallawalla', 'Cheap flight deal out of Pasco')), flightP: at('pasco', 'Cheap flight deal out of Pasco'),
+      flatD: at('dayton', 'Flat tire on US-12'), flatP: at('pasco', 'Flat tire on US-12'), strandedD: at('dayton', 'A stranded driver on the shoulder') };
+  });
+  assert(r.hospWW && !r.hospD && !r.walletD && !r.flightW && r.flightP, JSON.stringify(r));
+  assert(r.flatD && r.flatP && r.strandedD, `valley-wide events fire anywhere ${JSON.stringify(r)}`);
+});
+
+await t.check('i42-a06: the carpool halves gas only on the job you carpool to; far jobs say "carpool possible"', async () => {
+  const r = await ev(() => {
+    fresh('two', { jobId: 'cellar', community: 50, carpool: true, carpoolJob: 'cellar' });
+    return { own: commuteGasFactor(jobById('cellar')), other: commuteGasFactor(jobById('foodplant')), rowOther: jobRow(jobById('foodplant')), rowOwn: jobRow(jobById('cellar')),
+      low: (S.community = 20, jobRow(jobById('foodplant'))), near: (S.community = 50, jobRow(jobById('farmhand'))) };
+  });
+  assert(r.own === 0.5 && r.other === 1, `gas factors ${r.own} ${r.other}`);
+  assert(/carpool possible/.test(r.rowOther) && !/carpool possible/.test(r.rowOwn) && !/carpool possible/.test(r.low) && !/carpool possible/.test(r.near), 'carpool hint');
+});
+
+await t.check('i46-a01/a05: commute childcare is only for kids under 13, and the Jobs list shows it', async () => {
+  const r = await ev(() => {
+    const kids = ages => ages.map(y => S.ageMonths - y * 12 - 1);
+    fresh('two', { jobId: 'rn', ageMonths: 45 * 12 }); S.kids = kids([5, 15]); const both = week().lines['Kids (2)'];
+    fresh('two', { jobId: 'rn', ageMonths: 45 * 12 }); S.kids = kids([15]); const teen = week().lines['Kid'], teenCare = commuteCare(21);
+    fresh('two', { jobId: 'rn', ageMonths: 45 * 12 }); S.kids = kids([5]); const small = week().lines['Kid'];
+    fresh('two', { jobId: 'rn', ageMonths: 45 * 12 }); S.kids = kids([5]);
+    const care = commuteCare(21), th = takeHome(jobById('rn')), row = jobRow(jobById('rn')), rowNear = jobRow(jobById('farmhand'));
+    S.kids = []; const th0 = takeHome(jobById('rn'));
+    return { both, teen, small, teenCare, care, diff: th0 - th, row, rowNear, help: childcareHelp() };
+  });
+  assert(!r.help, 'a nurse earns too much for childcare help');
+  assert(near(r.teen, -(950 * W)) && near(r.small, -(1150 * W)) && near(r.both, r.teen + r.small), `kids ${r.both} ${r.teen} ${r.small}`);
+  assert(r.teenCare === 0 && near(r.care, 200) && near(r.diff, 200 * W), JSON.stringify(r));
+  assert(/childcare \$\d+\/wk/.test(r.row) && !/childcare/.test(r.rowNear), 'job rows');
+});
+
+await t.check('older saves get the stop streak and recent trip fields', async () => {
+  const r = await ev(() => { const old = { turn: 30, date: new Date(2028, 3, 1).getTime() }; migrate(old); return old; });
+  assert(JSON.stringify(r.stopRun) === '{}' && Array.isArray(r.tripTurns) && !r.tripTurns.length, JSON.stringify([r.stopRun, r.tripTurns]));
 });
 
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });

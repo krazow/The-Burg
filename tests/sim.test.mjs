@@ -311,6 +311,12 @@ if (!FILTERED) {
   await t.check(`doing nothing scores ${CEILING.idle} or below (median ${idle})`, async () => {
     if (idle > CEILING.idle) throw new Error(`idle median ${idle} is above ${CEILING.idle}`);
   });
+  // i58-b03: a one-trick life (a trip every week, or never leaving town) must not beat balanced play by 3 or more
+  const allMed = st => med(results.filter(r => r.label === 'normal' && r.strat === st).map(r => r.score));
+  const plannerAll = allMed('planner');
+  for (const st of ['tripper', 'homebody']) await t.check(`i58-b03: the ${st} bot doesn't beat the planner by 3+ (${allMed(st)} vs ${plannerAll})`, async () => {
+    if (allMed(st) >= plannerAll + 3) throw new Error(`${st} median ${allMed(st)} beats the planner's ${plannerAll} by 3 or more`);
+  });
 }
 if (aimMeds) {
   const fit = AIM_KEYS.map(k => aimMeds[k].fit), spread = Math.max(...fit) - Math.min(...fit), idleTop = Math.max(...AIM_KEYS.map(k => aimMeds[k].idle));

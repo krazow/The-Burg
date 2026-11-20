@@ -956,6 +956,9 @@ Object.assign(EVENT_PLACE, Object.fromEntries(WORK_EVENTS.map(e => [e.title, 'wo
   'Riverfront 5K in Richland':['R','richland'], 'Hanford history tour':['R','richland'], 'Classic car show in Dayton':['R','dayton'],
   'Bluewood season pass sale':['R','bluewood'], 'Chains required on the road to Bluewood':['R','dayton']
 });
+// i42-a05: a road event set in a town (by EVENT_PLACE) needs that town to be this week's drive; valley-wide ones fire anywhere
+const roadEventTown = ev => { const p = EVENT_PLACE[ev.title]; return Array.isArray(p) && p[0] === 'R' && CITIES[p[1]] ? p[1] : null; };
+for (const ev of ROAD_EVENTS) { const town = roadEventTown(ev), w = ev.when; if (town) ev.when = (...a) => roadTown() === town && (!w || w(...a)); }
 const tradeBonus = () => S.tradeBy === S.turn ? cr(500) : 0;   // R-21: a dealer's trade-in bonus, this week only
 
 /* ============================================================

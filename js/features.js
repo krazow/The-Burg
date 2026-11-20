@@ -8,6 +8,12 @@
    Places are described, not named (no real business names).
    ============================================================ */
 const TRIP_MAX = 3, TRIP_FX = 0.28, TRIP_TIME = 0.75, STOCK_WEEKS = 6, STOCK_OFF = 0.2, GROCERY_SHARE = 400, REPEAT_WEEKS = 4;
+// i42-a03: the same stop again and again does less each time: 100%, 50%, 30%, then 15%; 8 weeks away and it's new again
+const STOP_DECAY = [1, 0.5, 0.3, 0.15], STOP_RESET = 8;
+// i42-a02: in your work town, eat and do stops are an evening after a shift: 60% of their effect
+const AFTER_WORK = 0.6, AFTER_WORK_KINDS = ['eat', 'do'];
+// i58-b03: road-weary: each trip in the last 4 weeks cuts the next trip's happiness and health by a quarter
+const WEARY_WEEKS = 4, WEARY_CUT = 0.25;
 const inSeason = (...ms) => () => ms.includes(curMonth());
 const STOP_KINDS = { errand:'🛒 Errands', car:'🛻 Car care', eat:'🍽️ Eat out', do:'🎟️ Things to do', appt:'🩺 Appointments' };
 const STOPS = [
@@ -59,6 +65,22 @@ const stopCost = (s, town) => (s.id === 'dentist' && dentalOn() ? 0 : cost(s.cos
 // breakdown odds: lower within 6 months of an oil change, higher after a year without one
 function careMult(){ const w = S.turn - (S.svc ?? 0); return w <= 26 ? 0.6 : w <= 52 ? 1 : 1.4; }
 const ditchMult = () => S.tires === S.car ? 0.4 : 1;
+// i42-a03: how many times in a row you've made this stop (0 = fresh) if you went this week
+function stopRunNext(id){
+  const last = (S.stopLast || {})[id], n = (S.stopRun || {})[id] || 0;
+  if (last == null) return 0;
+  const gap = S.turn - last;
+  return gap < REPEAT_WEEKS ? n + 1 : gap > STOP_RESET ? 0 : Math.max(0, n - 1);
+}
+const stopFresh = id => STOP_DECAY[Math.min(STOP_DECAY.length - 1, stopRunNext(id))];
+// i58-b03: trips taken in the last 4 weeks, and what that leaves of a trip's happiness and health
+const recentTrips = () => (S.tripTurns || []).filter(t => S.turn - t < WEARY_WEEKS && t < S.turn).length;
+const wearyF = () => Math.max(0, 1 - recentTrips() * WEARY_CUT);
+// i42-a01: how much of the week a planned trip leaves for your focus (1 = no trip, or a trip in your work town)
+function tripTimeF(){
+  const t = S.trip; if (!t || !CITIES[t.city] || !(t.stops || []).some(id => { const s = stopById(id); return s && !stopBlocked(s); })) return 1;
+  return vanTrip(t) ? VAN_TIME : tripIsCommute(t.city) ? 1 : TRIP_TIME;
+}
 // plan this week's trip; returns '' or why it can't be planned
 function planTrip(city, ids, van = false){
   if (awaySouth()) return 'You\'re in Arizona until April.';   // i3-a30
@@ -80,38 +102,47 @@ function tripWeek(lines){
   const t = S.trip; if (!t || !CITIES[t.city]) { S.trip = null; return null; }
   const c = CITIES[t.city], fx = { happy:0, health:0, community:0 }, done = [];
   const van = vanTrip(t), gas = van ? 0 : tripGas(t.city);
+  const commute = !van && tripIsCommute(t.city), weary = wearyF();
   if (gas) lines.push([`Trip to ${c.name}: gas`, -gas, `${c.miles} miles each way at ${CARS[S.car].mpg} mpg.`]);
   if (van) lines.push(['County medical van', -cost(VAN_FARE), 'A seat on the county van to your appointments: no driving, but it takes the whole day.']);
   for (const id of t.stops) {
     const s = stopById(id); if (!s || stopBlocked(s)) continue;
     if (stopCost(s, t.city)) lines.push([s.name, -stopCost(s, t.city), `A stop on your trip to ${c.name}${s.date && S.partner ? ', for two' : ''}${retailPerk(t.city) ? ', with your 10% employee discount' : ''}.`]);
-    const half = S.turn - ((S.stopLast || {})[id] ?? -99) < REPEAT_WEEKS ? 0.5 : 1;   // again so soon: less special
-    let mult = half;
+    const run = stopRunNext(id);                     // i42-a03: again and again: less special each time
+    let mult = STOP_DECAY[Math.min(STOP_DECAY.length - 1, run)];
     if (s.date && S.partner) mult += 0.4;
     if (s.id === 'wash' && [7,8,11,0,1].includes(curMonth())) mult += 0.5;
     if (s.id === 'checkup' && S.health < 50) mult *= 1.7;
-    for (const [k, v] of Object.entries(s.fx || {})) fx[k] += v * mult * TRIP_FX;   // same scale as a week's focus
+    if (commute && AFTER_WORK_KINDS.includes(s.kind)) mult *= AFTER_WORK;   // i42-a02: an evening out after a shift
+    for (const [k, v] of Object.entries(s.fx || {})) fx[k] += v * mult * TRIP_FX * (v > 0 && k !== 'community' ? weary : 1);   // same scale as a week's focus; i58-b03 road-weary
     if (s.id === 'stock') S.stockUntil = S.turn + STOCK_WEEKS;
     if (s.id === 'oil') S.svc = S.turn;
     if (s.id === 'tires') S.tires = S.car;
     if (s.id === 'dentist') S.dentist = S.turn;
     stopDone(s, fx);                                  // i74: shots, physical therapy, a respite weekend
+    (S.stopRun = S.stopRun || {})[id] = run;
     (S.stopLast = S.stopLast || {})[id] = S.turn;
     done.push(s.name.charAt(0).toLowerCase() + s.name.slice(1));
   }
   S.trip = null;
   if (!done.length) return null;
   (S.towns = S.towns || {})[t.city] = 1;
+  S.tripTurns = [...(S.tripTurns || []).filter(x => S.turn - x < WEARY_WEEKS), S.turn];
   log(`Trip to ${c.name}${van ? ' on the county medical van' : tripIsCommute(t.city) ? ' on the way home from work' : ''}: ${done.join(', ')}.`, 'trip');
   if (S.run) S.run.happened.push({ ic:'🚗', title:`Trip to ${c.name}`, money:0 });
   return { fx, away: van || !tripIsCommute(t.city), city: t.city, van };
 }
 
 /* ---- trip screens ---- */
+// i58-b03: a note when this would be the 2nd, 3rd or 4th trip in a month
+function wearyNote(){
+  const n = recentTrips(); if (!n) return '';
+  return `<p class="muted weary">🥱 ${['2nd', '3rd', '4th'][Math.min(2, n - 1)]} trip in a month: less special. Its happiness and health count ${Math.round(wearyF() * 100)}%. One or two trips a month is the sweet spot.</p>`;
+}
 function tripPicker(){
   openSystem('trip', { quiet:true, how:'used' });
   sheet(`<h2>🚗 Plan a trip</h2>
-    ${firstTime('trips')}<p class="muted">One trip a week, up to ${tripMax()} stop${tripMax() === 1 ? '' : 's'}. It happens when you end the week.${S.trip ? ` You have a trip to ${CITIES[S.trip.city].name} planned.` : ''}</p>${debtTripNote()}
+    ${firstTime('trips')}<p class="muted">One trip a week, up to ${tripMax()} stop${tripMax() === 1 ? '' : 's'}. It happens when you end the week.${S.trip ? ` You have a trip to ${CITIES[S.trip.city].name} planned.` : ''}</p>${wearyNote()}${debtTripNote()}
     ${Object.entries(CITIES).filter(([k]) => k !== 'waitsburg').map(([k,c]) => {
       const gas = tripGas(k);
       return `<button class="kv job tripto" data-town="${k}"><span><span class="t">${TOWNIC[k]} ${c.name}</span><span class="s">${c.miles} mi each way · ${gas ? `gas about ${fmt(gas)}` : 'on your way home from work: no extra gas'}</span></span><span aria-hidden="true">›</span></button>`;
@@ -130,13 +161,15 @@ function tripSheet(city){
     const list = townStops(city).filter(s => s.kind === kind); if (!list.length) return '';
     return `<h3 class="triph">${label}</h3>` + list.map(s => {
       const why = stopBlocked(s);
-      const what = [stopCost(s, city) ? fmt(stopCost(s, city)) : 'Free', s.fx ? fxWords(s.fx) : ''].filter(Boolean).join(' · ');
+      const fresh = stopFresh(s.id), what = [stopCost(s, city) ? fmt(stopCost(s, city)) : 'Free', s.fx ? fxWords(s.fx) : '', s.fx && fresh < 1 ? `been here lately: ${Math.round(fresh * 100)}% as fun` : ''].filter(Boolean).join(' · ');   // i42-a03
       return `<button class="stopbtn${sel.includes(s.id) ? ' on' : ''}" data-stop="${s.id}" aria-pressed="${sel.includes(s.id)}" ${why ? 'disabled' : ''}>
         <span class="t">${s.ic} ${s.name}</span><span class="s">${why ? why : what}${s.date && S.partner && !why ? ' · for two' : ''}</span>${s.note && !why ? `<span class="s">${s.note}</span>` : ''}</button>`;
     }).join('');
   }).join('');
   sheet(`<div class="sheethead"><h2>${TOWNIC[city]} <span class="sr-only">Trip to </span>${c.name}</h2><span class="cnt" id="tripcnt"></span><button class="sm alt" id="close">Close</button></div>
     <p class="muted">${c.miles} mi each way · ${gas ? `gas about ${fmt(gas)}. A trip takes part of your week: your focus works at ${TRIP_TIME*100}%.` : 'You work here, so you\'ll stop on the way home: no extra gas or time.'}</p>
+    ${gas ? '' : `<p class="muted">After work: eat and do stops do a bit less (${AFTER_WORK * 100}%). Errands, car care and checkups count in full.</p>`}
+    ${wearyNote()}
     ${debtTripNote()}
     ${S.trip && S.trip.city !== city ? `<p class="muted">This replaces your trip to ${CITIES[S.trip.city].name}.</p>` : ''}
     ${groups}
