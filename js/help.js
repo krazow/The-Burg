@@ -36,7 +36,7 @@ const GLOSSARY = {
 let TERM_N = 0;
 // a word you can tap (or focus and press Enter) to see what it means; screen readers hear the meaning on focus
 function term(key, label){
-  const g = GLOSSARY[key]; if (!g) return label || key;
+  const g = GLOSSARY[key]; if (!g || !on('help.inline')) return label || (g ? g.w : key);
   const id = `gl${++TERM_N}`;
   return `<button type="button" class="term" data-term="${key}" aria-expanded="false" aria-describedby="${id}">${label || g.w}</button><span class="sr-only" id="${id}">${g.d()}</span>`;
 }
@@ -76,7 +76,7 @@ const FIRST = {
 let FIRST_SLOT = null;          // one explainer per screen: render() opens the slot, the first unseen explainer takes it
 function firstTime(key){
   const x = FIRST[key];
-  if (!x || !S || S.practice || TUT || (prefs().first || {})[key] || FIRST_SLOT === 'used') return '';
+  if (!x || !S || S.practice || TUT || !on('help.inline') || (prefs().first || {})[key] || FIRST_SLOT === 'used') return '';
   if (FIRST_SLOT === 'open') FIRST_SLOT = 'used';
   return `<div class="card tip first" data-firstcard="${key}"><div><b>${x.ic} New: ${x.t}.</b> ${x.d()}</div><div class="slotbtns">${x.help ? `<button class="sm alt" data-helpsec="${x.help}" aria-label="More in Help about ${x.t}">More in Help →</button>` : ''}<button class="sm alt" data-first="${key}" aria-label="Got it: ${x.t}">Got it</button></div></div>`;
 }
@@ -552,9 +552,9 @@ function showHelp(sec){
     <div class="helpbody">
       <div class="helpsearch"><label for="helpq" class="sr-only">Search the guide</label><input type="search" id="helpq" placeholder="🔍 Search: gas, carpool, retire…" autocomplete="off" enterkeyhint="search"></div>
       <div id="helpres" class="helpres" aria-label="Search results"></div>
-      <div class="card tutcard"><h3>🎮 Gameplay tutorial</h3>
+      ${on('help.tutorial') ? `<div class="card tutcard"><h3>🎮 Gameplay tutorial</h3>
         <p>Play a short <b>practice life</b>, about 4 minutes: jobs, your weekly focus, skips and plans, how the Life Score adds up, Out and about, trips, insurance, the money outlook, the maps and Settings. A pulsing ring shows exactly what to tap, and each step waits for your tap. ${HELP_FROM === 'game' ? 'Your current life is saved first and comes right back afterward.' : 'Nothing is saved.'}</p>
-        <button class="btn primary" id="tutstart">Start the tutorial</button></div>
+        <button class="btn primary" id="tutstart">Start the tutorial</button></div>` : ''}
       ${comingUpCard()}
       ${questionsHTML()}
       ${guideHTML()}
@@ -564,7 +564,7 @@ function showHelp(sec){
   const went = sec && helpGo(sec);
   if (!went) setTimeout(() => $('#helpclose').focus({ preventScroll: true }), 30);
   $('#helpclose').onclick = closeHelp; $('#helpclose2').onclick = closeHelp;
-  $('#tutstart').onclick = startTutorial;
+  if ($('#tutstart')) $('#tutstart').onclick = startTutorial;
   $('#helpq').oninput = e => helpSearch(e.target.value);
   comingUpWire();
   if ($('#eraseall')) $('#eraseall').onclick = eraseSheet;
@@ -655,6 +655,7 @@ const TSTEPS = [
 ];
 // after: what to do when the practice life ends from the title screen (i23-a01: start the real life the player picked)
 function startTutorial(after){
+  if (!on('help.tutorial')) { if (typeof after === 'function') after(); return; }   // to-do 2 D3: no tutorial: go straight on
   closeHelp(); closeSheet();
   if (S && !S.over && !S.practice) save();
   TUT = { i: -1, skipped: [], prev: { S: S && !S.over ? clone(S) : null, tab, prefs: clone(prefs()), jobCity, jobOK, undo: LIFE_UNDO, after: typeof after === 'function' ? after : null } };
