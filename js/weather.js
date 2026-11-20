@@ -29,21 +29,25 @@ const smokeOdds = y => Math.min(0.45, 0.25 + 0.004 * Math.max(0, y - 2027));
 const WX_STATE = () => ({ wx:null, wxW:null, wxHits:null, wxYr:null, wxLife:{ cost:0, saved:0 }, gray:null, grayLamp:false,
   helped:0, neighbors:{}, outage:null, movedUp:null, floodProof:false, dryOut:null });
 
+// to-do 2 D2: Easy has no weather year. Every read gets a calm year and a normal winter, and nothing is saved.
+// Normal keeps the year and the heating bill but has no smoke (that's Hard's smoke rule).
+const wxOn = () => on('weather');
+const wxCalm = () => ({ y: new Date(S.date).getFullYear(), dry:false, wet:false, smoke:false, heat:false, rain:false });
 const winterYear = () => { const d = new Date(S.date); return d.getMonth() >= 10 ? d.getFullYear() : d.getFullYear() - 1; };
 function wxEnsure(){
-  if (!S) return;
+  if (!S || !wxOn()) return;
   const y = new Date(S.date).getFullYear();
   if (!S.wx || S.wx.y !== y) {
     const dry = chance(WX_DRY);
     // the same overall odds as before (smoke about 1 year in 4), only now a dry year brings smoke and heat more often
     const p = smokeOdds(y), smoke = chance(dry ? Math.min(0.9, p * 2) : (p - WX_DRY * Math.min(0.9, p * 2)) / (1 - WX_DRY));
-    S.wx = { y, dry, wet: !dry && chance(WX_WET), smoke, heat: chance(dry ? 0.6 : 0.25), rain:false };
+    S.wx = { y, dry, wet: !dry && chance(WX_WET), smoke: smoke && on('weather.smoke'), heat: chance(dry ? 0.6 : 0.25), rain:false };
   }
   const wy = winterYear();
   if (!S.wxW || S.wxW.y !== wy) { const r = Math.random(); S.wxW = { y: wy, kind: r < WX_HARD ? 'hard' : r < WX_HARD + WX_MILD ? 'mild' : 'normal' }; }
 }
-const wxYear = () => { wxEnsure(); return S.wx; };
-const wxWinter = () => { wxEnsure(); return S.wxW.kind; };
+const wxYear = () => { if (!wxOn()) return wxCalm(); wxEnsure(); return S.wx; };
+const wxWinter = () => { if (!wxOn()) return 'normal'; wxEnsure(); return S.wxW.kind; };
 const wxDry = () => !!wxYear().dry, wxSmoke = () => !!wxYear().smoke, wxHeat = () => !!wxYear().heat;
 const wxHard = () => wxWinter() === 'hard', wxMild = () => wxWinter() === 'mild';
 const WX_NAME = () => { const w = wxYear(); return w.dry ? 'A dry year is shaping up.' : w.wet ? 'A wet year: the river ran high this spring.' : w.smoke ? 'A smoky summer.' : 'An ordinary year for weather, so far.'; };
@@ -51,24 +55,24 @@ const WX_NAME = () => { const w = wxYear(); return w.dry ? 'A dry year is shapin
 /* ---- a23: bad luck has a ceiling ---- */
 const thisYear = () => new Date(S.date).getFullYear();
 const wxHitsNow = () => S.wxHits && S.wxHits.y === thisYear() ? S.wxHits.n : 0;
-const wxCapped = () => wxHitsNow() >= WX_CAP;
-function wxHit(){ S.wxHits = { y: thisYear(), n: wxHitsNow() + 1 }; }
+const wxCapped = () => wxOn() && wxHitsNow() >= WX_CAP;
+function wxHit(){ if (!wxOn()) return; S.wxHits = { y: thisYear(), n: wxHitsNow() + 1 }; }
 
 /* ---- a30: what the weather cost this year, and what preparing saved ---- */
 function wxYr(){ const y = thisYear(); if (!S.wxYr || S.wxYr.y !== y) S.wxYr = { y, cost:0, saved:0 }; return S.wxYr; }
-function wxCostAdd(v){ if (!(v > 0)) return; wxYr().cost += v; S.wxLife = S.wxLife || { cost:0, saved:0 }; S.wxLife.cost += v; }
-function wxSave(v){ if (!(v > 0)) return; wxYr().saved += v; S.wxLife = S.wxLife || { cost:0, saved:0 }; S.wxLife.saved += v; }
+function wxCostAdd(v){ if (!(v > 0) || !wxOn()) return; wxYr().cost += v; S.wxLife = S.wxLife || { cost:0, saved:0 }; S.wxLife.cost += v; }
+function wxSave(v){ if (!(v > 0) || !wxOn()) return; wxYr().saved += v; S.wxLife = S.wxLife || { cost:0, saved:0 }; S.wxLife.saved += v; }
 // a weather event's result: what it cost goes on the weather bill
 function wxTrack(ev, dm){ if (ev && ev.wx && dm < 0) wxCostAdd(-dm); }
 // the year review's weather line (called by weekTick at New Year, before the counters reset)
 function wxYearEnd(y){ const r = S.wxYr && S.wxYr.y === y ? { cost: S.wxYr.cost, saved: S.wxYr.saved } : { cost:0, saved:0 }; return r; }
 
 /* ---- a18: storm debts. The people you helped help you back. ---- */
-function helpOut(){ S.helped = Math.min(HELP_MAX, (S.helped || 0) + 1); }
+function helpOut(){ if (!on('weather.neighbors')) return; S.helped = Math.min(HELP_MAX, (S.helped || 0) + 1); }
 const NUM = ['', 'One', 'Two', 'Three', 'Four', 'Five'];
 // a home repair after help: 10% off per helper, up to half, and a line that names them
 function helpCut(c){
-  const n = Math.min(HELP_MAX, S.helped || 0); if (!n) return { c, line:'' };
+  const n = on('weather.neighbors') ? Math.min(HELP_MAX, S.helped || 0) : 0; if (!n) return { c, line:'' };
   const cut = c * Math.min(0.5, 0.1 * n); wxSave(cut);
   const june = S.neighbors && S.neighbors.june;
   const who = june ? `June Harlow's grandson${n > 1 ? ` and ${NUM[n - 1].toLowerCase()} more neighbor${n > 2 ? 's' : ''}` : ''}` : `${NUM[n]} neighbor${n > 1 ? 's' : ''}`;
@@ -77,6 +81,7 @@ function helpCut(c){
 // a flooded basement's bill: moving things up (a05) halves it, a raised furnace (S.floodProof) cuts it 80%
 function floodBill(base){
   let c = base;
+  if (!on('weather.homeDamage')) return c;
   if (S.movedUp != null && S.turn - S.movedUp <= 16) { wxSave(c * 0.5); c *= 0.5; }
   if (S.floodProof && HOMES[S.home].own) { wxSave(c * 0.8); c *= 0.2; }
   return c;
@@ -90,7 +95,7 @@ const packShort = (j = S.retired ? null : job(), d = new Date(S.date)) => !!j &&
 const wxPayF = j => packShort(j) ? 1 - PACK_CUT : 1;                 // turn.js multiplies the paycheck by this
 const wxLayoffF = () => S.wx && S.wx.dry && PACK_JOBS.includes(S.jobId) ? 1.5 : 1;   // a29: layoffs go up a step
 function wxWeek(lines, notes){
-  wxEnsure();
+  wxEnsure(); if (!wxOn()) return;
   const d = new Date(S.date), mo = d.getMonth(), y = d.getFullYear(), first = d.getDate() <= 7;
   if (mo === 6 && first && !S.practice) notes.push(`🌦️ ${WX_NAME()}`);   // a01: the year gets a name in July
   // a03: a hard winter's heating bill (a mild one sends a refund card instead)
@@ -121,6 +126,7 @@ const dryNext = (step, wait) => { S.dryOut = { ...S.dryOut, step, at: S.turn + w
 const DRY_STEPS = ['The house after the water', 'Drying out: the drywall comes down', 'Drying out: done'];
 // a32: if the flood reached your place, six weeks of drying out (base: the flood's bill before choices)
 function startDryOut(){
+  if (!on('weather.homeDamage')) return '';
   const own = !!HOMES[S.home].own;
   if (!chance(own ? 0.5 : 0.35)) return '';
   S.dryOut = { step:0, at: S.turn + 1, base: floodBill(cost(own ? 2500 : 700)), asked:false };
@@ -271,3 +277,14 @@ wxWrap('Water in the basements', (i, r, c) => { if (/muck/i.test(c.label)) helpO
 { const e = EVENTS.find(x => x.title === 'The neighbor on oxygen'); if (e) { const orig = e.choices; e.choices = () => [
   ...(isCaptain() ? [{label:'She\'s on the storm plan: hook her up to the block\'s generator', go:() => { adj({ community:3 }); helpOut(); S.neighbors = { ...S.neighbors, june:'plan' };
     return 'June was first on your list. The generator was running at her place before her backup tank got low.'; }}] : []), ...orig()]; } }
+
+/* ---- to-do 2 D2 + D3 (area C): event packs sit behind their feature switches. A pack that's off never comes up
+   (its events' when() says no), so a life below its tier never sees it. ---- */
+function featGate(list, k){ for (const e of list) { const w = e.when; e.when = w ? (...a) => on(k) && w(...a) : () => on(k); } }
+featGate([...WX_EVENTS, ...WX2_EVENTS, ...WX_DUE], 'weather.events');
+featGate(OUT_EVENTS, 'out.events');
+featGate(TOWN_EVENTS_W2, 'events.packW2');
+featGate(TOWN_EVENTS_A1, 'events.packA1');
+featGate(STORY_EVENTS, 'events.story');
+featGate(EVENTS.filter(e => evCat(e) === 'road'), 'trips.roadEvents');
+featGate(EVENTS.filter(e => e.title === 'Bluewood season pass sale'), 'trips.ski');
