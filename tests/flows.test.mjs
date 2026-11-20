@@ -497,7 +497,8 @@ await t.check('What\'s new shows once to returning players after an update, neve
     store.set(SEEN_KEY, '0.1.0'); TUT = { i: 0 }; const tut = whatsNew(); TUT = null;
     return { fresh, freshSeen, first, text, again, tut, v: baseVersion() }; });
   assert(!r.fresh && r.freshSeen === r.v, 'a brand-new player should not see it (but it counts as seen)');
-  assert(r.first && /What's new in 0\.2\.0/.test(r.text) && /Trips around the region/.test(r.text) && /Legacy/.test(r.text), r.text.slice(0, 200));
+  // a 0.1.0 player sees the newest list they haven't seen (this version's)
+  assert(r.first && new RegExp(`What's new in ${r.v.replace(/\./g, '\\.')}`).test(r.text) && /Safer saves/.test(r.text) && /Weather and hard years/.test(r.text), r.text.slice(0, 200));
   assert(!r.again && !r.tut, JSON.stringify(r));
   await page.evaluate(() => closeSheet());
 });
@@ -1362,6 +1363,130 @@ await t.check('i31: an older save keeps every system it already uses open', asyn
   });
   for (const id of ['hustle', 'plan', 'biz', 'skills', 'study', 'out', 'goals']) assert(r[id], `${id} stays open: ${Object.keys(r)}`);
   assert(!r.trip, `nothing unused and not due yet opens: ${Object.keys(r)}`);
+});
+
+/* ---------- Wave 1, B-sheets-focus: Back button, tap guard, focus return, filters, scroll lock, money, Help ---------- */
+const histAt = n => page.waitForFunction(n => ((history.state && history.state.burg) || 0) === n, n);
+await t.check('i64-a01: phone Back closes the Menu, then the tab, and stays in the game', async () => {
+  await life({ jobId: 'farmhand' }, 'jobs');
+  await histAt(1);
+  await page.click('nav [data-tab="menu"]'); await histAt(2);
+  await page.evaluate(() => history.back());
+  await page.waitForSelector('#modal.hidden', { state: 'attached' });
+  assert(await page.evaluate(() => !!S && tab === 'jobs' && !!document.querySelector('#app nav')), 'Back should close only the Menu');
+  await histAt(1);
+  await page.evaluate(() => history.back());
+  await page.waitForFunction(() => tab === 'home');
+  assert(await page.evaluate(() => !!S && location.href.startsWith('http')), 'Back on a tab should go Home, not leave');
+});
+
+await t.check('i64-a01: Back and Escape never answer an event', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Celebration Days')));
+  await histAt(1);
+  const n0 = (await S()).log.length;
+  await page.evaluate(() => history.back());
+  await page.waitForFunction(() => /Pick one to go on/.test(document.querySelector('#toast').textContent));
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(80);
+  assert(await page.$(`${open} [data-i]`), 'the event should still be open');
+  assert((await S()).log.length === n0, 'no choice should have run');
+  await histAt(1);                                       // the entry is back, so the next Back is caught too
+  await page.click(`${open} [data-i="0"]`); await clearSheets();
+});
+
+await t.check('i60-a09: the tap that opens a sheet or closes one does not land on a choice or the tab bar', async () => {
+  await life({ jobId: 'farmhand' });
+  // the guard reads performance.now(); freeze it so a slow test machine can't stretch the tap window
+  const freeze = () => page.evaluate(() => { window.__pn = window.__pn || performance.now.bind(performance); const t = window.__pn(); performance.now = () => t; });
+  const thaw = () => page.evaluate(() => { if (window.__pn) performance.now = window.__pn; window.__pn = null; });
+  await page.evaluate(() => { window.TAP_GUARD = true; });
+  try {
+    await page.evaluate(() => { showEvent(EVENTS.find(e => e.title === 'Celebration Days')); const t = performance.now(); window.__pn = performance.now.bind(performance); performance.now = () => t; });
+    await page.click(`${open} [data-i="0"]`);
+    assert(await page.$(`${open} [data-i]`), 'a tap right after the event opened answered it');
+    await thaw(); await page.waitForTimeout(450);
+    await page.click(`${open} [data-i="0"]`);
+    assert(!(await page.$(`${open} [data-i]`)), 'a later tap should answer it');
+    await page.evaluate(() => closeSheet());
+    await page.waitForTimeout(400);
+    await page.click('nav [data-tab="menu"]'); await page.waitForTimeout(450);
+    await freeze();
+    await page.click(`${open} #close`); await page.click('nav [data-tab="jobs"]');
+    assert(await page.evaluate(() => tab === 'home'), 'the second half of a double tap on Close switched tabs');
+  } finally { await thaw(); await page.evaluate(() => { window.TAP_GUARD = null; }); }
+});
+
+await t.check('i54-a04/a07: focus goes back to the stat card, and to Menu after Help opened from the Menu', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.focus('[data-stat="happy"]'); await page.keyboard.press('Enter');
+  await page.waitForFunction(() => document.activeElement && !!document.activeElement.closest('#sheet'));
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => document.activeElement && document.activeElement.dataset.stat === 'happy');
+  await page.focus('nav [data-tab="menu"]'); await page.keyboard.press('Enter');
+  await page.waitForFunction(() => document.activeElement && !!document.activeElement.closest('#sheet'));
+  await page.focus(`${open} #help`); await page.keyboard.press('Enter');
+  await page.waitForSelector('#helpview:not(.hidden)');
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => document.activeElement && document.activeElement.dataset.tab === 'menu');
+});
+
+await t.check('i54-a05/a06: a focus tile and a map pin keep keyboard focus after Enter', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.focus('[data-f="rest"]'); await page.keyboard.press('Enter');
+  assert(await page.evaluate(() => S.focus === 'rest' && document.activeElement.dataset.f === 'rest'), 'focus tile lost focus');
+  await page.evaluate(() => { setPref('mapView', true); render(); });
+  await page.focus('.mpin[data-k="river"]'); await page.keyboard.press('Enter');
+  assert(await page.evaluate(() => MAPSEL === 'river' && document.activeElement.dataset.k === 'river' && !!document.querySelector('.mapdet')), 'map pin lost focus');
+  await page.evaluate(() => { setPref('mapView', false); MAPSEL = null; render(); });
+});
+
+await t.check('i54-a08: loading a life or starting a new one resets the Journal and job filters', async () => {
+  await life({ jobId: 'farmhand' });
+  const r = await page.evaluate(() => {
+    save(); logFilter = 'money'; jobCity = 'dayton'; loadSlot(0); const a = [logFilter, jobCity];
+    logFilter = 'ev'; jobCity = 'walla'; newGame('Again', 'two', 0); const b = [logFilter, jobCity];
+    closeSheet(); return a.concat(b);
+  });
+  assert(r.every(x => x === 'all'), JSON.stringify(r));
+});
+
+await t.check('i54-a09: a Main Street job keeps the Town pin on the map', async () => {
+  await life({ jobId: 'barista' });
+  const r = await page.evaluate(() => { const P = townPlaces(); return { ms: (P.find(p => p.k === 'mainst') || {}).focus, work: P.filter(p => p.focus === 'work').map(p => p.k) }; });
+  assert(r.ms === 'community' && r.work.length === 1 && r.work[0] !== 'mainst', JSON.stringify(r));
+});
+
+await t.check('i54-a10: a look-only tutorial step cannot be tapped', async () => {
+  await page.evaluate(() => { localStorage.clear(); S = null; startTutorial(); startJob('farmhand'); tab = 'home'; render(); TUT.i = TSTEPS.findIndex(s => s.sel === '#planbtn') - 1; tutNext(); });
+  await page.waitForSelector('#coach:not(.hidden) #cnext');
+  const b = await page.evaluate(() => { const r = document.querySelector('#planbtn').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
+  await page.mouse.click(b[0], b[1]);
+  await page.waitForTimeout(100);
+  assert(await page.isHidden('#modal'), 'the ringed Plan button opened its sheet');
+  await page.evaluate(() => endTutorial(false));
+});
+
+await t.check('i54-a16: the page behind a sheet stays still and comes back where it was', async () => {
+  await life({ jobId: 'farmhand' }, 'jobs');
+  await page.evaluate(() => window.scrollTo(0, 300)); const y0 = await page.evaluate(() => window.scrollY);
+  await page.click('nav [data-tab="menu"]');
+  assert(await page.evaluate(() => document.documentElement.classList.contains('sheetlock') && getComputedStyle(document.documentElement).overflow === 'hidden'), 'no scroll lock');
+  await page.mouse.move(195, 100); await page.mouse.wheel(0, 600); await page.waitForTimeout(100);
+  assert(await page.evaluate(() => window.scrollY) === y0, 'the page scrolled behind the sheet');
+  await page.click(`${open} #close`);
+  assert(await page.evaluate(y => window.scrollY === y && !document.documentElement.classList.contains('sheetlock'), y0), 'position not kept');
+});
+
+await t.check('i54-a03 / i43-b03: money is $1,500 on a German phone, and Help sections render lazily', async () => {
+  const de = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block', locale: 'de-DE' });
+  const p2 = await de.newPage();
+  await p2.goto(srv.url, { waitUntil: 'load' });
+  const r = await p2.evaluate(() => { showHelp(); const sec = document.querySelector('#helpview .guide section');
+    return { a: fmt(1500), b: fmt(-1234567), help: document.querySelector('#helpview').textContent.includes('$1,500'), cv: getComputedStyle(sec).contentVisibility, de: (1500).toLocaleString() }; });
+  await de.close();
+  assert(r.a === '$1,500' && r.b === '-$1,234,567' && r.help, JSON.stringify(r));
+  assert(r.cv === 'auto', `help sections: ${r.cv}`);
 });
 
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });

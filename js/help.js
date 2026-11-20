@@ -62,16 +62,16 @@ document.addEventListener('click', e => {
 
 function guideHTML(){
   const W2 = 12/52;
-  const pw = v => '$' + Math.round(v * W2).toLocaleString() + '/wk';
-  const lenRows = Object.values(LENGTHS).map(L => `<tr><td>${L.label}</td><td>${L.turns === Infinity ? 'Age 18 until the end (retire from 62)' : L.turns + ' weeks'}</td><td>$${L.target.toLocaleString()}</td></tr>`).join('');
+  const pw = v => '$' + Math.round(v * W2).toLocaleString('en-US') + '/wk';
+  const lenRows = Object.values(LENGTHS).map(L => `<tr><td>${L.label}</td><td>${L.turns === Infinity ? 'Age 18 until the end (retire from 62)' : L.turns + ' weeks'}</td><td>$${L.target.toLocaleString('en-US')}</td></tr>`).join('');
   const focusRows = Object.entries(FOCUS).map(([k,f]) => `<tr><td>${f.ic} <b>${f.name}</b></td><td>${f.desc} ${fxWords(f.fx)}${f.payMult ? `, +${Math.round((f.payMult - 1) * 100)}% pay` : ''}${f.hustle ? ', extra cash' : ''}${f.study ? ', counts toward your next diploma' : ''}</td><td>${f.cost ? pw(f.cost) : f.study ? 'tuition' : '—'}</td></tr>`).join('');
   const jobRows = Object.entries(CITIES).map(([ck,c]) => `<tr class="grp"><td colspan="3"><b>${c.name}</b> · ${c.miles ? c.miles + ' mi each way' : 'home, no commute'}</td></tr>` +
     JOBS.filter(x => x.city === ck).map(x => `<tr><td>${x.title}${x.season ? ` <small>(${MONTHS[x.season[0]].slice(0,3)}–${MONTHS[x.season[x.season.length-1]].slice(0,3)})</small>` : ''}${x.union ? ' 🪪' : ''}</td><td>${pw(x.pay)}${x.apprentice ? ' <small>(60% as an apprentice)</small>' : ''}</td><td>${EDU[x.edu].replace(' diploma','')}${x.needCert ? ` + ${CERTS[x.needCert].name.replace(/ \(.*/, '')}` : ''}${x.needMajor ? ` in ${PROGRAMS[x.needMajor].name.toLowerCase()}` : ''}</td></tr>`).join('')).join('');
-  const certRows = Object.values(CERTS).map(c => `<tr><td>${c.ic} ${c.name}</td><td>${c.weeks} weeks</td><td>$${c.fee.toLocaleString()}</td><td>${c.what}</td></tr>`).join('');
+  const certRows = Object.values(CERTS).map(c => `<tr><td>${c.ic} ${c.name}</td><td>${c.weeks} weeks</td><td>$${c.fee.toLocaleString('en-US')}</td><td>${c.what}</td></tr>`).join('');
   const progRows = Object.values(PROGRAMS).map(x => `<tr><td>${x.ic} ${x.name}</td><td>${x.jobs.map(id => JOBS.find(j => j.id === id)).filter(Boolean).map(j => j.title.toLowerCase()).join(', ')}</td></tr>`).join('');
   const eduRows = [1,2,3].map(l => `<tr><td>${EDU[l]}</td><td>${STUDY_NEED[l-1]} weeks</td><td>${pw(TUITION[l-1])}</td><td>${SCHOOL[l-1]}</td></tr>`).join('');
-  const homeRows = Object.values(HOMES).map(h => `<tr><td>${h.name}</td><td>${h.own ? 'Buy: $' + h.down.toLocaleString() + ' down, then ' : 'Rent '}${pw(h.cost)}</td><td>${h.own ? 'Builds equity' : '—'}</td></tr>`).join('');
-  const carRows = Object.values(CARS).map(c => `<tr><td>${c.name}</td><td>${c.mpg} mpg</td><td>${c.price ? '$' + c.price.toLocaleString() : c.down ? '$' + c.down.toLocaleString() + ' down + ' + pw(c.pay) + ' for 5 years' : 'Starter'}</td></tr>`).join('');
+  const homeRows = Object.values(HOMES).map(h => `<tr><td>${h.name}</td><td>${h.own ? 'Buy: $' + h.down.toLocaleString('en-US') + ' down, then ' : 'Rent '}${pw(h.cost)}</td><td>${h.own ? 'Builds equity' : '—'}</td></tr>`).join('');
+  const carRows = Object.values(CARS).map(c => `<tr><td>${c.name}</td><td>${c.mpg} mpg</td><td>${c.price ? '$' + c.price.toLocaleString('en-US') : c.down ? '$' + c.down.toLocaleString('en-US') + ' down + ' + pw(c.pay) + ' for 5 years' : 'Starter'}</td></tr>`).join('');
   const sec = (id, title, body) => `<section id="g-${id}"><h2>${title}</h2>${body}<button class="totop" onclick="document.querySelector('#helpview').scrollTo({top:0,behavior:'smooth'})">↑ Back to contents</button></section>`;
   const S2 = [
     ['start', '🌾 Getting started', `
@@ -159,8 +159,8 @@ function guideHTML(){
       <li><b>🤒 Sick hours:</b> like Washington's rule, a job earns one hour of sick time for every 40 worked (one a week), up to ${SICK_CAP}. When the flu or feeling run down hits, they cover the time off so the week isn't unpaid. They never turn into cash.</li>
       <li><b>🌤️ A personal day:</b> when happiness falls below ${MH_HAPPY} and you have a job, a personal day can come up, no reason needed (at most once every ${MH_GAP} weeks). It uses a day of sick hours, or a day's pay.</li>
       <li><b>💺 Desk jobs after ${DESK_AGE}:</b> jobs that are easy on the body start to wear a little (a stiff back, tired eyes). One good choice, walking at lunch, clears it for good.</li>
-      <li><b>🦷 Dental</b> (insurance sheet, $${DENTAL} a month): yearly checkups are free, an emergency dentist costs less, and a cracked tooth costs $${TOOTH_DENTAL.toLocaleString()} instead of $${TOOTH_BILL.toLocaleString()}. A yearly checkup makes a cracked tooth less likely either way.</li>
-      <li><b>🚑 Ambulance district</b> (insurance sheet, $${AMB_YEAR} a year): members pay nothing for the ride on a hospital trip. Without it, a hospital stay adds a $${AMB_RIDE.toLocaleString()} ride bill.</li>
+      <li><b>🦷 Dental</b> (insurance sheet, $${DENTAL} a month): yearly checkups are free, an emergency dentist costs less, and a cracked tooth costs $${TOOTH_DENTAL.toLocaleString('en-US')} instead of $${TOOTH_BILL.toLocaleString('en-US')}. A yearly checkup makes a cracked tooth less likely either way.</li>
+      <li><b>🚑 Ambulance district</b> (insurance sheet, $${AMB_YEAR} a year): members pay nothing for the ride on a hospital trip. Without it, a hospital stay adds a $${AMB_RIDE.toLocaleString('en-US')} ride bill.</li>
       <li><b>💉 Grown-up shots:</b> from 50, the pharmacy (a stop in Dayton or Walla Walla) has the shingles shot, and from 65 the pneumonia shot. With them a flu week is shorter and milder.</li>
       <li><b>🎣 Get outside</b> reads differently with age: hiking the Blues when you're young, creek walks in your 50s, the riverwalk bench at 75. Skiing Bluewood on a powder day wants a fair health score (${SKI_HEALTH} or more); otherwise you can ride up for the view. With a <b>Bluewood season pass</b> (on sale each October), every Get outside week from December through March is a ski day: a little extra happiness and health, no lift ticket.</li>
       <li><b>🩺 The health plan at work</b> (chosen each January): the cheaper plan puts about $240 back in your pocket that year; better coverage halves doctor, urgent-care, therapy and emergency dentist bills.</li>
@@ -219,9 +219,9 @@ function guideHTML(){
       <p><b>Skills</b> grow with practice and show on the Life tab (★ levels 1–3):</p>
       <ul>${Object.values(SKILLS).map(k => `<li>${k.ic} <b>${k.name}:</b> ${k.how}. ${k.perk}.</li>`).join('')}</ul>
       <p><b>Start a business</b> on the Life tab (one at a time; it's worth 60% of what you paid if you sell, less about 5% a year as it ages):</p>
-      <ul>${Object.values(BIZ).map(b => `<li>${b.ic} <b>${b.name}</b> ($${b.cost.toLocaleString()}): ${b.desc}</li>`).join('')}</ul>
+      <ul>${Object.values(BIZ).map(b => `<li>${b.ic} <b>${b.name}</b> ($${b.cost.toLocaleString('en-US')}): ${b.desc}</li>`).join('')}</ul>
       <p>The food truck and the shop only earn in certain weeks: each April a note says what yours needs, each October one says what it earned this year, and the business card shows <b>This season</b> (in red at $0).</p>
-      <p><b>🌾 Wheat:</b> lease by March to farm that year's crop; a lease taken later starts with the next year's crop. What a lease sells for shrinks as its 5 years run down, and a renewed lease is worth what the renewal cost. The ground is hired farmed: custom farming, seed and fertilizer cost about $${WHEAT_FARMING.toLocaleString()} each April, so a drought year loses money. The price per bushel is set each July. At harvest in August choose <b>sell now</b> or <b>store it</b> at the elevator (about 1% of the crop a month); stored wheat's price moves each month, usually up a little, and you sell it from the Life tab before the next July. <b>Crop insurance</b> ($${CROP_INS} each April) makes a drought year pay 90% of a normal crop instead of 30%, and covers most of a hail stripe. The harvest follows the year's weather (see Weather and hard years). <b>🐄 Cattle:</b> pasture rent is $${PASTURE} a month and the vet, minerals and bull lease about $${COW_CARE} per cow a year; hay costs extra in a hard winter, calves come in spring (more if you checked on the herd during calving), and they sell in October at that year's price. Every week without a Get outside week for 6 weeks risks losing a cow.</p>
+      <p><b>🌾 Wheat:</b> lease by March to farm that year's crop; a lease taken later starts with the next year's crop. What a lease sells for shrinks as its 5 years run down, and a renewed lease is worth what the renewal cost. The ground is hired farmed: custom farming, seed and fertilizer cost about $${WHEAT_FARMING.toLocaleString('en-US')} each April, so a drought year loses money. The price per bushel is set each July. At harvest in August choose <b>sell now</b> or <b>store it</b> at the elevator (about 1% of the crop a month); stored wheat's price moves each month, usually up a little, and you sell it from the Life tab before the next July. <b>Crop insurance</b> ($${CROP_INS} each April) makes a drought year pay 90% of a normal crop instead of 30%, and covers most of a hail stripe. The harvest follows the year's weather (see Weather and hard years). <b>🐄 Cattle:</b> pasture rent is $${PASTURE} a month and the vet, minerals and bull lease about $${COW_CARE} per cow a year; hay costs extra in a hard winter, calves come in spring (more if you checked on the herd during calving), and they sell in October at that year's price. Every week without a Get outside week for 6 weeks risks losing a cow.</p>
       <p><b>📅 Weekly challenge</b> (title screen): a 6-month life where everyone gets the same start and luck that week: the events come in the same weeks whatever you choose (what you chose earlier can still change which ones can happen). The week turns over at midnight UTC on Monday, the same moment for everyone. <b>📤 Share score card</b> on the end screen makes a picture of your result.</p>
       <p><b>🌳 Legacy:</b> when a Lifetime game ends and you had kids, you can keep playing as your grandkid (18, with a name like Ann Lee II that you can change), with half your net worth (up to $250,000 in 2027 dollars) and some of your standing in town.</p>`],
     ['weather', '🌦️ Weather and hard years', `
@@ -278,7 +278,8 @@ function guideHTML(){
       <li><b>Text size:</b> Normal, Large or Larger.</li>
       <li><b>Sounds:</b> off at first. Soft or Normal plays small sounds made by the game itself (nothing to download, so they work offline): a tick for each week, a chime for events, a fanfare for badges. ⏩ and Auto stay quiet until something happens.</li>
       <li><b>Vibration:</b> a short buzz for events and badges on phones that can (iPhones can't).</li>
-      <li><b>Swipes:</b> swipe left or right on the page to move between Home, Jobs, Life and the Journal. Pull the little handle at the top of a pop-up down to close it. Events that ask you to choose can't be swiped away.</li></ul>
+      <li><b>Swipes:</b> swipe left or right on the page to move between Home, Jobs, Life and the Journal. Pull the little handle at the top of a pop-up down to close it. Events that ask you to choose can't be swiped away.</li>
+      <li><b>Back button:</b> your phone's Back closes the pop-up on top, then Help, then takes you to Home; it stays in the game. On an event it just reminds you to pick one, so a stray Back never answers for you.</li></ul>
       <p>On a tablet, a computer or a phone held sideways, Home shows two columns, with your job, home, ride and recent journal entries at the side.</p>`],
     ['install', '📱 Installing and playing offline', `
       <p>The Burg is a web app you can install. On iPhone, open it in Safari, tap Share, then <b>Add to Home Screen</b>. On Android, open it in Chrome and tap <b>Install app</b> (or ⋮ → Add to Home screen). After the first visit it works offline. After you've played a couple of months, Home may offer an <b>Install</b> button where your browser supports it; <b>Not now</b> hides it for two weeks.</p>
@@ -287,11 +288,17 @@ function guideHTML(){
   ];
   return `<div class="guide">
     <h2 class="gt">📖 Game guide</h2>
-    <nav class="toc" aria-label="Guide contents">${S2.map(([id,t]) => `<button onclick="document.getElementById('g-${id}').scrollIntoView({behavior:'smooth'})">${t}</button>`).join('')}</nav>
+    <nav class="toc" aria-label="Guide contents">${S2.map(([id,t]) => `<button onclick="helpJump('${id}')">${t}</button>`).join('')}</nav>
     ${S2.map(([id,t,b]) => sec(id, t, b)).join('')}
   </div>`;
 }
+// i43-b03: guide sections lay out only when scrolled near (content-visibility); a contents jump lays them all out
+// first so it lands on the right spot
+function helpJump(id){ const g = document.querySelector('#helpview .guide'); if (g) g.classList.add('full'); const el = document.getElementById('g-' + id); if (el) el.scrollIntoView({ behavior: 'smooth' }); }
 function showHelp(){
+  // i54-a04/a07: remember what to go back to; Help opened from a sheet (the Menu) goes back to what opened that sheet
+  if (!lastHelpFocus) { const a = document.activeElement; lastHelpFocus = a && a.closest && a.closest('#sheet') ? lastFocus : opener(a); }
+  lastFocus = null;
   closeSheet(); $('#toast').classList.add('hidden');
   HELP_FROM = S && !S.over ? 'game' : 'title';
   const v = $('#helpview');
@@ -303,18 +310,19 @@ function showHelp(){
       ${comingUpCard()}
       ${guideHTML()}
     </div>`;
-  if (!lastHelpFocus) lastHelpFocus = document.activeElement && document.activeElement.id || null;
   v.classList.remove('hidden'); v.scrollTop = 0; setTimeout(() => $('#helpclose').focus({ preventScroll: true }), 30);
   $('#helpclose').onclick = closeHelp;
   $('#tutstart').onclick = startTutorial;
   comingUpWire();
+  histSync();
 }
 let lastHelpFocus = null;
 function closeHelp(){
   const wasOpen = !$('#helpview').classList.contains('hidden');
   $('#helpview').classList.add('hidden');
-  const id = lastHelpFocus; lastHelpFocus = null;
-  if (wasOpen && !TUT) setTimeout(() => { const el = id && document.getElementById(id); if (el) el.focus({ preventScroll: true }); }, 30);
+  const f = lastHelpFocus; lastHelpFocus = null;
+  if (wasOpen && !TUT) setTimeout(() => refocus(f), 30);
+  histSync();
 }
 
 /* ---------- guided practice tutorial ---------- */
@@ -429,6 +437,12 @@ function placeBubble(b, box, vw, vh, tap){
   at({ maxHeight: `${Math.max(80, room)}px`, overflowY: 'auto', top: below >= above ? `${box.y + box.h + gap}px` : `${Math.max(m, box.y - gap - Math.min(bh, room))}px` });
 }
 function hideCoach(){ const c = $('#coach'); if (c) { c.classList.add('hidden'); c.innerHTML = ''; } }
+// i54-a10: on a look-only step the ringed spot is just for looking: taps, long presses and right-clicks on it do nothing
+['click', 'pointerdown', 'contextmenu'].forEach(ev => document.addEventListener(ev, e => {
+  if (!TUT) return;
+  const st = TSTEPS[TUT.i];
+  if (st && !st.tap && st.sel && e.target.closest && e.target.closest(st.sel) && !(e.target.closest('#coach'))) { e.preventDefault(); e.stopImmediatePropagation(); }
+}, true));
 // a tap on the highlighted spot moves the tutorial on (the app handles the tap as usual)
 document.addEventListener('click', e => {
   if (!TUT) return;
