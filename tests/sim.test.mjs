@@ -8,10 +8,13 @@ import fs from 'node:fs';
 import { serve, launch, runner, seedScript } from './helpers.mjs';
 
 const SCALE = Number(process.env.SIM_SCALE || (process.env.GITHUB_EVENT_NAME === 'pull_request' ? 0.5 : 1));
-const FILTERED = !!(process.env.SIM_ONLY || process.env.SIM_LEN || process.env.SIM_VARIANTS || process.env.SIM_AIMS);   // a tuning run: no balance ceilings
+const FILTERED = !!(process.env.SIM_DIFF || process.env.SIM_ONLY || process.env.SIM_LEN || process.env.SIM_VARIANTS || process.env.SIM_AIMS || process.env.SIM_DIFFS);   // a tuning run: no balance ceilings
 const CEILING = { careless: 62, idle: 52 };
 const AIM_SPREAD = 5;                                            // i20-b23: fitted aim medians must sit within 5 points                     // the targets (60 and 50) plus a small margin for dice
 let GAMES = { half: 6, two: 4, five: 2, life: 1 };              // per strategy, times SIM_SCALE
+// to-do 2 D7: SIM_DIFF=easy|normal|hard plays the main games as new lives on that difficulty (a tuning run; Easy has no Lifetime)
+const SIM_DIFF = process.env.SIM_DIFF || '';
+if (SIM_DIFF === 'easy') delete GAMES.life;
 let STRATEGIES = ['planner', 'homebody', 'commuter', 'student', 'hustler', 'careless', 'idle', 'tripper', 'roadie', 'rotation'];
 // for tuning: SIM_ONLY=commuter,hustler and/or SIM_LEN=five,two run a subset (CI always runs everything)
 if (process.env.SIM_ONLY) STRATEGIES = STRATEGIES.filter(x => process.env.SIM_ONLY.split(',').includes(x));
@@ -37,12 +40,25 @@ const AIM_KEYS = ['all', 'content', 'roots', 'adventure', 'legacy'];
 const AIM_RUNS = process.env.SIM_ONLY && !process.env.SIM_AIMS ? [] : [
   ...AIM_KEYS.map(aim => ({ len: 'five', strat: 'planner', opts: { aim }, label: `aim-${aim}`, n: 4 })),
   ...AIM_KEYS.map(aim => ({ len: 'two', strat: 'idle', opts: { aim }, label: `aim-${aim}`, n: 3 }))];
+// to-do 2 D8: every difficulty played as new lives on the main games' dice (label diff-<d>). Careless and idle play every
+// length (one Lifetime each on Normal and Hard, as the main games); the planner adds 5-year games; the other bots one 2-year game each.
+// Targets (DIFF_TARGETS below) fail the full run; SIM_DIFFS=1 runs only these in a tuning run (with SIM_ONLY/SIM_LEN).
+const DIFF_KEYS = ['easy', 'normal', 'hard'];
+const DIFF_RUNS = (FILTERED && !process.env.SIM_DIFFS) || SIM_DIFF || process.env.SIM_AIMS ? [] : DIFF_KEYS.flatMap(diff => {
+  const n = k => Math.max(1, Math.round(k * SCALE)), runs = [];
+  const add = (len, strat, k) => { if (STRATEGIES.includes(strat) && (!process.env.SIM_LEN || process.env.SIM_LEN.split(',').includes(len))) runs.push({ len, strat, opts: { diff }, label: `diff-${diff}`, n: k }); };
+  for (const strat of ['careless', 'idle', 'planner']) { add('half', strat, n(6)); add('two', strat, n(4)); add('five', strat, n(strat === 'planner' ? 6 : 2)); }
+  if (diff !== 'easy') for (const strat of ['careless', 'idle', 'planner']) add('life', strat, 1);   // as the main games (Easy has no Lifetime)
+  for (const strat of STRATEGIES.filter(s => !['careless', 'idle', 'planner'].includes(s))) add('two', strat, 1);
+  return runs;
+});
+if (process.env.SIM_DIFFS && !SIM_DIFF) { for (const k of Object.keys(GAMES)) delete GAMES[k]; VARIANTS.length = 0; }
 if (process.env.SIM_AIMS) { STRATEGIES.length = 0; STRATEGIES.push('planner', 'idle'); for (const k of Object.keys(GAMES)) delete GAMES[k]; VARIANTS.length = 0; }
 // i19-b33: every rule option that still counts (Standard or Custom tier; sandbox lives are never recorded), and every
 // preset once PRESETS exists, read from the game itself: a planner plays one 5-year game (its 70 target is for long
 // games), a careless and an idle bot one 6-month and one 2-year game each; SIM_RULES=1 runs them in a filtered tuning run too
 let RULE_SETS = [];
-if (!(process.env.SIM_ONLY || process.env.SIM_LEN || process.env.SIM_AIMS) || process.env.SIM_VARIANTS || process.env.SIM_RULES) {
+if (!(process.env.SIM_ONLY || process.env.SIM_LEN || process.env.SIM_AIMS || process.env.SIM_DIFFS) || process.env.SIM_VARIANTS || process.env.SIM_RULES) {
   const p0 = await browser.newPage();
   await p0.goto(srv.url, { waitUntil: 'load' });
   RULE_SETS = await p0.evaluate(() => [
@@ -53,8 +69,8 @@ if (!(process.env.SIM_ONLY || process.env.SIM_LEN || process.env.SIM_AIMS) || pr
 }
 const RULE_LENS = { half: 1, two: Math.max(1, Math.round(SCALE)) };
 const JOBS_LIST = [];
-for (const len of Object.keys(GAMES)) for (const strat of STRATEGIES) for (let g = 0; g < Math.max(1, Math.round(GAMES[len] * SCALE)); g++) JOBS_LIST.push({ len, strat, g, opts: {}, label: 'normal' });
-for (const v of [...VARIANTS, ...AIM_RUNS]) for (let g = 0; g < (v.n || 4); g++) JOBS_LIST.push({ ...v, g });
+for (const len of Object.keys(GAMES)) for (const strat of STRATEGIES) for (let g = 0; g < Math.max(1, Math.round(GAMES[len] * SCALE)); g++) JOBS_LIST.push({ len, strat, g, opts: SIM_DIFF ? { diff: SIM_DIFF } : {}, label: 'normal' });
+for (const v of [...VARIANTS, ...AIM_RUNS, ...DIFF_RUNS]) for (let g = 0; g < (v.n || 4); g++) JOBS_LIST.push({ ...v, g });
 for (const rs of RULE_SETS) for (const [strat, lens] of [['planner', { five: 1 }], ['careless', RULE_LENS], ['idle', RULE_LENS]]) for (const [len, n] of Object.entries(lens)) for (let g = 0; g < n; g++)
   JOBS_LIST.push({ len, strat, g, opts: { rules: rs.rules }, label: `rules:${rs.label}`, tier: rs.tier });
 for (const { len, strat, g, opts, label, tier } of JOBS_LIST) {
@@ -180,7 +196,7 @@ for (const { len, strat, g, opts, label, tier } of JOBS_LIST) {
           if (bad.length) break;
         }
         const sc = lifeScore();
-        return { weeks, ending, bad, events, score: sc.score, parts: sc.parts, cardAvg: sc.cardAvg, snap: sc.snap, aimPart: Math.round(sc.aim), drag: sc.drag, good: S.goodWeeks, nw: Math.round(sc.real), age: age(), edu: S.edu, kids: S.kids.length,
+        return { weeks, ending, bad, events, score: sc.score, parts: sc.parts, cardAvg: sc.cardAvg, snap: sc.snap, aimPart: Math.round(sc.aim), drag: sc.drag, bonus: sc.bonus, good: S.goodWeeks, nw: Math.round(sc.real), age: age(), edu: S.edu, kids: S.kids.length,
                  debt: /debt/.test(ending || ''), endedOk: !!ending, cash: Math.round(S.money), bk: S.bk != null, climbed, nw65,
                  src: Object.fromEntries(Object.entries(src).map(([k, v]) => [k, Math.round(v)])),
                  choiceFx, wxCost: Math.round((S.wxLife || {}).cost || 0), wxSaved: Math.round((S.wxLife || {}).saved || 0), yrs: Math.max(0.5, S.turn / 52),
@@ -282,6 +298,32 @@ md += `\nIdle median **${idle}** (target 50 or below) · Careless median **${car
 if (idle > 50) md += `\n> ⚠️ Doing nothing scores too high (issue #20).\n`;
 if (careless > 60) md += `\n> ⚠️ Careless play scores too high (issue #7).\n`;
 if (planner < 70) md += `\n> ⚠️ Good play scores too low.\n`;
+// to-do 2 D8: each difficulty's medians against its targets. Careless and idle are pooled over every length (as the main
+// games are); the planner is judged in 5-year and Lifetime games. Ceilings get the same 2-point dice margin as CEILING,
+// and planner floors 2 points. Hard's planner has no 70 floor: Hard keeps today's Hard wear (i35-b05), which holds good
+// play near today's Hard score (about 66 in 5 years); instead it must sit 4 to 12 below Normal on the same dice.
+const DIFF_TARGETS = { easy: { planner: 75, careless: 65, idle: 55 }, normal: { planner: 70, careless: 60, idle: 50 }, hard: { planner: null, careless: 60, idle: 50 } };
+const diffMeds = {}, DIFFS_LABEL = { easy: 'Easy', normal: 'Normal', hard: 'Hard' };
+if (DIFF_RUNS.length) {
+  const of = (d, strat, lens) => results.filter(r => r.label === `diff-${d}` && r.strat === strat && (!lens || lens.includes(r.len)));
+  md += `\n**Difficulties** (to-do 2 D8; new lives on the main games' dice; planner median from 5-year and Lifetime games):\n\n| Difficulty | Planner | Careless | Idle | 6 mo planner / careless / idle | 2 yr | 5 yr | Other bots (2 yr) |\n|---|---|---|---|---|---|---|---|\n`;
+  for (const d of DIFF_KEYS) {
+    if (!results.some(r => r.label === `diff-${d}`)) continue;
+    const m = (strat, lens) => { const rs = of(d, strat, lens); return rs.length ? med(rs.map(r => r.score)) : null; };
+    diffMeds[d] = { planner: m('planner', ['five', 'life']), careless: m('careless'), idle: m('idle') };
+    const byLen = len => ['planner', 'careless', 'idle'].map(s => m(s, [len]) ?? '—').join(' / ');
+    const others = STRATEGIES.filter(s => !['careless', 'idle', 'planner'].includes(s)).map(s => `${s} ${m(s) ?? '—'}`).join(', ');
+    const T = DIFF_TARGETS[d];
+    md += `| ${DIFFS_LABEL[d]} | ${diffMeds[d].planner ?? '—'}${T.planner ? ` (≥${T.planner})` : ''} | ${diffMeds[d].careless ?? '—'} (≤${T.careless}) | ${diffMeds[d].idle ?? '—'} (≤${T.idle}) | ${byLen('half')} | ${byLen('two')} | ${byLen('five')} | ${others} |\n`;
+  }
+  // the same dice: 5-year planner games with the same game numbers on Normal and Hard
+  const gs = of('hard', 'planner', ['five']).map(r => r.g).filter(g => of('normal', 'planner', ['five']).some(r => r.g === g));
+  if (gs.length) {
+    const h = med(of('hard', 'planner', ['five']).filter(r => gs.includes(r.g)).map(r => r.score)), n = med(of('normal', 'planner', ['five']).filter(r => gs.includes(r.g)).map(r => r.score));
+    diffMeds.gap = { hard: h, normal: n };
+    md += `\nGood play on the same dice (5 years, ${gs.length} games): Normal **${n}**, Hard **${h}** (${n - h} below; target 4 to 12 below).\n`;
+  }
+}
 // i19-b33: custom rules, per option and per record tier (6-month and 2-year games)
 const ruleTiers = {};
 if (RULE_SETS.length) {
@@ -316,6 +358,24 @@ if (!FILTERED) {
   const plannerAll = allMed('planner');
   for (const st of ['tripper', 'homebody']) await t.check(`i58-b03: the ${st} bot doesn't beat the planner by 3+ (${allMed(st)} vs ${plannerAll})`, async () => {
     if (allMed(st) >= plannerAll + 3) throw new Error(`${st} median ${allMed(st)} beats the planner's ${plannerAll} by 3 or more`);
+  });
+}
+// to-do 2 D8: every difficulty keeps its balance (these fail any run that played the difficulties, tuning runs included)
+for (const d of DIFF_KEYS.filter(d => diffMeds[d])) {
+  const m = diffMeds[d], T = DIFF_TARGETS[d], full = !process.env.SIM_ONLY && !process.env.SIM_LEN;
+  await t.check(`${DIFFS_LABEL[d]}: careless ${m.careless} (≤${T.careless}), idle ${m.idle} (≤${T.idle})${T.planner ? `, planner ${m.planner} (≥${T.planner})` : ''}`, async () => {
+    const bad = [];
+    if (m.careless != null && m.careless > T.careless + 2) bad.push(`careless median ${m.careless} is above ${T.careless} (+2 for dice)`);
+    if (m.idle != null && m.idle > T.idle + 2) bad.push(`idle median ${m.idle} is above ${T.idle} (+2 for dice)`);
+    if (T.planner && m.planner != null && m.planner < T.planner - 2) bad.push(`planner median ${m.planner} is below ${T.planner} (-2 for dice)`);
+    if (full && (m.careless == null || m.idle == null || m.planner == null)) bad.push('a strategy did not play');
+    if (bad.length) throw new Error(bad.join('; '));
+  });
+}
+if (diffMeds.gap) {
+  const { hard, normal } = diffMeds.gap;
+  await t.check(`good play on Hard scores 4 to 12 below Normal on the same dice (5 years: Hard ${hard}, Normal ${normal})`, async () => {
+    if (hard > normal - 4 || hard < normal - 12) throw new Error(`Hard planner median ${hard} should be 4 to 12 below Normal ${normal}`);
   });
 }
 if (aimMeds) {
@@ -450,6 +510,7 @@ if (!process.env.SIM_ONLY || process.env.SIM_ONLY.split(',').includes('rotator')
 
 fs.mkdirSync('test-results', { recursive: true });
 fs.writeFileSync('test-results/balance-report.md', md);
+if (SIM_DIFF) fs.writeFileSync(`test-results/sim-${SIM_DIFF}.json`, JSON.stringify(results.map(({ events, choiceFx, opened, src, ...r }) => r)));
 if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md + '\n');
 
 await browser.close();

@@ -116,11 +116,15 @@ function focusEffect(f = S.focus, n = S.streakF === f ? S.streakN : 1){ return f
 const wk = v => fmt(v*W) + '/wk';
 const LENGTHS = {
   // i49-a01: mins is a real-time guess from timed phone play (390×844, ⏩ where it helps)
-  half: { label:'6 Months', sub:'26 weeks',  turns:26,       target:16000,   mins:'about 4 min' },
-  two:  { label:'2 Years',  sub:'104 weeks', turns:104,      target:90000,   mins:'about 11 min (7 with ⏩)' },
-  five: { label:'5 Years',  sub:'260 weeks', turns:260,      target:400000,  mins:'about 25 min' },   // B1: raised so careless long games don't coast on pay growth
+  // target: net worth for full points on Normal and Hard; easy: on Easy (to-do 2 D7, fitted to Easy sim runs: no investing,
+  // no price growth, no business, no report cards). Easy has no Lifetime.
+  half: { label:'6 Months', sub:'26 weeks',  turns:26,       target:16000,   easy:14000,  mins:'about 4 min' },
+  two:  { label:'2 Years',  sub:'104 weeks', turns:104,      target:90000,   easy:80000,  mins:'about 11 min (7 with ⏩)' },
+  five: { label:'5 Years',  sub:'260 weeks', turns:260,      target:400000,  easy:475000, mins:'about 25 min' },   // B1: raised so careless long games don't coast on pay growth
   life: { label:'Lifetime', sub:'18 to the end', turns:Infinity, target:4000000, mins:'about 4 hours, over many sittings' }
 };
+// to-do 2 D7: the net worth for full points in this length on this difficulty (Classic lives play Hard, so they keep the old targets)
+const lenTarget = (len = S && S.len, d = typeof diff === 'function' ? diff() : 'hard') => { const L = LENGTHS[len] || LENGTHS.two; return d === 'easy' && L.easy ? L.easy : L.target; };
 
 const CITIES = {
   waitsburg: { name:'Waitsburg',   miles:0,  blurb:'Home. Main Street, the Touchet River, and everybody knows your truck.' },
@@ -299,6 +303,7 @@ function blankLife(name, len, slot = 0){
     skills:{}, biz:null, weekly:null, rng:null, rngEv:null, gen:1, goalAt:{}, carpoolJob:null, hustleLast:0, highWater:null, recentF:[], out:outDefault(), years:[],
     stopRun:{}, tripTurns:[],                      // i42-a03 stop repeats in a row; i58-b03 recent trip weeks (road-weary)
     plan:[], planI:0,                              // i2-a12: a weekly focus rotation (empty = no plan)
+    hist:[], spend4:[], ansRules:{},               // i15-b01 weekly history, i15-b05 last 4 weeks by kind, i49-a11 answer rules
     opened:{}, unlockQ:[], unlockMode:'go',        // i31: systems open as you go ({id: {w: week, how}}), unlock cards waiting, or everything open
     hireJoy:null, bgRest:null,                     // i38-a01: the week of the last hiring cheer; i37-b06: a background's community resting point
     evSeen:{}, seenOT:false,                       // i52-a10: events seen this life (no repeats in the first year); i52-a03: the overtime note
@@ -351,6 +356,9 @@ function repairLife(s){
   if (Array.isArray(s.plan)) s.plan = s.plan.filter(k => FOCUS[k]).slice(0, PLAN_MAX);
   if (Array.isArray(s.evPins)) s.evPins = s.evPins.filter(isObj).slice(0, 12).map(p => ({ ...p, t: noTags(p.t).slice(0, 80), r: noTags(p.r).slice(0, 400), ic: noTags(p.ic).slice(0, 8) }));
   if (Array.isArray(s.years)) s.years = s.years.filter(isObj).slice(-120).map(y => ({ ...y, m: Array.isArray(y.m) ? y.m.slice(0, 3).map(t => noTags(t).slice(0, 600)) : [] }));
+  if (Array.isArray(s.hist)) s.hist = s.hist.filter(r => Array.isArray(r) && r.length === 6 && r.every(okNum)).slice(-1200);
+  if (Array.isArray(s.spend4)) s.spend4 = s.spend4.filter(isObj).slice(0, 4).map(o => Object.fromEntries(Object.entries(o).filter(([, v]) => okNum(v)).slice(0, 12).map(([k, v]) => [noTags(k).slice(0, 12), v])));
+  if (isObj(s.ansRules)) s.ansRules = Object.fromEntries(Object.entries(s.ansRules).filter(([, r]) => isObj(r) && typeof r.k === 'string').slice(0, 60).map(([t, r]) => [noTags(t).slice(0, 80), { k: noTags(r.k).slice(0, 160), l: noTags(r.l).slice(0, 120) }]));
   if (Array.isArray(s.line)) s.line = s.line.filter(isObj).slice(-40).map(p => Object.fromEntries(Object.entries(p).map(([k, v]) => [k, typeof v === 'string' ? noTags(v).slice(0, 200) : okNum(v) ? v : null])));
   if (isObj(s.certs)) s.certs = Object.fromEntries(Object.keys(s.certs).filter(k => CERTS[k]).map(k => [k, 1]));
   if (s.program != null && !PROGRAMS[s.program]) s.program = null;
@@ -370,7 +378,7 @@ function migrate(s){
   if (s.diff === undefined) { s.diff = 'hard'; s.classic = true; }
   if (s.classic === undefined) s.classic = false;
   if (s.flagsEdited === undefined) s.flagsEdited = false;
-  const d = { slot:0, evPins:[], streakF:null, streakN:0, run:null, yearEvents:0, yearStart:null, evCd:{}, evDone:{}, evSeen:{}, seenOT:true, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, k401match:0, uiPay:null, mortgage:null, loanPay:0 };   // i75: an older 401(k) counts as vested; old benefits pay the floor
+  const d = { hist:[], spend4:[], ansRules:{}, slot:0, evPins:[], streakF:null, streakN:0, run:null, yearEvents:0, yearStart:null, evCd:{}, evDone:{}, evSeen:{}, seenOT:true, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, k401match:0, uiPay:null, mortgage:null, loanPay:0 };   // i75: an older 401(k) counts as vested; old benefits pay the floor
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
   s.rules = cleanRules(s.rules); if (!TIERS[s.tier0]) s.tier0 = recordTier(s.rules);   // i19-b01: unknown knobs fall back to Normal
   if (typeof s.lid !== 'string' || !s.lid) s.lid = newLid();          // i63-b22
@@ -532,8 +540,35 @@ const isLife = g => !!g && typeof g === 'object' && !Array.isArray(g) && typeof 
 // writes one life (null deletes it); false when the write failed
 function writeSlot(i, game){
   if (i !== WEEKLY_SLOT && rawGet(SLOTS_KEY) != null) importLegacy();
-  if (!game) { store.del(slotKey(i)); return true; }
+  if (!game) { store.del(slotKey(i)); store.del(prevKey(i)); return true; }
+  keepPrev(i, game);
   return store.set(slotKey(i), game);
+}
+// i3-b04: each slot also keeps last week's save. When a new week is written, the save it replaces becomes the
+// copy; a different life in the slot drops the old copy. If the copy can't fit, it goes, never the life itself.
+const prevKey = i => slotKey(i) + '.prev';
+function keepPrev(i, game){
+  const raw = rawGet(slotKey(i)); if (!raw) return;
+  let old; try { old = JSON.parse(raw); } catch(e){ return; }
+  if (!isLife(old)) return;
+  if (old.lifeId !== game.lifeId) { store.del(prevKey(i)); return; }
+  if (old.turn === game.turn) return;
+  try { localStorage.setItem(prevKey(i), raw); } catch(e){ store.del(prevKey(i)); }
+}
+// the copy from a week earlier, or null
+function prevLife(i){
+  const raw = rawGet(prevKey(i)); if (!raw) return null;
+  try { const g = JSON.parse(raw); return isLife(g) ? g : null; } catch(e){ return null; }
+}
+// i3-b03: ask the browser to keep this game's storage, so a phone low on space doesn't clear the lives.
+// PERSIST: true (kept), false (the phone said no) or null (not asked yet, or the browser can't say)
+let PERSIST = null;
+function askPersist(){
+  if (askPersist.done) return; askPersist.done = true;
+  try {
+    const st = navigator.storage; if (!st || !st.persist) return;
+    Promise.resolve(st.persisted ? st.persisted() : false).then(p => p || st.persist()).then(p => { PERSIST = !!p; }).catch(() => {});
+  } catch(e){}
 }
 // all five at once (restoring a backup); true only if every life landed
 function writeSlots(a){ let ok = true; for (let i = 0; i < SLOT_COUNT; i++) ok = writeSlot(i, a[i] || null) && ok; return ok; }
@@ -571,9 +606,9 @@ function save(){
 /* ---------- i73-b01: a finished life leaves a small stub, so it outlasts "Play again" ---------- */
 const ENDS_KEY = KEY_PREFIX + 'ends.v1', ENDS_MAX = 100;
 const ends = () => { const a = store.get(ENDS_KEY); return Array.isArray(a) ? a.filter(e => e && typeof e === 'object' && typeof e.name === 'string' && Number.isFinite(e.score)) : []; };
-// newest first; past ENDS_MAX the oldest go, but never the ten best
+// newest first; past ENDS_MAX the oldest go, but never the ten best of a difficulty
 function keepEnds(list){
-  const top = new Set(list.slice().sort((a, b) => b.score - a.score).slice(0, 10)), out = list.slice();
+  const top = new Set(SHELVES.flatMap(sh => list.filter(e => endShelf(e) === sh).sort((a, b) => b.score - a.score).slice(0, 10))), out = list.slice();   // D7: the ten best on each shelf
   for (let i = out.length - 1; out.length > ENDS_MAX && i >= 0; i--) if (!top.has(out[i])) out.splice(i, 1);
   return out;
 }
@@ -665,7 +700,37 @@ function sfx(name){
     }
   } catch(e){}
 }
-function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.remove('hidden'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.add('hidden'), 2200); }
+// i20-a03: a toast sits just above the bars at the bottom (never on them), and fades out after 2.5 seconds.
+// i20-a04: while an event is open, toasts wait and show after it closes, so they never cover the event.
+// toast(msg, true) shows at once, even over an event (Pick one to go on).
+const TOAST_MS = 2500, TOAST_Q = [];
+const evOpen = () => { const m = $('#modal'), sh = $('#sheet'); return !!(m && sh && !m.classList.contains('hidden') && sh.classList.contains('ev')); };
+function placeToast(t){
+  let top = Infinity;
+  for (const q of ['#strip', '.endbar', '.focusrow', '#app > nav']) {
+    const e = document.querySelector(q); if (!e) continue;
+    const r = e.getBoundingClientRect(); if (r.height > 0 && r.top < top) top = r.top;
+  }
+  t.style.bottom = top < Infinity && top > 120 ? `${Math.round(innerHeight - top + 8)}px` : '';
+}
+function toast(msg, now){
+  const t = $('#toast'); if (!t) return;
+  if (!now && evOpen()) { if (!TOAST_Q.includes(msg)) TOAST_Q.push(msg); if (TOAST_Q.length > 3) TOAST_Q.shift(); return; }
+  placeToast(t);
+  t.textContent = msg; t.classList.remove('hidden', 'out'); clearTimeout(toast.t); clearTimeout(toast.f);
+  toast.t = setTimeout(() => { t.classList.add('out'); toast.f = setTimeout(() => { t.classList.add('hidden'); t.classList.remove('out'); flushToasts(); }, 300); }, TOAST_MS);
+}
+// an event just opened: a toast already showing waits for it too
+function holdToast(){
+  const t = $('#toast'); if (!t || t.classList.contains('hidden') || !t.textContent) return;
+  clearTimeout(toast.t); clearTimeout(toast.f); t.classList.add('hidden'); t.classList.remove('out');
+  if (!TOAST_Q.includes(t.textContent)) TOAST_Q.unshift(t.textContent);
+}
+function flushToasts(){
+  const t = $('#toast');
+  if (!TOAST_Q.length || !t || !t.classList.contains('hidden') || evOpen()) return;
+  toast(TOAST_Q.shift());
+}
 
 /* ============================================================
    🎬 HOW A LIFE BEGINS (#69) and 🎚️ MODES (#73)
@@ -770,7 +835,34 @@ const rulesSummary = r => { const ch = Object.keys(cleanRules(r)); return ch.len
 // i22-a19: how far through a Lifetime you are (age 18 to 65): the header bar and the score's on-track target share it
 const lifeProgress = () => clamp((S.ageMonths / 12 - 18) / (65 - 18), 0, 1);
 const bestKey = (len, m) => m && m !== 'normal' ? `${len}-${m}` : len;
-const bestLabel = k => { if (k.startsWith('cu-')) { const b = bestLabel(k.slice(3)); return b ? `🎛️ ${b} · Custom rules` : null; } if (k.startsWith('wk-'))return `📅 ${k.slice(3)}`; if (k.startsWith('sc-')) { const sc = SCENARIOS[k.slice(3)]; return sc ? `${sc.ic} ${sc.name}` : null; } const [len, m] = k.split('-'); return LENGTHS[len] ? `${LENGTHS[len].label}${m && MODES[m] ? ` (${MODES[m].name})` : ''}` : null; };
+/* ---------- to-do 2 D7: records are kept per difficulty ----------
+   Each best score sits on a shelf: Easy, Normal, Hard, or Classic for lives from before difficulty modes.
+   A difficulty's key starts with its name ("easy.two", "hard.sc-farm", "normal.wk-2026-W47", "cu-easy.two");
+   every key stored before then has no such start, so it reads as Classic and keeps its old form ("two-relaxed", "sc-farm"). */
+const SHELVES = ['easy', 'normal', 'hard', 'classic'];
+const shelfOf = (s = S) => !s || s.classic || !DIFFS[s.diff] ? 'classic' : s.diff;
+const endShelf = e => !e || e.classic || !DIFFS[e.diff] ? 'classic' : e.diff;
+const shelfName = sh => sh === 'classic' ? '🏛️ Classic' : `${DIFFS[sh].ic} ${DIFFS[sh].label}`;
+const recKey = (sh, rest) => sh === 'classic' ? rest : `${sh}.${rest}`;
+function parseRecKey(k){
+  const cu = k.startsWith('cu-'), b = cu ? k.slice(3) : k, m = /^(easy|normal|hard)\.(.+)$/.exec(b);
+  return { cu, shelf: m ? m[1] : 'classic', rest: m ? m[2] : b };
+}
+// what a key holds, without its shelf: "2 Years", "6 Months (Relaxed)" (Classic), a challenge or a week
+function restLabel(r){
+  if (r.startsWith('wk-')) return `📅 ${r.slice(3)}`;
+  if (r.startsWith('sc-')) { const sc = SCENARIOS[r.slice(3)]; return sc ? `${sc.ic} ${sc.name}` : null; }
+  const [len, m] = r.split('-'); return LENGTHS[len] ? `${LENGTHS[len].label}${m && MODES[m] ? ` (${MODES[m].name})` : ''}` : null;
+}
+const bestLabel = k => { const p = parseRecKey(k), b = restLabel(p.rest); return b ? `${p.cu ? '🎛️ ' : ''}${shelfName(p.shelf)} · ${b}${p.cu ? ' · Custom rules' : ''}` : null; };
+// a life's difficulty for the end screen and records: "🌱 Easy", or "🏛️ Classic (Relaxed)" for an older life
+const lifeDiffLabel = (s = S) => shelfOf(s) === 'classic' ? `🏛️ Classic${s && s.mode && s.mode !== 'normal' && MODES[s.mode] ? ` (${MODES[s.mode].name})` : ''}` : shelfName(shelfOf(s));
+// boot and restore: a finished life stored before difficulty modes is marked Classic (best scores need no change: see above)
+function migrateRecords(){
+  const a = store.get(ENDS_KEY); if (!Array.isArray(a)) return;
+  let n = 0; for (const e of a) if (e && typeof e === 'object' && !DIFFS[e.diff] && !e.classic) { e.classic = true; n++; }
+  if (n) store.set(ENDS_KEY, a);
+}
 
 /* ============================================================
    🌸 SEASON GOALS IN TOWN (#77): one town goal a season, worked toward with your weekly focus
@@ -786,7 +878,7 @@ const SEASON_GOALS = [
   { key:'winter', ic:'❄️', name:'Holiday food drive and shoveling for neighbors', months:[11,0,1], focus:['community','outdoors'], need:7, fx:{community:5, happy:4},
     what:'Show up for town or Get outside', done:'Every older neighbor on your street had a clear walk and a full pantry.' }
 ];
-const seasonGoal = () => SEASON_GOALS.find(g => g.months.includes(curMonth()));
+const seasonGoal = () => !on('town.seasonGoals') ? null : SEASON_GOALS.find(g => g.months.includes(curMonth()));
 // the season's year label, so winter's December–February counts as one season
 const seasonId = g => { const d = new Date(S.date), y = d.getFullYear(); return `${g.key}-${g.key === 'winter' && d.getMonth() <= 1 ? y - 1 : y}`; };
 function seasonWeek(notes){
@@ -826,39 +918,41 @@ function seasonWeeksLeft(g){
 // so that save keeps it open. Opening is UI only: nothing pays more or less for opening early or late.
 // The tutorial, practice lives and 'Everything open' always show everything.
 const UNLOCKS = [
-  { id:'study', ic:'📚', label:'Take classes', tab:'home', sel:'.fbtn[data-f="study"]', focus:'study',
+  { id:'study', feat:'school', ic:'📚', label:'Take classes', tab:'home', sel:'.fbtn[data-f="study"]', focus:'study',
     moment:'A new focus: classes in Walla Walla or the Tri-Cities. A certificate or a diploma opens the 🔒 jobs.',
     when:s => s.edu > 0 || s.studyProg > 0 || !!s.certStudy, used:s => s.edu > 0 || s.studyProg > 0 || !!s.certStudy || s.focus === 'study',
     by:{ half:1, two:1, five:1, life:1 } },
-  { id:'out', ic:'🛍️', label:'Out and about', tab:'home', sel:'#outbtn',
+  { id:'out', feat:'out', ic:'🛍️', label:'Out and about', tab:'home', sel:'#outbtn',
     moment:'A walk down Main Street: a couple of quick visits a week to shops and the café, on top of your focus.',
     when:s => s.turn >= 1, used:s => !!(s.out && s.out.visits), by:{ half:1, two:2, five:2, life:2 } },
-  { id:'goals', ic:'🎯', label:'Life goals', tab:'life', sel:'#goalscard',
+  { id:'goals', feat:'goals.badges', ic:'🎯', label:'Life goals', tab:'life', sel:'#goalscard',
     moment:'Pin a few badges as life goals on the Life tab. Each one you reach adds points to your Life Score.',
     when:s => s.turn >= 1, used:s => (s.goals || []).length > 0, by:{ half:2, two:2, five:2, life:2 } },
-  { id:'k401', ic:'🏦', label:'401(k)', tab:'life', sel:'#k401card',
+  { id:'k401', feat:'money.k401', ic:'🏦', label:'401(k)', tab:'life', sel:'#k401card',
     moment:'Your job comes with a 401(k): save 5% of each paycheck and your employer adds 3% more.',
     when:s => !!s.jobId || !!s.retired, used:s => (s.k401rate || 0) > 0 || (s.k401 || 0) > 0, by:{ half:null, two:null, five:null, life:null } },
-  { id:'hustle', ic:'🔧', label:'Side hustle', tab:'home', sel:'.fbtn[data-f="hustle"]', focus:'hustle',
+  { id:'hustle', feat:'jobs.hustle', ic:'🔧', label:'Side hustle', tab:'home', sel:'.fbtn[data-f="hustle"]', focus:'hustle',
     moment:'A neighbor needs a hand: weekend gigs that follow the seasons, and pay more as you get good at them.',
     when:s => s.turn >= 2 && !!s.jobId, used:s => (s.hustleWeeks || 0) > 0 || s.focus === 'hustle', by:{ half:2, two:3, five:3, life:3 } },
-  { id:'plan', ic:'🗓', label:'Focus plan', tab:'home', sel:'#planbtn',
+  { id:'plan', feat:'ui.plan', ic:'🗓', label:'Focus plan', tab:'home', sel:'#planbtn',
     moment:'Set up to 4 focuses that take turns, one a week, so you don\'t have to change it by hand.',
     when:s => s.turn >= 3, used:s => (s.plan || []).length > 0, by:{ half:3, two:4, five:4, life:4 } },
   { id:'score', ic:'🏆', label:'Life Score so far', tab:'home', sel:'#scorenow',
     moment:'How your life would score if it ended today. It shows from day one, with the stats (i5-a02).',
     when:() => true, used:() => true, by:{ half:0, two:0, five:0, life:0 } },
-  { id:'trip', ic:'🚗', label:'Trips', tab:'home', sel:'#tripchip',
+  { id:'trip', feat:'trips', ic:'🚗', label:'Trips', tab:'home', sel:'#tripchip',
     moment:'Town doesn\'t have everything: once a week, drive to Dayton, Walla Walla or the Tri-Cities for groceries, an oil change or a night out.',
     when:s => s.turn >= 3 && s.turn - (s.svc || 0) >= 6, used:s => !!s.trip || Object.keys(s.towns || {}).length > 0, by:{ half:4, two:8, five:8, life:8 } },
-  { id:'skills', ic:'🧰', label:'Skills', tab:'life', sel:'#skillscard',
+  { id:'skills', feat:'skills', ic:'🧰', label:'Skills', tab:'life', sel:'#skillscard',
     moment:'You\'re getting better at things: skills grow as you practice, and each level saves money or opens a choice.',
     when:s => Object.values(s.skills || {}).some(v => v > 0), used:s => Object.values(s.skills || {}).some(v => v > 0), by:{ half:null, two:26, five:26, life:26 } },
-  { id:'biz', ic:'🏪', label:'Your own business', tab:'life', sel:'#bizcard',
+  { id:'biz', feat:'biz', ic:'🏪', label:'Your own business', tab:'life', sel:'#bizcard',
     moment:'With some savings you could start a business: a food truck, a woodshop or leased wheat ground. Small, risky, and it can grow.',
     when:s => s.money >= 30000 * (s.col || 1) || (s.turn >= 52 && s.money >= 8000 * (s.col || 1)), used:s => !!s.biz, by:{ half:null, two:78, five:52, life:52 } }
 ];
 const UNLOCK = Object.fromEntries(UNLOCKS.map(u => [u.id, u]));
+// to-do 2 D6: the systems this life has (a system whose feature is off never opens, and Help doesn't list it)
+const unlocksOn = (s = S) => UNLOCKS.filter(u => !u.feat || typeof on !== 'function' || on(u.feat, s));
 const UNLOCK_FOCUS = Object.fromEntries(UNLOCKS.filter(u => u.focus).map(u => [u.focus, u.id]));
 const UNLOCK_MODES = { go:{ ic:'🌱', name:'Open as I go', desc:'Week 1 is just four focuses and End Week. Classes, side hustles, trips, plans and more open as they come up, each with a short card and a Show me.' },
   all:{ ic:'🔓', name:'Everything open', desc:'Every system is there from day one, with no unlock cards. For players who know the Burg.' } };
@@ -874,6 +968,7 @@ const focusOpen = k => !UNLOCK_FOCUS[k] || isOpen(UNLOCK_FOCUS[k]);
 // Quiet opens get no card; nothing else changes, so opening early gives nothing extra.
 function openSystem(id, o = {}){
   if (!S || !UNLOCK[id] || S.practice) return false;
+  if (!unlocksOn().includes(UNLOCK[id])) return false;   // to-do 2 D6: a switched-off system never opens
   S.opened = S.opened || {};
   if (S.opened[id]) return false;
   S.opened[id] = { w: S.turn, how: o.how || 'moment' };
@@ -885,7 +980,7 @@ function openSystem(id, o = {}){
 function unlockCheck(weekEnd){
   if (!S || S.practice || S.over || S.unlockMode === 'all') return false;
   let any = false;
-  for (const u of UNLOCKS) {
+  for (const u of unlocksOn()) {
     if (S.opened && S.opened[u.id]) continue;
     const by = unlockBy(u);
     if (u.when(S)) any = openSystem(u.id) || any;
