@@ -1435,7 +1435,7 @@ await t.check('i20-a14/a22/a28/a30/i50-a04: two-line Buy buttons, one way to cou
 
 await t.check('the heir sheet keeps the will line in one block (no narrow column)', async () => {
   await life({ jobId: 'farmhand' }, 'home', 'life');
-  await page.evaluate(() => { S.kids = [S.ageMonths - 240]; S.money = 30000; S.will = true; finish('done'); });
+  await page.evaluate(() => { S.ageMonths = 72 * 12; S.kids = [S.ageMonths - 240]; S.money = 30000; S.will = true; finish('done'); });   // a grandkid needs a parent of 60 or more
   await page.click(`${open} #legacy`);
   const w = await page.evaluate(() => { const c = document.querySelector('#sheet .card.tip'); return [c.getBoundingClientRect().width, c.firstElementChild.getBoundingClientRect().width, c.children.length]; });
   assert(w[2] === 1 && w[1] > w[0] * 0.7, JSON.stringify(w));
