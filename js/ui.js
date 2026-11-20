@@ -402,7 +402,7 @@ function newGame(name, len, slot = 0, opts = {}){
 function render(){
   if (!S) return renderTitle();
   const L = LENGTHS[S.len];
-  const pct = L.turns === Infinity ? Math.min(100, (age()-18)/(85-18)*100) : S.turn / L.turns * 100;
+  const pct = L.turns === Infinity ? lifeProgress() * 100 : S.turn / L.turns * 100;   // i22-a19: the same 18-to-65 span the score uses
   const big = L.turns === Infinity || L.turns >= 104;
   const left = L.turns === Infinity ? `Age ${age()}` : weeksLeftLabel(L.turns - S.turn);
   const nar = S.practice ? '' : ' skipx';          // i2-a23: on narrow phones the ⏩ buttons hide behind a long press on End Week
@@ -578,7 +578,7 @@ function renderHome(){
   ${S.happy < 30 ? sugg('happy', 'outdoors', `😟 Happiness is low (${Math.round(S.happy)}).`) : ''}
   ${S.health < 30 ? sugg('health', 'rest', `🤒 Health is low (${Math.round(S.health)}).`) : ''}
   ${overtimeTip() ? `<div class="card warn">${overtimeTip()}</div>` : ''}
-  ${S.money < debtWarnAt() ? `<div class="card warn">${debtEnd() == null ? `⚠️ Your debt is getting heavy. On Relaxed you won't have to leave town (a debt counselor stops it at ${fmt(DEBT_FLOOR)}), but the interest keeps piling up.` : `⚠️ Your debt is getting dangerous. Below ${fmt(debtEnd())}${mode() === 'hard' ? ' (Hard mode)' : ''} you'll have to leave town${canBankrupt() ? ' or file for bankruptcy' : ''}.`}</div>` : onPlan() ? `<div class="card">📞 <b>On a payment plan.</b> Your debt is still in collections (worse odds on job applications and loans until you're back above $0), but the calls stop while your cash keeps going up.</div>` : inCollections() ? `<div class="card warn">📞 Your debt is in collections: daily calls (−happiness) and worse odds on job applications and loans until you're back above $0. Raise your cash ${PLAN_WEEKS} weeks in a row to get on a payment plan.</div>` : ''}
+  ${S.money < debtWarnAt() ? `<div class="card warn" id="debtwarn">⚠️ Your debt is getting dangerous.${debtLimit() == null ? ` In Relaxed it never ends your life (a debt counselor stops it at ${fmt(RELAXED_FLOOR)}), but the interest keeps eating your cash.` : ` Below ${fmt(debtLimit())} you'll have to leave town${canBankrupt() ? ' or file for bankruptcy' : ''}.`}</div>` : onPlan() ? `<div class="card">📞 <b>On a payment plan.</b> Your debt is still in collections (worse odds on job applications and loans until you're back above $0), but the calls stop while your cash keeps going up.</div>` : inCollections() ? `<div class="card warn">📞 Your debt is in collections: daily calls (−happiness) and worse odds on job applications and loans until you're back above $0. Raise your cash ${PLAN_WEEKS} weeks in a row to get on a payment plan.</div>` : ''}
   <div class="card"><div class="focushead"><h3>This week's focus</h3><button class="sm alt" id="planbtn" aria-pressed="${!!(S.plan && S.plan.length)}" aria-label="Focus plan: ${S.plan && S.plan.length ? 'on' : 'off'}">🗓 Plan${S.plan && S.plan.length ? ' ✓' : ''}</button></div>${scenarioLine() || seasonLine()}${mapToggle()}
     ${prefs().mapView ? mapBlock('T') : `<div class="fgrid">${Object.entries(FOCUS).map(([k,x]) => {
       const dis = (x.needsJob && (!j || S.retired)) || (x.study && !canStudy());
@@ -1033,7 +1033,7 @@ function buyCar(k){
       '😊 Happiness +5',
       `💰 ${term('networth', 'Net worth')}: ${dNw >= 0 ? '+' : '−'}${fmt(Math.abs(dNw))}${dNw < 0 ? ' (a vehicle loses value once you drive it home' + (loan ? ', and the loan counts against you' : '') + ')' : ''}`],
     onYes: () => {
-      S.money -= price; S.car = k; S.carValue = cost(c.value); S.loanLeft = c.months || 0; S.loanPay = c.pay ? cost(c.pay) : 0; S.svc = S.turn;
+      S.money -= price; S.car = k; S.carValue = cost(c.value); S.loanLeft = c.months || 0; S.loanPay = c.pay ? cost(c.pay) : 0; S.svc = S.turn; S.tires = null;   // i22-a08: the winter tires went with the trade-in
       adj({happy:5}); log(`Drove home a ${c.name.toLowerCase()}.`);
       save(); render();
     } });

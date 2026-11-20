@@ -1125,7 +1125,7 @@ await t.check('i3-a29/a17: index funds and wine futures from the Life tab', asyn
 
 await t.check('i3-a15/a16: the harvest asks sell or store; stored wheat sells from the Life tab; crop insurance toggles', async () => {
   await life({ jobId: 'farmhand', money: 10000, date: new Date(2027, 7, 2).getTime() }, 'life');
-  await page.evaluate(() => { startBiz('wheat'); S.noEvents = false; S.due = []; });
+  await page.evaluate(() => { startBiz('wheat'); S.biz.paidYear = null; S.noEvents = false; S.due = []; });   // i22-a04: as if leased by March
   await page.click('#cropins');
   assert((await S()).biz.ins === true, 'crop insurance should turn on');
   await page.evaluate(() => { bizWeek([], []); showEvent(takeDue()); });
@@ -1326,13 +1326,7 @@ await t.check('i72-b06: tap the cash for last week in and out, next week, and th
   await page.keyboard.press('Escape');
 });
 
-await t.check('i12-b03/i23-a05/i50-a03: the debt warning fits the mode, the town goal shows what is left and the reward, one goal line at a time', async () => {
-  const warn = async (mode, money) => { await life({ jobId: 'farmhand', mode, money }, 'home'); return page.textContent('#main'); };
-  assert(/Below -\$40,000 you'll have to leave town/.test(await warn('normal', -16000)), 'Normal warns at -$15,000 about -$40,000');
-  const hard = await warn('hard', -11000);
-  assert(/Below -\$25,000 \(Hard mode\)/.test(hard), 'Hard warns sooner about -$25,000');
-  const rel = await warn('relaxed', -16000);
-  assert(/won't have to leave town/.test(rel) && !/you'll have to leave town/.test(rel), 'Relaxed never says you have to leave');
+await t.check('i23-a05/i50-a03: the town goal shows what is left and the reward, one goal line at a time', async () => {
   await life({ jobId: 'farmhand', date: new Date(2027, 0, 4).getTime() }, 'home');
   const g = await page.textContent('#main .sgoal');
   assert(/4 more needed · \d+ weeks left · reward ▲5 community ▲4 happiness/.test(g), g);

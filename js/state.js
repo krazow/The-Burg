@@ -507,10 +507,12 @@ const MODES = {
   hard:    { ic:'🔥', name:'Hard', desc:'Stats wear down faster, more events, layoffs more likely, rent, food and insurance cost 10% more, and debt ends the game at -$25,000.' }
 };
 const mode = () => (S && S.mode) || 'normal';
-// i12-b03: where debt ends a life (weekTick reads it too): Hard at -$25,000, Normal at -$40,000, never on Relaxed
-const DEBT_FLOOR = -40000, DEBT_FLOOR_HARD = -25000;
-const debtEnd = () => mode() === 'relaxed' ? null : mode() === 'hard' ? DEBT_FLOOR_HARD : DEBT_FLOOR;
-const debtWarnAt = () => mode() === 'hard' ? -10000 : -15000;   // Hard warns sooner: there's less room
+// i60-a12: where debt ends a life in this mode (null: Relaxed, where a debt counselor stops it at RELAXED_FLOOR), and where Home warns
+const DEBT_LIMIT = { hard:-25000, normal:-40000, relaxed:null }, DEBT_WARN = { hard:-10000, normal:-15000, relaxed:-15000 }, RELAXED_FLOOR = -40000;
+const debtLimit = (m = mode()) => DEBT_LIMIT[m] === undefined ? DEBT_LIMIT.normal : DEBT_LIMIT[m];
+const debtWarnAt = (m = mode()) => DEBT_WARN[m] ?? DEBT_WARN.normal;
+// i22-a19: how far through a Lifetime you are (age 18 to 65): the header bar and the score's on-track target share it
+const lifeProgress = () => clamp((S.ageMonths / 12 - 18) / (65 - 18), 0, 1);
 const bestKey = (len, m) => m && m !== 'normal' ? `${len}-${m}` : len;
 const bestLabel = k => { if (k.startsWith('wk-')) return `📅 ${k.slice(3)}`; if (k.startsWith('sc-')) { const sc = SCENARIOS[k.slice(3)]; return sc ? `${sc.ic} ${sc.name}` : null; } const [len, m] = k.split('-'); return LENGTHS[len] ? `${LENGTHS[len].label}${m && MODES[m] ? ` (${MODES[m].name})` : ''}` : null; };
 
