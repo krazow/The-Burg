@@ -93,7 +93,7 @@ function guideHTML(){
       <p><b>What the week did:</b> the strip above End Week shows your money (events included) and ▲▼ for each stat. Tap it to see every paycheck, bill and event. Tap a line there to see <b>why</b> it cost what it did, and read why your stats moved.</p>
       <p><b>Before you pick:</b> under the focus buttons, <b>Next week</b> estimates what the focus will add (stats and cash, before events). A button shows a percentage when that focus is fading from repeating it.</p>`],
     ['stats', '📊 Stats', `
-      <p>Tap any stat on Home to see what moves it.</p>
+      <p>Tap any stat on Home to see what moves it. Each stat also shows a word: <b>Low</b> (under 35), <b>OK</b>, <b>Good</b> (60 and up) or <b>Great</b> (80 and up). The small notches on its bar mark where the word changes.</p>
       <ul><li><b>😊 Happiness (0–100).</b> Up: Rest, Get outside, Show up for town, a partner, a dog, kids, a nicer home, retirement. Down: stressful jobs, long commutes, overtime, classes, side hustles, debt, no job, ruts.</li>
       <li><b>❤️ Health (0–100).</b> Up: Rest, Get outside, a doctor visit. Down: physical jobs, overtime, side hustles, and age. At 0 you land in the hospital (a big bill), or in Lifetime after 50 it can end your life.</li>
       <li><b>🤝 Community (0–100).</b> Up: Show up for town, working in Waitsburg (a little in Dayton), kids, a council seat, helping in events. It fades slowly if you don't show up. Higher standing helps you get hired.</li>
@@ -264,10 +264,11 @@ function guideHTML(){
     ['settings', '⚙️ Settings: night theme, text size, sounds', `
       <p>Open <b>Menu → ⚙️ Settings</b> (or Settings on the title screen). Settings are saved on this device for every life and never change the game's numbers.</p>
       <ul><li><b>Theme:</b> Day, Night, or Match phone (the default), which follows your phone's dark mode.</li>
-      <li><b>Text size:</b> Normal, Large or Larger.</li>
+      <li><b>Text size:</b> Normal, Large or Larger. Normal starts from your phone's own text size, and every part of the screen grows with it, the header, tabs and End Week too.</li>
       <li><b>Sounds:</b> off at first. Soft or Normal plays small sounds made by the game itself (nothing to download, so they work offline): a tick for each week, a chime for events, a fanfare for badges. ⏩ and Auto stay quiet until something happens.</li>
       <li><b>Vibration:</b> a short buzz for events and badges on phones that can (iPhones can't).</li>
-      <li><b>Swipes:</b> swipe left or right on the page to move between Home, Jobs, Life and the Journal. Pull the little handle at the top of a pop-up down to close it. Events that ask you to choose can't be swiped away.</li></ul>
+      <li><b>Swipes:</b> swipe left or right on the page to move between Home, Jobs, Life and the Journal. Pull the little handle at the top of a pop-up down to close it. Events that ask you to choose can't be swiped away.</li>
+      <li><b>Week summary (screen readers):</b> after End Week a screen reader says one short sentence (Short, the default), or every number (Full).</li></ul>
       <p>On a tablet, a computer or a phone held sideways, Home shows two columns, with your job, home, ride and recent journal entries at the side.</p>`],
     ['install', '📱 Installing and playing offline', `
       <p>The Burg is a web app you can install. On iPhone, open it in Safari, tap Share, then <b>Add to Home Screen</b>. On Android, open it in Chrome and tap <b>Install app</b> (or ⋮ → Add to Home screen). After the first visit it works offline. After you've played a couple of months, Home may offer an <b>Install</b> button where your browser supports it; <b>Not now</b> hides it for two weeks.</p>
@@ -414,6 +415,13 @@ function placeBubble(b, box, vw, vh, tap){
   const room = Math.max(below, above);
   if (!tap && room < 120) return at({ top: 'auto', bottom: `${m}px` });   // a big area to look at: the bubble may sit over part of it
   at({ maxHeight: `${Math.max(80, room)}px`, overflowY: 'auto', top: below >= above ? `${box.y + box.h + gap}px` : `${Math.max(m, box.y - gap - Math.min(bh, room))}px` });
+}
+// i43-a05: where Tab may go during the tutorial: the lit spot (when it's for tapping), then Next and Skip
+function coachStops(){
+  const st = TUT && TSTEPS[TUT.i], el = st && st.tap && st.sel ? document.querySelector(st.sel) : null;
+  const own = !el ? [] : el.matches('button:not([disabled]), [tabindex="0"], input, a[href]') ? [el] : focusables(el);
+  const b = document.querySelector('#coach .cbubble');
+  return [...own, ...(b ? focusables(b) : [])];
 }
 function hideCoach(){ const c = $('#coach'); if (c) { c.classList.add('hidden'); c.innerHTML = ''; } }
 // a tap on the highlighted spot moves the tutorial on (the app handles the tap as usual)

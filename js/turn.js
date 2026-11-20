@@ -70,7 +70,8 @@ function finishRun(res, why, n){
     else { if (!res.ev) { if (n === 1) sfx('week'); buzz('week'); } next(); }   // i2-a04/a05: one small tick per press
     const r = S.run, dm = S.money - r.money, ch = (n, v) => Math.abs(v) < 0.5 ? `${n} unchanged` : `${n} ${v > 0 ? 'up' : 'down'} ${Math.abs(Math.round(v))}`;
     const own = r.happened.filter(h => h.auto).length;
-    announce(`${r.weeks > 1 ? r.weeks + ' weeks' : 'Week'} done. Cash ${dm >= 0 ? 'up' : 'down'} ${fmt(Math.abs(dm))}, now ${fmt(S.money)}. ${ch('Happiness', S.happy - r.happy)}, ${ch('health', S.health - r.health)}, ${ch('community', S.community - r.community)}. ${own ? `${own} event${own > 1 ? 's' : ''} with no choice to make played out: see the week strip. ` : ''}${dateLabel()}.`);
+    if (setting('srWeek') === 'short') announce(weekSentence(res));   // i7-a02: one plain sentence (Settings can ask for every number)
+    else announce(`${r.weeks > 1 ? r.weeks + ' weeks' : 'Week'} done. Cash ${dm >= 0 ? 'up' : 'down'} ${fmt(Math.abs(dm))}, now ${fmt(S.money)}. ${ch('Happiness', S.happy - r.happy)}, ${ch('health', S.health - r.health)}, ${ch('community', S.community - r.community)}. ${own ? `${own} event${own > 1 ? 's' : ''} with no choice to make played out: see the week strip. ` : ''}${dateLabel()}.`);
   };
   if (notes.length) {
     sheet(`<h2>${S.run.weeks > 1 ? S.run.weeks + ' weeks later' : 'This week'}</h2>
@@ -79,6 +80,25 @@ function finishRun(res, why, n){
       <button class="btn primary" id="ok">Continue</button>`);
     $('#ok').onclick = () => { closeSheet(); after(); };
   } else after();
+}
+// i7-a02: the short week summary a screen reader hears after End Week, e.g.
+// "Week 34 done. You earned $612. Health up 2, happiness down 1. One event waiting."
+function weekSentence(res = {}){
+  const r = S.run; if (!r) return '';
+  const dm = Math.round(S.money - r.money), first = S.turn - r.weeks + 1;
+  const stats = [['Happiness', S.happy - r.happy], ['Health', S.health - r.health], ['Community', S.community - r.community]]
+    .filter(([, v]) => Math.abs(v) >= 0.5).map(([n, v], i) => `${i ? n.toLowerCase() : n} ${v > 0 ? 'up' : 'down'} ${Math.abs(Math.round(v))}`);
+  return [r.weeks > 1 ? `Weeks ${first} to ${S.turn} done.` : `Week ${S.turn} done.`,
+    dm > 0 ? `You earned ${fmt(dm)}.` : dm < 0 ? `You spent ${fmt(-dm)} more than you made.` : 'Your cash stayed the same.',
+    stats.length ? `${stats.join(', ')}.` : 'Your stats held steady.',
+    res.ev ? 'One event waiting.' : ''].filter(Boolean).join(' ');
+}
+// i43-a01: the week strip's numbers in words, for its screen-reader label
+function runWords(){
+  if (!S.run) return '';
+  const r = S.run, dm = S.money - r.money;
+  const ch = (n, v) => Math.abs(v) < 0.5 ? `${n} unchanged` : `${n} ${v > 0 ? 'up' : 'down'} ${Math.abs(Math.round(v))}`;
+  return `${r.weeks > 1 ? `Last ${r.weeks} weeks` : 'Last week'}: cash ${Math.abs(dm) < 0.5 ? 'unchanged' : `${dm > 0 ? 'up' : 'down'} ${fmt(Math.abs(dm))}`}, ${ch('happiness', S.happy - r.happy)}, ${ch('health', S.health - r.health)}, ${ch('community', S.community - r.community)}`;
 }
 // what the last End Week / skip did, counting events resolved since
 function runChips(){
