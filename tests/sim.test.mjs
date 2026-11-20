@@ -26,6 +26,8 @@ const results = [];
 const VARIANTS = (process.env.SIM_ONLY || process.env.SIM_LEN) && !process.env.SIM_VARIANTS ? [] : [
   ...['farm', 'grad', 'transplant', 'parent'].flatMap(bg => ['planner', 'careless'].map(strat => ({ len: 'two', strat, opts: { bg }, label: bg }))),
   ...['relaxed', 'hard'].flatMap(mode => ['planner', 'careless', 'idle'].map(strat => ({ len: 'two', strat, opts: { mode }, label: mode }))),
+  // i35-b06: 5-year games on Hard and the same dice on Normal, so good play on Hard can be held below Normal
+  ...['hard', 'normal'].flatMap(mode => ['planner', 'careless'].map(strat => ({ len: 'five', strat, opts: { mode }, label: `${mode}-5y`, n: strat === 'planner' ? 3 : 2 }))),
   // i75-b21: a broke start: -$5,000 and the farm hand job, played sensibly (the struggler) and idle, 8 games each
   ...['struggler', 'idle'].map(strat => ({ len: 'two', strat, opts: { debt: 5000 }, label: 'broke', n: 8 }))];
 // i20-b23: each life aim played well by a planner fitted to it (5-year games), and played idle (2-year games)
@@ -218,7 +220,7 @@ for (const len of Object.keys(GAMES)) for (const strat of STRATEGIES) {
   md += `| ${len} | ${strat} | ${rs.length} | ${med(sc)} | ${Math.min(...sc)}–${Math.max(...sc)} | ${money(med(rs.map(r => r.nw)))} | ${rs.filter(r => r.debt).length} |\n`;
 }
 if (VARIANTS.length) {
-  md += `\n**Backgrounds and modes** (2-year games):\n\n| Start or mode | Strategy | Games | Median score | Median net worth | Debt endings |\n|---|---|---|---|---|---|\n`;
+  md += `\n**Backgrounds and modes** (2-year games; 5y rows are 5-year games):\n\n| Start or mode | Strategy | Games | Median score | Median net worth | Debt endings |\n|---|---|---|---|---|---|\n`;
   for (const lab of [...new Set(VARIANTS.map(v => v.label))]) for (const strat of ['planner', 'careless', 'idle']) {
     const rs = results.filter(r => r.label === lab && r.strat === strat); if (!rs.length) continue;
     md += `| ${lab} | ${strat} | ${rs.length} | ${med(rs.map(r => r.score))} | ${money(med(rs.map(r => r.nw)))} | ${rs.filter(r => r.debt).length} |\n`;
@@ -321,6 +323,11 @@ if (VARIANTS.length) {
       if (inDebt > rs.length / 4 || nw < 0) bad.push(`${bg}: ${inDebt} of ${rs.length} in debt, median net worth ${money(nw)}`);
     }
     if (bad.length) throw new Error(bad.join('; '));
+  });
+  // i35-b06: Hard can't quietly turn back into Normal with a higher price tag
+  const hard5 = med(results.filter(r => r.label === 'hard-5y' && r.strat === 'planner').map(r => r.score)), norm5 = med(results.filter(r => r.label === 'normal-5y' && r.strat === 'planner').map(r => r.score));
+  await t.check(`good play on Hard scores at least 4 below Normal (5 years: Hard ${hard5}, Normal ${norm5})`, async () => {
+    if (hard5 > norm5 - 4) throw new Error(`Hard planner median ${hard5} is not 4+ below Normal ${norm5}`);
   });
   const broke = s => results.filter(r => r.label === 'broke' && r.strat === s), out = rs => rs.filter(r => r.climbed && !r.bk && !r.debt).length;
   const st = broke('struggler'), id = broke('idle');

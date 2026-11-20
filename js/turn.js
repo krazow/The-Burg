@@ -177,11 +177,13 @@ function animateStats(from){
 }
 // i2-a02: what a focus does to your stats this week; weekTick and the focus preview share it
 const FOCUS_K = 0.28;
+const rutHit = () => mode() === 'relaxed' ? 0.7 : 1.2;
+const comfortF = () => clamp((88 - S.happy) / 30, 0, 1);
 function focusFx(fk, eff, away){
   const f = FOCUS[fk] || FOCUS.rest;
   return Object.fromEntries(Object.entries(f.fx).map(([st,v]) => {
     let d = v * FOCUS_K * (v > 0 ? eff * (away ? (away === true ? TRIP_TIME : away) : 1) : 1);   // i74-a05: a van day passes a number
-    if (fk === 'rest' && v > 0) d *= clamp((86 - S[st]) / 20, 0, 1);   // rest tops out in the low 80s
+    if ((fk === 'rest' || fk === 'outdoors') && v > 0) d *= clamp((restTop() - S[st]) / 20, 0, 1);   // Rest and Get outside top out in the low 80s (i59-b02; the 70s on Hard, i35-b05)
     return [st, d];
   }));
 }
@@ -196,7 +198,7 @@ function focusPreview(fk){
   const away = !!(S.trip && CITIES[S.trip.city] && !tripIsCommute(S.trip.city));
   const fx = focusFx(fk, eff, away), cash = [];
   const rut = fk !== 'study' && n > RUT_WEEKS;
-  if (rut) fx.happy = (fx.happy || 0) - 1.2;
+  if (rut) fx.happy = (fx.happy || 0) - rutHit();
   if (f.payMult && j) cash.push(['overtime after taxes', payNow(j) * W * (f.payMult - 1) * (1 - K401[S.k401rate || 0]) * (1 - taxRate(payNow(j) * f.payMult))]);
   if (f.hustle) { if (truckSeason()) cash.push(['a food-truck weekend', truckPay()]); else { const g = currentGig(); cash.push([g.name, hustlePay(g, 0.5)]); } }
   if (f.cost) cash.push([f.name.toLowerCase(), -cost(f.cost) * W]);
@@ -207,7 +209,7 @@ function previewLine(fk){
   const p = focusPreview(fk), ic = { happy:'😊', health:'❤️', community:'🤝' };
   const st = Object.entries(p.fx).filter(([, v]) => Math.abs(v) >= 0.05).map(([k, v]) => `${ic[k]} ${v > 0 ? '+' : '−'}${Math.abs(v).toFixed(1)}`);
   const cash = p.cash.map(([l, v]) => `💵 ${v >= 0 ? '+' : '−'}${fmt(Math.abs(v)).replace('-', '')} ${l}`);
-  return `<div class="preview" id="fprev"><b>Next week:</b> ${[...st, ...cash].join(' · ') || 'no change'}${p.eff < 1 ? ` · <b>works at ${Math.round(p.eff * 100)}%</b> (${p.n} weeks in a row)` : ''}${p.rut ? ' · in a rut (−1.2 😊)' : ''}${p.away ? ` · your trip takes part of the week (${TRIP_TIME * 100}%)` : ''}
+  return `<div class="preview" id="fprev"><b>Next week:</b> ${[...st, ...cash].join(' · ') || 'no change'}${p.eff < 1 ? ` · <b>works at ${Math.round(p.eff * 100)}%</b> (${p.n} weeks in a row)` : ''}${p.rut ? ` · in a rut (−${rutHit()} 😊)` : ''}${p.away ? ` · your trip takes part of the week (${TRIP_TIME * 100}%)` : ''}
     <span class="s">On top of your job, home and bills. An estimate, before events.</span></div>`;
 }
 function showReview(rv){
@@ -400,20 +402,23 @@ function weekTick(auto){
   if (smokeRuleWeek()) why.push(pushingSmoke() ? '😷 Pushing through full shifts in the smoke: full pay, full wear, and a chance of a sick week.' : '😷 The smoke rule at work: shorter days, 10% less pay, half the wear on your body.');
   if (commuteOneWay() >= 20) why.push(`🛣️ ${commuteOneWay()} miles each way${carpooling() ? ' (the carpool helps)' : ''}: ▼ happiness.`);
   if (S.money < 0) why.push('💳 Being in debt: ▼ happiness.');
-  if (S.partner || S.dog || S.cat || kidsAtHome()) why.push(`🏡 ${[S.partner ? 'your partner' : '', S.dog ? 'your dog' : '', S.cat ? 'your cat' : '', kidsAtHome() ? 'kids at home' : ''].filter(Boolean).join(', ').replace(/^./, c => c.toUpperCase())}: ▲ happiness.`);
+  if (S.partner || S.dog || S.cat || kidsAtHome()) why.push(`🏡 ${[S.partner ? 'your partner' : '', S.dog ? 'your dog' : '', S.cat ? 'your cat' : '', kidsAtHome() ? 'kids at home' : ''].filter(Boolean).join(', ').replace(/^./, c => c.toUpperCase())}: ▲ happiness${comfortF() < 1 ? `, ${comfortF() <= 0 ? 'but not past the high 80s' : 'less as you near the high 80s'}` : ''}.`);
   if (S.health < 35 && (S.focus === 'work' || S.focus === 'hustle')) why.push('😮‍💨 Pushing through low health with extra work: ▼▼ health.');
   if (S.focus !== 'study' && S.streakF === S.focus && S.streakN + 1 > RUT_WEEKS) why.push(`🔁 In a rut (${S.streakN + 1} weeks of the same thing): ▼ happiness.`);
   why.push(`⚖️ Stats drift toward the middle: high ones slip, low ones recover a little${a >= 50 ? ', and health drifts lower with age' : ''}.`);
-  let dh = -0.5 + (52 - S.happy) * 0.06;
+  if (S.bgRest != null && S.turn < BG_REST_WEEKS) why.push('🏙️ New in town: community slips back toward 10 until your first year is up, unless you show up.');   // i37-b06
+  if (maxHealth(a) < 100 && S.health >= maxHealth(a) - 1) why.push(`❤️ At ${a}, health tops out at ${Math.round(maxHealth(a))}.`);   // i30-b03
+  let dh = -0.5 + (happyRest() - S.happy) * 0.06;   // i35-b05: Hard rests lower
   let dH = ((a < 30 ? 85 : a < 50 ? 78 : a < 65 ? 68 : a < 80 ? 55 : 42) - S.health) * 0.025;
-  let dc = (25 - S.community) * 0.05 * (S.community > 25 ? 1 - skillLv('people') * 0.15 : 1);   // people skill: community fades slower
+  const cRest = commRest();                        // i35-b05 Hard 20; i37-b06 a newcomer's first year 10
+  let dc = (cRest - S.community) * (S.community > 60 ? 0.1 : 0.05) * (S.community > cRest ? 1 - skillLv('people') * 0.15 : 1);   // people skill: community fades slower; i38-a08: harder above 60
   if (S.retired) dh += 1;
   else if (j) { dh -= j.stress + rungOf(j).stress; dH -= onLeave() ? 0 : j.wear * smokeWearMult(); dc += j.remote === 5 ? -0.4 : j.city==='waitsburg' ? 0.6 : j.city==='dayton' ? 0.2 : 0; }   // i3-a01 rung stress; i3-a13 no coworkers
   else dh -= 2;
   dh -= commuteOneWay() / 40 * driveDays() * (carpooling() ? 0.6 : 1);
   if (carpooling()) dc += 0.3;                    // riding with neighbors keeps you in the loop
   if (onBus()) dh -= 0.3;                          // i3-a14: longer days on the bus
-  dh += home.happy * 0.4 + (S.partner ? 0.6 : 0) + (S.dog ? 0.4 : 0) + (S.cat ? 0.2 : 0) + kidsHome * kidJoy() - (S.money < 0 ? 2 : 0);
+  dh += (home.happy * 0.4 + (S.partner ? 0.6 : 0) + (S.dog ? 0.4 : 0) + (S.cat ? 0.2 : 0) + kidsHome * kidJoy()) * comfortF() - (S.money < 0 ? 2 : 0);   // i30-b04: home comforts pull toward the mid-80s
   dc += kidsHome * 0.2;
   if (S.council) dc += 0.8;
   if (awaySouth()) { dh = Math.max(dh, 0.5); dH = Math.max(dH, 0.3); dc -= 1.2; }   // i3-a30: sun holds you up, but town forgets you a little
@@ -423,7 +428,8 @@ function weekTick(auto){
   if (S.health < 35 && (S.focus === 'work' || S.focus === 'hustle')) dH -= 3.2;
   if (mode() === 'relaxed') { if (dh < 0) dh *= 0.6; if (dH < 0) dH *= 0.6; if (dc < 0) dc *= 0.6; }
   if (mode() === 'hard') { if (dh < 0) dh *= 1.25; if (dH < 0) dH *= 1.25; if (dc < 0) dc *= 1.25; }
-    S.happy = clamp(S.happy + dh*m); S.health = clamp(S.health + dH*m); S.community = clamp(S.community + dc*m);
+  S.happy = clamp(S.happy + dh*m); S.health = clamp(S.health + dH*m); S.community = clamp(S.community + dc*m);
+  if (dH > 0) S.health = Math.min(S.health, Math.max(maxHealth(), S.health - dH*m));   // i30-b03: health recovers only up to its age cap
   // doing the same thing week after week loses its punch (classes excepted), and a long rut wears on you
   if (S.streakF === S.focus) S.streakN++; else { S.streakF = S.focus; S.streakN = 1; }
   S.recentF = [S.focus, ...(S.recentF || [])].slice(0, 4);
@@ -432,7 +438,7 @@ function weekTick(auto){
   if (skiWeek()) { adj({happy:2, health:1}); why.push('⛷️ A ski day at Bluewood on your season pass: ▲ happiness and health, no lift ticket.'); }   // i66-b16
   S.last.why = why;
   if (S.focus !== 'study' && S.streakN > RUT_WEEKS) {
-    adj({happy: -1.2});
+    adj({happy: -rutHit()});                       // i48-b02: softer on Relaxed
     if (S.streakN === RUT_WEEKS + 1) notes.push(`🔁 ${S.streakN - 1} weeks of "${f.name}" in a row. You're in a rut: try a different focus.`);
   }
   if (trip) adj(trip.fx);
