@@ -13,7 +13,7 @@ page.on('pageerror', e => errors.push(String(e)));
 await page.goto(srv.url, { waitUntil: 'load' });
 // test helpers inside the page: a fresh life with no random events, and one week played
 await page.evaluate(() => {
-  window.fresh = (len = 'two', extra = {}) => { newGame('Rules', len, 0); S.noEvents = true; Object.assign(S, extra); return S; };
+  window.fresh = (len = 'two', extra = {}) => { newGame('Rules', len, 0); S.diff = 'hard'; S.noEvents = true; Object.assign(S, extra); return S; };
   window.week = () => { const r = weekTick(false); return { ...r, lines: Object.fromEntries(S.last.lines) }; };
   window.weeks = n => { let r; for (let i = 0; i < n; i++) r = weekTick(false); return r; };
 });

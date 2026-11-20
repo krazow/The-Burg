@@ -771,7 +771,7 @@ const SEASON_GOALS = [
   { key:'winter', ic:'❄️', name:'Holiday food drive and shoveling for neighbors', months:[11,0,1], focus:['community','outdoors'], need:7, fx:{community:5, happy:4},
     what:'Show up for town or Get outside', done:'Every older neighbor on your street had a clear walk and a full pantry.' }
 ];
-const seasonGoal = () => SEASON_GOALS.find(g => g.months.includes(curMonth()));
+const seasonGoal = () => !on('town.seasonGoals') ? null : SEASON_GOALS.find(g => g.months.includes(curMonth()));
 // the season's year label, so winter's December–February counts as one season
 const seasonId = g => { const d = new Date(S.date), y = d.getFullYear(); return `${g.key}-${g.key === 'winter' && d.getMonth() <= 1 ? y - 1 : y}`; };
 function seasonWeek(notes){

@@ -318,7 +318,7 @@ const EVENTS = [
   // i75-a12: owners lose shingles, and every roofer in the valley is booked for weeks (windChoices, below)
   // i15-a03: storm season (October to March), once a year at most, with a choice to get ready (last in windChoices)
   { ic:'🌬️', title:'Windstorm', yr:1, w:2, when:m => inM(m,9,10,11,0,1,2),
-    text:() => `The forecast calls for a big wind tonight, and the old limb over the ${HOMES[S.home].own ? 'roof' : 'driveway'} is already creaking.${HOMES[S.home].own ? ' If the shingles go, every roofer in the valley will be booked.' : ''}`,
+    text:() => `The forecast calls for a big wind tonight, and the old limb over the ${HOMES[S.home].own ? 'roof' : 'driveway'} is already creaking.${HOMES[S.home].own && on('weather.homeDamage') ? ' If the shingles go, every roofer in the valley will be booked.' : ''}`,
     choices:() => windChoices() },
   { ic:'🧅', title:'Walla Walla Sweets are in', yr:1, w:3, when:m => inM(m,5,6),
     text:'The sweet onion harvest is here.',
@@ -481,7 +481,7 @@ function roadTown(){
 const roadName = () => CITIES[roadTown()].name;
 // the ski season that starts each October (December to March count with the October before)
 const skiSeason = () => { const d = new Date(S.date); return d.getMonth() >= 9 ? d.getFullYear() : d.getFullYear() - 1; };
-const skiPass = () => S.skiPass === skiSeason();
+const skiPass = () => on('trips.ski') && S.skiPass === skiSeason();
 // i66-b16: with a pass, a December-March Get outside week is a ski day at Bluewood
 const skiWeek = () => S.focus === 'outdoors' && skiPass() && [11, 0, 1, 2].includes(curMonth()) && S.health >= SKI_HEALTH;
 // J29: better coverage halves doctor and urgent-care bills from events until next January
@@ -1107,14 +1107,14 @@ const smokeYear = () => wxSmoke();
 const heatYear = () => wxHeat();
 const SMOKE_RULE_MONTHS = [6, 7];                     // July and August
 const outdoorJob = () => working() && !!job().outdoor;
-const smokeRuleWeek = () => SMOKE_RULE_MONTHS.includes(curMonth()) && outdoorJob() && smokeYear();   // cheap checks first: no weather roll for others
+const smokeRuleWeek = () => on('weather.smoke') && SMOKE_RULE_MONTHS.includes(curMonth()) && outdoorJob() && smokeYear();   // cheap checks first: no weather roll for others
 const pushingSmoke = () => !!(S.smokeRule && S.smokeRule.y === thisYear() && S.smokeRule.push);
 // i75-a07: in a smoke week outdoor crews work shorter days (pay ×0.9, wear ×0.5), unless you chose to push through
 const SMOKE_PAY = 0.9, SMOKE_WEAR = 0.5, SMOKE_SICK = 0.08;
 const smokePayMult = () => smokeRuleWeek() && !pushingSmoke() ? SMOKE_PAY : 1;
 const smokeWearMult = () => smokeRuleWeek() && !pushingSmoke() ? SMOKE_WEAR : 1;
 const airFilterOn = () => S.airFilter === thisYear();           // i75-a08: good for this year's smoke
-const isCaptain = () => !!S.captain;                            // i75-a33
+const isCaptain = () => !!S.captain && on('weather.neighbors');   // i75-a33
 const peopleHome = () => !!(S.partner || kidsAtHome() || S.community >= 30);
 const FLOOD_PROOF_OFF = 0.8;                                    // i75-a14: a raised furnace cuts flood cleanup 80%
 const ROOF_RUSH = 0.3, ROOF_WAIT = [4, 8], ROOF_LEAK = 0.05;    // i75-a12
@@ -1129,7 +1129,7 @@ function roofWaitList(c){
 }
 // i75-a12/a13: the windstorm's choices. Owners pick how the roof gets fixed; renters lose a day of power.
 function windChoices(){
-  const own = !!HOMES[S.home].own;
+  const own = !!HOMES[S.home].own && on('weather.homeDamage');   // to-do 2: below Hard, the wind never damages your home
   const plan = isCaptain() ? [{label:own ? 'Run the block\'s storm plan, and get on a roofer\'s list' : 'Run the block\'s storm plan (an evening)',
     go:() => runPlan('the windstorm') + (own ? ' ' + roofWaitList(roofCost()) : '')}] : [];
   if (!own) return [...outageChoices('Check the damage', () => { if (S.generator) return 'Power was out a day, but your generator kept the fridge cold.'; adj({money:-cost(60), happy:-1}); return 'Power was out a day and the fridge food spoiled.'; }, 'the windstorm'),
@@ -1155,6 +1155,7 @@ const roofCost = () => Math.round(cost(ri(1000, 4000)) * (1 - skillLv('handy') *
 // i75-a19/a26/a33: an outage's choices. The outage's own cost (base) always happens; remote workers also decide about the
 // work day, people at home can make an evening of it, and a block captain runs the plan.
 function outageChoices(label, base, what){
+  if (!on('weather.neighbors')) return [{label, go:base}];      // to-do 2: below Hard, an outage is just the outage
   const remote = working() && !!job().remote, g = Math.round(tripGas('wallawalla')), day = Math.round(dayPay()), list = [];
   const both = extra => () => `${base()} ${extra()}`;
   if (isCaptain()) list.push({label:'Run the block\'s storm plan (an evening)', go:both(() => runPlan(what))});
@@ -1250,7 +1251,7 @@ function weatherLines(lines, notes){
     }
   }
   // i75-a21: a snowy week (about one in three December to March; half in a hard winter, one in seven in a mild one)
-  if (S.walk && inM(curMonth(), 11, 0, 1, 2) && chance(wxHard() ? 0.5 : wxMild() ? 0.15 : 0.35)) {
+  if (S.walk && on('town.walk') && inM(curMonth(), 11, 0, 1, 2) && chance(wxHard() ? 0.5 : wxMild() ? 0.15 : 0.35)) {
     adj({health:isCaptain() ? -0.5 : -1, community:1});
     if (S.walkWinter !== winterYear()) { S.walkWinter = winterYear(); S.walkWinters = (S.walkWinters || 0) + 1;
       notes.push(`❄️ First snow of the winter: you cleared Edna's walk next door before breakfast${isCaptain() ? ', and the block\'s shovel crew took the rest' : ''}.`); }

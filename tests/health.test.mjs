@@ -10,7 +10,7 @@ const errors = [];
 page.on('pageerror', e => errors.push(String(e)));
 await page.goto(srv.url, { waitUntil: 'load' });
 await page.evaluate(() => {
-  window.fresh = (len = 'two', extra = {}) => { newGame('Body', len, 0); S.noEvents = true; Object.assign(S, extra); return S; };
+  window.fresh = (len = 'two', extra = {}) => { newGame('Body', len, 0); S.diff = 'hard'; S.noEvents = true; Object.assign(S, extra); return S; };
   window.week = () => { const r = weekTick(false); return { ...r, lines: Object.fromEntries(S.last.lines) }; };
   window.weeks = n => { let r; for (let i = 0; i < n; i++) r = weekTick(false); return r; };
   window.E = t => EVENTS.find(e => e.title === t) || PLAN_DUE.find(e => e.title === t);
