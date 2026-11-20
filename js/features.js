@@ -562,7 +562,7 @@ const MONEY_STATE = () => ({ ins:{ auto:'full', renters:true, ded:1000, dental:f
 function insParts(){
   const i = S.ins || {}, own = !!HOMES[S.home].own, ded = INS_DED[i.ded] != null ? i.ded : 1000;
   return [['📱 Phone', INS_PHONE], [i.auto === 'liab' ? '🛻 Vehicle: liability only' : '🛻 Vehicle: full coverage', INS_AUTO[i.auto === 'liab' ? 'liab' : 'full']],
-    own ? [`🏡 Homeowners ($${ded.toLocaleString()} deductible)`, (INS_HOME[S.home] ?? INS_HOME_DEF) + INS_DED[ded]] : [i.renters === false ? '🏠 No renters insurance' : '🏠 Renters insurance', i.renters === false ? 0 : INS_RENTERS], ...insExtras(),   // i74-a04/a08
+    own ? [`🏡 Homeowners ($${ded.toLocaleString('en-US')} deductible)`, (INS_HOME[S.home] ?? INS_HOME_DEF) + INS_DED[ded]] : [i.renters === false ? '🏠 No renters insurance' : '🏠 Renters insurance', i.renters === false ? 0 : INS_RENTERS], ...insExtras(),   // i74-a04/a08
     ...(own && i.wind === 'pct' ? [[`🌬️ Wind and hail: ${WIND_PCT * 100}% deductible`, -windSave()]] : []),   // i75-a13
     ...(S.ticketUntil > S.turn ? [['🚓 A speeding ticket on your record', TICKET_INS]] : [])];   // i26-b06
 }
@@ -586,7 +586,7 @@ function insSheet(focusSel){
   sheet(`<h2>🛡️ Insurance</h2><p class="muted">Through Wheatland Mutual on Main Street. Cheaper coverage saves a little every month, until something goes wrong.</p>
     <h3>🛻 Your vehicle</h3><div class="maptog" role="group" aria-label="Vehicle coverage">${opt('auto', 'full', `Full ${fmtc(INS_AUTO.full)}/mo`)}${opt('auto', 'liab', `Liability ${fmtc(INS_AUTO.liab)}/mo`)}</div>
     <p class="muted">Full coverage pays for crashes, deer, ditches and theft after a ${fmtc(AUTO_DED)} deductible. Liability only covers the other driver: your own repairs are on you.</p>
-    ${own ? `<h3>🏡 Homeowners deductible</h3><div class="maptog" role="group" aria-label="Homeowners deductible">${[500, 1000, 2500].map(d => opt('ded', d, `$${d.toLocaleString()}`)).join('')}</div>
+    ${own ? `<h3>🏡 Homeowners deductible</h3><div class="maptog" role="group" aria-label="Homeowners deductible">${[500, 1000, 2500].map(d => opt('ded', d, `$${d.toLocaleString('en-US')}`)).join('')}</div>
       <p class="muted">Storms, fires and break-ins: you pay up to the deductible, insurance pays the rest. A $500 deductible costs ${fmtc(INS_DED[500])} more a month; $2,500 saves ${fmtc(-INS_DED[2500])}.</p>
       <h3>🌬️ Wind and hail</h3><div class="maptog" role="group" aria-label="Wind and hail deductible">${opt('wind', 'flat', 'Same deductible')}${opt('wind', 'pct', `${WIND_PCT * 100}% of the home, ${fmtc(windSave())}/mo less`)}</div>
       <p class="muted">On the cheaper plan, a windstorm or hail claim costs you up to ${WIND_PCT * 100}% of what the house is worth: <b>${fmt(windDed())}</b> today, instead of your regular deductible. Fires and break-ins keep the regular one.</p>`
