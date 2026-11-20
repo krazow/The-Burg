@@ -8,8 +8,9 @@ import fs from 'node:fs';
 import { serve, launch, runner, seedScript } from './helpers.mjs';
 
 const SCALE = Number(process.env.SIM_SCALE || (process.env.GITHUB_EVENT_NAME === 'pull_request' ? 0.5 : 1));
-const FILTERED = !!(process.env.SIM_ONLY || process.env.SIM_LEN || process.env.SIM_VARIANTS);   // a tuning run: no balance ceilings
-const CEILING = { careless: 62, idle: 52 };                     // the targets (60 and 50) plus a small margin for dice
+const FILTERED = !!(process.env.SIM_ONLY || process.env.SIM_LEN || process.env.SIM_VARIANTS || process.env.SIM_AIMS);   // a tuning run: no balance ceilings
+const CEILING = { careless: 62, idle: 52 };
+const AIM_SPREAD = 5;                                            // i20-b23: fitted aim medians must sit within 5 points                     // the targets (60 and 50) plus a small margin for dice
 let GAMES = { half: 6, two: 4, five: 2, life: 1 };              // per strategy, times SIM_SCALE
 let STRATEGIES = ['planner', 'homebody', 'commuter', 'student', 'hustler', 'careless', 'idle', 'tripper', 'roadie', 'rotation'];
 // for tuning: SIM_ONLY=commuter,hustler and/or SIM_LEN=five,two run a subset (CI always runs everything)
@@ -27,9 +28,15 @@ const VARIANTS = (process.env.SIM_ONLY || process.env.SIM_LEN) && !process.env.S
   ...['relaxed', 'hard'].flatMap(mode => ['planner', 'careless', 'idle'].map(strat => ({ len: 'two', strat, opts: { mode }, label: mode }))),
   // i75-b21: a broke start: -$5,000 and the farm hand job, played sensibly (the struggler) and idle, 8 games each
   ...['struggler', 'idle'].map(strat => ({ len: 'two', strat, opts: { debt: 5000 }, label: 'broke', n: 8 }))];
+// i20-b23: each life aim played well by a planner fitted to it (5-year games), and played idle (2-year games)
+const AIM_KEYS = ['all', 'content', 'roots', 'adventure', 'legacy'];
+const AIM_RUNS = process.env.SIM_ONLY && !process.env.SIM_AIMS ? [] : [
+  ...AIM_KEYS.map(aim => ({ len: 'five', strat: 'planner', opts: { aim }, label: `aim-${aim}`, n: 4 })),
+  ...AIM_KEYS.map(aim => ({ len: 'two', strat: 'idle', opts: { aim }, label: `aim-${aim}`, n: 3 }))];
+if (process.env.SIM_AIMS) { STRATEGIES.length = 0; STRATEGIES.push('planner', 'idle'); for (const k of Object.keys(GAMES)) delete GAMES[k]; VARIANTS.length = 0; }
 const JOBS_LIST = [];
 for (const len of Object.keys(GAMES)) for (const strat of STRATEGIES) for (let g = 0; g < Math.max(1, Math.round(GAMES[len] * SCALE)); g++) JOBS_LIST.push({ len, strat, g, opts: {}, label: 'normal' });
-for (const v of VARIANTS) for (let g = 0; g < (v.n || 4); g++) JOBS_LIST.push({ ...v, g });
+for (const v of [...VARIANTS, ...AIM_RUNS]) for (let g = 0; g < (v.n || 4); g++) JOBS_LIST.push({ ...v, g });
 for (const { len, strat, g, opts, label } of JOBS_LIST) {
   {
     {
@@ -43,7 +50,7 @@ for (const { len, strat, g, opts, label } of JOBS_LIST) {
       const r = await page.evaluate(([len, strat, opts]) => {
         // ---- the bot, running inside the game page ----
         render = () => {}; toast = () => {};   // skip redrawing the screen: just the rules
-        const debt = opts.debt; delete opts.debt;
+        const debt = opts.debt; delete opts.debt; const aimK = opts.aim || 'all', aimRun = !!opts.aim;
         newGame('Bot', len, 0, opts);
         if (debt) { S.money = -debt; apply('farmhand'); if (!S.jobId) startJob('farmhand'); }   // i75-b21: a fresh start, broke
         S.k401rate = { planner: 2, homebody: 1, commuter: 1, student: 1, rotation: 1 }[strat] || 0;
@@ -74,13 +81,24 @@ for (const { len, strat, g, opts, label } of JOBS_LIST) {
           else if (S.health < 45 || S.happy < 40) f = S.health < S.happy ? 'rest' : 'outdoors';
           else if (strat === 'struggler') f = S.edu < 1 ? 'study' : ['work', 'community', 'rest', 'work'][weeks % 4];   // classes until a certificate, then steady work
           else if (strat === 'student' && S.edu < 3) f = 'study';
-          else if (strat === 'planner') f = S.edu < 2 && LENGTHS[S.len].turns > 26 ? 'study' : ['work', 'community', 'outdoors', 'work', 'community', 'rest'][weeks % 6];
+          else if (strat === 'planner' && S.edu < 2 && LENGTHS[S.len].turns > 26) f = 'study';
+          else if (strat === 'planner' && aimRun) f = ['work', 'community', 'outdoors', 'work', 'outdoors', 'rest'][weeks % 6];   // i20-b23: every aim bot shares one balanced week; only the aim's extras differ
+          else if (strat === 'planner') f = ['work', 'community', 'outdoors', 'work', 'community', 'rest'][weeks % 6];
           else if (strat === 'hustler') f = weeks % 3 ? 'hustle' : (job() ? 'work' : 'rest');
           else if (strat === 'commuter') f = weeks % 4 === 3 ? 'community' : (job() && !S.retired ? 'work' : 'rest');
           else if (strat === 'roadie') f = ['work', 'community', 'outdoors', 'rest'][weeks % 4];   // a long commute, but a balanced week
           else f = ['community', 'outdoors', 'rest', 'community'][weeks % 4];
           S.focus = opts.includes(f) ? f : 'rest';
           if (!['careless', 'idle'].includes(strat) && canCarpool()) { S.carpool = true; S.carpoolJob = S.jobId; }   // sensible players share the drive
+          if (strat === 'planner' && aimK === 'roots' && !HOMES[S.home].own && S.money > homeDown('fixer') + cost(4000)) { moveHome('fixer'); const y = document.querySelector('#y'); if (y) y.click(); }
+          if (strat === 'planner' && aimK === 'adventure' && weeks % 5 === 2 && S.money > 800) {   // a trip somewhere every 5 weeks, new places in town
+            const towns = ['dayton', 'wallawalla', 'pasco', 'kennewick', 'richland'], town = towns[Math.floor(weeks / 5) % towns.length];
+            planTrip(town, townStops(town).filter(s => !stopBlocked(s)).slice(0, 1).map(s => s.id));
+          }
+          if (strat === 'planner' && (aimK === 'adventure' || aimK === 'roots') && S.money > 1000) {
+            const seen = (S.out && S.out.last) || {}, pl = PLACES.filter(p => aimK === 'roots' || !(p.id in seen));
+            const p = pl[weeks % Math.max(1, pl.length)]; if (p) visit(p.id, p.acts[0].id);
+          }
           if (!S.biz && strat === 'planner' && S.money > 40000) startBiz('wheat');            // businesses: a planner leases wheat ground (and renews it),
           if (strat === 'planner' && leaseDue()) renewLease();
           if (strat === 'planner' && S.biz && S.biz.type === 'wheat') S.biz.ins = true;          // i75-a31: the planner gets ready for weather (crop insurance; prep choices come first in weather cards)
@@ -140,7 +158,7 @@ for (const { len, strat, g, opts, label } of JOBS_LIST) {
           if (bad.length) break;
         }
         const sc = lifeScore();
-        return { weeks, ending, bad, events, score: sc.score, parts: sc.parts, nw: Math.round(sc.real), age: age(), edu: S.edu, kids: S.kids.length,
+        return { weeks, ending, bad, events, score: sc.score, parts: sc.parts, cardAvg: sc.cardAvg, snap: sc.snap, aimPart: Math.round(sc.aim), drag: sc.drag, good: S.goodWeeks, nw: Math.round(sc.real), age: age(), edu: S.edu, kids: S.kids.length,
                  debt: /debt/.test(ending || ''), endedOk: !!ending, cash: Math.round(S.money), bk: S.bk != null, climbed, nw65,
                  src: Object.fromEntries(Object.entries(src).map(([k, v]) => [k, Math.round(v)])),
                  choiceFx, wxCost: Math.round((S.wxLife || {}).cost || 0), wxSaved: Math.round((S.wxLife || {}).saved || 0), yrs: Math.max(0.5, S.turn / 52) };
@@ -222,6 +240,14 @@ if (lifeRs.length) {
     if (a > 0 && b > a * 1.5) md += `\n> ⚠️ The ${strat} bot's net worth grows ${Math.round((b / a - 1) * 100)}% after 65: retirees shouldn't get rich just by living long.\n`;
   }
 }
+// i20-b23: no aim beats another
+let aimMeds = null;
+if (AIM_RUNS.length) {
+  const aimRs = (k, st) => results.filter(r => r.label === `aim-${k}` && r.strat === st);
+  aimMeds = Object.fromEntries(AIM_KEYS.map(k => [k, { fit: med(aimRs(k, 'planner').map(r => r.score)), idle: med(aimRs(k, 'idle').map(r => r.score)) }]));
+  md += `\n**Life aims** (i20-b23): a planner fitted to each aim (5-year games) and idle play (2-year games):\n\n| Aim | Fitted median | Idle median |\n|---|---|---|\n` +
+    AIM_KEYS.map(k => `| ${k} | ${aimMeds[k].fit} | ${aimMeds[k].idle} |`).join('\n') + '\n';
+}
 const careless = med(results.filter(r => r.label === 'normal' && r.strat === 'careless').map(r => r.score));
 const idle = med(results.filter(r => r.label === 'normal' && r.strat === 'idle').map(r => r.score));
 const planner = med(results.filter(r => r.label === 'normal' && r.strat === 'planner' && (r.len === 'five' || r.len === 'life')).map(r => r.score));
@@ -237,6 +263,15 @@ if (!FILTERED) {
   });
   await t.check(`doing nothing scores ${CEILING.idle} or below (median ${idle})`, async () => {
     if (idle > CEILING.idle) throw new Error(`idle median ${idle} is above ${CEILING.idle}`);
+  });
+}
+if (aimMeds) {
+  const fit = AIM_KEYS.map(k => aimMeds[k].fit), spread = Math.max(...fit) - Math.min(...fit), idleTop = Math.max(...AIM_KEYS.map(k => aimMeds[k].idle));
+  await t.check(`no life aim beats another: fitted medians within ${AIM_SPREAD} points (${AIM_KEYS.map(k => `${k} ${aimMeds[k].fit}`).join(', ')})`, async () => {
+    if (spread > AIM_SPREAD) throw new Error(`aim medians spread ${spread} points: ${JSON.stringify(aimMeds)}`);
+  });
+  await t.check(`idle play scores 50 or below with every aim (highest ${idleTop})`, async () => {
+    if (idleTop > 50) throw new Error(`idle play with an aim scored ${idleTop}: ${JSON.stringify(aimMeds)}`);
   });
 }
 // i75-b24: every start must be winnable: a planner may end in debt in at most 1 of 4 games, with a median net worth of $0 or more
@@ -260,7 +295,8 @@ if (VARIANTS.length) {
     if (med(st.map(r => r.score)) <= med(id.map(r => r.score))) throw new Error('sensible play from a broke start should score better than idle play');
   });
 }
-if (process.env.SIM_DEBUG) for (const len of Object.keys(GAMES)) for (const st of STRATEGIES) { const rs = results.filter(r => r.len===len && r.strat===st); const avg = k => Math.round(rs.reduce((a,r)=>a+r.parts[k],0)/rs.length); console.log(len.padEnd(5), st.padEnd(9), 'happy', avg('happy'), 'health', avg('health'), 'comm', avg('community'), 'wealth', avg('wealth'), 'kids', rs.map(r=>r.kids).join(',')); }
+if (process.env.SIM_DEBUG) for (const lab of [...new Set(results.map(r => r.label))].filter(l => l.startsWith('aim-'))) for (const st of ['planner', 'idle']) { const rs = results.filter(r => r.label === lab && r.strat === st); if (rs.length) console.log(lab.padEnd(14), st.padEnd(8), 'scores', rs.map(r => r.score).join(','), 'aim part', rs.map(r => r.aimPart).join(','), 'parts', JSON.stringify(rs[0].parts), 'cards', rs[0].cardAvg, 'end', rs[0].snap, 'nw', rs.map(r => r.nw).join(',')); }
+if (process.env.SIM_DEBUG) for (const len of Object.keys(GAMES)) for (const st of STRATEGIES) { const rs = results.filter(r => r.len===len && r.strat===st); const avg = k => Math.round(rs.reduce((a,r)=>a+(k in r.parts ? r.parts[k] : r[k] || 0),0)/rs.length); console.log(len.padEnd(5), st.padEnd(9), 'happy', avg('happy'), 'health', avg('health'), 'comm', avg('community'), 'wealth', avg('wealth'), 'cards', avg('cardAvg'), 'end', avg('snap'), 'drag', avg('drag'), 'good', avg('good'), 'kids', rs.map(r=>r.kids).join(',')); }
 // ---- i66-b27: strictly better choices (information only) ----
 // Every event with 2+ choices was replayed choice by choice from a copy of the week. A choice that beats another on
 // money, happiness, health and community (at least as good on all four, better on one) in 95% of its fires

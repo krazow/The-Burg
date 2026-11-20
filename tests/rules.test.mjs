@@ -88,12 +88,12 @@ await t.check('retirement pays Social Security and draws about 4% a year from th
 
 await t.check('the Life Score maps each part to 0–100 and weights 30/20/20/30', async () => {
   const r = await ev(() => { fresh('two');
-    S.monthsPlayed = 10; S.happySum = 600; S.healthSum = 675; S.community = 50;
+    S.monthsPlayed = 10; S.happySum = 600; S.healthSum = 675; S.commSum = 500; S.community = 50;
     S.money = 45000 - S.carValue; S.equity = 0; S.k401 = 0;
     const mid = lifeScore();
-    S.happySum = 1000; S.healthSum = 1000; S.community = 100; S.money = 1e7;
+    S.happySum = 1000; S.healthSum = 1000; S.commSum = 1000; S.community = 100; S.money = 1e7;
     const top = lifeScore();
-    S.happySum = 0.001; S.healthSum = 0.001; S.community = 0; S.money = -1e5;
+    S.happySum = 0.001; S.healthSum = 0.001; S.commSum = 0; S.community = 0; S.money = -1e5;
     const low = lifeScore();
     return { mid, top, low };
   });
@@ -2384,6 +2384,110 @@ await t.check('i71-b04: promotion stress counts in weeks with events off', async
   const r = await ev(() => { const run = promo => { fresh('two', { jobId: 'farmhand', focus: 'rest', happy: 60 }); if (promo) S.promo = { job: 'farmhand', n: 2 }; weeks(1); return S.happy; };
     return { base: run(false), promo: run(true) }; });
   assert(near(r.base - r.promo, 0.6 * W, 0.01), JSON.stringify(r));
+});
+
+// ---- wave 1: Life Score formula and aims ----
+await t.check('i5-a02: Life Score so far is right in the first month, with a friendly title until week 4', async () => {
+  const r = await ev(() => { fresh('two', { jobId: 'farmhand' }); tab = 'home';
+    const s0 = lifeScore(); const a = scoreSnap(); week(); const s1 = lifeScore(), b = scoreSnap(); render(); const btn = document.querySelector('#scorenow').textContent;
+    weeks(4); render(); const btn4 = document.querySelector('#scorenow').textContent;
+    return { s0: s0.score, s1: s1.score, h0: a.avgH, h1: b.avgH, happy: S.happy, btn, btn4, title: lifeScore().title }; });
+  assert(Math.abs(r.s0 - r.s1) <= 4, `the score shouldn't crash after one week: ${r.s0} → ${r.s1}`);
+  assert(r.h1 > 40 && r.h1 < 80, `average happiness after a week ${r.h1}`);
+  assert(/Just getting started/.test(r.btn) && !/Just getting started/.test(r.btn4) && r.btn4.includes(r.title), `${r.btn} / ${r.btn4}`);
+});
+
+await t.check('i15-a01: community counts as the life average, so a late spike barely moves it', async () => {
+  const r = await ev(() => { fresh('two'); S.monthsPlayed = 20; S.happySum = 1200; S.healthSum = 1350; S.commSum = 600; S.community = 30;
+    const a = lifeScore(); S.community = 100; const b = lifeScore(); return { a: a.parts.community, b: b.parts.community, avgC: b.avgC }; });
+  assert(r.a === r.b && r.avgC === 30, JSON.stringify(r));
+  const t = await ev(() => { fresh('two', { focus: 'rest' }); weeks(2); return { sum: S.commSum, mp: S.monthsPlayed }; });
+  assert(t.sum > 0 && near(t.mp, 2 * W), JSON.stringify(t));
+});
+
+await t.check('i20-b13: 85% the weighted parts + 15% the weakest; a steady middling life lands where it did', async () => {
+  const r = await ev(() => { fresh('two'); S.monthsPlayed = 10; S.commSum = 500; S.money = 45000 - S.carValue; S.equity = 0; S.k401 = 0;
+    S.happySum = 600; S.healthSum = 675; const even = lifeScore();
+    S.happySum = 900; S.healthSum = 400 + 0.001; const lop = lifeScore(), sn = scoreSnap();
+    showScoreNow(); const txt = document.querySelector('#sheet').textContent; closeSheet();
+    return { even: even.score, lop: lop.score, weighted: sn.weighted, weakest: sn.weakest, base: sn.base, txt }; });
+  assert(r.even === 50, `steady middling life ${r.even}`);
+  assert(near(r.base, r.weighted * 0.85 + r.weakest * 0.15, 1e-9) && r.weakest < 0.01 && r.lop < Math.round(r.weighted), JSON.stringify(r).slice(0, 300));
+  assert(/Weakest part: Health/.test(r.txt), 'the sheet names the weakest part');
+});
+
+await t.check('i20-b14: report cards are kept, and the final score is 60% their average + 40% the ending', async () => {
+  const r = await ev(() => { fresh('two', { jobId: 'farmhand' }); weeks(26); const sc = lifeScore(), n = S.cardCount, sum = S.cardSum;
+    const log = S.log.filter(e => /Report card/.test(e.m)).map(e => e.m); S.over = false; finish('Test.'); const txt = document.querySelector('#sheet').textContent; closeSheet();
+    return { n, sum, score: sc.score, cardAvg: sc.cardAvg, snap: scoreSnap().base, raw: sum / n, log, txt }; });
+  assert(r.n === 2 && r.log.length === 2 && /this quarter/.test(r.log[0]), JSON.stringify(r.log));
+  assert(r.score === Math.round(r.raw * 0.6 + r.snap * 0.4), `blend ${r.score} vs ${r.raw} / ${r.snap}`);
+  assert(/Report-card average \d+, ending \d+/.test(r.txt), 'the end sheet shows both');
+});
+
+await t.check('i62-a04, i63-a01, i63-a02: debt pulls the wealth part below 0 against $90,000, floored at -33 (-20 Relaxed); student loans count at half', async () => {
+  const r = await ev(() => { const at = (len, md, money, extra = {}) => { newGame('D', len, 0, { mode: md }); S.noEvents = true; Object.assign(S, extra); S.money = money - S.carValue; return scoreSnap().wealth; };
+    return { two: at('two', 'normal', -25000), five: at('five', 'normal', -25000), floor: at('two', 'normal', -90000), relaxed: at('two', 'relaxed', -90000), plus: at('two', 'normal', 45000),
+      grad: (() => { newGame('G', 'two', 0, { bg: 'grad' }); return { real: scoredReal(), nw: netWorth(), sl: S.sloanLeft * S.sloanPay * 0.85 }; })() }; });
+  assert(near(r.two, -25000 / 900, 0.001) && near(r.five, r.two, 0.001), `-$25,000: ${r.two} (2y) ${r.five} (5y)`);
+  assert(r.floor === -33 && r.relaxed === -20 && near(r.plus, 50, 0.01), JSON.stringify(r));
+  assert(near(r.grad.real, r.grad.nw + r.grad.sl / 2, 0.001), JSON.stringify(r.grad));
+});
+
+await t.check('i63-a03, i63-a04: weeks below -$1,000 drag the score up to 6 points (3 Relaxed); climbing out cuts it to a third', async () => {
+  const r = await ev(() => { fresh('two'); S.turn = 100; S.deepWeeks = 100; S.money = -5000; const deep = debtDrag();
+    S.money = 100; S.equity = 50000; const out = debtDrag(); S.mode = 'relaxed'; S.money = -5000; S.equity = 0; const rel = debtDrag();
+    fresh('two', { jobId: null, money: -2000 }); weeks(3); const n = S.deepWeeks, low = S.debtLow;
+    return { deep, out, rel, n, low, sc: lifeScore().drag }; });
+  assert(r.deep === 6 && r.out === 2 && r.rel === 3, JSON.stringify(r));
+  assert(r.n === 3 && r.low < -2000, JSON.stringify(r));
+});
+
+await t.check('i63-a10: the score sheet shows a red Debt line with what climbing out wins back, only after debt', async () => {
+  const r = await ev(() => { fresh('two', { jobId: 'farmhand' }); weeks(8); showScoreNow(); const clean = document.querySelector('#sheet').textContent; closeSheet();
+    S.money = -30000; S.deepWeeks = 8; showScoreNow(); const debt = document.querySelector('#sheet .kv.debt'); const txt = document.querySelector('#sheet').textContent; closeSheet();
+    return { clean, debt: debt && debt.textContent, tip: /Debt is costing you the most/.test(txt), dc: debtCost() }; });
+  assert(!/💳 Debt/.test(r.clean), 'no debt line for a careful life');
+  assert(r.debt && /Debt is costing you \d+ points?\./.test(r.debt) && /Back to \$0 by the end wins back \d+/.test(r.debt) && r.dc.cost >= r.dc.back && r.dc.back > 0, JSON.stringify(r));
+  assert(r.tip, 'the tip talks about debt when it costs the most');
+});
+
+await t.check('i63-a20: a life that climbed out says "Came back from $X in debt." on the end sheet and in records', async () => {
+  const r = await ev(() => { localStorage.clear(); fresh('two', { jobId: 'farmhand' }); S.debtLow = -11437; S.money = 5000; const line = comebackLine();
+    finish('Test.'); const txt = document.querySelector('#sheet').textContent; closeSheet(); recordsSheet(); const rec = document.querySelector('#sheet').textContent; closeSheet();
+    fresh('two'); S.debtLow = -11437; S.money = -50; const still = comebackLine(); return { line, txt, rec, still }; });
+  assert(r.line === 'Came back from $11,400 in debt.' && r.txt.includes(r.line) && r.rec.includes(r.line) && r.still === '', JSON.stringify(r).slice(0, 300));
+});
+
+await t.check('i20-b01: a life aim moves 15 of net worth\'s 30 points to its measure; All-around keeps the old weights', async () => {
+  const r = await ev(() => { const at = aim => { newGame('A', 'two', 0, { aim }); S.noEvents = true; const s = scoreSnap(); return { aim: S.aim, w: s.w }; };
+    const all = at('all'), roots = at('roots'), bad = at('nope');
+    newGame('A', 'two', 0, { aim: 'content' }); S.noEvents = true; S.focus = 'rest'; weeks(10); S.over = false; finish('Test.'); const txt = document.querySelector('#sheet').textContent; closeSheet();
+    return { all, roots, bad, txt, keys: Object.keys(AIMS) }; });
+  assert(r.all.w.wealth === 30 && r.all.w.aim === 0 && r.roots.aim === 'roots' && r.roots.w.wealth === 15 && r.roots.w.aim === 15 && r.bad.aim === 'all', JSON.stringify(r).slice(0, 300));
+  assert(r.keys.join() === 'all,content,roots,adventure,legacy' && /Contentment/.test(r.txt), 'aims and end sheet');
+});
+
+await t.check('i20-b05: good weeks count happiness and health 60+ with cash at $0 or more, and the end screen shows them', async () => {
+  const r = await ev(() => { fresh('two', { happy: 90, health: 90, money: 5000 }); weeks(3); const g = S.goodWeeks;
+    S.money = -500; weeks(2); const g2 = S.goodWeeks; S.money = 5000; S.happy = 30; weeks(1); const g3 = S.goodWeeks;
+    finish('Test.'); const txt = document.querySelector('#sheet').textContent; closeSheet(); return { g, g2, g3, txt }; });
+  assert(r.g === 3 && r.g2 === 3 && r.g3 === 3, JSON.stringify(r).slice(0, 200));
+  assert(/3 of 6 weeks were good ones/.test(r.txt), 'end sheet line');
+});
+
+await t.check('i20-b06: the aim changes once a year, counts by the weeks held, and the Life tab says when it can change next', async () => {
+  const r = await ev(() => { fresh('two', { aim: 'content' }); S.aimAt = 0; weeks(10); const early = setAim('roots'); tab = 'life'; render(); const card = document.querySelector('#aimcard').textContent;
+    weeks(42); const ok = setAim('roots'); weeks(52); const sh = aimShares(); return { early, card, ok, sh, aw: S.aimWeeks }; });
+  assert(!r.early && /Next change: \w+ 20\d\d/.test(r.card), r.card);
+  assert(r.ok && near(r.sh.content, 0.5, 0.01) && near(r.sh.roots, 0.5, 0.01), JSON.stringify(r));
+});
+
+await t.check('wave 1 score: an older save loads with the score tallies filled in', async () => {
+  const r = await ev(() => { const old = JSON.parse(JSON.stringify(fresh('two', { turn: 30, monthsPlayed: 30 * W, community: 40 })));
+    for (const k of ['commSum', 'cardSum', 'cardCount', 'cardSeed', 'goodWeeks', 'deepWeeks', 'debtLow', 'tallyFrom', 'aim', 'aimWeeks', 'aimAt', 'townWeeks', 'outWeeks', 'tripsN', 'bizWeeks', 'bizSold']) delete old[k];
+    const m = migrate(old); S = m; S.noEvents = true; const s0 = lifeScore(); weeks(9); return { aim: m.aim, comm: lifeScore().avgC, seed: S.cardSeed, n: S.cardCount, s0: s0.score, aw: S.aimWeeks, from: S.tallyFrom }; });
+  assert(r.aim === 'all' && r.comm > 30 && r.n === 3 && r.seed === false && r.from === 30 && r.aw.all === 39 && Number.isInteger(r.s0), JSON.stringify(r));
 });
 
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });

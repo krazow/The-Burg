@@ -58,6 +58,11 @@ follows Washington's 2027 prices, and each year brings its own weather. Your bod
   first haircut. Most weeks with kids at home, the week's summary adds a short line about them.
 - Things to do under 21 at the tasting room and the wine bar, and an all-ages music night.
 - Get ready for a windstorm: trim the limb and tie things down to halve the damage.
+- **🎯 Life aims** (under More options): All-around, Contentment, Roots, Adventure or Legacy. An aim moves part of
+  the net worth score to what you care about. You can change it on the Life tab once a year. "Good weeks" (happy and
+  healthy with cash at $0 or more) show on the end screen and the score card.
+- A red **💳 Debt** line on Life Score so far and the end screen says how many points debt is costing you and how many
+  getting back to $0 would win back. Coming back from deep debt is noted on the end screen, score card and records.
 
 ### Changed
 - **Money follows Washington's 2027 prices:** every job pays at least the state minimum wage, nurses, aides, techs and
@@ -71,6 +76,11 @@ follows Washington's 2027 prices, and each year brings its own weather. Your bod
 - Tuition paid while you're below $0 goes on a student loan instead of the credit card.
 - Businesses pay a fairer return: the woodshop and food truck pay less, the cattle herd costs more, and the wheat
   ground has a farming bill each April.
+- **How the Life Score is figured:** the final score is 60% the average of your report cards (every 13 weeks) and 40%
+  how your life ends. It weighs your weakest part a little more, so a balanced life does best. Community counts as
+  your average over the whole life, net worth can go below zero in debt (student loans count half), and long stretches
+  deep in debt cost a few points. Life Score so far says "Just getting started" for the first few weeks. Most scores
+  come out a little lower than before.
 - Trucking needs a CDL, and the Bluewood lift is a winter job.
 - Every kid gets a college send-off, once, in the week they turn 18, and it says whether it's your oldest, middle or
   youngest. The year in review and the Journal's milestones count the big moments: a new job, a partner, a dog, a
