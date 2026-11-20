@@ -1401,6 +1401,84 @@ await t.check('i54-a03 / i43-b03: money is $1,500 on a German phone, and Help se
   assert(r.cv === 'auto', `help sections: ${r.cv}`);
 });
 
+await t.check('i5-a05: perks with weeks left show as chips on Home, and a tap opens where you use them', async () => {
+  await life({ jobId: 'farmhand' });
+  await setup(() => { S.hireBy = S.turn + 3; S.stockUntil = S.turn + 4; S.out = { ...outDefault(), look: S.turn, ad: S.turn - 2 }; render(); });
+  const chips = await page.$$eval('[data-perk]', bs => bs.map(b => b.textContent));
+  const txt = chips.join(' | ');
+  assert(/Sure-thing interview: 4 wks/.test(txt) && /Looking sharp: 2 wks/.test(txt) && /Hustle ad: 6 wks/.test(txt) && /Stocked up: 4 wks/.test(txt), txt);
+  await page.click('[data-perk="0"]');
+  assert(await page.evaluate(() => tab) === 'jobs', 'interview chip should open Jobs');
+  await setup(() => { S.hireBy = -1; S.stockUntil = -1; S.out = null; tab = 'home'; render(); });
+  assert(!(await page.$('[data-perk]')), 'no chips once the perks run out');
+});
+
+await t.check('i48-b03/b04: the rut note comes back every 13 weeks, stops the skip and offers focus buttons', async () => {
+  await life({ jobId: 'farmhand', focus: 'rest', streakF: 'rest', streakN: 8 });
+  const a = await setup(() => { const r = weekTick(true); return { rut: r.rut, note: r.notes.join(' ') }; });
+  assert(a.rut && /−1\.2 happiness every week until you switch/.test(a.note), JSON.stringify(a));
+  const b = await setup(() => { const out = []; for (let i = 0; i < 13; i++) out.push(weekTick(true).rut); return out; });
+  assert(b.filter(Boolean).length === 1 && b[12], JSON.stringify(b));
+  await setup(() => { S.streakN = 21; S.happy = 50; S.health = 70; S.community = 20; render(); playWeeks(4); });
+  assert(await page.evaluate(() => S.run.weeks) === 1, 'skip should stop for the rut');
+  const btns = await page.$$eval(`${open} [data-sugg]`, bs => bs.map(b => b.dataset.sugg));
+  assert(btns[0] === 'community' && !btns.includes('rest') && /Keep Rest/.test(await page.textContent(`${open} #ok`)), JSON.stringify(btns));
+  await page.click(`${open} [data-sugg="community"]`);
+  assert(await page.evaluate(() => S.focus) === 'community', 'focus not switched');
+  await clearSheets();
+});
+
+await t.check('i48-b05: a skip stops when a stat drops into the red, and warns again only after it climbs back above 35', async () => {
+  await life({ jobId: 'farmhand', focus: 'work', happy: 80, health: 22, community: 60 });
+  await setup(() => playWeeks(13));
+  assert(await page.evaluate(() => S.run.weeks) === 1 && /Health dropped into the red/.test(await page.textContent(`${open}`)), 'no red stop');
+  assert(await page.$(`${open} [data-sugg="rest"]`), 'no Rest button');
+  await page.click(`${open} #ok`); await clearSheets();
+  const r = await setup(() => { S.health = 24; const n1 = weekTick(true).red; S.health = 40; weekTick(true); S.health = 20; const n2 = weekTick(true).red; return { n1, n2, low: S.redLow }; });
+  assert(r.n1.length === 0 && r.n2.includes('health'), JSON.stringify(r));
+});
+
+await t.check('i48-b06: ⏩ 13 after 4+ weeks of one focus asks to keep or switch, once, and can be turned off', async () => {
+  await life({ jobId: 'farmhand', focus: 'rest', streakF: 'rest', streakN: 5, happy: 70, health: 70, community: 20 });
+  await page.evaluate(() => $('#ff13').click());
+  assert(/Keep Rest, or switch/.test(await page.textContent(`${open} h2`)), 'no focus check');
+  const fc = await page.$$eval(`${open} [data-fc]`, bs => bs.map(b => b.dataset.fc));
+  assert(fc.length === 2 && fc[0] === 'community' && !fc.includes('rest'), JSON.stringify(fc));
+  await page.click(`${open} [data-fc="community"]`); await clearSheets();
+  const s = await S();
+  assert(s.run.weeks >= 1 && s.streakF === 'community', JSON.stringify({ w: s.run.weeks, f: s.streakF }));
+  await setup(() => { closeSheet(); S.focus = 'rest'; S.streakF = 'rest'; S.streakN = 6; S.turn = 20; render(); });
+  await page.evaluate(() => $('#ff13').click());
+  await page.click(`${open} #fcoff`); await clearSheets();
+  assert(await page.evaluate(() => setting('skipAsk')) === 'off', 'setting not saved');
+  await setup(() => { closeSheet(); S.focus = 'rest'; S.streakF = 'rest'; S.streakN = 7; S.turn = 0; render(); });
+  await page.evaluate(() => $('#ff13').click());
+  assert(!/or switch/.test(await page.textContent('body')), 'asked again after Don\'t ask again');
+  await setup(() => { closeSheet(); setPref('skipAsk', 'on'); });
+});
+
+await t.check('i63-a13: the first time cash drops below -$1,000, the money talk offers jobs near home and side hustles', async () => {
+  await life({ money: -900, edu: 1, focus: 'rest', happy: 80, health: 80, community: 80 });
+  await page.click('#end');
+  for (let i = 0; i < 5 && !(await page.$(`${open} #mtjobs`)); i++) await page.click(`${open} #ok`);
+  assert(/Let's talk money/.test(await page.textContent(`${open} h2`)) && await page.$(`${open} #mthustle`), 'no money talk');
+  await page.click(`${open} #mtjobs`);
+  const r = await page.evaluate(() => ({ tab, near: !!document.querySelector('#jobnear'), rows: [...document.querySelectorAll('[data-apply]')].map(b => b.dataset.apply), ok: nearJobs().map(x => x.id), talked: S.moneyTalk }));
+  assert(r.tab === 'jobs' && r.near && r.talked && r.rows.length && r.rows.every(id => r.ok.includes(id)), JSON.stringify(r));
+  assert(await page.evaluate(ids => ids.every(id => CITIES[jobById(id).city].miles <= 15), r.ok), 'a far job');
+  await page.click('#jobnear');
+  assert(!(await page.$('#jobnear')), 'filter should clear');
+  await setup(() => { tab = 'home'; render(); });
+  await page.click('#end'); await page.waitForTimeout(100);
+  assert(!(await page.$(`${open} #mtjobs`)), 'the money talk came back');
+});
+
+await t.check('i8-a01: a waiting grandkid never starts before the grandparent\'s birth year + 60', async () => {
+  const r = await setup(() => { localStorage.clear(); newGame('Young', 'life', 0); const p = { name: 'Young', community: 50, slot: 0, mode: 'normal', gen: 1, date: new Date(2034, 5, 1).getTime(), ageMonths: 25 * 12, col: 1.1, wage: 1, will: false, home: 'room' };
+    startLegacy(p, 'Kid'); const y = new Date(S.date).getFullYear(); return { y, born: 2034 - 25 }; });
+  assert(r.y === r.born + 60, JSON.stringify(r));
+});
+
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });
 
 await browser.close();
