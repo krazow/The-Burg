@@ -1389,7 +1389,7 @@ await t.check('i72-b06: tap the cash for last week in and out, next week, and th
 await t.check('i23-a05/i50-a03: the town goal shows what is left and the reward, one goal line at a time', async () => {
   await life({ jobId: 'farmhand', date: new Date(2027, 0, 4).getTime() }, 'home');
   const g = await page.textContent('#main .sgoal');
-  assert(/4 more needed · \d+ weeks left · reward ▲5 community ▲4 happiness/.test(g), g);
+  assert(/7 more needed · \d+ weeks left · reward ▲5 community ▲4 happiness/.test(g), g);   // i37: winter needs 7 weeks now
   await page.evaluate(() => { S.scenario = 'farm'; render(); });
   assert((await page.$$('#main .sgoal')).length === 1 && /Challenge/.test(await page.textContent('#main .sgoal')), 'a challenge life shows only the challenge line');
 });
