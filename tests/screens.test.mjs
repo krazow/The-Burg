@@ -52,7 +52,7 @@ const audit = () => {
     if (!el || seen.has(el) || !node.textContent.trim() || /^[\p{Emoji}\s·›✕↑]+$/u.test(node.textContent.trim())) continue;
     seen.add(el);
     if (!vis(el) || el.closest('svg, .cdim') || covered(el)) continue;
-    if (el.closest('button[disabled], [aria-hidden=true]')) continue;              // inactive controls are exempt
+    if (el.closest('button[disabled], [aria-hidden=true], .toast.out')) continue;   // inactive controls, and a toast fading out (i20-a03), are exempt
     const cs = getComputedStyle(el), px = parseFloat(cs.fontSize), bold = Number(cs.fontWeight) >= 700;
     if (px < 11) out.smallText.push(`${node.textContent.trim().slice(0, 24)} (${px}px)`);
     const fg = rgba(cs.color); fg[3] *= opac(el);
@@ -134,6 +134,14 @@ for (const [label, w, h, nightXL] of SIZES) {
       milestones: ['Hired as Wheat farm hand in Waitsburg!', 'Adopted a dog from the Blue Mountain Humane Society.', 'Finished a welding certificate.', 'Earned a badge: Good dog.'] }); }); }],
     ['bank-card', async () => { await page.evaluate(() => { closeSheet(); S.k401 = 3200; S.k401rate = 1; S.sloanLeft = 30; S.sloanPay = 120; bankSheet('bank'); }); }],
     ['trades-card', async () => { await page.evaluate(() => { closeSheet(); tradesSheet('trades'); }); }],
+    // wave 1 week flow: compare two jobs, the charts, up next, the last 4 weeks, answer rules and Done for now
+    ['compare-jobs', async () => { await page.evaluate(() => { closeSheet(); S.jobId = 'farmhand'; compareSheet(null, 'hanford'); }); }],
+    ['net-chart', async () => { await page.evaluate(() => { closeSheet(); const ne = S.noEvents; S.noEvents = true; for (let i = 0; i < 30; i++) weekTick(false); S.noEvents = ne; showStatInfo('net'); }); }],
+    ['stat-trend', async () => { await page.evaluate(() => { closeSheet(); showStatInfo('health'); }); }],
+    ['up-next', async () => { await page.evaluate(() => { closeSheet(); upNextSheet(); }); }],
+    ['spend-kinds', async () => { await page.evaluate(() => { closeSheet(); spendSheet(null); }); }],
+    ['answer-rules', async () => { await page.evaluate(() => { closeSheet(); S.ansRules = { 'Snow on Highway 12': { k: 'x', l: 'Leave early and take it slow on the grade into Walla Walla' }, 'Truck trouble': { k: 'y', l: 'Fix it right' } }; ansRulesSheet(); }); }],
+    ['done-for-now', async () => { await page.evaluate(() => { closeSheet(); SIT = { key: sitKey(), turn: Math.max(0, S.turn - 12), date: 'January 4, 2027', score: 48, top: null }; doneSheet(); }); }],
     ['heir-naming', async () => { await page.evaluate(() => { closeSheet(); legacySheet({ name: 'Margaret Ann Whitmore', nw: 420000, community: 70, home: 'farm', equity: 90000, will: true, col: 1.4, slot: 0, gen: 2, mortgage: 1650 }); }); }],
     ['backup', async () => { await page.evaluate(() => { closeSheet(); backupSheet(); }); }],
     ['restore', async () => { await page.evaluate(() => { closeSheet(); restoreSheet(); }); }],

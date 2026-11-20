@@ -13,7 +13,7 @@ page.on('pageerror', e => errors.push(String(e)));
 await page.goto(srv.url, { waitUntil: 'load' });
 // test helpers inside the page: a fresh life with no random events, and one week played
 await page.evaluate(() => {
-  window.fresh = (len = 'two', extra = {}) => { newGame('Rules', len, 0); S.noEvents = true; Object.assign(S, extra); return S; };
+  window.fresh = (len = 'two', extra = {}) => { newGame('Rules', len, 0); S.diff = 'hard'; S.noEvents = true; Object.assign(S, extra); return S; };
   window.week = () => { const r = weekTick(false); return { ...r, lines: Object.fromEntries(S.last.lines) }; };
   window.weeks = n => { let r; for (let i = 0; i < n; i++) r = weekTick(false); return r; };
 });
@@ -141,7 +141,7 @@ await t.check('events follow their rules: seasons, cooldowns, once-only, and job
 });
 
 await t.check('at 0 health you go to the hospital (outside Lifetime), with a bill', async () => {
-  const r = await ev(() => { fresh('two', { health: -5, jobId: 'hanford', focus: 'work' }); const m = S.money; const res = week(); return { note: res.notes.join(' '), health: S.health, paid: -(res.lines['🏥 Hospital bill'] || 0) }; });   // i71-b05: the bill is a money line now
+  const r = await ev(() => { fresh('two', { health: -5, jobId: 'hanford', focus: 'work', diff: 'hard' }); const m = S.money; const res = week(); return { note: res.notes.join(' '), health: S.health, paid: -(res.lines['🏥 Hospital bill'] || 0) }; });   // i71-b05: the bill is a money line now
   assert(r.note.includes('hospital') && r.health === 30 && near(r.paid, 6500 + 1200, 0.02), JSON.stringify(r));   // i74-a04: plus the ambulance ride (no membership)
 });
 
@@ -515,10 +515,10 @@ await t.check('Relaxed softens drains and never ends in debt; Hard costs more an
   assert(/debt/.test(r.hEnd || '') && near(r.hCost, -(650 + 700 + 220) * 0.1 * W) && near(r.lay, r.layN * 1.6), JSON.stringify(r));
 });
 
-await t.check('best scores are kept per mode', async () => {
+await t.check('best scores are kept per difficulty (to-do 2 D7; an old mode key reads as Classic)', async () => {
   const r = await ev(() => { localStorage.clear(); newGame('A', 'half', 0, { mode: 'hard' }); S.noEvents = true; weeks(26); finish('done'); closeSheet();
-    const b = store.get(BEST_KEY); return { keys: Object.keys(b), label: bestLabel('half-hard') }; });
-  assert(r.keys.includes('half-hard') && !r.keys.includes('half') && r.label === '6 Months (Hard)', JSON.stringify(r));
+    const b = store.get(BEST_KEY); return { keys: Object.keys(b), label: bestLabel('hard.half'), old: bestLabel('half-hard') }; });
+  assert(r.keys.includes('hard.half') && !r.keys.includes('half') && r.label === '🔥 Hard · 6 Months' && r.old === '🏛️ Classic · 6 Months (Hard)', JSON.stringify(r));
 });
 
 await t.check('a season goal counts weeks of the right focus and pays out once', async () => {
@@ -585,7 +585,7 @@ await t.check('a business costs money up front, earns, counts in net worth, and 
     let earned = 0, work = 0; for (let i = 0; i < 20; i++) { S.focus = 'rest'; const l = week().lines; earned += l['🪚 Woodworking shop'] || 0; }
     S.focus = 'community'; for (let i = 0; i < 4; i++) work += week().lines['🪚 Woodworking shop'] || 0;
     const m = S.money; sellBiz(); const got = S.money - m;
-    fresh('two', { money: 10000, date: new Date(2027, 1, 5).getTime() }); render(); startBiz('wheat'); S.date = new Date(2027, 6, 5).getTime(); let check = 0, n = 0;   // i22-a04: leased by March
+    fresh('two', { money: 10000, date: new Date(2027, 1, 5).getTime(), diff: 'hard' }); render(); startBiz('wheat'); S.date = new Date(2027, 6, 5).getTime(); let check = 0, n = 0;   // i22-a04: leased by March
     for (let i = 0; i < 6; i++) { const l = week().lines; if (l['🌾 Harvest check']) { check = l['🌾 Harvest check']; n++; } }
     return { lost: nw0 - nw1, earned, work, got, biz: S.biz && S.biz.type, check, n }; });
   assert(near(r.lost, 6000 * 0.4, 0.02), `starting should only lose 40% of the cost in net worth: ${r.lost}`);
@@ -805,7 +805,7 @@ await t.check('R12: a carpool ends when the job changes', async () => {
 
 await t.check('R13: businesses lose 5% of their value a year; the wheat lease must be renewed every 5 years', async () => {
   const r = await ev(() => { fresh('five', { money: 50000, col: 1 }); render(); startBiz('shop'); const v0 = bizValue(); for (let i = 0; i < 52; i++) bizWeek([], []); const v1 = bizValue() / S.col;
-    fresh('five', { money: 50000 }); render(); startBiz('wheat'); S.biz.weeks = LEASE_WEEKS - 1; const notes = []; bizWeek([], notes); const due = leaseDue();
+    fresh('five', { money: 50000, diff: 'hard' }); render(); startBiz('wheat'); S.biz.weeks = LEASE_WEEKS - 1; const notes = []; bizWeek([], notes); const due = leaseDue();
     tab = 'life'; render(); const btn = !!document.querySelector('#renew'); const m = S.money; document.querySelector('#renew').click();
     const paid = m - S.money, after = !leaseDue() && S.biz.lease === LEASE_WEEKS * 2;
     S.biz.weeks = S.biz.lease - 1; bizWeek([], []); for (let i = 0; i < LEASE_GRACE; i++) bizWeek([], []); const gone = S.biz === null;
@@ -815,12 +815,12 @@ await t.check('R13: businesses lose 5% of their value a year; the wheat lease mu
   assert(r.gone, 'an unrenewed lease should end after the grace weeks');
 });
 
-await t.check('R16: the end screen and score sheet label Relaxed and Hard scores', async () => {
+await t.check('R16, to-do 2 D7: the end screen and score sheet name the difficulty (Relaxed is now Easy)', async () => {
   const r = await ev(() => { localStorage.clear(); newGame('R', 'half', 0, { mode: 'relaxed' }); S.noEvents = true; weeks(3); showScoreNow(); const now = document.querySelector('#sheet').textContent; closeSheet();
     finish('done'); const end = document.querySelector('#sheet').textContent; closeSheet();
     newGame('N', 'half', 0); finish('done'); const normal = document.querySelector('#sheet').textContent; closeSheet(); return { now, end, normal }; });
-  assert(/Relaxed mode score/.test(r.end) && /Relaxed mode score/.test(r.now) && /New best \(Relaxed\)/.test(r.end), r.end.slice(0, 300));
-  assert(!/mode score/.test(r.normal), 'Normal games need no label');
+  assert(/Easy score/.test(r.end) && /Easy score/.test(r.now) && /New best \(Easy\)/.test(r.end), r.end.slice(0, 300));
+  assert(/Normal score/.test(r.normal) && !/Easy/.test(r.normal.replace(/Easy, Normal and Hard/g, '')), 'a Normal life is labeled Normal');
 });
 
 await t.check('B2: a 6-month life starts with a little less happiness and health', async () => {
@@ -1153,6 +1153,70 @@ await t.check('skips play one-choice events on their own and list them, but stop
   assert(r.b.weeks === 1 && r.b.sheet, `real choice: ${JSON.stringify(r.b)}`);
 });
 
+await t.check('i49-a03: good-news notes ride along on a skip and show on the next sheet; notes that need you still stop it', async () => {
+  const r = await ev(() => {
+    const ok = e => e.choices().filter(c => !c.if || c.if()), two = EVENTS.find(e => !e.once && ok(e).length >= 2), real = rollEvent;
+    fresh('two', { jobId: 'farmhand', loanLeft: W * 1.5, loanPay: 400 }); S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1]));
+    playWeeks(4); const a = { weeks: S.run.weeks, txt: $('#sheet').textContent, open: !$('#modal').classList.contains('hidden') }; closeSheet();
+    fresh('two', { jobId: 'farmhand', loanLeft: W * 1.5, loanPay: 400 }); S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1])); S.noEvents = false;
+    let n = 0; rollEvent = () => ++n === 3 ? two : null;
+    playWeeks(4); const b = { weeks: S.run.weeks, ride: ($('#sheet .ridealong') || {}).textContent || '', title: ($('#sheet h2') || {}).textContent }; closeSheet(); rollEvent = real;
+    fresh('two', { jobId: 'farmhand', focus: 'work', streakF: 'work', streakN: RUT_WEEKS - 1 }); S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1]));
+    playWeeks(4); const c = { weeks: S.run.weeks, txt: $('#sheet').textContent }; closeSheet();
+    return { a, b, c, rides: rides('🛻 The truck is paid off!'), stops: rides('🏥 You ended up in the hospital.') };
+  });
+  assert(r.rides && !r.stops, 'the note kinds are wrong');
+  assert(r.a.weeks === 4 && r.a.open && /truck is paid off/.test(r.a.txt), `the skip should run on and end on the note: ${JSON.stringify(r.a).slice(0, 200)}`);
+  assert(r.b.weeks === 3 && /truck is paid off/.test(r.b.ride) && !!r.b.title, `the note should sit on top of the event: ${JSON.stringify(r.b)}`);
+  assert(r.c.weeks < 4 && /rut/.test(r.c.txt), `a rut still stops the skip: ${JSON.stringify(r.c).slice(0, 200)}`);
+});
+
+await t.check('i49-a11: an answer rule settles a small event during skips (a line in the strip) but not on a plain End Week', async () => {
+  const r = await ev(() => {
+    const ok = e => e.choices().filter(c => !c.if || c.if()), real = rollEvent;
+    fresh('two', { jobId: 'farmhand' }); S.noEvents = false; S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1]));
+    const two = EVENTS.find(e => ruleOK(e) && ok(e).length >= 2), pick = ok(two)[1];
+    S.ansRules = { [two.title]: { k: ruleKey(pick.label), l: pick.label } };
+    rollEvent = () => two; playWeeks(4);
+    const a = { weeks: S.run.weeks, rule: S.run.happened.filter(h => h.rule).length, strip: (() => { closeSheet(); showRunDetails(); return $('#sheet').textContent; })() }; closeSheet();
+    playWeeks(1); const b = { evSheet: !!$('#sheet [data-i]') }; closeSheet();
+    rollEvent = real;
+    return { a, b, key: ruleKey('Pay $1,250 to fix it'), key2: ruleKey('Pay $1,400 to fix it'), big: ruleOK(EVENTS.find(e => e.title === 'Starting a family?')) };
+  });
+  assert(r.a.weeks === 4 && r.a.rule === 4 && /your rule/.test(r.a.strip), JSON.stringify(r.a).slice(0, 300));
+  assert(r.b.evSheet, 'a plain End Week should still ask');
+  assert(r.key === r.key2 && !r.big, `rule keys ${r.key} / ${r.key2}, big ${r.big}`);
+});
+
+await t.check('i15-b01/b05: a small weekly history (weekly for 2 years, then monthly and yearly) and the last 4 weeks by kind', async () => {
+  const r = await ev(() => {
+    fresh('life', { jobId: 'farmhand' }); for (let i = 0; i < 1500; i++) { weekTick(false); if (S.health < 30) S.health = 70; }
+    const h = S.hist, last = h.slice(-HIST_WEEKS);
+    return { n: h.length, size: JSON.stringify(h).length, weekly: last.every((x, i) => !i || x[0] - last[i - 1][0] === 1), end: h[h.length - 1][0] === S.turn && h[h.length - 1][1] === Math.round(S.money),
+      spend: S.spend4.length, kinds: Object.keys(S.spend4[0]), rent: spendKind('Rent', -100), tabs: spendKind('Vehicle tabs (DMV)', -60) };
+  });
+  assert(r.n > 104 && r.n < 400 && r.size < 12000 && r.weekly && r.end, JSON.stringify(r));
+  assert(r.spend === 4 && r.kinds.includes('pay') && r.kinds.includes('home') && r.rent === 'home' && r.tabs === 'ride', JSON.stringify(r));
+});
+
+await t.check('i15-b06: up next lists dated things in the next 8 weeks (tabs, New Year, a last truck payment)', async () => {
+  const r = await ev(() => {
+    fresh('two', { jobId: 'farmhand', loanLeft: W * 2.5, loanPay: 400 }); S.date = new Date(2027, 11, 6).getTime(); S.tabsYear = 2027;
+    const a = upNext().map(x => x.ic + x.n);
+    fresh('two', { jobId: 'farmhand' }); S.date = new Date(2027, 4, 3).getTime(); S.svc = -30; S.sgoal = { id: seasonId(seasonGoal()), prog: 6, done: true };
+    return { a, b: upNext().map(x => x.ic + x.n) };
+  });
+  assert(r.a.includes('📅3') && r.a.includes('🪪4') && r.a.includes('🛻2'), JSON.stringify(r.a));
+  assert(!r.b.length, JSON.stringify(r.b));
+});
+
+await t.check('i15-b01 / i49-a11: an older save without the history, the rules or the spend list loads with empty ones', async () => {
+  const r = await ev(() => { fresh('two'); const o = JSON.parse(JSON.stringify(S)); delete o.hist; delete o.ansRules; delete o.spend4; o.ansRules = undefined;
+    const m = migrate(o); const bad = migrate({ ...JSON.parse(JSON.stringify(S)), hist: [[1, 'x']], ansRules: { a: 5, b: { k: '<b>x</b>', l: 'y' } } });
+    return { m: [m.hist, m.ansRules, m.spend4], bad: [bad.hist.length, Object.keys(bad.ansRules), bad.ansRules.b.k] }; });
+  assert(JSON.stringify(r.m) === '[[],{},[]]' && JSON.stringify(r.bad) === '[0,["b"],"x"]', JSON.stringify(r));
+});
+
 await t.check('a double tap on End Week plays one week, not two', async () => {
   const r = await ev(() => {
     fresh('two', { jobId: 'farmhand' }); S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1])); PLAY_AT = -1e9; const t0 = S.turn;
@@ -1406,7 +1470,7 @@ await t.check('older saves get the round-3 job fields', async () => {
 /* ---------- round 3: money ---------- */
 await t.check('i3-a15: wheat has a July price; the harvest waits on sell-or-store; storing costs a fee and sells by July', async () => {
   const r = await ev(() => {
-    fresh('two', { money: 20000, date: new Date(2027, 1, 5).getTime() }); render(); startBiz('wheat'); S.date = new Date(2027, 6, 5).getTime();   // i22-a04: leased by March
+    fresh('two', { money: 20000, date: new Date(2027, 1, 5).getTime(), diff: 'hard' }); render(); startBiz('wheat'); S.date = new Date(2027, 6, 5).getTime();   // i22-a04: leased by March
     const prices = []; for (let i = 0; i < 300; i++) { S.monKey = 0; moneyMonth([]); prices.push(S.wheatPrice); }
     const avgP = prices.reduce((a, v) => a + v, 0) / prices.length;
     S.wheatPrice = WHEAT_BASE; S.noEvents = false; S.due = []; S.date = new Date(2027, 7, 2).getTime(); const lines = [];
@@ -1425,7 +1489,7 @@ await t.check('i3-a15: wheat has a July price; the harvest waits on sell-or-stor
 
 await t.check('i3-a16: crop insurance costs about what a drought year loses on average, charged in April', async () => {
   const r = await ev(() => {
-    fresh('two', { money: 20000, date: new Date(2027, 2, 5).getTime() }); render(); startBiz('wheat'); S.date = new Date(2027, 3, 5).getTime();   // i22-a04: leased by March
+    fresh('two', { money: 20000, date: new Date(2027, 2, 5).getTime(), diff: 'hard' }); render(); startBiz('wheat'); S.date = new Date(2027, 3, 5).getTime();   // i22-a04: leased by March
     const sample = ins => { S.biz.ins = ins; const a = []; for (let i = 0; i < 4000; i++) { S.wx = null; a.push(wheatYield()); } return a; };   // i75-a01: a new weather year each draw
     const off = sample(false), on = sample(true);
     const lines = []; bizWeek(lines, []); const prem = (lines.find(l => /premium/.test(l[0])) || [])[1]; const again = []; bizWeek(again, []);
@@ -1452,11 +1516,11 @@ await t.check('i3-a17: wine futures sell in the fall, count at cost, and pay out
 
 await t.check('i3-a18: cattle earn for an owner who checks the herd and lose money for one who never does', async () => {
   const r = await ev(() => {
-    const year = active => { fresh('two', { money: 30000, jobId: 'farmhand' }); render(); startBiz('cattle'); let cash = 0;
+    const year = active => { fresh('two', { money: 30000, jobId: 'farmhand', diff: 'hard' }); render(); startBiz('cattle'); let cash = 0;
       for (let i = 0; i < 52; i++) { S.focus = active && i % 3 === 0 ? 'outdoors' : 'rest'; const l = week().lines; for (const [k, v] of Object.entries(l)) if (k.startsWith('🐄')) cash += v; }
       return { cash, cows: S.biz ? S.biz.cows : 0, hay: true }; };
     const a = [], b = []; for (let i = 0; i < 6; i++) { a.push(year(true)); b.push(year(false)); }
-    fresh('two', { money: 30000, date: new Date(2027, 11, 6).getTime() }); render(); startBiz('cattle'); const w = week().lines;
+    fresh('two', { money: 30000, date: new Date(2027, 11, 6).getTime(), diff: 'hard' }); render(); startBiz('cattle'); const w = week().lines;
     return { active: a.reduce((x, v) => x + v.cash, 0) / 6, idle: b.reduce((x, v) => x + v.cash, 0) / 6, cowsA: a.reduce((x, v) => x + v.cows, 0) / 6, cowsI: b.reduce((x, v) => x + v.cows, 0) / 6, hay: w['🐄 Hay'] || w['🐄 Hay (hard winter)'], rent: w['🐄 Pasture rent'], vet: w['🐄 Vet, minerals and bull lease'] }; });
   assert(r.active > 1000 && r.idle < 0, `active ${r.active}, idle ${r.idle}`);
   assert(r.cowsA > r.cowsI && r.cowsA >= 5.5, `cows ${r.cowsA} vs ${r.cowsI}`);
@@ -1505,7 +1569,7 @@ await t.check('i3-a21: home prices move each year (2.5% on average); a hot year 
 await t.check('i3-a22: the mortgage follows the year\'s rate; refinancing needs a 1-point drop and has closing costs', async () => {
   const r = await ev(() => {
     const rates = []; fresh('two'); for (let i = 0; i < 500; i++) { S.mkt = null; S.monKey = 0; moneyMonth([]); rates.push(S.rate); }
-    fresh('two', { money: 50000, rate: 8 }); render(); moveHome('fixer'); document.querySelector('#y').click();
+    fresh('two', { money: 50000, rate: 8, diff: 'hard' }); render(); moveHome('fixer'); document.querySelector('#y').click();
     const pay8 = S.mortgage; S.rate = 7.25; const half = canRefi(); S.rate = 7; const can = canRefi(), fee = refiFee(), m = S.money, newPay = refiPay(); refinance();
     return { expect8: 950 * payF(8) / payF(6.5), min: Math.min(...rates), max: Math.max(...rates), pay8, half, can, fee, paid: m - S.money, newPay, mort: S.mortgage, rate: S.mortRate }; });
   assert(r.min >= 4 && r.max <= 9.5, `rates ${r.min}–${r.max}`);
@@ -1516,7 +1580,7 @@ await t.check('i3-a22: the mortgage follows the year\'s rate; refinancing needs 
 
 await t.check('i3-a23: a home equity loan: up to half the equity, a fixed payment, and it can\'t pad net worth', async () => {
   const r = await ev(() => {
-    fresh('two', { money: 50000 }); render(); moveHome('fixer'); document.querySelector('#y').click(); S.equity = 30000;
+    fresh('two', { money: 50000, diff: 'hard' }); render(); moveHome('fixer'); document.querySelector('#y').click(); S.equity = 30000;
     const max = heMax(), tooMuch = takeHE(20000), nw0 = netWorth(), ok = takeHE(15000), nw1 = netWorth(), again = takeHE(500);
     const pay = week().lines['Home equity loan'];
     const bal = heBalance(); const m = S.money; moveHome('room'); document.querySelector('#y').click();
@@ -1618,10 +1682,10 @@ await t.check('i3-a30: a December choice sends a retiree to Arizona for January 
   assert(r.comm < 60 && !r.after, JSON.stringify(r));
 });
 await t.check('i3-a31: insurance at 55, then a care choice at 75 with health under 50; insurance pays 60% of the bill', async () => {
-  const r = await ev(() => { fresh('life', { ageMonths: 55 * 12 }); const ins = planDue(3); ins.choices()[0].go(); const prem = week().lines['Long-term care insurance'];
+  const r = await ev(() => { fresh('life', { ageMonths: 55 * 12, diff: 'hard' }); const ins = planDue(3); ins.choices()[0].go(); const prem = week().lines['Long-term care insurance'];
     S.ageMonths = 76 * 12; S.health = 60; const early = planDue(3); S.health = 40; S.kids = []; S.partner = false; S.money = 100000; const care = planDue(3);
     const labels = care.choices().filter(c => !c.if || c.if()).map(c => c.label); care.choices()[0].go(); const l = week().lines;
-    fresh('life', { ageMonths: 76 * 12, health: 40, ltc: { ins: false }, kids: [100], money: 100000 }); const fam = planDue(3).choices().filter(c => !c.if || c.if());
+    fresh('life', { ageMonths: 76 * 12, health: 40, ltc: { ins: false }, kids: [100], money: 100000, diff: 'hard' }); const fam = planDue(3).choices().filter(c => !c.if || c.if());
     fam[2].go(); const lf = week().lines;
     return { ins: ins.title, prem, early: early && early.title, labels, aide: l['Home care aide'], expect: -cost(4200) * 0.4 * W, premAfter: l['Long-term care insurance'], famN: fam.length, famBill: Object.keys(lf).filter(k => /aide|living/i.test(k)) }; });
   assert(r.ins === 'Long-term care insurance' && r.prem < 0 && r.early == null, JSON.stringify(r));
@@ -1629,8 +1693,8 @@ await t.check('i3-a31: insurance at 55, then a care choice at 75 with health und
   assert(r.famN === 3 && r.famBill.length === 0, JSON.stringify(r));
 });
 await t.check('i3-a31: without the money for paid care, Medicaid takes over, and paid care that runs dry moves there too', async () => {
-  const r = await ev(() => { fresh('life', { ageMonths: 80 * 12, health: 40, money: 2000, retired: true }); const ch = planDue(3).choices().filter(c => !c.if || c.if()).map(c => c.label);
-    fresh('life', { ageMonths: 80 * 12, health: 40, money: -10, retired: true, care: 'aide' }); const res = week();
+  const r = await ev(() => { fresh('life', { ageMonths: 80 * 12, health: 40, money: 2000, retired: true, diff: 'hard' }); const ch = planDue(3).choices().filter(c => !c.if || c.if()).map(c => c.label);
+    fresh('life', { ageMonths: 80 * 12, health: 40, money: -10, retired: true, care: 'aide', diff: 'hard' }); const res = week();
     return { ch, care: S.care, note: res.notes.join(' ') }; });
   assert(r.ch.length === 1 && /Medicaid/.test(r.ch[0]) && r.care === 'medicaid' && /Medicaid/.test(r.note), JSON.stringify(r));
 });
@@ -2237,9 +2301,9 @@ await t.check('i63-b08: 4 weeks before a 2-year or 5-year life ends, the week of
 
 await t.check('i73-b18: the shared score card comes with a short text (and the week for a weekly challenge)', async () => {
   const r = await ev(() => { fresh('two'); const a = shareText(); S.len = 'half'; S.weekly = '2026-W47'; const b = shareText(); S.weekly = null; S.len = 'life'; const c = shareText(); return { a, b, c }; });
-  assert(/^Rules scored \d+, [A-Z][\w ]+, in a 2-year life in The Burg\. krazow\.github\.io\/The-Burg$/.test(r.a), r.a);
-  assert(r.b.includes('in a 6-month life in The Burg (Weekly challenge, week of Nov 16).'), r.b);
-  assert(r.c.includes('in a lifetime in The Burg'), r.c);
+  assert(/^Rules scored \d+, [A-Z][\w ]+, in a 2-year life on (Normal|Hard) in The Burg\. krazow\.github\.io\/The-Burg$/.test(r.a), r.a);
+  assert(/in a 6-month life on (Normal|Hard) in The Burg \(Weekly challenge, week of Nov 16\)\./.test(r.b), r.b);
+  assert(/in a lifetime on (Normal|Hard) in The Burg/.test(r.c), r.c);
 });
 
 // i56-b16: every event has a way to happen. Each event needs a row: a setup (job, month, health, home, chain step…)
@@ -2445,7 +2509,7 @@ await t.check('i22-a03: a new job clears leftover unemployment months', async ()
 
 await t.check('i22-a04: a wheat lease taken after March skips that year\'s farming bill and harvest; one taken by March gets both', async () => {
   const r = await ev(() => {
-    const run = mo => { fresh('two', { money: 50000 }); S.date = new Date(2028, mo, 3).getTime(); startBiz('wheat'); const seen = {};
+    const run = mo => { fresh('two', { money: 50000, diff: 'hard' }); S.date = new Date(2028, mo, 3).getTime(); startBiz('wheat'); const seen = {};
       while (new Date(S.date).getFullYear() === 2028) { week(); for (const [l] of S.last.lines) seen[l] = 1; } return seen; };
     const late = run(5), early = run(1);
     return { lateFarm: !!late['🌾 Custom farming, seed and fertilizer'], lateHarvest: !!late['🌾 Harvest check'], earlyFarm: !!early['🌾 Custom farming, seed and fertilizer'], earlyHarvest: !!early['🌾 Harvest check'] }; });
@@ -2559,9 +2623,9 @@ await t.check('i19-b03: the end screen puts Custom lives on their own shelf and 
     const std = end({}), cu = end({ start: 'comfy' });
     const cuNote = (() => { localStorage.clear(); newGame('R', 'half', 0, { rules: { start: 'comfy' } }); S.noEvents = true; finish('Done.'); const n = document.querySelector('#tiernote'); const t = n ? n.textContent : ''; closeSheet(); return t; })();
     const sb = end({ events: 'none' });
-    return { std: Object.keys(std.best), cu: Object.keys(cu.best), sb: Object.keys(sb.best), cuNote, label: bestLabel('cu-half') };
+    return { std: Object.keys(std.best), cu: Object.keys(cu.best), sb: Object.keys(sb.best), cuNote, label: bestLabel('cu-normal.half') };
   });
-  assert(JSON.stringify(r.std) === '["half"]' && JSON.stringify(r.cu) === '["cu-half"]' && r.sb.length === 0, JSON.stringify(r));
+  assert(JSON.stringify(r.std) === '["normal.half"]' && JSON.stringify(r.cu) === '["cu-normal.half"]' && r.sb.length === 0, JSON.stringify(r));
   assert(/Custom shelf/.test(r.cuNote) && /Starting money: Comfortable/.test(r.cuNote), r.cuNote);
   assert(/6 Months/.test(r.label) && /Custom rules/.test(r.label), r.label);
 });
@@ -2661,9 +2725,9 @@ await t.check('i62-a04, i63-a01, i63-a02: debt pulls the wealth part below 0 aga
 });
 
 await t.check('i63-a03, i63-a04: weeks below -$1,000 drag the score up to 6 points (3 Relaxed); climbing out cuts it to a third', async () => {
-  const r = await ev(() => { fresh('two'); S.turn = 100; S.deepWeeks = 100; S.money = -5000; const deep = debtDrag();
+  const r = await ev(() => { fresh('two', { diff: 'hard' }); S.turn = 100; S.deepWeeks = 100; S.money = -5000; const deep = debtDrag();
     S.money = 100; S.equity = 50000; const out = debtDrag(); S.mode = 'relaxed'; S.money = -5000; S.equity = 0; const rel = debtDrag();
-    fresh('two', { jobId: null, money: -2000 }); weeks(3); const n = S.deepWeeks, low = S.debtLow;
+    fresh('two', { jobId: null, money: -2000, diff: 'hard' }); weeks(3); const n = S.deepWeeks, low = S.debtLow;
     return { deep, out, rel, n, low, sc: lifeScore().drag }; });
   assert(r.deep === 6 && r.out === 2 && r.rel === 3, JSON.stringify(r));
   assert(r.n === 3 && r.low < -2000, JSON.stringify(r));
