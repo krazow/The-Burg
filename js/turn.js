@@ -259,7 +259,7 @@ function lineWhy(l, f, j){
   if (/^Paycheck/.test(l) && j) return `${j.title}: ${wk(payNow(j))}${f.payMult ? `, plus ${Math.round((f.payMult - 1) * 100)}% for overtime at time and a half` : ''}${plantOT(j) > 1 ? `, plus ${PLANT_OT * 100}% harvest overtime (August to October)` : ''}${S.raise > 1.005 ? `, with ${Math.round((S.raise - 1) * 100)}% in raises` : ''}. Pay grows about 2.5% a year.`;
   if (l === 'Mortgage') return `Your ${home.name.toLowerCase()}: the payment was locked in when you bought (or refinanced).`;
   if (l === 'Rent') return `Rent on the ${home.name.replace(/^Rented /, '').toLowerCase()}. Rents rise with prices, about 3% a year.`;
-  if (/^Food & utilities/.test(l)) return `Groceries, power, water, sewer, trash and internet${/stocked/.test(l) ? `, with groceries ${STOCK_OFF*100}% off from a stock-up run` : ''}${skillLv('cook') ? `, ${skillLv('cook') * 4}% less because you cook` : ''}.`;
+  if (/^Food & utilities/.test(l)) return `Groceries, power, water, sewer, trash and internet${/stocked/.test(l) ? `, with groceries ${STOCK_OFF*100}% off from a stock-up run` : ''}${skillLv('cook') ? `, ${skillLv('cook') * 4}% less because you cook` : ''}. Shop local at Burg Basket Grocery for a little community, or stock up on a trip to Walla Walla for ${STOCK_OFF * 100}% off groceries.`;
   if (l === 'Insurance & phone') return `Your insurance (set on the insurance sheet) and your phone plan${insExtras().length ? `, with ${insExtras().map(([n]) => n.replace(/^\S+ /, '').toLowerCase()).join(' and ')}` : ''}. Your medical plan is the separate Health care line.`;
   if (/^Higher living costs/.test(l)) return 'Hard mode: rent, food and insurance cost 10% more.';
   if (/^Vehicle tabs/.test(l)) return 'Every January: about 1% of what your vehicle is worth, at least $60.';
@@ -459,10 +459,10 @@ function weekTick(auto){
     if (chance(p) || age() >= 102) ending = `${S.name} passed peacefully at age ${age()}, with the whole town at the service.`;
   }
   if (!ending && S.turn >= L.turns) ending = `${L.label} in the Burg is in the books.`;
-  const debtEnd = mode() === 'hard' ? -25000 : -40000;
+  const floor = debtEnd();
   let debt = false;
-  if (!ending && mode() !== 'relaxed' && S.money < debtEnd) { ending = `Buried in debt, ${S.name} packed up and left Waitsburg.`; debt = true; }
-  if (mode() === 'relaxed' && S.money < -40000) S.money = -40000;   // Relaxed: a debt counselor stops the slide
+  if (!ending && floor != null && S.money < floor) { ending = `Buried in debt, ${S.name} packed up and left Waitsburg.`; debt = true; }
+  if (mode() === 'relaxed' && S.money < DEBT_FLOOR) S.money = DEBT_FLOOR;   // Relaxed: a debt counselor stops the slide
   return { ev, notes, ending, review, debt };
 }
 

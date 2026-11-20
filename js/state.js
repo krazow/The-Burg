@@ -507,6 +507,10 @@ const MODES = {
   hard:    { ic:'🔥', name:'Hard', desc:'Stats wear down faster, more events, layoffs more likely, rent, food and insurance cost 10% more, and debt ends the game at -$25,000.' }
 };
 const mode = () => (S && S.mode) || 'normal';
+// i12-b03: where debt ends a life (weekTick reads it too): Hard at -$25,000, Normal at -$40,000, never on Relaxed
+const DEBT_FLOOR = -40000, DEBT_FLOOR_HARD = -25000;
+const debtEnd = () => mode() === 'relaxed' ? null : mode() === 'hard' ? DEBT_FLOOR_HARD : DEBT_FLOOR;
+const debtWarnAt = () => mode() === 'hard' ? -10000 : -15000;   // Hard warns sooner: there's less room
 const bestKey = (len, m) => m && m !== 'normal' ? `${len}-${m}` : len;
 const bestLabel = k => { if (k.startsWith('wk-')) return `📅 ${k.slice(3)}`; if (k.startsWith('sc-')) { const sc = SCENARIOS[k.slice(3)]; return sc ? `${sc.ic} ${sc.name}` : null; } const [len, m] = k.split('-'); return LENGTHS[len] ? `${LENGTHS[len].label}${m && MODES[m] ? ` (${MODES[m].name})` : ''}` : null; };
 
@@ -542,5 +546,15 @@ function seasonLine(){
   const g = seasonGoal(); if (!g || S.practice) return '';
   const st = S.sgoal && S.sgoal.id === seasonId(g) ? S.sgoal : { prog:0, done:false };
   const end = MONTHS[g.months[g.months.length - 1]];
-  return `<div class="sgoal">${g.ic} <b>Town goal:</b> ${g.name} · ${st.done ? '✅ done!' : `${st.prog}/${g.need} weeks of ${g.what} (until the end of ${end})`}</div>`;
+  // i23-a05: what's left, how long there is, and what it pays
+  const more = g.need - st.prog, left = seasonWeeksLeft(g);
+  const reward = Object.entries(g.fx).map(([k, v]) => `▲${v} ${{ happy:'happiness', health:'health', community:'community' }[k]}`).join(' ');
+  return `<div class="sgoal">${g.ic} <b>Town goal:</b> ${g.name} · ${st.done ? '✅ done!' : `${st.prog}/${g.need} weeks of ${g.what} (until the end of ${end})
+    <br><small>${more} more needed · ${left} week${left === 1 ? '' : 's'} left${more > left ? ' (out of reach this time)' : ''} · reward ${reward}</small>`}</div>`;
+}
+// weeks still to play in this season, this one included
+function seasonWeeksLeft(g){
+  const d0 = new Date(S.date).getTime(); let n = 0;
+  while (n < 20 && g.months.includes(new Date(d0 + n * 7 * 864e5).getMonth())) n++;
+  return n;
 }

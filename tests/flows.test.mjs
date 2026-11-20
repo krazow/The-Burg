@@ -431,7 +431,7 @@ await t.check('start and sell a business on the Life tab; skills show there too'
 
 await t.check('the weekly challenge starts a seeded 6-month life from the title screen; the end screen offers a score card', async () => {
   await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); render(); });
-  await page.click('#weekly'); await page.click(`${open} #y`);
+  await page.click('#chal'); await page.click(`${open} #weekly`);   // i50-a05: the weekly challenge lives in Challenges
   const s = await S();
   assert(s.weekly && s.rng !== null && s.len === 'half', JSON.stringify({ weekly: s.weekly, rng: s.rng, len: s.len }));
   await page.evaluate(() => { S.noEvents = true; finish('done'); });
@@ -458,13 +458,22 @@ await t.check('title screen: Start comes before a closed "More options" panel, w
 
 await t.check('title screen: "Your records" shows best scores by length and mode, challenges, and only this week\'s weekly best', async () => {
   await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); renderTitle(); });
-  assert(!(await page.$('#records')), 'no records button before any life is finished');
+  assert(!(await page.$('#records')) && !(await page.$('#weekly')), 'i50-a05: no records or weekly buttons on the title screen');
+  assert(!/records/.test(await page.textContent('#chal')), 'Challenges should not mention records before any life is finished');
   assert(!(await page.$('.title .best')), 'the old long best-score line should be gone');
   await page.evaluate(() => { store.set(BEST_KEY, { two: 66, 'half-hard': 48, 'life-relaxed': 71, 'sc-farm': 80, ['wk-' + isoWeek()]: 59, 'wk-2001-W01': 99 });
     store.set(CHALLENGE_KEY, { farm: 1 }); pruneWeekly(); renderTitle(); });
   const kept = await page.evaluate(() => Object.keys(store.get(BEST_KEY)));
   assert(!kept.includes('wk-2001-W01') && kept.includes('wk-' + await page.evaluate(() => isoWeek())), `old weekly bests should be pruned: ${kept}`);
-  await page.click('#records');
+  assert(/Challenges and records/.test(await page.textContent('#chal')), 'the Challenges button should say it holds the records');
+  // i50-a05: the Challenges sheet holds the weekly row, each challenge's best, and the records table
+  await page.click('#chal');
+  const ch = await page.textContent(open);
+  assert(/Weekly challenge/.test(ch) && /Your best 59/.test(ch) && /Your best 80/.test(ch) && /1\/4 completed/.test(ch) && /Your records/.test(ch), ch.slice(0, 400));
+  const crow = await page.$$eval(`${open} table.rec tbody tr`, trs => trs.map(tr => [...tr.children].map(c => c.textContent.trim())));
+  assert(crow.length === 4 && crow[1][2] === '66', JSON.stringify(crow));
+  await page.evaluate(() => closeSheet());
+  await page.evaluate(() => recordsSheet());
   const rows = await page.$$eval(`${open} table.rec tbody tr`, trs => trs.map(tr => [...tr.children].map(c => c.textContent.trim())));
   assert(rows.length === 4 && rows[1][0] === '2 Years' && rows[1][2] === '66' && rows[0][3] === '48' && rows[3][1] === '71' && rows[0][1] === '–', JSON.stringify(rows));
   const txt = await page.textContent(open);
@@ -1260,6 +1269,123 @@ await t.check('W22: the Little League season runs coach → losing streak → co
   await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Little League needs a coach')));
   await page.click(`${open} [data-i="1"]`); await clearSheets();
   assert(!(await page.evaluate(() => leagueOn() || !!planDue(curMonth()))), 'skipping started the season');
+});
+
+// ---- Wave 1: screen-by-screen fixes ----
+await t.check('i2-a01: every event with a choice shows what each choice does, and working it out changes nothing', async () => {
+  await life({ jobId: 'farmhand', money: 3000, community: 40 }, 'home');
+  const r = await page.evaluate(() => {
+    const out = { events: 0, missing: [], leaked: [], dice: 0 };
+    for (const e of EVENTS) {
+      let ch; try { ch = e.choices().filter(c => !c.if || c.if()); } catch (x) { continue; }
+      if (ch.length < 2) continue;
+      const snap = JSON.stringify(S), rnd = Math.random;
+      showEvent(e);
+      if (JSON.stringify(S) !== snap) out.leaked.push(e.title);
+      if (Math.random !== rnd) out.dice++;
+      const btns = [...document.querySelectorAll('#sheet [data-i]')];
+      btns.forEach((b, i) => { const h = b.querySelector('small.hint'); if (!h || h.textContent.trim().length < 3) out.missing.push(`${e.title} #${i}`); });
+      closeSheet(); out.events++;
+    }
+    return out;
+  });
+  assert(r.events > 100 && !r.missing.length && !r.leaked.length && !r.dice, JSON.stringify(r).slice(0, 400));
+  // a choice can carry its own hint; a hint never names the dice roll, only the direction
+  const own = await page.evaluate(() => choiceHints([{ label: 'A', hint: 'Its own words', go: () => '' }, { label: 'B', go: () => { adj({ happy: 3 }); return ''; } }]));
+  assert(own[0] === 'Its own words' && own[1] === '▲ happiness', JSON.stringify(own));
+});
+
+await t.check('i23-a03/a04: the header says "Last week!" at the end, and End Week names a planned trip', async () => {
+  await life({ jobId: 'farmhand' }, 'home', 'half');
+  assert(/26 weeks left/.test(await page.textContent('.top .meta')), await page.textContent('.top .meta'));
+  await page.evaluate(() => { S.turn = 25; render(); });
+  assert(/Last week!/.test(await page.textContent('.top .meta')) && !/1 weeks/.test(await page.textContent('.top .meta')), await page.textContent('.top .meta'));
+  await page.evaluate(() => { S.turn = 3; S.date = new Date(2027, 5, 7).getTime(); render(); tripSheet('wallawalla'); });
+  assert(/0 of \d stops/.test(await page.textContent('#tripcnt')), 'the trip header should count stops');
+  const sticky = await page.evaluate(() => getComputedStyle(document.querySelector('#sheet .sheethead')).position);
+  assert(sticky === 'sticky', 'the trip header should stay put');
+  await page.click(`${open} [data-stop="market"]`);
+  assert(/1 of \d stops/.test(await page.textContent('#tripcnt')), 'the count should follow the picks');
+  await page.click(`${open} #go`);
+  assert(/Rest \+ 🚗 Walla Walla/.test(await page.textContent('#end')), await page.textContent('#end'));
+});
+
+await t.check('i72-b06: tap the cash for last week in and out, next week, and the full outlook', async () => {
+  await life({ jobId: 'farmhand', money: 3000 }, 'home');
+  await page.click('#moneybtn');
+  assert(/End a week/.test(await page.textContent(open)), 'before a week, the sheet should say pay shows up after one');
+  await page.keyboard.press('Escape');
+  await page.click('#end'); await clearSheets();
+  await page.click('#moneybtn');
+  const txt = await page.textContent(open);
+  assert(/Last week/.test(txt) && /Paycheck/.test(txt) && /Bills out/.test(txt) && /Next week/.test(txt) && /Cash after/.test(txt), txt.slice(0, 300));
+  await page.click(`${open} #cashout`);
+  assert(/Money outlook/.test(await page.textContent(open)), 'the outlook should open');
+  await page.click(`${open} #back`);
+  assert(/Cash:/.test(await page.textContent(open)), 'Back should return to the cash sheet');
+  await page.keyboard.press('Escape');
+});
+
+await t.check('i12-b03/i23-a05/i50-a03: the debt warning fits the mode, the town goal shows what is left and the reward, one goal line at a time', async () => {
+  const warn = async (mode, money) => { await life({ jobId: 'farmhand', mode, money }, 'home'); return page.textContent('#main'); };
+  assert(/Below -\$40,000 you'll have to leave town/.test(await warn('normal', -16000)), 'Normal warns at -$15,000 about -$40,000');
+  const hard = await warn('hard', -11000);
+  assert(/Below -\$25,000 \(Hard mode\)/.test(hard), 'Hard warns sooner about -$25,000');
+  const rel = await warn('relaxed', -16000);
+  assert(/won't have to leave town/.test(rel) && !/you'll have to leave town/.test(rel), 'Relaxed never says you have to leave');
+  await life({ jobId: 'farmhand', date: new Date(2027, 0, 4).getTime() }, 'home');
+  const g = await page.textContent('#main .sgoal');
+  assert(/4 more needed · \d+ weeks left · reward ▲5 community ▲4 happiness/.test(g), g);
+  await page.evaluate(() => { S.scenario = 'farm'; render(); });
+  assert((await page.$$('#main .sgoal')).length === 1 && /Challenge/.test(await page.textContent('#main .sgoal')), 'a challenge life shows only the challenge line');
+});
+
+await t.check('i20-a01/a02/a09: chips keep their words, the Journal counts each filter, and the job board has three sections', async () => {
+  await life({ jobId: 'farmhand' }, 'jobs');
+  const chips = await page.$$eval('.chips .chip', cs => cs.map(c => ({ w: c.getBoundingClientRect().width, s: c.scrollWidth, shrink: getComputedStyle(c).flexShrink })));
+  assert(chips.every(c => c.shrink === '0' && c.w + 1 >= c.s), JSON.stringify(chips.slice(0, 4)));
+  const heads = await page.$$eval('.boardh', hs => hs.map(h => h.textContent.replace(/\s+/g, ' ').trim()));
+  assert(heads.length === 3 && /Can apply \d+/.test(heads[0]) && /Needs a certificate \d+/.test(heads[1]) && /Needs a degree \d+/.test(heads[2]), JSON.stringify(heads));
+  const order = await page.evaluate(() => [...document.querySelectorAll('.boardh, [data-locked], [data-apply]')].map(e => e.matches('.boardh') ? 'H' : e.dataset.locked ? 'L' : 'A').join(''));
+  assert(/^HA+H/.test(order) && !/L.*A/.test(order), `apply rows should come before locked rows: ${order}`);
+  await page.evaluate(() => { S.log.unshift({ d: 'x', m: 'Drove home a used sedan.', k: 'money' }); tab = 'log'; render(); });
+  const counts = await page.$$eval('[data-lf]', cs => cs.map(c => c.textContent.trim()));
+  assert(/^💰 Money1$/.test(counts[1]) && /🚗 Trips0$/.test(counts[4]), JSON.stringify(counts));
+  assert(/Money, 1 entry/.test(await page.getAttribute('[data-lf="money"]', 'aria-label')), 'the count should be read out');
+});
+
+await t.check('i20-a14/a22/a28/a30/i50-a04: two-line Buy buttons, one way to count visits, the score table, Start under each challenge, home first on Life', async () => {
+  await life({ jobId: 'farmhand', money: 50000 }, 'life');
+  const first = await page.$$eval('#main .card h3', hs => hs.slice(0, 2).map(h => h.textContent));
+  assert(/Home in Waitsburg/.test(first[0]) && /Ride/.test(first[1]), JSON.stringify(first));
+  assert(!/Around town/.test(await page.textContent('#main')), 'the Around town card should be gone');
+  const buys = await page.$$eval('[data-home].buy2, [data-car].buy2', bs => bs.map(b => Math.round(b.getBoundingClientRect().width)));
+  assert(buys.length >= 3 && new Set(buys).size === 1, `Buy buttons should share one width: ${buys}`);
+  assert(/^Buy\$[\d,]+ down$/.test((await page.textContent('[data-home="fixer"]')).trim()), await page.textContent('[data-home="fixer"]'));
+  const why = await page.evaluate(() => lineWhy('Food & utilities', FOCUS.rest, null));
+  assert(/Burg Basket/.test(why) && /stock up/.test(why), why);
+  await page.evaluate(() => { tab = 'home'; render(); });
+  assert(/Visits left this week: 2 of 2/.test(await page.textContent('#outbtn')), await page.textContent('#outbtn'));
+  await page.evaluate(() => bizSheet(PLACES.find(p => !placeClosed(p) && shownActs(p).some(a => !a.info)).id));
+  assert(/Visits left this week: 2 of 2/.test(await page.textContent(open)), 'the business card should count the same way');
+  await page.evaluate(() => { closeSheet(); S.noEvents = true; finish('done'); });
+  const cols = await page.$$eval(`${open} table.scoremath thead th`, ths => ths.map(t => t.textContent));
+  assert(cols.join() === 'Stat,Score,Weight,Points', cols.join());
+  assert((await page.$$(`${open} table.scoremath tbody tr`)).length >= 5, 'four stats and the total');
+  await page.click(`${open} #again`);
+  await page.click('#chal');
+  const fit = await page.$$eval(`${open} [data-sc]`, bs => bs.map(b => b.getBoundingClientRect().right <= innerWidth && b.closest('.chrow').querySelector('.s').getBoundingClientRect().bottom <= b.getBoundingClientRect().top));
+  assert(fit.length > 3 && fit.every(Boolean), 'each Start should sit under its description, on screen');
+  await page.keyboard.press('Escape');
+});
+
+await t.check('the heir sheet keeps the will line in one block (no narrow column)', async () => {
+  await life({ jobId: 'farmhand' }, 'home', 'life');
+  await page.evaluate(() => { S.kids = [S.ageMonths - 240]; S.money = 30000; S.will = true; finish('done'); });
+  await page.click(`${open} #legacy`);
+  const w = await page.evaluate(() => { const c = document.querySelector('#sheet .card.tip'); return [c.getBoundingClientRect().width, c.firstElementChild.getBoundingClientRect().width, c.children.length]; });
+  assert(w[2] === 1 && w[1] > w[0] * 0.7, JSON.stringify(w));
+  await page.evaluate(() => { closeSheet(); S = null; renderTitle(); });
 });
 
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });

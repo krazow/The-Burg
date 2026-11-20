@@ -173,7 +173,7 @@ function placeLine(p){
 }
 function outButton(){
   const n = visitsLeft();
-  return `<button class="btn ghost outbtn" id="outbtn">🛍️ Out and about<small>${n ? `${n} of ${OUT_MAX} quick visits left this week` : 'No visits left this week'}</small></button>`;
+  return `<button class="btn ghost outbtn" id="outbtn">🛍️ Out and about<small>${n ? `Visits left this week: ${n} of ${OUT_MAX}` : 'No visits left this week'}</small></button>`;
 }
 function outSheet(){
   const grp = (title, list) => `<h3 class="triph">${title}</h3>` + list.map(p => `<button class="kv job tripto" data-place="${p.id}"><span><span class="t">${p.ic} ${esc(p.name)}</span><span class="s">${esc(p.addr)} · ${placeLine(p)}</span></span><span aria-hidden="true">›</span></button>`).join('');
@@ -198,7 +198,7 @@ function bizSheet(pid, fromList){
     ${acts.map(a => { const why = actBlocked(p, a);
       return `<button class="stopbtn" data-act="${a.id}" ${why ? 'disabled' : ''}><span class="t">${a.ic} ${a.name}</span><span class="s">${why || actWhat(a)}</span>${a.note && !why ? `<span class="s">${a.note}</span>` : ''}</button>`; }).join('')}
     ${hidden ? '<p class="muted">Drinks here are for 21 and over.</p>' : ''}
-    ${acts.some(a => !a.info) ? `<p class="muted">Visits this week: ${o.n} of ${OUT_MAX}.</p>` : ''}
+    ${acts.some(a => !a.info) ? `<p class="muted">Visits left this week: ${visitsLeft()} of ${OUT_MAX}.</p>` : ''}
     ${jobs ? `<h3 class="triph">Work here</h3>${jobs}<p class="muted">Apply on the Jobs tab.</p>` : ''}
     ${bizRecent(pid)}
     <div id="bizout" role="status"></div>
@@ -365,19 +365,7 @@ const OUT_EVENT_BIZ = { 'Feeling run down':'clinic', 'An inheritance':'legal', '
 for (const e of OUT_EVENTS) OUT_EVENT_BIZ[e.title] = e.biz;
 for (const [t, b] of Object.entries(OUT_EVENT_BIZ)) EVENT_PLACE[t] = ['T', placeById(b).st === 'preston' ? b : 'mainst'];
 
-/* ---- life systems at real places (#53): the Life tab's Around town card ---- */
-function townLifeCard(){
-  const a0 = age(), food = cost(FOOD_UTIL - (S.turn < S.stockUntil ? GROCERY_SHARE * STOCK_OFF : 0)) * (1 - skillLv('cook') * 0.04);
-  const btn = id => `<button class="sm alt" onclick="BIZTAP('${id}')">${placeById(id).ic} ${esc(placeById(id).name)}</button>`;
-  return `<div class="card"><h3>🏘️ Around town</h3>
-    <div class="kv"><span>🏦 Savings and loans</span><span>Standard Bearer Bank</span></div>
-    <div class="kv"><span>🩺 Health care${healthMonthly() ? ` (${wk(cost(healthMonthly()))})` : a0 < 50 ? ' (Apple Health, $0)' : ''}</span><span>The Burg Clinic</span></div>
-    <div class="kv"><span>🛒 Food and utilities (${wk(food)})</span><span>Burg Basket Grocery</span></div>
-    <div class="kv"><span>🔨 Home repairs</span><span>Local trades</span></div>
-    <p class="muted" style="margin:6px 0">Shop local at Burg Basket for a little community, or stock up on a trip to Walla Walla for ${STOCK_OFF * 100}% off groceries.${HOMES[S.home].own ? ' Storm damage and fixer-upper work go to the local trades.' : ''}</p>
-    ${newHome() ? `<p style="margin:6px 0"><b>New place?</b> The Junque Sisters and Dreamy Garden Center can help make it home.</p>${btn('junque')} ${btn('garden')}` : `${btn('bank')} ${btn('clinic')}`}
-  </div>`;
-}
+// i50-a04: the Life tab's Around town card is gone; its grocery tip lives in the Food & utilities line of the week's money details
 // a line of local news for the week's details
 const TATTLER = [
   'Council debates the new crosswalk on Main Street.', 'The Cardinals win at home in overtime.', 'Library story hour moves to Saturdays.',

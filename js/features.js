@@ -133,7 +133,7 @@ function tripSheet(city){
         <span class="t">${s.ic} ${s.name}</span><span class="s">${why ? why : what}${s.date && S.partner && !why ? ' · for two' : ''}</span>${s.note && !why ? `<span class="s">${s.note}</span>` : ''}</button>`;
     }).join('');
   }).join('');
-  sheet(`<h2>${TOWNIC[city]} Trip to ${c.name}</h2>
+  sheet(`<div class="sheethead"><h2>${TOWNIC[city]} <span class="sr-only">Trip to </span>${c.name}</h2><span class="cnt" id="tripcnt"></span><button class="sm alt" id="close">Close</button></div>
     <p class="muted">${c.miles} mi each way · ${gas ? `gas about ${fmt(gas)}. A trip takes part of your week: your focus works at ${TRIP_TIME*100}%.` : 'You work here, so you\'ll stop on the way home: no extra gas or time.'}</p>
     ${debtTripNote()}
     ${S.trip && S.trip.city !== city ? `<p class="muted">This replaces your trip to ${CITIES[S.trip.city].name}.</p>` : ''}
@@ -148,6 +148,7 @@ function tripSheet(city){
     if ($('#van')) { $('#van').classList.toggle('on', vanOn); $('#van').setAttribute('aria-pressed', vanOn); $('#van').disabled = !!sel.length && !vanFits(city, sel); }
     const total = (vanOn ? cost(VAN_FARE) : gas) + sel.reduce((a, id) => a + stopCost(stopById(id), city), 0);
     $('#tripsum').textContent = sel.length ? `${sel.length} of ${max} stop${max === 1 ? '' : 's'} · about ${fmt(total)} in all` : `Pick up to ${max} stop${max === 1 ? '' : 's'}.`;
+    $('#tripcnt').textContent = `${sel.length} of ${max} stop${max === 1 ? '' : 's'}`;   // i20-a23: the sticky header keeps the count in view
     $('#go').disabled = !sel.length;
     document.querySelectorAll('[data-stop]').forEach(b => {
       const s = stopById(b.dataset.stop), on = sel.includes(s.id);
@@ -161,10 +162,11 @@ function tripSheet(city){
   });
   $('#go').onclick = () => {
     const err = planTrip(city, sel, van); if (err) return toast(err);
-    save(); closeSheet(); render(); toast(`🚗 Trip to ${c.name} planned for this week`);
+    save(); closeSheet(); render(); announce(`Trip to ${c.name} planned for this week. End Week now shows it.`);   // i23-a04: the End Week button shows it, so no toast on top of it
   };
   if ($('#cancel')) $('#cancel').onclick = () => { S.trip = null; save(); closeSheet(); render(); toast('Trip canceled'); };
   $('#back').onclick = tripPicker;
+  $('#close').onclick = closeSheet;
   if ($('#van')) $('#van').onclick = () => { van = !van; sum(); };
   sum();
 }
@@ -341,12 +343,23 @@ function scenarioLine(){
   const sc = SCENARIOS[S.scenario]; if (!sc) return '';
   return `<div class="sgoal">${sc.ic} <b>Challenge:</b> ${sc.desc}${S.scWon ? ' ✅ Done!' : ''}</div>`;
 }
+// i20-a30: Start sits under each description (no more clipping at 360 wide), with the length and your best as tags.
+// i50-a05: the weekly challenge and your records moved here from the title screen.
 function challengesSheet(){
-  const won = store.get(CHALLENGE_KEY) || {};
+  const won = store.get(CHALLENGE_KEY) || {}, best = store.get(BEST_KEY) || {}, wk = best[`wk-${isoWeek()}`];
+  const nWon = Object.keys(SCENARIOS).filter(k => won[k]).length;
+  const tags = (len, b) => `<span class="tag">${LENGTHS[len].label}</span>${b != null ? `<span class="tag">Your best ${b}</span>` : ''}`;
   sheet(`<h2>🏁 Challenges</h2>
     <p class="muted">Set-up stories with a goal. They use the name you typed and Normal mode.</p>
-    ${Object.entries(SCENARIOS).map(([k,sc]) => `<div class="kv job"><div><div class="t">${sc.ic} ${sc.name}${won[k] ? ' ✅' : ''}</div><div class="s">${sc.desc} ${LENGTHS[sc.len].label}.</div></div><button class="sm" data-sc="${k}">Start</button></div>`).join('')}
+    <div class="chrow"><div class="t">📅 Weekly challenge (${isoWeek()}) ${tags('half', wk)}</div>
+      <div class="s">A 6-month life where everyone gets the same events and dice this week. Play it, then share your score card and compare with friends.</div>
+      <button class="sm" id="weekly">Start the weekly challenge</button></div>
+    <h3 style="margin-top:14px">Story challenges <span class="tag">${nWon}/${Object.keys(SCENARIOS).length} completed</span></h3>
+    ${Object.entries(SCENARIOS).map(([k,sc]) => `<div class="chrow"><div class="t">${sc.ic} ${sc.name}${won[k] ? ' ✅' : ''} ${tags(sc.len, best['sc-' + k])}</div><div class="s">${sc.desc}</div><button class="sm" data-sc="${k}" aria-label="Start: ${esc(sc.name)}">Start</button></div>`).join('')}
+    ${hasRecords() ? `<h3 style="margin-top:14px">🏆 Your records</h3><p class="muted" style="margin:2px 0">Your best Life Scores on this device.</p>${recordsTable()}` : ''}
+    ${badgeLine()}
     <button class="btn ghost" id="n">Close</button>`);
+  $('#weekly').onclick = () => { const name = (($('#nm') && $('#nm').value.trim()) || 'Dusty').slice(0,20); closeSheet(); startWeekly(name); };
   document.querySelectorAll('[data-sc]').forEach(b => b.onclick = () => {
     const sc = SCENARIOS[b.dataset.sc], name = (($('#nm') && $('#nm').value.trim()) || 'Dusty').slice(0,20), free = slots().indexOf(null);
     closeSheet();
@@ -842,7 +855,8 @@ function heirName(name){
 // i3-a33: what the will (or the lack of one) means for the grandkid
 function legacyWillLine(p){
   const inh = inheritance(p);
-  return inh.will ? `<div class="card tip">📜 <b>${esc(p.name)} left a will.</b> ${fmt(inh.now)} passes right away${inh.home ? `, and so does the ${HOMES[inh.home].name.toLowerCase()}` : ''}.</div>`
+  // the tip card is a flex row: one wrapper keeps the sentence in one block, so it doesn't wrap into a narrow column
+  return inh.will ? `<div class="card tip"><div>📜 <b>${esc(p.name)} left a will.</b> ${fmt(inh.now)} passes right away${inh.home ? `, and so does the ${HOMES[inh.home].name.toLowerCase()}` : ''}.</div></div>`
     : `<div class="card warn">⚖️ <b>No will.</b> ${inh.later > 0 ? `${HOMES[p.home] && HOMES[p.home].own ? 'The house is sold, and p' : 'P'}robate takes ${fmt(inh.cut)} and about 6 months: ${fmt(inh.later)} arrives after 26 weeks.` : 'There\'s nothing to pass on.'}</div>`;
 }
 // pick (or type) the grandkid's name before the next generation starts
@@ -995,7 +1009,8 @@ function lifeScore(){
 }
 function finish(reason){
   const { score, title, avgH, avgHe, nw, real, wealth, parts, bonus, bk: bkPts } = lifeScore();
-  const part = (l, sub, v, w) => `<div class="kv"><span>${l}<br><small class="muted">${sub}</small></span><span><b>${v}</b>/100 × ${w}% = <b>${Math.round(v * w / 100)}</b></span></div>`;
+  // i20-a28: four tight columns (Stat · Score · Weight · Points), the range notes in small text under each stat
+  const part = (l, sub, v, w) => `<tr><th scope="row">${l}<small>${sub}</small></th><td>${v}</td><td>${w}%</td><td>${Math.round(v * w / 100)}</td></tr>`;
   const sc = SCENARIOS[S.scenario], scWin = sc ? (S.scWon || sc.win()) : false;
   if (sc && scWin) markChallenge(S.scenario);
   const best = store.get(BEST_KEY) || {};
@@ -1012,12 +1027,15 @@ function finish(reason){
     <p style="text-align:center;margin-top:0"><b>${title}</b>${mode() !== 'normal' ? ` <span class="tag">${MODES[mode()].ic} ${MODES[mode()].name} score</span>` : ''}${isBest ? ` · <span class="tag cur">New best${mode() !== 'normal' ? ` (${MODES[mode()].name})` : ''}!</span>` : ''}</p>
     ${modeScoreNote()}
     <h3 style="margin-top:10px">How the score adds up</h3>
+    <table class="rec scoremath"><caption class="sr-only">How the score adds up</caption>
+      <thead><tr><th scope="col">Stat</th><th scope="col">Score</th><th scope="col">Weight</th><th scope="col">Points</th></tr></thead><tbody>
     ${part('Happiness', `average ${Math.round(avgH)} (30 → 0, 90 → 100)`, parts.happy, 30)}
     ${part('Health', `average ${Math.round(avgHe)} (40 → 0, 95 → 100)`, parts.health, 20)}
     ${part('Community', `ended at ${Math.round(S.community)} (10 → 0, 90 → 100)`, parts.community, 20)}
     ${part('Net worth', `${fmt(nw)}${S.col > 1.05 ? ` (${fmt(real)} in 2027 dollars)` : ''} of ${fmt(LENGTHS[S.len].target)}`, parts.wealth, 30)}
-    ${bonus ? `<div class="kv"><span>🎯 Life goals reached</span><span><b>+${bonus}</b></span></div>` : ''}
-    ${bkPts ? `<div class="kv"><span>⚖️ Bankruptcy</span><span><b>−${bkPts}</b></span></div>` : ''}
+    ${bonus ? `<tr><th scope="row" colspan="3">🎯 Life goals reached</th><td>+${bonus}</td></tr>` : ''}
+    ${bkPts ? `<tr><th scope="row" colspan="3">⚖️ Bankruptcy</th><td>−${bkPts}</td></tr>` : ''}
+    <tr><th scope="row" colspan="3">Life Score</th><td>${score}</td></tr></tbody></table>
     ${sc ? `<div class="card ${scWin ? 'tip' : 'warn'}" style="margin-top:10px">${sc.ic} <b>${scWin ? 'Challenge complete!' : 'Challenge not met this time.'}</b> ${sc.name}: ${sc.desc}</div>` : ''}
     ${Object.keys(S.badges || {}).length ? `<h3 style="margin-top:10px">Badges</h3><p>${BADGES.filter(b => S.badges[b.id]).map(b => `${b.ic} ${b.name}`).join(' · ')}</p>` : ''}
     <h3 style="margin-top:10px">Your life</h3>
