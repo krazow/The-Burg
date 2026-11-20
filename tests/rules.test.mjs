@@ -141,7 +141,7 @@ await t.check('events follow their rules: seasons, cooldowns, once-only, and job
 });
 
 await t.check('at 0 health you go to the hospital (outside Lifetime), with a bill', async () => {
-  const r = await ev(() => { fresh('two', { health: -5, jobId: 'hanford', focus: 'work' }); const m = S.money; const res = week(); return { note: res.notes.join(' '), health: S.health, paid: m + S.last.net - S.money }; });
+  const r = await ev(() => { fresh('two', { health: -5, jobId: 'hanford', focus: 'work' }); const m = S.money; const res = week(); return { note: res.notes.join(' '), health: S.health, paid: -(res.lines['🏥 Hospital bill'] || 0) }; });   // i71-b05: the bill is a money line now
   assert(r.note.includes('hospital') && r.health === 30 && near(r.paid, 6500 + 1200, 0.02), JSON.stringify(r));   // i74-a04: plus the ambulance ride (no membership)
 });
 
@@ -549,7 +549,7 @@ await t.check('a business costs money up front, earns, counts in net worth, and 
     let earned = 0, work = 0; for (let i = 0; i < 20; i++) { S.focus = 'rest'; const l = week().lines; earned += l['🪚 Woodworking shop'] || 0; }
     S.focus = 'community'; for (let i = 0; i < 4; i++) work += week().lines['🪚 Woodworking shop'] || 0;
     const m = S.money; sellBiz(); const got = S.money - m;
-    fresh('two', { money: 10000, date: new Date(2027, 6, 5).getTime() }); render(); startBiz('wheat'); let check = 0, n = 0;
+    fresh('two', { money: 10000, date: new Date(2027, 1, 5).getTime() }); render(); startBiz('wheat'); S.date = new Date(2027, 6, 5).getTime(); let check = 0, n = 0;   // i22-a04: leased by March
     for (let i = 0; i < 6; i++) { const l = week().lines; if (l['🌾 Harvest check']) { check = l['🌾 Harvest check']; n++; } }
     return { lost: nw0 - nw1, earned, work, got, biz: S.biz && S.biz.type, check, n }; });
   assert(near(r.lost, 6000 * 0.4, 0.02), `starting should only lose 40% of the cost in net worth: ${r.lost}`);
@@ -1363,7 +1363,7 @@ await t.check('older saves get the round-3 job fields', async () => {
 /* ---------- round 3: money ---------- */
 await t.check('i3-a15: wheat has a July price; the harvest waits on sell-or-store; storing costs a fee and sells by July', async () => {
   const r = await ev(() => {
-    fresh('two', { money: 20000, date: new Date(2027, 6, 5).getTime() }); render(); startBiz('wheat');
+    fresh('two', { money: 20000, date: new Date(2027, 1, 5).getTime() }); render(); startBiz('wheat'); S.date = new Date(2027, 6, 5).getTime();   // i22-a04: leased by March
     const prices = []; for (let i = 0; i < 300; i++) { S.monKey = 0; moneyMonth([]); prices.push(S.wheatPrice); }
     const avgP = prices.reduce((a, v) => a + v, 0) / prices.length;
     S.wheatPrice = WHEAT_BASE; S.noEvents = false; S.due = []; S.date = new Date(2027, 7, 2).getTime(); const lines = [];
@@ -1382,7 +1382,7 @@ await t.check('i3-a15: wheat has a July price; the harvest waits on sell-or-stor
 
 await t.check('i3-a16: crop insurance costs about what a drought year loses on average, charged in April', async () => {
   const r = await ev(() => {
-    fresh('two', { money: 20000, date: new Date(2027, 3, 5).getTime() }); render(); startBiz('wheat');
+    fresh('two', { money: 20000, date: new Date(2027, 2, 5).getTime() }); render(); startBiz('wheat'); S.date = new Date(2027, 3, 5).getTime();   // i22-a04: leased by March
     const sample = ins => { S.biz.ins = ins; const a = []; for (let i = 0; i < 4000; i++) { S.wx = null; a.push(wheatYield()); } return a; };   // i75-a01: a new weather year each draw
     const off = sample(false), on = sample(true);
     const lines = []; bizWeek(lines, []); const prem = (lines.find(l => /premium/.test(l[0])) || [])[1]; const again = []; bizWeek(again, []);
@@ -1974,6 +1974,87 @@ await t.check('i75: older saves load with the new fields filled in (unvested mat
   const r = await ev(() => { const old = JSON.parse(JSON.stringify(fresh('two', { jobId: 'farmhand', k401: 500, ui: 3 }))); delete old.k401match; delete old.uiPay;
     const m = migrate(old); S = m; S.jobId = null; const ui = week().lines['Unemployment benefits']; return { match: m.k401match, uiPay: m.uiPay, ui }; });
   assert(r.match === 0 && r.uiPay === null && near(r.ui, 1500 * W), JSON.stringify(r));
+});
+
+await t.check('i22-a12: a food-truck weekend keeps hustle experience from fading', async () => {
+  const r = await ev(() => {
+    const run = truck => { fresh('two', { focus: 'hustle', hustleWeeks: 20, hustleLast: 0, turn: 100, money: 50000 }); S.date = new Date(2028, 4, 10).getTime();
+      if (truck) S.biz = { type: 'truck', weeks: 0, earned: 0, dep: 1, permitYear: 2028 }; const t0 = S.turn; week(); return { last: S.hustleLast, t0, hw: S.hustleWeeks }; };
+    return { truck: run(true), gig: run(false) }; });
+  assert(r.truck.last === r.truck.t0 && r.truck.hw === 20, `truck week ${JSON.stringify(r.truck)}`);
+  assert(r.gig.last === r.gig.t0 && r.gig.hw === 21, `gig week ${JSON.stringify(r.gig)}`);
+});
+
+await t.check('i22-a03: a new job clears leftover unemployment months', async () => {
+  const r = await ev(() => { fresh('two', { ui: 4, uiPay: 2000 }); startJob('diner'); const ui = S.ui; S.jobId = null; return { ui, line: week().lines['Unemployment benefits'] }; });
+  assert(r.ui === 0 && r.line == null, JSON.stringify(r));
+});
+
+await t.check('i22-a04: a wheat lease taken after March skips that year\'s farming bill and harvest; one taken by March gets both', async () => {
+  const r = await ev(() => {
+    const run = mo => { fresh('two', { money: 50000 }); S.date = new Date(2028, mo, 3).getTime(); startBiz('wheat'); const seen = {};
+      while (new Date(S.date).getFullYear() === 2028) { week(); for (const [l] of S.last.lines) seen[l] = 1; } return seen; };
+    const late = run(5), early = run(1);
+    return { lateFarm: !!late['🌾 Custom farming, seed and fertilizer'], lateHarvest: !!late['🌾 Harvest check'], earlyFarm: !!early['🌾 Custom farming, seed and fertilizer'], earlyHarvest: !!early['🌾 Harvest check'] }; });
+  assert(!r.lateFarm && !r.lateHarvest && r.earlyFarm && r.earlyHarvest, JSON.stringify(r));
+});
+
+await t.check('i22-a06: a wheat lease sells for what is left of it, so renewing then selling loses money', async () => {
+  const r = await ev(() => { fresh('two', { money: 50000 }); S.biz = { type: 'wheat', weeks: 0, earned: 0, dep: 1, lease: LEASE_WEEKS };
+    const v0 = bizValue(); S.biz.weeks = LEASE_WEEKS / 2; const half = bizValue(); S.biz.weeks = LEASE_WEEKS; const end = bizValue();
+    const m0 = S.money; renewLease(); const paid = m0 - S.money, after = bizValue(); return { v0, half, end, paid, after, full: cost(6000) * 0.6 }; });
+  assert(near(r.v0, r.full) && near(r.half, r.full / 2) && r.end === 0, JSON.stringify(r));
+  assert(r.paid > 0 && r.after < r.paid, `renew ${r.paid}, sell ${r.after}`);
+});
+
+await t.check('i22-a07: a goal you already meet can\'t be newly pinned for free points', async () => {
+  const r = await ev(() => { fresh('two', { retired: true }); const met = goalMetNow('retired');
+    goalsSheet(); const btn = document.querySelector('[data-goal="retired"]'); const dis = btn.disabled; btn.click(); $('#ok').click();
+    const pinned = S.goals.includes('retired'); S.goals = ['retired']; S.goalAt = { retired: S.turn }; const kept = goalMetNow('retired'); return { met, dis, pinned, kept }; });
+  assert(r.met && r.dis && !r.pinned && !r.kept, JSON.stringify(r));
+});
+
+await t.check('i22-a08: winter tires don\'t carry over to a new vehicle', async () => {
+  const r = await ev(() => { fresh('two', { money: 60000, car: 'beater', tires: 'beater', carValue: 2500 }); buyCar('sedan'); $('#y').click(); const t1 = S.tires;
+    S.money = 60000; buyCar('beater'); if ($('#y')) $('#y').click(); return { t1, car: S.car, t2: S.tires }; });
+  assert(r.t1 === null && (r.car !== 'beater' || r.t2 === null), JSON.stringify(r));
+});
+
+await t.check('i22-a15: extra class weeks carry into the next program', async () => {
+  const r = await ev(() => { fresh('two', { edu: 0, studyProg: 15 }); classWeeks(4); const a = { edu: S.edu, p: S.studyProg };
+    fresh('two', { edu: 2, studyProg: 71 }); classWeeks(4); return { a, b: { edu: S.edu, p: S.studyProg } }; });
+  assert(r.a.edu === 1 && r.a.p === 3 && r.b.edu === 3 && r.b.p === 0, JSON.stringify(r));
+});
+
+await t.check('i22-a19: the Lifetime header bar and the score\'s on-track target use the same 18-to-65 span', async () => {
+  const r = await ev(() => { fresh('life', { ageMonths: Math.round(41.5 * 12) }); tab = 'home'; render();
+    return { bar: $('.progress i').style.width, gp: gameProgress(), lp: lifeProgress() }; });
+  assert(near(parseFloat(r.bar), 50, 0.01) && near(r.gp, 0.5, 0.01) && r.gp === r.lp, JSON.stringify(r));
+});
+
+await t.check('i60-a12: the Home debt card names the limit weekTick uses in each mode; Relaxed has no ending line', async () => {
+  const r = await ev(() => {
+    const card = (md, money) => { fresh('two', { mode: md, money }); tab = 'home'; render(); const c = $('#debtwarn'); return c ? c.textContent : null; };
+    const ends = (md, money) => { fresh('two', { mode: md, money }); return !!weekTick(false).debt; };
+    return { hard: card('hard', -12000), normalQuiet: card('normal', -12000), normal: card('normal', -16000), relaxed: card('relaxed', -16000),
+      limits: [debtLimit('hard'), debtLimit('normal'), debtLimit('relaxed')], hardEnd: ends('hard', -26000), normalEnd: ends('normal', -26000), relaxedEnd: ends('relaxed', -60000), floor: S.money }; });
+  assert(r.hard && r.hard.includes('-$25,000') && !r.normalQuiet && r.normal.includes('-$40,000') && r.relaxed && !/leave town/.test(r.relaxed), JSON.stringify(r));
+  assert(r.limits[0] === -25000 && r.limits[1] === -40000 && r.limits[2] === null && r.hardEnd && !r.normalEnd && !r.relaxedEnd && r.floor === -40000, JSON.stringify(r));
+});
+
+await t.check('i71-b05: the collections fee and a hospital bill show as money lines, so the lines add up to the change in cash', async () => {
+  const r = await ev(() => {
+    fresh('two', { money: -100, debtWeeks: 12 }); let m0 = S.money; week(); const fee = S.last.lines.find(l => l[0] === '📞 Collections fee'), d1 = S.money - m0, n1 = S.last.net;
+    fresh('two', { jobId: 'farmhand', focus: 'work', health: 0, money: 20000 }); m0 = S.money; week(); const bill = S.last.lines.find(l => l[0] === '🏥 Hospital bill'), d2 = S.money - m0, n2 = S.last.net;
+    return { fee: fee && fee[1], d1, n1, bill: bill && bill[1], d2, n2 }; });
+  assert(near(r.fee, -150) && near(r.d1, r.n1, 0.0001), JSON.stringify(r));
+  assert(r.bill < -6000 && near(r.d2, r.n2, 0.0001), JSON.stringify(r));
+});
+
+await t.check('i71-b04: promotion stress counts in weeks with events off', async () => {
+  const r = await ev(() => { const run = promo => { fresh('two', { jobId: 'farmhand', focus: 'rest', happy: 60 }); if (promo) S.promo = { job: 'farmhand', n: 2 }; weeks(1); return S.happy; };
+    return { base: run(false), promo: run(true) }; });
+  assert(near(r.base - r.promo, 0.6 * W, 0.01), JSON.stringify(r));
 });
 
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });
