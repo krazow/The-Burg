@@ -185,7 +185,7 @@ await t.check('every event\'s every choice works and shows a result', async () =
   }
   assert(tried >= titles.length, `only ${tried} choices across ${titles.length} events`);
   const cats = await page.evaluate(() => ['road', 'work'].map(c => EVENTS.filter(e => e.cat === c).length));
-  assert(cats[0] === 32 && cats[1] === 37, `expected 32 road and 37 work events (with the contract vote, the federal shutdown, a personal day, desk stiffness and round 75's wind on Highway 12, smoke rule, de-icing and Hanford heat), got ${cats}`);
+  assert(cats[0] === 32 && cats[1] === 38, `expected 32 road and 38 work events (with the contract vote, the federal shutdown, a personal day, desk stiffness and round 75's wind on Highway 12, smoke rule, de-icing, Hanford heat and the missing ASL interpreter), got ${cats}`);
   console.log(`     (${tried} choices across ${titles.length} events)`);
 });
 
@@ -2012,7 +2012,7 @@ await t.check('i70-b21: the install offer never redraws Home; its card sits belo
 await t.check('i20-a03 / i20-a04: a toast sits above the strip, fades, and waits while an event is open', async () => {
   await life({ jobId: 'farmhand' });
   await page.click('#end'); await clearSheets();
-  await page.evaluate(() => toast('Hello there'));
+  await page.evaluate(() => { TOAST_Q.length = 0; toast('Hello there'); });   // i17-a03: week one's start events can leave toasts queued
   const r = await page.evaluate(() => ({ t: $('#toast').getBoundingClientRect().bottom, s: ($('#strip') || $('.endbar')).getBoundingClientRect().top }));
   assert(r.t <= r.s, JSON.stringify(r));
   await page.waitForFunction(() => $('#toast').classList.contains('hidden'), null, { timeout: 4000 });
