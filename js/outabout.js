@@ -131,7 +131,7 @@ function placeClosed(p){
   return '';
 }
 // which of a place's options show at all (drinks only for 21 and over)
-const shownActs = p => p.acts.filter(a => !(a.min21 && age() < 21) && !(a.feat && !on(a.feat)));   // to-do 2 D2: an act for a feature that's off (the will in Easy)
+const shownActs = p => p.acts.filter(a => !(a.min21 && age() < 21) && !(a.feat && !on(a.feat)) && !(a.info && !on('out.extras')));   // to-do 2 D2: an act for a feature that's off (the will in Easy; the bank and trades sheets are Normal+)
 // i26-b05: a place where everything is 21 and over says so on its pin and in the list
 const only21 = p => age() < 21 && p.acts.some(a => a.min21) && !shownActs(p).some(a => !a.info);
 // why an option can't be done right now ('' when it can)
@@ -154,6 +154,7 @@ const actWhat = a => [a.cost ? fmt(actCost(a)) + (a.date && S.partner ? ' for tw
 
 // do it: pay, apply the (capped) effect, and return what happened
 function visit(pid, aid){
+  if (!on('out')) return { err:'Out and about isn\'t part of this life.' };
   const p = placeById(pid), a = p && actOf(p, aid);
   if (!a) return { err:'That place isn\'t in town.' };
   const why = actBlocked(p, a); if (why) return { err:why };
@@ -195,10 +196,12 @@ function placeLine(p){
   return shut ? `Closed: ${shut.replace(/^Closed (for )?/i, '').replace(/^\w/, c => c.toLowerCase())}` : `Open this week${from != null ? ` · ${from ? 'from ' + fmtc(from) : 'free'}` : ''}`;
 }
 function outButton(){
+  if (!on('out')) return '';
   const n = visitsLeft();
   return `<button class="btn ghost outbtn" id="outbtn">🛍️ Out and about${newTag('out')}<small>${n ? `Visits left this week: ${n} of ${OUT_MAX}` : 'No visits left this week'}</small></button>`;
 }
 function outSheet(){
+  if (!on('out')) return;
   openSystem('out', { quiet:true, how:'used' });   // i31: using it from anywhere (the checklist) opens it
   const grp = (title, list) => `<h3 class="triph">${title}</h3>` + list.map(p => `<button class="kv job tripto" data-place="${p.id}"><span><span class="t">${p.ic} ${esc(p.name)}</span><span class="s">${esc(p.addr)} · ${placeLine(p)}</span></span><span aria-hidden="true">›</span></button>`).join('');
   sheet(`<h2>🛍️ Out and about</h2>
@@ -209,9 +212,9 @@ function outSheet(){
   document.querySelectorAll('#sheet [data-place]').forEach(b => b.onclick = () => bizSheet(b.dataset.place, true));
   $('#no').onclick = closeSheet;
 }
-function bizJobs(p){ return JOBS.filter(j => j.place === p.id); }
+function bizJobs(p){ return !on('out.bizJobs') ? [] : JOBS.filter(j => j.place === p.id); }
 function bizSheet(pid, fromList){
-  const p = placeById(pid); if (!p) return;
+  const p = placeById(pid); if (!p || !on('out')) return;
   const shut = placeClosed(p), acts = shownActs(p), o = outState();
   const jobs = bizJobs(p).map(j => `<div class="kv"><span>💼 ${j.title}${S.jobId === j.id && !S.retired ? ' <span class="tag cur">Your job</span>' : ''}</span><span>${wk(payNow(j))}${j.edu ? ` · ${EDU[j.edu].replace(' diploma','').toLowerCase()}` : ''}</span></div>`).join('');
   const hidden = p.acts.length > acts.length;
@@ -240,6 +243,7 @@ function bizSheet(pid, fromList){
   $('#no').onclick = closeSheet;
 }
 function bankSheet(pid){
+  if (!on('out.extras')) return;
   const row = (l, v) => `<div class="kv"><span>${l}</span><span>${v}</span></div>`;
   const h = HOMES[S.home];
   sheet(`<h2>🏦 Standard Bearer Bank</h2><p class="evplace">📍 215 Main St.</p>
@@ -253,6 +257,7 @@ function bankSheet(pid){
   $('#back').onclick = () => bizSheet(pid, true); $('#no').onclick = closeSheet;
 }
 function tradesSheet(pid){
+  if (!on('out.extras')) return;
   sheet(`<h2>🔨 Local trades</h2>
     <p>When something breaks, these are the folks around town who fix it:</p>
     <div class="kv"><span>🧱 Fair Price Pours</span><span>Concrete</span></div><div class="kv"><span>🏗️ Sharp Point Builders</span><span>Construction</span></div>
@@ -287,12 +292,13 @@ function mainStreetSVG(){
   return s + '</svg>';
 }
 function mainStreetBlock(){
+  if (!on('out')) return '';
   return `<h3 class="triph">🔍 Main Street close-up</h3>${mainStreetSVG()}
     <div class="mapcap">Tap a business for its card: when it's open and what you can do there. Dashed pins are closed this week.</div>
     <button class="btn ghost" data-call="outSheet">🛍️ Out and about: every place in town</button>`;
 }
 // Preston Avenue businesses as pins on the town map (along Highway 12 heading out toward Dayton)
-const outTownPins = () => PLACES.filter(p => p.st === 'preston').map(p => ({ k:p.id, lb:p.lb, ic:p.ic, x:p.x, y:p.y, name:p.name, biz:p.id, desc:`${p.desc} ${p.addr}.` }));
+const outTownPins = () => !on('out') ? [] : PLACES.filter(p => p.st === 'preston').map(p => ({ k:p.id, lb:p.lb, ic:p.ic, x:p.x, y:p.y, name:p.name, biz:p.id, desc:`${p.desc} ${p.addr}.` }));
 function outTownDetail(p){
   const b = placeById(p.biz), f = p.focus && FOCUS[p.focus];
   const btn = !f ? '' : S.focus === p.focus ? `<span class="tag cur">This week's focus: ${f.name}</span>`
@@ -402,4 +408,4 @@ const TATTLER = [
   'Wheat prices tick up at the elevator.', 'The levee committee wants volunteers.', 'A letter to the editor about loose dogs.',
   'The fairgrounds get a fresh coat of paint.', 'Classifieds: a good used truck, cheap.', 'Bluegrass jam draws a crowd at Tonnage.'
 ];
-const tattlerLine = () => S && !S.practice ? `<p class="muted" style="margin-top:10px">📰 In The Touchet Tattler this week: ${TATTLER[S.turn % TATTLER.length]}</p>` : '';
+const tattlerLine = () => S && !S.practice && on('out.extras') ? `<p class="muted" style="margin-top:10px">📰 In The Touchet Tattler this week: ${TATTLER[S.turn % TATTLER.length]}</p>` : '';
