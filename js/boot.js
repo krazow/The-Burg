@@ -35,6 +35,7 @@ window.addEventListener('storage', e => {
   const g = newerOnDisk(); if (g) adoptNewer(g);
 });
 tagEventTiers();                 // to-do 2 D4: every event knows its difficulty tier
+migrateRecords();                // to-do 2 D7: finished lives from before difficulty modes are Classic
 pruneWeekly();
 renderTitle();
 setPref('lastSeen', Date.now());                 // i73-b13: the next visit can tell how long you were away

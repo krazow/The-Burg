@@ -528,18 +528,19 @@ await t.check('title screen: Challenges and records shows best scores by length 
   assert(!(await page.$('#records')) && !(await page.$('#weekly')), 'i50-a05: no records or weekly buttons on the title screen');
   assert(!/records/.test(await page.textContent('#chal')), 'Challenges should not mention records before any life is finished');
   assert(!(await page.$('.title .best')), 'the old long best-score line should be gone');
-  await page.evaluate(() => { store.set(BEST_KEY, { two: 66, 'half-hard': 48, 'life-relaxed': 71, 'sc-farm': 80, ['wk-' + isoWeek()]: 59, 'wk-2001-W01': 99 });
+  // to-do 2 D7: one column per difficulty; keys stored before difficulty modes ("two", "sc-farm") are on the Classic shelf
+  await page.evaluate(() => { store.set(BEST_KEY, { 'normal.two': 66, 'hard.half': 48, 'normal.life': 71, 'hard.sc-farm': 80, two: 44, ['normal.wk-' + isoWeek()]: 59, 'normal.wk-2001-W01': 99, 'wk-2001-W02': 98 });
     store.set(CHALLENGE_KEY, { farm: 1 }); pruneWeekly(); renderTitle(); });
   const kept = await page.evaluate(() => Object.keys(store.get(BEST_KEY)));
-  assert(!kept.includes('wk-2001-W01') && kept.includes('wk-' + await page.evaluate(() => isoWeek())), `old weekly bests should be pruned: ${kept}`);
+  assert(!kept.includes('normal.wk-2001-W01') && !kept.includes('wk-2001-W02') && kept.includes('normal.wk-' + await page.evaluate(() => isoWeek())), `old weekly bests should be pruned: ${kept}`);
   assert(/Challenges and records/.test(await page.textContent('#chal')), 'the Challenges button should say it holds the records');
   // i50-a05: the Challenges sheet holds the weekly row, each challenge's best, and the records table
   await page.click('#chal');
   const ch = await page.textContent(open);
   assert(/Weekly challenge/.test(ch) && /Your best 59/.test(ch) && /Your best 80/.test(ch) && /1\/4 completed/.test(ch) && /Your records/.test(ch), ch.slice(0, 400));
   const crow = await page.$$eval(`${open} table.rec tbody tr`, trs => trs.map(tr => [...tr.children].map(c => c.textContent.trim())));
-  assert(crow.length === 4 && crow[1][0] === '2 Years' && crow[1][2] === '66' && crow[0][3] === '48' && crow[3][1] === '71' && crow[0][1] === '–', JSON.stringify(crow));
-  assert(/Save the family farm ✅/.test(ch) && !/99/.test(ch), ch.slice(0, 300));
+  assert(crow.length === 4 && crow[1][0] === '2 Years' && crow[1][2] === '66' && crow[0][3] === '48' && crow[3][2] === '71' && crow[3][1] === '·' && crow[0][1] === '–', JSON.stringify(crow));
+  assert(/Save the family farm ✅/.test(ch) && !/99|98/.test(ch) && /🏛️ Classic/.test(ch) && /best 44/.test(ch), ch.slice(0, 300));
   await page.keyboard.press('Escape');
   assert(await page.isHidden('#modal'), 'Escape should close the records');
 });
@@ -1690,7 +1691,7 @@ await t.check('i73-b18: where a picture can\'t be shared, the score card downloa
   await page.waitForSelector('#sharetext');
   await page.click('#sharetext');
   await page.waitForSelector('#sharetextout:not(.hidden)');
-  assert((await page.textContent('#sharetextout')).includes('in a 6-month life in The Burg'), await page.textContent('#sharetextout'));
+  assert((await page.textContent('#sharetextout')).includes('in a 6-month life on Normal in The Burg'), await page.textContent('#sharetextout'));
   await page.evaluate(() => { closeSheet(); S = null; renderTitle(); });
 });
 
@@ -1959,7 +1960,7 @@ await t.check('i62-a23: two phones: finish a life, reload, back up records from 
   await p2.waitForSelector('#modal:not(.hidden) #ok');
   const r = await p2.evaluate(() => ({ best: Object.keys(store.get(BEST_KEY) || {}), badges: Object.keys(store.get(BADGE_KEY) || {}), tips: prefs().tips || [], title: $('#sheet h2').textContent }));
   await ctx2.close();
-  assert(r.best.includes('two') && r.badges.length === 2 && r.tips.includes('carpool') && /Backup restored/.test(r.title), JSON.stringify(r));   // i62-a08, i62-a10
+  assert(r.best.includes('normal.two') && r.badges.length === 2 && r.tips.includes('carpool') && /Backup restored/.test(r.title), JSON.stringify(r));   // i62-a08, i62-a10
 });
 
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });

@@ -241,39 +241,49 @@ function newbieSheet(set){
 function pruneWeekly(){
   { const w = readSlot(WEEKLY_SLOT); if (w && w.weekly !== isoWeek()) writeSlot(WEEKLY_SLOT, null); }   // i73-b11: the challenge week is over
   const best = store.get(BEST_KEY); if (!best) return;
-  const cur = `wk-${isoWeek()}`, stale = Object.keys(best).filter(k => k.startsWith('wk-') && k !== cur);
+  const cur = `wk-${isoWeek()}`, stale = Object.keys(best).filter(k => { const r = parseRecKey(k).rest; return r.startsWith('wk-') && r !== cur; });   // D7: on any shelf
   if (stale.length) { stale.forEach(k => delete best[k]); store.set(BEST_KEY, best); }
 }
 function hasRecords(){
   const best = store.get(BEST_KEY) || {};
   return Object.keys(best).some(k => bestLabel(k)) || Object.keys(store.get(CHALLENGE_KEY) || {}).length > 0 || ends().length > 0;
 }
-// the best-score table, shown in the Challenges sheet
+// the best-score table, shown in the Challenges sheet. to-do 2 D7: one column per difficulty; Classic lives get their own list
 function recordsTable(){
-  const best = store.get(BEST_KEY) || {}, mds = ['relaxed', 'normal', 'hard'];
+  const best = store.get(BEST_KEY) || {}, ds = DIFF_LIST;
   const notes = store.get(BEST_NOTE_KEY) || {};   // i63-a20: a best life's comeback line
   const cell = (v, k) => v == null ? '<span class="muted" aria-label="none yet">–</span>' : `<b>${v}</b>${notes[k] ? `<br><small class="muted comeback">${esc(notes[k])}</small>` : ''}`;
-  return `<table class="rec"><caption>Best score by game length and mode</caption>
-      <thead><tr><th scope="col">Length</th>${mds.map(m => `<th scope="col">${MODES[m].ic} ${MODES[m].name}</th>`).join('')}</tr></thead>
-      <tbody>${Object.entries(LENGTHS).map(([k, L]) => `<tr><th scope="row">${L.label}</th>${mds.map(m => `<td>${cell(best[bestKey(k, m)], bestKey(k, m))}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
-
+  const td = (len, d) => d === 'easy' && !LENGTHS[len].easy ? '<td><span class="muted" aria-label="not in Easy">·</span></td>' : `<td>${cell(best[recKey(d, len)], recKey(d, len))}</td>`;
+  return `<table class="rec"><caption>Best score by game length and difficulty</caption>
+      <thead><tr><th scope="col">Length</th>${ds.map(d => `<th scope="col">${shelfName(d)}</th>`).join('')}</tr></thead>
+      <tbody>${Object.entries(LENGTHS).map(([k, L]) => `<tr><th scope="row">${L.label}</th>${ds.map(d => td(k, d)).join('')}</tr>`).join('')}</tbody></table>`;
 }
-// i19-b03: the Custom shelf, kept apart from the table above
+// D7: best scores from lives played before difficulty modes, by length and the old mode, and old challenge bests
+function classicShelf(){
+  const best = store.get(BEST_KEY) || {}, notes = store.get(BEST_NOTE_KEY) || {};
+  const ks = Object.keys(best).filter(k => { const p = parseRecKey(k); return !p.cu && p.shelf === 'classic' && !p.rest.startsWith('wk-') && restLabel(p.rest) && Number.isFinite(best[k]); });
+  return ks.length ? `<h3 style="margin-top:14px">🏛️ Classic</h3><p class="muted">Lives from before Easy, Normal and Hard. They are kept apart.</p>${ks.map(k => `<div class="kv"><span>${esc(restLabel(k))}${notes[k] ? `<br><small class="muted comeback">${esc(notes[k])}</small>` : ''}</span><span>best <b>${best[k]}</b></span></div>`).join('')}` : '';
+}
+// i19-b03: the Custom shelf, kept apart from the table above (each line names its difficulty)
 function customShelf(){
   const best = store.get(BEST_KEY) || {};
-  const cu = Object.keys(best).filter(k => k.startsWith('cu-') && bestLabel(k) && Number.isFinite(best[k]));
-  return cu.length ? `<h3 style="margin-top:14px">🎛️ Custom rules</h3><p class="muted">Lives played with changed rules, kept apart from the table above.</p>${cu.map(k => `<div class="kv"><span>${esc(bestLabel(k.slice(3)))}</span><span>best <b>${best[k]}</b></span></div>`).join('')}` : '';
+  const cu = Object.keys(best).filter(k => parseRecKey(k).cu && bestLabel(k) && Number.isFinite(best[k]))
+    .sort((a, b) => SHELVES.indexOf(parseRecKey(a).shelf) - SHELVES.indexOf(parseRecKey(b).shelf));
+  return cu.length ? `<h3 style="margin-top:14px">🎛️ Custom rules</h3><p class="muted">Lives played with changed rules, kept apart from the table above.</p>${cu.map(k => { const p = parseRecKey(k); return `<div class="kv"><span>${shelfName(p.shelf)} · ${esc(restLabel(p.rest))}</span><span>best <b>${best[k]}</b></span></div>`; }).join('')}` : '';
 }
 // i50-a05: records live in the Challenges sheet
 const recordsSheet = () => challengesSheet();
-// i73-b02: the ten best finished lives on this device, from the stubs finish() leaves
-const top10 = () => ends().map((e, i) => [e, i]).sort((a, b) => b[0].score - a[0].score || a[1] - b[1]).slice(0, 10).map(x => x[0]);
+// i73-b02: the ten best finished lives on this device, from the stubs finish() leaves. D7: ten for each difficulty, then Classic
+const topOf = sh => ends().map((e, i) => [e, i]).filter(([e]) => endShelf(e) === sh).sort((a, b) => b[0].score - a[0].score || a[1] - b[1]).slice(0, 10).map(x => x[0]);
+const top10 = () => SHELVES.flatMap(topOf);   // in the order they are listed (data-end counts through all of them)
 function topLives(){
-  const t = top10(); if (!t.length) return '';
-  return `<h3 style="margin-top:14px">🏅 Your top ${t.length === 10 ? 10 : t.length} ${t.length === 1 ? 'life' : 'lives'}</h3>
-    <table class="rec"><caption>Your best finished lives. Tap one to see how it ended.</caption>
+  const all = top10(); if (!all.length) return '';
+  let i = 0;
+  const table = sh => { const t = topOf(sh); if (!t.length) return '';
+    return `<table class="rec" data-shelf="${sh}"><caption>${shelfName(sh)}: your ${t.length === 1 ? 'best life' : `top ${t.length}`}. Tap one to see how it ended.</caption>
       <thead><tr><th scope="col">Name</th><th scope="col">Length</th><th scope="col">Score</th><th scope="col">Year</th></tr></thead>
-      <tbody>${t.map((e, i) => `<tr><th scope="row"><button class="linkbtn" data-end="${i}" aria-label="${esc(e.name)}, score ${e.score}: see how it ended">${esc(e.name)}</button></th><td>${LENGTHS[e.len] ? LENGTHS[e.len].label : ''}${MODES[e.mode] && e.mode !== 'normal' ? ` ${MODES[e.mode].ic}` : ''}</td><td><b>${e.score}</b> <span class="s">${esc(e.title || '')}</span></td><td>${Number.isFinite(e.to) ? e.to : ''}</td></tr>`).join('')}</tbody></table>`;
+      <tbody>${t.map(e => `<tr><th scope="row"><button class="linkbtn" data-end="${i++}" aria-label="${esc(e.name)}, score ${e.score}: see how it ended">${esc(e.name)}</button></th><td>${LENGTHS[e.len] ? LENGTHS[e.len].label : ''}${sh === 'classic' && MODES[e.mode] && e.mode !== 'normal' ? ` ${MODES[e.mode].ic}` : ''}</td><td><b>${e.score}</b> <span class="s">${esc(e.title || '')}</span></td><td>${Number.isFinite(e.to) ? e.to : ''}</td></tr>`).join('')}</tbody></table>`; };
+  return `<h3 style="margin-top:14px">🏅 Your top lives</h3>${SHELVES.map(table).join('')}`;
 }
 function endSummary(e){
   if (!e) return;
@@ -281,7 +291,7 @@ function endSummary(e){
   sheet(`<h2 style="text-align:center">${esc(e.name)}'s life in the Burg</h2>
     <p class="muted" style="text-align:center">${esc(e.cause || '')}</p>
     <div class="score">${e.score}</div><p style="text-align:center;margin-top:0"><b>${esc(e.title || '')}</b></p>
-    ${row('Played', `${LENGTHS[e.len] ? LENGTHS[e.len].label : ''}${MODES[e.mode] ? ` · ${MODES[e.mode].ic} ${MODES[e.mode].name}` : ''}${BACKGROUNDS[e.bg] ? ` · ${BACKGROUNDS[e.bg].ic} ${BACKGROUNDS[e.bg].name}` : ''}`)}
+    ${row('Played', `${LENGTHS[e.len] ? LENGTHS[e.len].label : ''} · ${endShelf(e) === 'classic' ? `🏛️ Classic${MODES[e.mode] && e.mode !== 'normal' ? ` (${MODES[e.mode].name})` : ''}` : shelfName(endShelf(e))}${BACKGROUNDS[e.bg] ? ` · ${BACKGROUNDS[e.bg].ic} ${BACKGROUNDS[e.bg].name}` : ''}`)}
     ${row('Years', `${e.from ?? ''}–${e.to ?? ''}${Number.isFinite(e.age) ? `, to age ${e.age}` : ''}`)}
     ${['happy', 'health', 'community', 'wealth'].filter(k => Number.isFinite(p[k])).map(k => row({ happy:'Happiness', health:'Health', community:'Community', wealth:'Net worth' }[k], `<b>${p[k]}</b>/100`)).join('')}
     ${row('Work', esc(e.job || ''))}${row('Home', esc(e.home || ''))}
@@ -550,7 +560,7 @@ async function readBackupOne(text){
   const when = typeof d.exported === 'string' || Number.isFinite(d.exported) ? new Date(d.exported) : null;   // H1: a date is shown only if it parses
   // i73-b01: finished-life stubs come along as plain values only
   const endsIn = (Array.isArray(d.ends) ? d.ends : []).filter(e => e && typeof e === 'object' && typeof e.name === 'string' && Number.isFinite(e.score)).slice(0, ENDS_MAX)
-    .map(e => Object.fromEntries(Object.entries(e).map(([k, v]) => [k, typeof v === 'string' ? noTags(v).slice(0, 200) : Number.isFinite(v) || v == null ? v ?? null : k === 'parts' && obj(v) ? Object.fromEntries(Object.entries(v).filter(([, x]) => Number.isFinite(x))) : null])));
+    .map(e => Object.fromEntries(Object.entries(e).map(([k, v]) => [k, typeof v === 'string' ? noTags(v).slice(0, 200) : typeof v === 'boolean' || Number.isFinite(v) || v == null ? v ?? null : k === 'parts' && obj(v) ? Object.fromEntries(Object.entries(v).filter(([, x]) => Number.isFinite(x))) : null])));
   return { lives, ends: endsIn, prefs: prefsIn, best: obj(d.best), badges: obj(d.badges), challenges: obj(d.challenges), exported: when && !isNaN(when) ? when.toISOString() : null };
 }
 // i63-b22: lives in a backup that are an earlier week of a life already on this phone (same life id)
@@ -568,7 +578,7 @@ function restoreBackup(b, mode){
   for (const [g] of olderCopies(b)) g.rewound = true;            // i63-b22: it still plays, but its ending sets no records
   { const have = ends(), seen = new Set(have.map(e => `${e.name}|${e.at}|${e.score}`));
     const add = (b.ends || []).filter(e => !seen.has(`${e.name}|${e.at}|${e.score}`));
-    if (add.length) store.set(ENDS_KEY, keepEnds([...have, ...add].sort((x, y) => (y.at || 0) - (x.at || 0)))); }
+    if (add.length) store.set(ENDS_KEY, keepEnds([...have, ...add].sort((x, y) => (y.at || 0) - (x.at || 0)))); migrateRecords(); }
   // i62-a10: seen tips are added together; a setting this phone already has stays as it is
   if (b.prefs) { const p = prefs();
     for (const [k, v] of Object.entries(b.prefs)) { if (k === 'tips' && Array.isArray(v)) p.tips = [...new Set([...(Array.isArray(p.tips) ? p.tips : []), ...v])]; else if (p[k] === undefined) p[k] = v; }
@@ -1275,7 +1285,7 @@ const STATINFO = {
 function showStatInfo(k){
   if (k === 'net') {
     const loan = S.loanLeft > 0 ? S.loanLeft * (S.loanPay || CARS.truck.pay) * 0.85 : 0;
-    const t = LENGTHS[S.len].target;
+    const t = lenTarget();
     sheet(`<h2>💰 Net worth</h2><p class="muted">Everything you own minus what you owe.</p>
       <div class="kv"><span>Cash</span><span>${fmt(S.money)}</span></div>
       <div class="kv"><span>${term('equity')}</span><span>${fmt(S.equity)}</span></div>
