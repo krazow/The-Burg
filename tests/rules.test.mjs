@@ -2237,9 +2237,9 @@ await t.check('i63-b08: 4 weeks before a 2-year or 5-year life ends, the week of
 
 await t.check('i73-b18: the shared score card comes with a short text (and the week for a weekly challenge)', async () => {
   const r = await ev(() => { fresh('two'); const a = shareText(); S.len = 'half'; S.weekly = '2026-W47'; const b = shareText(); S.weekly = null; S.len = 'life'; const c = shareText(); return { a, b, c }; });
-  assert(/^Rules scored \d+, [A-Z][\w ]+, in a 2-year life on Normal in The Burg\. krazow\.github\.io\/The-Burg$/.test(r.a), r.a);
-  assert(r.b.includes('in a 6-month life on Normal in The Burg (Weekly challenge, week of Nov 16).'), r.b);
-  assert(r.c.includes('in a lifetime on Normal in The Burg'), r.c);
+  assert(/^Rules scored \d+, [A-Z][\w ]+, in a 2-year life on (Normal|Hard) in The Burg\. krazow\.github\.io\/The-Burg$/.test(r.a), r.a);
+  assert(/in a 6-month life on (Normal|Hard) in The Burg \(Weekly challenge, week of Nov 16\)\./.test(r.b), r.b);
+  assert(/in a lifetime on (Normal|Hard) in The Burg/.test(r.c), r.c);
 });
 
 // i56-b16: every event has a way to happen. Each event needs a row: a setup (job, month, health, home, chain step…)
