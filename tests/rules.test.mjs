@@ -936,6 +936,12 @@ await t.check('What\'s new ignores beta tags, compares versions as numbers, and 
   assert(/^\d+\.\d+\.\d+$/.test(r.v) && r.n >= 12 && r.order, JSON.stringify(r));
 });
 
+await t.check('What\'s new has a list for this version: 12 lines at most, each with an icon, a title and a short line (i69-a01)', async () => {
+  const r = await ev(() => ({ v: baseVersion(), list: WHATS_NEW[baseVersion()] }));
+  assert(Array.isArray(r.list) && r.list.length >= 1 && r.list.length <= 12, `no What's new list for ${r.v}: ` + JSON.stringify(r.list));
+  for (const [ic, title, line] of r.list) assert(ic && title && line && line.length <= 120 && /\.$/.test(line), JSON.stringify([ic, title, line]));
+});
+
 // ---- Out and about (#48–#54): Waitsburg's businesses ----
 await t.check('no real business names appear anywhere in js/ or index.html (stand-in names only)', async () => {
   const fs = await import('node:fs');
@@ -1553,12 +1559,16 @@ await t.check('i3-a24: public jobs vest a pension after 5 years that pays 2% of 
   assert(r.priv === 0 && r.pub.join() === 'para,clerk,co,rn,teacher', JSON.stringify(r.pub));
 });
 await t.check('i3-a28: the money outlook projects 13 weeks from the same bills and flags the first week below zero', async () => {
-  const r = await ev(() => { fresh('two', { jobId: null, money: 1200, focus: 'rest', ui: 0 }); const o = moneyOutlook();
-    const net0 = o.weeks[0].net; const real = week(); const ok = Math.abs(real.lines && S.last.net - net0) < 1;
+  const r = await ev(() => { fresh('two', { jobId: null, money: 1200, focus: 'rest', ui: 0 }); wxEnsure(); const o = moneyOutlook();
+    const net0 = o.weeks[0].net; week(); const last = S.last.net;
+    // i71-b02: with a job and a 401(k), week one still matches the real week (pay, savings, taxes and bills)
+    fresh('two', { jobId: 'farmhand', money: 3000, focus: 'rest', k401rate: 2 }); wxEnsure(); const k = moneyOutlook().weeks[0].net; const kl = week().lines; const kNet = S.last.net;
     fresh('two', { jobId: 'rn', money: 5000, focus: 'rest', date: new Date(2027, 11, 6).getTime(), tabsYear: 2027 }); const p = moneyOutlook();
     const tabs = p.weeks.findIndex(w => w.big.some(b => b[0] === 'Vehicle tabs (DMV)'));
-    return { n: o.weeks.length, low: o.lowWeek, ok, net0, last: S.last && S.last.net, good: p.lowWeek, tabs }; });
+    return { n: o.weeks.length, low: o.lowWeek, net0, last, k, kNet, k401: kl['401(k) contribution'], good: p.lowWeek, tabs }; });
   assert(r.n === 13 && r.low != null && r.low < 13, JSON.stringify(r));
+  assert(Math.abs(r.last - r.net0) < 1, `outlook week one ${r.net0} vs the real week ${r.last}`);
+  assert(r.k401 < 0 && Math.abs(r.kNet - r.k) < 1, `with a job and a 401(k): outlook ${r.k} vs real ${r.kNet}`);
   assert(r.good === null && r.tabs >= 3 && r.tabs <= 5, JSON.stringify(r));
 });
 await t.check('i3-a30: a December choice sends a retiree to Arizona for January to March: a bill, no events, community fades', async () => {
@@ -1645,6 +1655,7 @@ await t.check('i3-a28 + jobs: the 13-week outlook counts union dues, the bus pas
   const r = await ev(() => {
     // week one of the outlook matches the real week for a union apprentice who rides the bus
     fresh('two', { edu: 1, money: 3000, focus: 'rest' }); startJob('electrician'); S.bus = true;
+    S.wxW = { y: winterYear(), kind: 'hard' };   // a hard winter: the heating line is in both (i71-b02)
     const o0 = moneyOutlook().weeks[0].net, b0 = billLines(0).map(l => l[0]); const real = week();
     // a furlough: no pay until it ends, then the back pay in one lump
     fresh('two', { edu: 1, money: 3000, focus: 'rest' }); startJob('hanford'); S.clearAt = -1; S.furlough = { until: S.turn + 3, owed: 0 };
@@ -1661,7 +1672,7 @@ await t.check('i3-a28 + jobs: the 13-week outlook counts union dues, the bus pas
     return { o0, b0, fo: fo.map(w => [w.net, w.big.map(b => b[0]).join()]), wPay, lo, ro, ao, co, realLines: real.lines };
   });
   const realNet = Object.values(r.realLines).reduce((a, v) => a + v, 0);
-  assert(r.b0.includes('Union dues') && r.b0.includes('County bus pass'), `bills ${r.b0}`);
+  assert(r.b0.includes('Union dues') && r.b0.includes('County bus pass') && r.realLines['🔥 Heating (hard winter)'] < 0, `bills ${r.b0}`);
   assert(Math.abs(r.o0 - realNet) < 1, `outlook week one ${r.o0} vs real ${realNet}`);
   assert(r.fo[0][0] < 0 && r.fo[2][0] < 0 && /Back pay/.test(r.fo[3][1]) && r.fo[3][0] > r.wPay * 3, `furlough ${JSON.stringify(r.fo.slice(0, 5))}`);
   assert(r.lo[0] > 0 && r.lo[6] < r.lo[0] - 200, `season end ${r.lo}`);
@@ -1974,6 +1985,96 @@ await t.check('i75: older saves load with the new fields filled in (unvested mat
   const r = await ev(() => { const old = JSON.parse(JSON.stringify(fresh('two', { jobId: 'farmhand', k401: 500, ui: 3 }))); delete old.k401match; delete old.uiPay;
     const m = migrate(old); S = m; S.jobId = null; const ui = week().lines['Unemployment benefits']; return { match: m.k401match, uiPay: m.uiPay, ui }; });
   assert(r.match === 0 && r.uiPay === null && near(r.ui, 1500 * W), JSON.stringify(r));
+});
+
+// i56-b16: every event has a way to happen. Each event needs a row: a setup (job, month, health, home, chain step…)
+// under which its when() is true and pickEvent (or planDue, for events that come when they're due) returns it.
+// Most events are found by the broad setups; the REACH rows name the special state the rest need.
+// A new event that no row reaches fails here: add a row for it.
+await t.check('i56-b16: reach table: every event can happen under some setup, and pickEvent can return it', async () => {
+  const r = await ev(() => {
+    const chainRow = (id, step, f = {}) => () => { S.chains = { ...(S.chains || {}), [id]: { step, at: 0, f } }; };
+    const farJob = () => JOBS.find(j => { S.jobId = j.id; return commuteOneWay() >= 20; }).id;
+    const deskJob = () => JOBS.find(j => !j.wear && !j.season).id;
+    const unionJob = () => JOBS.find(j => j.union && !j.season).id;
+    // [month, setup] per event that the broad setups below don't reach
+    const REACH = {
+      'Starting a family?': [3, () => { S.partner = true; S.ageMonths = 26 * 12; }],
+      'A kid heads off to college': [8, () => { S.ageMonths = 45 * 12; S.kids = [S.ageMonths - 18 * 12 - 2]; }],
+      'A hard winter on the herd': [0, () => { S.biz = { type: 'cattle', weeks: 60, value: 16000, hard: thisYear() - 1 }; }],
+      'Wildfire smoke over the valley': [7, () => { S.smoke = thisYear(); }],
+      'Your carpool buddy is always late': [4, () => { S.jobId = farJob(); S.edu = 3; S.carpool = true; }],
+      'Chains required on the road to Bluewood': [0, () => { S.roadTo = 'dayton'; }],
+      "Neighbor's tree takes out your fence": [10, () => { S.home = 'fixer'; S.evCd['Windstorm'] = S.turn + 8; }],
+      'A cough in a smoke week': [7, () => { S.kids = [S.ageMonths - 60]; S.wx.smoke = true; }],
+      'After the flood: the furnace': [5, () => { S.home = 'fixer'; chainRow('levee', 2)(); S.floodAsk = null; }],
+      'The kitchen is next': [5, () => { S.home = 'fixer'; chainRow('fixer', 2)(); }],
+      'The house is coming together': [5, () => { S.home = 'fixer'; chainRow('fixer', 3)(); }],
+      'Opening day for the food truck': [5, () => { S.biz = { type: 'truck', weeks: 10, value: 8000 }; chainRow('truck', 2)(); }],
+      'A year of the food truck': [5, () => { S.biz = { type: 'truck', weeks: 60, value: 8000 }; chainRow('truck', 3)(); }],
+      'Water in the basements': [3, () => { S.highWater = S.turn - 2; }],
+      'A levee for the town': [5, chainRow('levee', 2)],
+      'The levee is dedicated': [5, chainRow('levee', 3)],
+      'Contract vote': [4, () => { S.jobId = unionJob(); S.edu = 3; S.contractAt = S.turn; }],
+      'Wine weekend guests': [6, () => { S.home = 'farm'; S.roomHost = true; S.hostLast = S.turn; }],
+      'A rough guest': [6, () => { S.home = 'farm'; S.roomHost = true; S.hostLast = S.turn; }],
+      'Stiff after a long day at the desk': [4, () => { S.jobId = deskJob(); S.edu = 3; S.ageMonths = 45 * 12; S.deskHabit = false; }],
+      'Gray January': [0, () => { S.gray = { left: 3, y: thisYear() }; }],
+      'The neighbor on oxygen': [0, () => { S.outage = S.turn; }],
+      'Line crews fill the café': [0, () => { S.jobId = 'diner'; S.outage = S.turn; }],
+      'An ice storm in calving season': [1, () => { S.biz = { type: 'cattle', weeks: 60, value: 16000 }; S.wxW.kind = 'hard'; }],
+      'Dale says thanks': [5, chainRow('farmer', 2)],
+      'Heat limits in the suit at Hanford': [6, () => { S.jobId = 'hanford'; S.edu = 3; S.wx.heat = true; }],
+      'Physical therapy, or tough it out?': [4, () => { S.jobId = 'farmhand'; S.injury = { part: 'back', ask: true, at: S.turn }; }],
+      'Family leave is ending': [4, () => { S.ageMonths = 50 * 12; S.parent = { who: 'leave', until: S.turn + 40, leaveEnd: S.turn, drain: { happy: 0, health: 0 }, leaveUsed: true }; }],
+      // events that come when they're due (planDue)
+      'Long-term care insurance': [3, () => { S.ageMonths = 56 * 12; S.ltc = null; }],
+      'Who will care for you?': [3, () => { S.ageMonths = 77 * 12; S.health = 40; S.care = null; }],
+      'Winter in Arizona?': [11, () => { S.ageMonths = 70 * 12; S.retired = true; S.jobId = null; S.money = 100000; }],
+      'Scholarship night at Waitsburg High': [5, () => { S.scholar = { y: 0, n: 0 }; }]
+    };
+    // the broad setups: every job (with school and certificates), every home, car and business, and a few lives
+    const BROAD = [['fresh', () => {}]];
+    for (const j of JOBS) BROAD.push(['job ' + j.id, () => { S.jobId = j.id; S.edu = 3; S.jobMonths = 24; S.tenure = 24; S.certs = Object.fromEntries(Object.keys(CERTS).map(k => [k, 1])); }]);
+    for (const h of Object.keys(HOMES)) BROAD.push(['home ' + h, () => { S.home = h; S.jobId = 'farmhand'; }]);
+    for (const c of Object.keys(CARS)) BROAD.push(['car ' + c, () => { S.car = c; S.jobId = 'farmhand'; }]);
+    for (const b of Object.keys(BIZ)) BROAD.push(['business ' + b, () => { S.biz = { type: b, weeks: 60, value: 10000 }; S.jobId = 'farmhand'; }]);
+    for (const k of ['dry', 'wet', 'smoke', 'heat']) BROAD.push([`a ${k} year`, () => { S.wx[k] = true; S.jobId = 'farmhand'; S.home = 'fixer'; }]);
+    for (const k of ['hard', 'mild']) BROAD.push([`a ${k} winter`, () => { S.wxW.kind = k; S.jobId = 'farmhand'; S.home = 'fixer'; }]);
+    for (const id of ['league']) for (let k = 2; k <= 6; k++) BROAD.push([`${id} step ${k}`, chainRow(id, k)]);
+    BROAD.push(['family', () => { S.partner = true; S.kids = [S.ageMonths - 30, S.ageMonths - 100]; S.dog = true; S.home = 'house'; S.jobId = 'farmhand'; S.community = 70; S.happy = 70; }],
+      ['single at 25', () => { S.ageMonths = 25 * 12; S.community = 60; }],
+      ['retired at 72', () => { S.ageMonths = 72 * 12; S.retired = true; S.jobId = null; S.health = 40; S.home = 'farm'; S.money = 80000; }],
+      ['worker in the 50s', () => { S.ageMonths = 52 * 12; S.jobId = 'para'; S.health = 45; S.happy = 40; S.home = 'fixer'; S.partner = true; }],
+      ['broke', () => { S.money = -3000; S.happy = 30; S.health = 30; }],
+      ['out of work', () => { S.jobId = null; S.ui = 20; S.money = 500; S.happy = 40; }],
+      ['student', () => { S.focus = 'study'; S.edu = 1; S.jobId = 'barista'; }]);
+    // an ordinary weather year and winter (no dice), so what's reached doesn't depend on the roll; rows set the weather they need
+    const start = m => { newGame('Reach', 'life', 0); S.noEvents = true; S.turn = 300; S.date = new Date(2031, m, 8).getTime();
+      S.wx = { y: 2031, dry: false, wet: false, smoke: false, heat: false, rain: false }; S.wxW = { y: winterYear(), kind: 'normal' }; };
+    const all = [...EVENTS.map(e => ['pick', e]), ...PLAN_DUE.map(e => ['due', e])];
+    // pickEvent with only this event in the list (so the dice can't pick another), planDue with only this one due
+    const returns = (kind, e, m) => {
+      const list = kind === 'pick' ? EVENTS : PLAN_DUE, keep = list.slice(); list.length = 0; list.push(e);
+      try { return (kind === 'pick' ? pickEvent(m, evCat(e)) : planDue(m)) === e; } finally { list.length = 0; list.push(...keep); }
+    };
+    const when = (e, m) => !e.when || e.when(m);
+    const rows = {}, wrong = [];
+    for (const [kind, e] of all) {
+      const row = REACH[e.title]; if (!row) continue;
+      start(row[0]); row[1]();
+      if (when(e, row[0]) && returns(kind, e, row[0])) rows[e.title] = 'row'; else wrong.push(e.title);
+    }
+    for (const [name, f] of BROAD) for (let m = 0; m < 12; m++) {
+      start(m); f();
+      for (const [kind, e] of all) if (!rows[e.title] && !REACH[e.title] && when(e, m) && returns(kind, e, m)) rows[e.title] = `${name}, month ${m + 1}`;
+    }
+    const unused = Object.keys(REACH).filter(k => !all.some(([, e]) => e.title === k));
+    return { n: all.length, reached: Object.keys(rows).length, missing: all.filter(([, e]) => !rows[e.title]).map(([, e]) => e.title), wrong, unused };
+  });
+  assert(!r.wrong.length, `these REACH rows no longer make their event happen: ${r.wrong.join('; ')}`);
+  assert(!r.unused.length, `REACH rows for events that don't exist: ${r.unused.join('; ')}`);
+  assert(!r.missing.length && r.reached === r.n, `no setup makes these events happen (add a REACH row): ${r.missing.join('; ')}`);
 });
 
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });

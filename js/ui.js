@@ -154,6 +154,20 @@ const WHATS_NEW = {
     ['🏘️', 'Out and about', 'visit 20 Waitsburg businesses from a new Main Street map, with new local jobs.'],
     ['🛣️', 'Road and work events', '60 new events on the road, in other towns and at work.'],
     ['📒', 'Your records and Journal filters', 'see your best scores by length and mode, and filter the Journal.']
+  ],
+  '0.2.1': [
+    ['🛡️', 'Safer saves', 'a damaged save no longer blanks the game, and ending or replacing a life asks first.'],
+    ['⚙️', 'Settings', 'sounds, vibration, bigger text and a night theme that follows your phone. Find them in the Menu.'],
+    ['👆', 'Easier on a phone', 'swipe to change tabs, pull a pop-up down to close it, and choices sit near your thumb.'],
+    ['🧓', 'Retirement and legacy', 'pensions, Social Security that follows your work, long-term care, a will and a scholarship.'],
+    ['📅', 'Money outlook', 'see the next 13 weeks of pay and bills, and the week your cash would run short.'],
+    ['🏡', 'Homes, farm and investing', 'insurance, property tax, moving home prices, wheat prices, cattle and index funds.'],
+    ['💵', 'Washington prices', 'pay, rent, taxes, tuition and childcare follow 2027 numbers, with state help for low earners.'],
+    ['🪜', 'Jobs with a ladder', 'promotions, certificates, apprenticeships, interviews, unions and 13 new jobs.'],
+    ['🌦️', 'Weather and hard years', 'each year has its own weather, from smoke summers to ice storms. Get ready and help your neighbors.'],
+    ['🩺', 'Health and aging', 'jobs wear on your body, with sick hours, family leave, dental and care for your dad.'],
+    ['🏘️', '30 Waitsburg events', 'the parade, the barn dance, snow days, Little League and more around town.'],
+    ['🧭', 'Smoother weeks', 'Auto until you choose, a focus plan, undo, tap-to-explain words and your life story at the end.']
   ]
 };
 const baseVersion = () => APP_VERSION.replace(/-.*/, '');

@@ -1499,6 +1499,8 @@ function moneyOutlook(n = 13){
     if (gross && rate) lines.push(['Taxes', -gross * rate]);   // i75-b03/b14
     if (S.partner && age() < 65) lines.push(["Partner's paycheck", 1400 * S.wage * W]);
     lines.push(...billLines(i));
+    // i75-a03: a hard winter's heating line, once this winter's kind is known (read only: the outlook never rolls dice)
+    if ([11, 0, 1].includes(d.getMonth()) && S.wxW && S.wxW.kind === 'hard' && S.wxW.y === (d.getMonth() >= 10 ? d.getFullYear() : d.getFullYear() - 1)) lines.push(['🔥 Heating (hard winter)', -cost(HEAT_BILL) * grow * W]);
     if (f.cost) lines.push([f.name, -cost(f.cost) * grow * W]);
     if (f.study && S.edu < 3 && !(S.certStudy && i < CERTS[S.certStudy.id].weeks - S.certStudy.prog)) big.push(['Tuition', -tuitionNow() * grow * W]);   // i3-a03: a paid-up certificate comes first
     if (S.loanLeft > i * W) lines.push(['Truck payment', -(S.loanPay || CARS.truck.pay) * Math.min(W, S.loanLeft - i * W)]);
