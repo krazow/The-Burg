@@ -215,7 +215,7 @@ const START_WEEKS = 8, START_ODDS = 0.3;
 function startEvent(month){
   if (S.turn >= START_WEEKS || S.retired) return null;
   if (!EVENTS.some(e => e.cat === 'start' && !S.evDone[e.title] && (!e.when || e.when(month)))) return null;
-  return chance(START_ODDS) ? pickEvent(month, 'start') : null;
+  return chance(START_ODDS * rule('evMult')) ? pickEvent(month, 'start') : null;   // the events rule (i19-b01) scales these too
 }
 const START_EVENTS = [
   { ic:'🥘', title:'A welcome casserole', cat:'start', start:1, once:1, w:3,

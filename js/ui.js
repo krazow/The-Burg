@@ -88,6 +88,8 @@ function renderTitle(){
       <div class="bgs" role="group" aria-label="Life aim">${Object.entries(AIMS).map(([k,a]) =>
         `<button class="chip ${k==='all'?'on':''}" data-aim="${k}" aria-pressed="${k==='all'}">${a.ic} ${a.name}</button>`).join('')}</div>
       <div class="muted bgdesc" id="aimdesc">${aimDesc('all')}</div>
+      <label class="field">Rules</label>
+      <button class="moreopts" id="rulesbtn" aria-haspopup="dialog"><span><b>🎛️ Change the rules</b><span class="s" id="rulesum">Normal rules · 🏆 counts toward the normal records</span></span><span class="caret" aria-hidden="true">›</span></button>
     </div>
     <button class="btn ghost" id="chal">🏁 Challenges</button>
     <button class="btn ghost" id="weekly">📅 Weekly challenge (${isoWeek()})</button>
@@ -99,8 +101,10 @@ function renderTitle(){
     ${Object.keys(store.get(BADGE_KEY) || {}).length ? `<div class="muted" style="margin-top:10px;font-size:0.8125rem">🏅 Badges collected across your lives: ${BADGES.filter(b => (store.get(BADGE_KEY) || {})[b.id]).map(b => b.ic).join(' ')} (${Object.keys(store.get(BADGE_KEY) || {}).length}/${BADGES.length})</div>` : ''}
     <div class="muted" style="margin-top:14px;font-size:0.75rem">v${APP_VERSION}</div>
   </div>`;
-  let bg = 'fresh', md = 'normal', aim = 'all', pr = 'they', dsel = 'wheel', face = okFace(null);
-  const moreSum = () => { $('#moresum').textContent = `${BACKGROUNDS[bg].ic} ${BACKGROUNDS[bg].name} · ${MODES[md].ic} ${MODES[md].name} · ${AIMS[aim].ic} ${AIMS[aim].name}`; };
+  let bg = 'fresh', md = 'normal', aim = 'all', rules = {}, pr = 'they', dsel = 'wheel', face = okFace(null);
+  const moreSum = () => { const t = recordTier(rules), cu = Object.keys(rules).length;
+    $('#moresum').textContent = `${BACKGROUNDS[bg].ic} ${BACKGROUNDS[bg].name} · ${MODES[md].ic} ${MODES[md].name} · ${AIMS[aim].ic} ${AIMS[aim].name}${cu ? ` · 🎛️ ${TIERS[t].name} rules` : ''}`;
+    $('#rulesum').textContent = `${rulesSummary(rules)} · ${TIERS[t].ic} counts toward ${TIERS[t].shelf}`; };
   moreSum();
   // G2: starting backgrounds and modes live in a "More options" panel; open or closed is remembered
   $('#moreopts').onclick = () => {
@@ -124,6 +128,7 @@ function renderTitle(){
     document.querySelectorAll('[data-mode]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#modedesc').textContent = MODES[md].desc; moreSum(); });
   document.querySelectorAll('[data-aim]').forEach(b => b.onclick = () => { aim = b.dataset.aim;   // i20-b01
     document.querySelectorAll('[data-aim]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#aimdesc').textContent = aimDesc(aim); moreSum(); });
+  $('#rulesbtn').onclick = () => rulesSheet(rules, { bg, mode: md }, r => { rules = r; moreSum(); });   // i19-b02
   document.querySelectorAll('.len').forEach(b => b.onclick = () => {
     len = b.dataset.len; document.querySelectorAll('.len').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
   });
@@ -133,7 +138,7 @@ function renderTitle(){
   $('#start').onclick = () => {
     const name = ($('#nm').value.trim() || 'Dusty').slice(0,20);
     const free = slots().indexOf(null);
-    const opts = { bg, mode: md, aim, pron: pr, face: { ...face }, dis: bg === 'access' ? dsel : null };
+    const opts = { bg, mode: md, aim, rules, pron: pr, face: { ...face }, dis: bg === 'access' ? dsel : null };
     if (free < 0) return askReplace(name, len, opts);
     newGame(name, len, free, opts);
   };
@@ -141,7 +146,7 @@ function renderTitle(){
   $('#chal').onclick = challengesSheet;
   $('#weekly').onclick = () => {
     const cur = readSlot(WEEKLY_SLOT);
-    sheet(`<h2>📅 Weekly challenge ${isoWeek()}</h2><p>A 6-month life where everyone gets the same events and dice this week. Play it, then share your score card and compare with friends.</p><p class="muted">It has its own place, so it doesn't use one of your ${SLOT_COUNT} slots.${cur ? ` Starting again replaces ${esc(cur.name)}'s challenge in progress.` : ''}</p>${cur ? '<button class="btn primary" id="wcont">Continue this week\'s challenge</button>' : ''}<button class="btn ${cur ? 'ghost' : 'primary'}" id="y">${cur ? 'Start over' : 'Start'}</button><button class="btn ghost" id="n">Not now</button>`);
+    sheet(`<h2>📅 Weekly challenge ${isoWeek()}</h2><p>A 6-month life where everyone gets the same events and dice this week. Play it, then share your score card and compare with friends.</p><p class="muted">It has its own place, so it doesn't use one of your ${SLOT_COUNT} slots.${cur ? ` Starting again replaces ${esc(cur.name)}'s challenge in progress.` : ''}</p><p class="muted">🎛️ Everyone plays the weekly with the same rules: Normal, whatever you set under Change the rules.</p>${cur ? '<button class="btn primary" id="wcont">Continue this week\'s challenge</button>' : ''}<button class="btn ${cur ? 'ghost' : 'primary'}" id="y">${cur ? 'Start over' : 'Start'}</button><button class="btn ghost" id="n">Not now</button>`);
     if ($('#wcont')) $('#wcont').onclick = () => loadSlot(WEEKLY_SLOT);
     $('#y').onclick = () => { const name = (($('#nm') && $('#nm').value.trim()) || 'Dusty').slice(0,20); closeSheet(); startWeekly(name); };
     $('#n').onclick = closeSheet;
@@ -220,11 +225,13 @@ function recordsSheet(){
   const notes = store.get(BEST_NOTE_KEY) || {};   // i63-a20: a best life's comeback line
   const cell = (v, k) => v == null ? '<span class="muted" aria-label="none yet">–</span>' : `<b>${v}</b>${notes[k] ? `<br><small class="muted comeback">${esc(notes[k])}</small>` : ''}`;
   const nWon = Object.keys(SCENARIOS).filter(k => won[k]).length, wk = best[`wk-${isoWeek()}`];
+  const cu = Object.keys(best).filter(k => k.startsWith('cu-') && bestLabel(k) && Number.isFinite(best[k]));   // i19-b03: the Custom shelf
   sheet(`<h2>🏆 Your records</h2>
     <p class="muted">Your best Life Scores on this device.</p>
     <table class="rec"><caption>Best score by game length and mode</caption>
       <thead><tr><th scope="col">Length</th>${mds.map(m => `<th scope="col">${MODES[m].ic} ${MODES[m].name}</th>`).join('')}</tr></thead>
       <tbody>${Object.entries(LENGTHS).map(([k, L]) => `<tr><th scope="row">${L.label}</th>${mds.map(m => `<td>${cell(best[bestKey(k, m)], bestKey(k, m))}</td>`).join('')}</tr>`).join('')}</tbody></table>
+    ${cu.length ? `<h3 style="margin-top:14px">🎛️ Custom rules</h3><p class="muted">Lives played with changed rules, kept apart from the table above.</p>${cu.map(k => `<div class="kv"><span>${esc(bestLabel(k.slice(3)))}</span><span>best <b>${best[k]}</b></span></div>`).join('')}` : ''}
     <h3 style="margin-top:14px">🏁 Challenges <span class="tag">${nWon}/${Object.keys(SCENARIOS).length} completed</span></h3>
     ${Object.entries(SCENARIOS).map(([k, sc]) => `<div class="kv"><span>${sc.ic} ${sc.name}${won[k] ? ' ✅' : ''}</span><span>${best['sc-' + k] != null ? `best <b>${best['sc-' + k]}</b>` : '<span class="muted">not played</span>'}</span></div>`).join('')}
     <h3 style="margin-top:14px">📅 This week's challenge (${isoWeek()})</h3>
@@ -696,6 +703,9 @@ function newGame(name, len, slot = 0, opts = {}){
   S.pron = PRONS[opts.pron] ? opts.pron : 'they'; S.face = okFace(opts.face);   // i7-a20, i6-b01
   if (S.bg === 'access') S.disability = DISABILITIES[opts.dis] ? opts.dis : 'wheel';   // i7-a21
   if (BACKGROUNDS[S.bg].set) BACKGROUNDS[S.bg].set(S);
+  // i19-b01/b28: custom rules, except in weekly challenges, scenarios and practice, where everyone plays Normal rules
+  S.rules = opts.weekly || SCENARIOS[opts.scenario] || opts.practice ? {} : cleanRules(opts.rules); S.tier0 = recordTier(S.rules);
+  if (rule('startSet') != null) S.money = rule('startSet'); S.money += rule('startAdd');
   S.startAge = age();
   S.weekly = opts.weekly || null; S.rng = opts.weekly ? weekSeed(opts.weekly) : null; S.rngEv = opts.weekly ? weekSeed(`${opts.weekly}:events`) : null; useDice();
   if (len === 'half') { S.happy -= HALF_START_DIP; S.health -= HALF_START_DIP; }   // B2: 26 weeks is short, so a 6-month life starts a little worn
@@ -708,6 +718,53 @@ function newGame(name, len, slot = 0, opts = {}){
   tab = S.jobId || !opts.practice ? 'home' : 'jobs'; save(); render();
   if (!opts.practice) playedFlag(true);            // i63-b05
   if (!opts.practice) toast('Welcome to the Burg!');
+}
+
+/* ---------- 🎛️ Change the rules (i19-b02..b05, b19) ---------- */
+// the rules sheet from the start screen: grouped knobs, each with its Normal value, a plain preview and a live record badge;
+// every change goes straight back through done(), so closing the sheet any way keeps it
+function rulesSheet(start, ctx, done){
+  let r = cleanRules(start);
+  const ids = Object.keys(RULES);
+  const row = id => `<div class="rulerow" role="group" aria-labelledby="rl-${id}"><div class="t" id="rl-${id}"></div>
+    <div class="maptog wrap">${Object.entries(RULES[id].opts).map(([k, o]) => `<button data-rule="${id}" data-opt="${k}">${o.name}</button>`).join('')}</div>
+    <div class="muted rp" id="rp-${id}"></div></div>`;
+  sheet(`<h2>🎛️ Change the rules</h2>
+    <p class="muted">Like Normal, but with a few knobs turned. Each one shows the Normal value, so you can always put it back. Standard is how the game is meant to be played.</p>
+    <div class="card tip" id="tierbadge" role="status" aria-live="polite"></div>
+    ${RULE_GROUPS.map(g => `<h3 style="margin-top:12px">${g}</h3>${ids.filter(id => RULES[id].grp === g).map(row).join('')}`).join('')}
+    <button class="btn primary" id="rdone">Done</button>
+    <button class="btn ghost" id="rnormal">Back to Normal</button>`);
+  const upd = () => {
+    for (const id of ids) {
+      const cur = ruleOpt(id, r);
+      $(`#rl-${id}`).textContent = ruleLabel(id, cur, ctx); $(`#rp-${id}`).textContent = rulePreview(id, cur, ctx);
+      document.querySelectorAll(`[data-rule="${id}"]`).forEach(b => { const on = b.dataset.opt === cur; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+    }
+    const t = recordTier(r); $('#tierbadge').innerHTML = `<span>${TIERS[t].ic} <b>This life counts toward ${TIERS[t].shelf}.</b> ${TIERS[t].desc}</span>`;
+    done(cleanRules(r));
+  };
+  document.querySelectorAll('[data-rule]').forEach(b => b.onclick = () => { r = { ...r, [b.dataset.rule]: b.dataset.opt }; upd(); });
+  $('#rnormal').onclick = () => { r = {}; upd(); announce('All rules back to Normal.'); };
+  $('#rdone').onclick = closeSheet;
+  upd();
+}
+// i19-b19: a read-only card on the Life tab for lives with changed rules; assists can be switched off, never on
+function rulesCard(){
+  const ch = Object.keys(cleanRules(S.rules)); if (!ch.length && lifeTier() === 'standard') return '';
+  const t = lifeTier(), ctx = { bg: S.bg, mode: mode() };
+  return `<div class="card" id="rulescard"><h3>🎛️ Rules for this life</h3>
+    <p class="muted">${TIERS[t].ic} Counts toward ${TIERS[t].shelf}. Rules are set when a life starts. Assists can be turned off, but not back on.</p>
+    ${ch.map(id => `<div class="kv"><span>${esc(ruleLabel(id, ruleOpt(id), ctx))}</span>${RULES[id].assist ? `<button class="sm" style="flex:none;white-space:nowrap" data-assistoff="${id}" aria-label="Turn off ${esc(RULES[id].name)}">Turn off</button>` : ''}</div>`).join('')}
+    <p class="muted">Everything else: Normal.</p></div>`;
+}
+function assistOffSheet(id){
+  const after = cleanRules({ ...S.rules, [id]: RULES[id].def }), t = tierMax(S.tier0 || 'standard', recordTier(after));
+  sheet(`<h2>Turn off "${esc(RULES[id].name)}"?</h2><p>You can't turn it back on in this life.</p>
+    <p>${TIERS[t].ic} This life ${t === lifeTier() ? 'stays on' : 'moves to'} <b>${TIERS[t].shelf}</b>.</p>
+    <button class="btn primary" id="y">Turn it off</button><button class="btn ghost" id="n">Keep it on</button>`);
+  $('#y').onclick = () => { S.rules = after; save(); closeSheet(); render(); toast(`🎛️ ${RULES[id].name}: off for the rest of this life`); };
+  $('#n').onclick = closeSheet;
 }
 
 /* ---------- main render ---------- */
@@ -1198,6 +1255,7 @@ ${S.edu < 3 ? firstTime('school') : ''}${eduCard()}
     <div class="kv"><span>Prices since 2027</span><span>${S.col > 1.005 ? `+${Math.round((S.col-1)*100)}%` : 'Same'}</span></div>
     <div class="kv"><span>Town council</span><span>${S.council ? 'Council member' : '—'}</span></div>
   </div>`;
+  if (!S.practice) { $('#main').insertAdjacentHTML('beforeend', rulesCard()); document.querySelectorAll('[data-assistoff]').forEach(b => b.onclick = () => assistOffSheet(b.dataset.assistoff)); }   // i19-b19
   if ($('#goals')) $('#goals').onclick = goalsSheet;
   wireAimCard();
   if ($('#undo')) $('#undo').onclick = lifeUndo;

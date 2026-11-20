@@ -61,6 +61,7 @@ function finishRun(res, why, n){
   if (res.ending) S.endPending = { r: res.ending, debt: !!res.debt, death: !!res.death };   // i22-a02: the ending sticks if the app closes behind the notes
   save();
   const notes = why ? [...res.notes, `⏸ Auto stopped: ${why}`] : res.notes;
+  const cared = careLine();                        // i19-b15: one "Taken care of" line for the routine assist
   const after = () => {
     if (res.ending) return endLife(S.endPending);   // i3-a27: a debt ending can still be a bankruptcy
     COUNT_FROM = { money: S.run.money, happy: S.run.happy, health: S.run.health, community: S.run.community };   // i2-a08: stats count up from last week
@@ -74,18 +75,25 @@ function finishRun(res, why, n){
     else { if (!res.ev) { if (n === 1) sfx('week'); buzz('week'); } next(); }   // i2-a04/a05: one small tick per press
     const r = S.run, dm = S.money - r.money, ch = (n, v) => Math.abs(v) < 0.5 ? `${n} unchanged` : `${n} ${v > 0 ? 'up' : 'down'} ${Math.abs(Math.round(v))}`;
     const own = r.happened.filter(h => h.auto).length;
-    if (setting('srWeek') === 'short') announce(weekSentence(res));   // i7-a02: one plain sentence (Settings can ask for every number)
-    else announce(`${r.weeks > 1 ? r.weeks + ' weeks' : 'Week'} done. Cash ${dm >= 0 ? 'up' : 'down'} ${fmt(Math.abs(dm))}, now ${fmt(S.money)}. ${ch('Happiness', S.happy - r.happy)}, ${ch('health', S.health - r.health)}, ${ch('community', S.community - r.community)}. ${own ? `${own} event${own > 1 ? 's' : ''} with no choice to make played out: see the week strip. ` : ''}${dateLabel()}.`);
+    if (cared && !notes.length) toast(cared);
+    if (setting('srWeek') === 'short') announce(weekSentence(res) + (cared ? ` ${cared}.` : ''));   // i7-a02: one plain sentence (Settings can ask for every number)
+    else announce(`${r.weeks > 1 ? r.weeks + ' weeks' : 'Week'} done. Cash ${dm >= 0 ? 'up' : 'down'} ${fmt(Math.abs(dm))}, now ${fmt(S.money)}. ${ch('Happiness', S.happy - r.happy)}, ${ch('health', S.health - r.health)}, ${ch('community', S.community - r.community)}. ${own ? `${own} event${own > 1 ? 's' : ''} with no choice to make played out: see the week strip. ` : ''}${cared ? cared + '. ' : ''}${dateLabel()}.`);
   };
   if (notes.length) {
     sheet(`<h2>${S.run.weeks > 1 ? S.run.weeks + ' weeks later' : 'This week'}</h2>
       ${notes.map(t => `<p><b>${t}</b></p>`).join('')}
+      ${cared ? `<p class="muted">${esc(cared)}</p>` : ''}
       <p>${runChips()}</p>
       ${notes.includes(BACKUP_NUDGE) ? '<button class="btn ghost" id="nudgebk">📤 Back up now</button>' : ''}
       <button class="btn primary" id="ok">Continue</button>`);
     $('#ok').onclick = () => { closeSheet(); after(); };
     if ($('#nudgebk')) $('#nudgebk').onclick = () => backupSheet(after);   // closing the backup sheet carries on with the week
   } else after();
+}
+// i19-b15: the routine events the assist answered in the last End Week or skip, in one line
+function careLine(){
+  const c = S.run ? S.run.happened.filter(h => h.care) : [];
+  return c.length ? `🧹 Taken care of: ${c.map(h => `${h.title}${h.money ? ` (${h.money > 0 ? '+' : ''}${fmt(h.money)})` : ''}`).join(', ')}` : '';
 }
 // i7-a02: the short week summary a screen reader hears after End Week, e.g.
 // "Week 34 done. You earned $612. Health up 2, happiness down 1. One event waiting."
@@ -216,7 +224,7 @@ function showReview(rv){
 
 // i3-a28: the bills that come every week, the same in weekTick and the 13-week money outlook (off = weeks from now)
 function billLines(off = 0){
-  const m = W, home = HOMES[S.home], car = CARS[S.car], out = [], c = v => cost(v) * Math.pow(1 + COL_RATE, off / 52);
+  const m = W, home = HOMES[S.home], car = CARS[S.car], out = [], c = v => cost(v) * Math.pow(1 + rule('col'), off / 52);
   const rentV = -(home.own && S.mortgage ? S.mortgage : c(home.cost))*m;
   out.push([home.own ? 'Mortgage' : 'Rent', rentV]);
   const stocked = S.turn + off < S.stockUntil;
@@ -228,7 +236,7 @@ function billLines(off = 0){
   out.push([commuteOneWay() ? 'Gas (commute + errands)' : 'Gas (errands)', -miles*c(GAS)/car.mpg]);
   if (onBus()) out.push(['County bus pass', -c(BUS_PASS)*m]);          // i3-a14
   { const j = S.retired ? null : job();                                 // i3-a10: union dues, not while on strike or gone
-    if (j && j.union && !(S.strike && S.turn + off < S.strike.until) && !(S.notice != null && S.turn + off >= S.notice) && !(j.season && !jobInSeason(j, new Date(S.date + off * 7 * 864e5).getMonth()))) out.push(['Union dues', -payNow(j) * Math.pow(1 + WAGE_RATE, off / 52) * UNION_DUES * m]); }
+    if (j && j.union && !(S.strike && S.turn + off < S.strike.until) && !(S.notice != null && S.turn + off >= S.notice) && !(j.season && !jobInSeason(j, new Date(S.date + off * 7 * 864e5).getMonth()))) out.push(['Union dues', -payNow(j) * Math.pow(1 + rule('wage'), off / 52) * UNION_DUES * m]); }
   if (S.dog) out.push(['Dog food & vet', -c(45)*m]);
   if (S.cat) out.push(['Cat food', -c(CAT_MONTHLY)*m]);              // W14: the barn cat
   if (S.partner) out.push(['Date nights', -c(120)*m]);
@@ -378,7 +386,7 @@ function weekTick(auto){
   if (home.own) S.equity = S.equity * Math.pow(1 + (S.homeGrow ?? 0.025), 1/52) + home.equityPer * m;
   S.carValue = Math.max(cost(500), S.carValue * Math.pow(0.99, m));   // i30-b02: the floor rises with prices
   S.k401 *= Math.pow(1.06, 1/52); if (S.k401match) S.k401match = Math.min(S.k401, S.k401match * Math.pow(1.06, 1/52));
-  S.col *= Math.pow(1 + COL_RATE, 1/52); S.wage *= Math.pow(1 + WAGE_RATE, 1/52);
+  S.col *= Math.pow(1 + rule('col'), 1/52); S.wage *= Math.pow(1 + rule('wage'), 1/52);
 
   // ---- stats drift for the week ----
   const a = age();
@@ -443,9 +451,14 @@ function weekTick(auto){
     { const pl = eventPlace(ev); S.evPins = [{ t: ev.title, ic: ev.ic, m: pl[0], k: pl[1], turn: S.turn + 1, r: '' }, ...(S.evPins || [])].slice(0, 12); }
     S.evLabel = dateLabel();
     S.yearEvents = (S.yearEvents || 0) + 1;
-    if (auto) {                      // while skipping ahead, one-choice events resolve on their own
-      const ch = ev.choices().filter(c => !c.if || c.if());
-      if (ch.length === 1) { resolveChoice(ev, ch[0], true); ev = null; }   // i71-b03
+    // while skipping ahead, one-choice events resolve on their own; with the routine assist (i19-b15) routine events
+    // take a careful player's choice and show up as "Taken care of"
+    const care = rule('routine') && !S.practice ? routinePick(ev) : null, ch = !care && auto ? ev.choices().filter(c => !c.if || c.if()) : [];
+    const pickNow = care || (ch.length === 1 ? ch[0] : null);
+    if (pickNow) {
+      resolveChoice(ev, pickNow, true);                                   // i71-b03
+      if (care && S.run && S.run.happened.length) S.run.happened[S.run.happened.length - 1].care = 1;
+      ev = null;
     }
   }
 
