@@ -195,7 +195,7 @@ const BADGES = [
   { id:'legend', ic:'🤝', name:'Pillar of the town', desc:'Reach community 80.', test:() => S.community >= 80 },
   { id:'healthy', ic:'💪', name:'Picture of health', desc:'Reach health 85.', test:() => S.health >= 85 },
   { id:'happy', ic:'😄', name:'Happy camper', desc:'Reach happiness 85.', test:() => S.happy >= 85 },
-  { id:'council', ic:'🏛️', name:'Council member', desc:'Win a seat on the town council.', test:() => !!S.council },
+  { id:'council', feat:'family.council', ic:'🏛️', name:'Council member', desc:'Win a seat on the town council.', test:() => !!S.council },
   { id:'family', feat:'family.kids', ic:'👶', name:'Family', desc:'Have a kid.', test:() => (S.kids || []).length > 0 },
   { id:'dog', ic:'🐕', name:'Good dog', desc:'Adopt a dog.', test:() => !!S.dog },
   { id:'roadtrip', ic:'🗺️', name:'Know the region', desc:'Take a trip to all five towns.', test:() => Object.keys(S.towns || {}).length >= 5 },
@@ -211,7 +211,7 @@ function badgeWeek(notes){
   if (S.practice || !on('goals.badges')) return;
   S.badges = S.badges || {};
   const all = store.get(BADGE_KEY) || {};
-  for (const b of BADGES) if (!S.badges[b.id] && b.test()) {
+  for (const b of badgesOn()) if (!S.badges[b.id] && b.test()) {   // to-do 2 D6: a badge for a switched-off system can't be earned
     S.badges[b.id] = S.turn; if (!S.rewound) all[b.id] = 1;   // i63-b22: a rewound life's badges stay in the life, not the collection
     const goal = (S.goals || []).includes(b.id);
     buzz('badge');
