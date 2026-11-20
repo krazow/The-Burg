@@ -69,7 +69,9 @@ for (const { len, strat, g, opts, label, tier } of JOBS_LIST) {
         // ---- the bot, running inside the game page ----
         render = () => {}; toast = () => {};   // skip redrawing the screen: just the rules
         const debt = opts.debt; delete opts.debt; const aimK = opts.aim || 'all', aimRun = !!opts.aim;
-        newGame('Bot', len, 0, opts);
+        // to-do 2 stage 1: the sim plays today's full game (a Classic life with the mode's numbers) until stage 4 adds
+        // runs for each difficulty, so the balance targets below measure the same game as before
+        newGame('Bot', len, 0, opts.diff ? opts : { classic: true, ...opts });
         if (debt) { S.money = -debt; apply('farmhand'); if (!S.jobId) startJob('farmhand'); }   // i75-b21: a fresh start, broke
         S.k401rate = { planner: 2, homebody: 1, commuter: 1, student: 1, rotation: 1 }[strat] || 0;
         const bad = [], events = {}, choiceFx = {};

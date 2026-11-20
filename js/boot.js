@@ -38,6 +38,7 @@ window.addEventListener('storage', e => {
   if (!S || S.over || S.practice || e.key !== slotKey(S.slot ?? 0)) return;
   const g = newerOnDisk(); if (g) adoptNewer(g);
 });
+tagEventTiers();                 // to-do 2 D4: every event knows its difficulty tier
 pruneWeekly();
 renderTitle();
 setPref('lastSeen', Date.now());                 // i73-b13: the next visit can tell how long you were away

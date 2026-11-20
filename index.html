@@ -69,6 +69,10 @@ input[type=text]:focus{outline:none;border-color:var(--wheat-d)}
 .len{padding:14px 6px;border-radius:12px;border:2px solid var(--edge);background:var(--paper)}
 .len b{display:block;font-size:1.0625rem}.len span{font-size:0.75rem;color:var(--muted)}
 .len.on{border-color:var(--barn);background:var(--tint)}
+.diffs{display:grid;gap:8px}
+.dcard{padding:10px 12px;border-radius:12px;border:2px solid var(--edge);background:var(--paper);text-align:left;color:inherit;font:inherit}
+.dcard b{display:block;font-size:1.0625rem}.dcard span{display:block;font-size:0.8125rem;color:var(--muted);margin-top:2px}
+.dcard.on{border-color:var(--barn);background:var(--tint)}
 .btn{display:block;width:100%;padding:15px;border-radius:14px;font-weight:700;font-size:1.0625rem;margin-top:12px}
 .btn.primary{background:var(--barn);color:#fff;box-shadow:0 3px 0 var(--barn-d)}
 .btn.primary:active{transform:translateY(2px);box-shadow:0 1px 0 var(--barn-d)}
@@ -392,6 +396,7 @@ html,body,.helpview{overscroll-behavior-y:contain}
 <div id="helpview" class="helpview hidden" role="dialog" aria-label="Help"></div>
 
 <script src="js/state.js"></script>
+<script src="js/difficulty.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/turn.js"></script>
 <script src="js/events.js"></script>
