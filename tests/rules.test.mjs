@@ -672,7 +672,7 @@ await t.check('i75-b20: every job pays within 25% of real 2027 Washington pay, a
 
 await t.check('i75-b22: collections stop calling once cash has gone up 4 weeks in a row: "On a payment plan"', async () => {
   const r = await ev(() => {
-    const run = up => { fresh('two', { money: up ? -12000 : -6000, debtWeeks: 20, happy: 60, jobId: up ? 'rail' : null, edu: 1, focus: 'rest' }); const notes = [];
+    const run = up => { fresh('two', { diff: 'hard', money: up ? -12000 : -6000, debtWeeks: 20, happy: 60, jobId: up ? 'rail' : null, edu: 1, focus: 'rest' }); const notes = [];
       for (let i = 0; i < 8; i++) notes.push(...weekTick(false).notes); return { happy: S.happy, plan: onPlan(), notes: notes.join(' '), card: (tab = 'home', render(), document.querySelector('#main').textContent) }; };
     return { up: run(true), down: run(false) }; });
   assert(r.up.plan && /payment plan/.test(r.up.notes) && /On a payment plan/.test(r.up.card), JSON.stringify(r.up).slice(0, 300));
@@ -1275,7 +1275,7 @@ await t.check('i3-a04 / i75-b07: a plumber apprentice starts at 50% and steps up
 
 await t.check('i3-a06: a seasonal job lays you off when the season ends, and calls you back when it returns', async () => {
   const r = await ev(() => {
-    fresh('two', { date: new Date(2027, 2, 29).getTime(), tenure: 5 }); startJob('lift'); S.tenure = 5; S.rung = 1;
+    fresh('two', { diff: 'hard', date: new Date(2027, 2, 29).getTime(), tenure: 5 }); startJob('lift'); S.tenure = 5; S.rung = 1;
     let res; for (let i = 0; i < 2; i++) res = weekTick(false);
     const off = { job: S.jobId, recall: S.recall && S.recall.job, ui: S.ui, note: res.notes.join(' ') };
     const canApply = (() => { const a = S.applied; apply('lift'); const got = S.interview; S.applied = a; return got; })();
@@ -1334,9 +1334,9 @@ await t.check('i3-a09: notice after 6 months gives a good reference; walking out
 await t.check('i3-a10: union jobs pay dues, halve layoff odds, step up each January, and a contract vote can strike', async () => {
   const r = await ev(() => {
     const E = t => EVENTS.find(e => e.title === t);
-    fresh('two', { edu: 1 }); startJob('rail'); const dues = week().lines['Union dues'], pay = payNow(job());
-    S.jobMonths = 12; const wU = E('Layoffs').w(); fresh('two', { jobId: 'trucker', jobMonths: 12 }); const wN = E('Layoffs').w();
-    fresh('two', { edu: 1, date: new Date(2027, 11, 27).getTime() }); startJob('rail'); S.tenure = 8; const r0 = S.raise; weekTick(false); const step = S.raise / r0;
+    fresh('two', { diff: 'hard', edu: 1 }); startJob('rail'); const dues = week().lines['Union dues'], pay = payNow(job());
+    S.jobMonths = 12; const wU = E('Layoffs').w(); fresh('two', { diff: 'hard', jobId: 'trucker', jobMonths: 12 }); const wN = E('Layoffs').w();
+    fresh('two', { diff: 'hard', edu: 1, date: new Date(2027, 11, 27).getTime() }); startJob('rail'); S.tenure = 8; const r0 = S.raise; weekTick(false); const step = S.raise / r0;
     S.contractAt = S.turn; const vote = E('Contract vote').when(); const m = S.money; E('Contract vote').choices()[1].go(); const n = S.strike.until - S.turn;
     const w = week(); const strike = w.lines['Strike pay from the union'];
     const old = Math.random; Math.random = () => 0.1; S.strike.until = S.turn; const r1 = S.raise; weekTick(false); Math.random = old;
@@ -1363,8 +1363,8 @@ await t.check('i3-a11: a federal shutdown stops pay for a few weeks, then back p
 
 await t.check('i3-a12: Hanford and the lab pay 80% until the clearance clears in 12 weeks; heavy debt can sink it', async () => {
   const r = await ev(() => {
-    fresh('two', { edu: 1 }); startJob('hanford'); const p0 = payNow(job()) / (6500 * S.wage); weeks(12); const p1 = payNow(job()) / (6500 * S.wage), kept = S.jobId;
-    fresh('two', { edu: 3, money: -40000, mode: 'relaxed' }); startJob('scientist'); const old = Math.random; Math.random = () => 0.1; weeks(13); Math.random = old;
+    fresh('two', { diff: 'hard', edu: 1 }); startJob('hanford'); const p0 = payNow(job()) / (6500 * S.wage); weeks(12); const p1 = payNow(job()) / (6500 * S.wage), kept = S.jobId;
+    fresh('two', { diff: 'hard', edu: 3, money: -40000, mode: 'relaxed' }); startJob('scientist'); const old = Math.random; Math.random = () => 0.1; weeks(13); Math.random = old;
     return { p0, p1, kept, lost: S.jobId, ref: S.ref };
   });
   assert(near(r.p0, 0.8) && near(r.p1, 1) && r.kept === 'hanford', JSON.stringify(r));
@@ -1464,7 +1464,7 @@ await t.check('i3-a18: cattle earn for an owner who checks the herd and lose mon
 
 await t.check('i3-a19/i75-b26: insurance defaults to $220 at Washington prices; cheaper coverage costs more when something happens', async () => {
   const r = await ev(() => {
-    fresh('two'); const def = insMonthly(), line = week().lines['Insurance & phone'];
+    fresh('two', { diff: 'hard' }); const def = insMonthly(), line = week().lines['Insurance & phone'];
     S.home = 'farm'; const farm = insMonthly(); S.home = 'fixer'; const own = insMonthly(); S.ins.ded = 2500; const high = insMonthly(); S.ins.ded = 500; const low = insMonthly();
     S.ins.ded = 1000; S.col = 1; const ownFire = youPay('home', 9000); S.ins.ded = 2500; const ownFire2 = youPay('home', 9000);
     S.home = 'room'; S.ins = { auto: 'full', renters: true, ded: 1000 };
@@ -1526,7 +1526,7 @@ await t.check('i3-a23: a home equity loan: up to half the equity, a fixed paymen
 
 await t.check('i3-a26: 12 weeks in debt goes to collections: a fee, weekly unhappiness, worse odds; clears above $0', async () => {
   const r = await ev(() => {
-    fresh('two', { money: -2000, jobId: null }); const notes = []; let fee = 0;
+    fresh('two', { diff: 'hard', money: -2000, jobId: null }); const notes = []; let fee = 0;
     for (let i = 0; i < 13; i++) { const m = S.money; const res = weekTick(false); notes.push(...res.notes); }
     const inC = inCollections(), block = loanBlock(), h0 = S.happy;
     const hireRate = () => { S.jobId = null; return hireOdds(jobById('diner')); };   // i3-a07: applying now goes through an interview, so compare the odds
@@ -1536,13 +1536,13 @@ await t.check('i3-a26: 12 weeks in debt goes to collections: a fee, weekly unhap
   assert(r.inC && /collections/.test(r.notes.join()) && /collections/.test(r.block), JSON.stringify(r).slice(0, 300));
   assert(r.outRate - r.inRate > 0.04, `hire odds in collections ${r.inRate} vs ${r.outRate}`);
   assert(r.after === 0 && r.cleared, JSON.stringify(r));
-  const h = await ev(() => { const run = d => { fresh('two', { money: -3000, debtWeeks: d, happy: 60 }); weeks(4); return S.happy; }; return run(0) - run(20); });
+  const h = await ev(() => { const run = d => { fresh('two', { diff: 'hard', money: -3000, debtWeeks: d, happy: 60 }); weeks(4); return S.happy; }; return run(0) - run(20); });
   assert(h > 2.5, `collections should cost happiness every week: ${h}`);
 });
 
 await t.check('i3-a27: bankruptcy wipes debt, takes savings, vehicles and the business, blocks loans for 7 years, and costs Life Score', async () => {
   const r = await ev(() => {
-    fresh('two', { money: -40500, car: 'truck', carValue: 30000, loanLeft: 20, loanPay: 640, k401: 4000, stocks: 3000, wine: [{ y: 2027, paid: 2500, at: 999, smoke: false }] });
+    fresh('two', { diff: 'hard', money: -40500, car: 'truck', carValue: 30000, loanLeft: 20, loanPay: 640, k401: 4000, stocks: 3000, wine: [{ y: 2027, paid: 2500, at: 999, smoke: false }] });
     S.biz = { type: 'shop', weeks: 1, earned: 0, paidYear: null, dep: 1 };
     const res = week(), can = canBankrupt(), sc0 = lifeScore().score;
     const lost = fileBankruptcy(); const sc1 = lifeScore().score;
@@ -1690,21 +1690,21 @@ await t.check('i2-a29: an old save gets its past years in the life story, and sa
 await t.check('i3-a28 + jobs: the 13-week outlook counts union dues, the bus pass, furloughs, seasons, call-backs, unemployment, apprenticeship steps and certificates', async () => {
   const r = await ev(() => {
     // week one of the outlook matches the real week for a union apprentice who rides the bus
-    fresh('two', { edu: 1, money: 3000, focus: 'rest' }); startJob('electrician'); S.bus = true;
+    fresh('two', { diff: 'hard', edu: 1, money: 3000, focus: 'rest' }); startJob('electrician'); S.bus = true;
     S.wxW = { y: winterYear(), kind: 'hard' };   // a hard winter: the heating line is in both (i71-b02)
     const o0 = moneyOutlook().weeks[0].net, b0 = billLines(0).map(l => l[0]); const real = week();
     // a furlough: no pay until it ends, then the back pay in one lump
-    fresh('two', { edu: 1, money: 3000, focus: 'rest' }); startJob('hanford'); S.clearAt = -1; S.furlough = { until: S.turn + 3, owed: 0 };
+    fresh('two', { diff: 'hard', edu: 1, money: 3000, focus: 'rest' }); startJob('hanford'); S.clearAt = -1; S.furlough = { until: S.turn + 3, owed: 0 };
     const fo = moneyOutlook().weeks, wPay = payNow(job()) * 12 / 52 * 0.85;
     // a ski-lift job in March: pay stops in April, unemployment follows; the call-back returns in December
-    fresh('two', { money: 3000, date: new Date(2027, 2, 1).getTime(), focus: 'rest' }); startJob('lift');
+    fresh('two', { diff: 'hard', money: 3000, date: new Date(2027, 2, 1).getTime(), focus: 'rest' }); startJob('lift');
     const lo = moneyOutlook().weeks.map(w => w.net);
-    fresh('two', { money: 3000, date: new Date(2027, 10, 1).getTime(), focus: 'rest', recall: { job: 'lift', raise: 1, rung: 0, tenure: 4, until: 60 } });
+    fresh('two', { diff: 'hard', money: 3000, date: new Date(2027, 10, 1).getTime(), focus: 'rest', recall: { job: 'lift', raise: 1, rung: 0, tenure: 4, until: 60 } });
     const ro = moneyOutlook().weeks.map(w => w.net);
     // an apprentice about to finish year one steps up
-    fresh('two', { edu: 1, money: 3000, focus: 'rest' }); startJob('plumber'); S.appWeeks = 50; const ao = moneyOutlook().weeks.map(w => w.net);
+    fresh('two', { diff: 'hard', edu: 1, money: 3000, focus: 'rest' }); startJob('plumber'); S.appWeeks = 50; const ao = moneyOutlook().weeks.map(w => w.net);
     // a certificate in progress delays tuition
-    fresh('two', { money: 3000, focus: 'study', certStudy: { id: 'cdl', prog: 2 } }); const co = moneyOutlook().weeks.map(w => w.big.some(b => b[0] === 'Tuition'));
+    fresh('two', { diff: 'hard', money: 3000, focus: 'study', certStudy: { id: 'cdl', prog: 2 } }); const co = moneyOutlook().weeks.map(w => w.big.some(b => b[0] === 'Tuition'));
     return { o0, b0, fo: fo.map(w => [w.net, w.big.map(b => b[0]).join()]), wPay, lo, ro, ao, co, realLines: real.lines };
   });
   const realNet = Object.values(r.realLines).reduce((a, v) => a + v, 0);
@@ -1935,11 +1935,11 @@ await t.check('i58-b02: the cheaper health plan and light duty pay out week by w
 
 await t.check('i75-a13: a wind-and-hail plan saves a little a month; a wind claim then costs up to 1% of the home', async () => {
   const r = await ev(() => {
-    fresh('two', { home: 'fixer', mortgage: 950 }); const flat = youPay('home', 3000, 'wind'), base = insMonthly();
+    fresh('two', { diff: 'hard', home: 'fixer', mortgage: 950 }); const flat = youPay('home', 3000, 'wind'), base = insMonthly();
     S.ins.wind = 'pct'; const pct = youPay('home', 3000, 'wind'), fire = youPay('home', 3000), small = youPay('home', 1200, 'wind'), cheaper = insMonthly();
     tab = 'life'; render(); insSheet(); const sheetTxt = document.querySelector('#sheet').textContent;
     document.querySelector('#sheet [data-ins="wind"][data-v="flat"]').click(); const back = S.ins.wind; closeSheet();
-    fresh('two'); insSheet(); const renterSheet = !!document.querySelector('#sheet [data-ins="wind"]'); closeSheet();
+    fresh('two', { diff: 'hard' }); insSheet(); const renterSheet = !!document.querySelector('#sheet [data-ins="wind"]'); closeSheet();
     return { flat, pct, fire, small, base, cheaper, sheetTxt, back, renterSheet, ded: windDed() };
   });
   assert(r.flat === 1000 && r.pct === 1600 && r.fire === 1000 && r.small === 1200, JSON.stringify(r));
@@ -2102,10 +2102,10 @@ await t.check('i75-b04: health insurance costs $130 a month while working before
 
 await t.check('i75-b05: unemployment pays 41% of the last job\'s pay, between $1,500 and $4,900, after a layoff (not a quit)', async () => {
   const r = await ev(() => {
-    const laid = id => { fresh('two', { jobId: id, focus: 'rest' }); leaveJob('laid'); S.ui = 6; return week().lines['Unemployment benefits'] / W; };
+    const laid = id => { fresh('two', { diff: 'hard', jobId: id, focus: 'rest' }); leaveJob('laid'); S.ui = 6; return week().lines['Unemployment benefits'] / W; };
     const rn = laid('rn'), diner = laid('diner');
-    fresh('two', { jobId: 'rn' }); S.ui = 0; leaveJob('notice'); const quit = week().lines['Unemployment benefits'];
-    fresh('two', { jobId: 'lift', date: new Date(2027, 2, 29).getTime() }); weeks(2); const season = S.uiPay;
+    fresh('two', { diff: 'hard', jobId: 'rn' }); S.ui = 0; leaveJob('notice'); const quit = week().lines['Unemployment benefits'];
+    fresh('two', { diff: 'hard', jobId: 'lift', date: new Date(2027, 2, 29).getTime() }); weeks(2); const season = S.uiPay;
     return { rn, diner, quit, season }; });
   assert(near(r.rn, 8600 * 0.41, 0.001) && near(r.diner, 1500, 0.001) && !r.quit, JSON.stringify(r));
   assert(near(r.season, 1500, 0.001), `a seasonal layoff sets the benefit too: ${r.season}`);
@@ -2495,8 +2495,8 @@ await t.check('i60-a12: the Home debt card names the limit weekTick uses in each
 
 await t.check('i71-b05: the collections fee and a hospital bill show as money lines, so the lines add up to the change in cash', async () => {
   const r = await ev(() => {
-    fresh('two', { money: -100, debtWeeks: 12 }); let m0 = S.money; week(); const fee = S.last.lines.find(l => l[0] === '📞 Collections fee'), d1 = S.money - m0, n1 = S.last.net;
-    fresh('two', { jobId: 'farmhand', focus: 'work', health: 0, money: 20000 }); m0 = S.money; week(); const bill = S.last.lines.find(l => l[0] === '🏥 Hospital bill'), d2 = S.money - m0, n2 = S.last.net;
+    fresh('two', { diff: 'hard', money: -100, debtWeeks: 12 }); let m0 = S.money; week(); const fee = S.last.lines.find(l => l[0] === '📞 Collections fee'), d1 = S.money - m0, n1 = S.last.net;
+    fresh('two', { diff: 'hard', jobId: 'farmhand', focus: 'work', health: 0, money: 20000 }); m0 = S.money; week(); const bill = S.last.lines.find(l => l[0] === '🏥 Hospital bill'), d2 = S.money - m0, n2 = S.last.net;
     return { fee: fee && fee[1], d1, n1, bill: bill && bill[1], d2, n2 }; });
   assert(near(r.fee, -150) && near(r.d1, r.n1, 0.0001), JSON.stringify(r));
   assert(r.bill < -6000 && near(r.d2, r.n2, 0.0001), JSON.stringify(r));
