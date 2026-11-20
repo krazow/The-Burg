@@ -457,7 +457,7 @@ await t.check('title screen: Start comes before a closed "More options" panel, w
 });
 
 await t.check('i20-b01, i20-b06: pick a life aim at setup, see it on the Life tab, and change it only once a year', async () => {
-  await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); setPref('moreOpts', true); renderTitle(); });
+  await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); setPref('moreOpts', true); setPref('newHere', 1); renderTitle(); });
   await page.click('[data-aim="roots"]');
   assert((await page.getAttribute('[data-aim="roots"]', 'aria-pressed')) === 'true' && /Roots/.test(await page.textContent('#moresum')) && /Show up for town/.test(await page.textContent('#aimdesc')), 'aim chip');
   await page.fill('#nm', 'Aimee'); await page.click('#start');
