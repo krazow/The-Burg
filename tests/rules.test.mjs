@@ -488,13 +488,13 @@ await t.check('best scores are kept per mode', async () => {
 await t.check('a season goal counts weeks of the right focus and pays out once', async () => {
   const r = await ev(() => { fresh('two', { date: new Date(2027, 2, 1).getTime(), focus: 'community', community: 30 }); tab = 'home'; render();
     const line = document.querySelector('.sgoal').textContent; let note = null, c5 = 0;
-    for (let i = 0; i < 6; i++) { const res = week(); if (i === 4) c5 = S.community; if (res.notes.some(n => /Town goal done/.test(n))) note = i; }
+    for (let i = 0; i < 9; i++) { const res = week(); if (i === 7) c5 = S.community; if (res.notes.some(n => /Town goal done/.test(n))) note = i; }
     const done = { ...S.sgoal }, wins = S.seasonWins; weeks(2);
     fresh('two', { date: new Date(2027, 2, 1).getTime(), focus: 'rest' }); weeks(4);
     return { line, note, done, wins, after: S.seasonWins, restProg: S.sgoal.prog };
   });
-  assert(/Celebration Days/.test(r.line) && /0\/6/.test(r.line), r.line);
-  assert(r.note === 5 && r.done.done && r.wins === 1, JSON.stringify(r));
+  assert(/Celebration Days/.test(r.line) && /0\/9/.test(r.line), r.line);
+  assert(r.note === 8 && r.done.done && r.wins === 1, JSON.stringify(r));
   assert(r.restProg === 0, 'Rest should not count toward the spring goal');
 });
 
@@ -2349,6 +2349,49 @@ await t.check('wave 1 score: an older save loads with the score tallies filled i
     for (const k of ['commSum', 'cardSum', 'cardCount', 'cardSeed', 'goodWeeks', 'deepWeeks', 'debtLow', 'tallyFrom', 'aim', 'aimWeeks', 'aimAt', 'townWeeks', 'outWeeks', 'tripsN', 'bizWeeks', 'bizSold']) delete old[k];
     const m = migrate(old); S = m; S.noEvents = true; const s0 = lifeScore(); weeks(9); return { aim: m.aim, comm: lifeScore().avgC, seed: S.cardSeed, n: S.cardCount, s0: s0.score, aw: S.aimWeeks, from: S.tallyFrom }; });
   assert(r.aim === 'all' && r.comm > 30 && r.n === 3 && r.seed === false && r.from === 30 && r.aw.all === 39 && Number.isInteger(r.s0), JSON.stringify(r));
+});
+
+// ---- wave 1: weekly drift and focus balance ----
+await t.check('i59-b02/i35-b05: Get outside tops out like Rest, lower on Hard', async () => {
+  const r = await ev(() => { fresh('two', { happy: 84, health: 84 }); const n = focusFx('outdoors', 1, false), lo = (S.happy = 50, S.health = 50, focusFx('outdoors', 1, false));
+    S.mode = 'hard'; S.happy = 80; S.health = 80; const h = focusFx('rest', 1, false); return { n, lo, h }; });
+  assert(r.n.health < 5 * 0.28 * 0.2 && r.lo.health === 5 * 0.28 && r.h.happy === 0 && r.h.health === 0, JSON.stringify(r));
+});
+await t.check('i38-a01: the hiring cheer comes once every 26 weeks', async () => {
+  const r = await ev(() => { fresh('two', { happy: 50 }); hireCheer(); const a = S.happy; hireCheer(); const b = S.happy; S.turn += 26; hireCheer(); return [a, b, S.happy]; });
+  assert(r[0] === 55 && r[1] === 55 && r[2] === 60, JSON.stringify(r));
+});
+await t.check('i38-a06: town goals take 3 more weeks each', async () => {
+  const r = await ev(() => SEASON_GOALS.map(g => g.need));
+  assert(JSON.stringify(r) === '[9,8,8,7]', JSON.stringify(r));
+});
+await t.check('i38-a08/i37-b06/i35-b05: community pulls back harder above 60; a Transplant rests at 10 for a year; Hard rests lower', async () => {
+  const r = await ev(() => { const drift = (c, extra) => { fresh('two', { focus: 'study', community: c, edu: 3, ...extra }); S.focus = 'study'; const c0 = S.community; weekTick(false); return S.community - c0; };
+    return { hi: drift(80), mid: drift(50), newbie: drift(10, { bgRest: 10, turn: 0 }), later: drift(10, { bgRest: 10, turn: 60 }), hard: (() => { fresh('two', { mode: 'hard' }); return [happyRest(), commRest(), restTop()]; })() }; });
+  assert(r.hi < r.mid * 2 - 0.3 && Math.abs(r.newbie) < 0.05 && r.later > 0.1 && JSON.stringify(r.hard) === '[48,20,76]', JSON.stringify(r));
+});
+await t.check('i48-b02: Relaxed softens the rut to -0.7', async () => {
+  const r = await ev(() => { fresh('two'); const n = rutHit(); S.mode = 'relaxed'; return [n, rutHit()]; });
+  assert(r[0] === 1.2 && r[1] === 0.7, JSON.stringify(r));
+});
+await t.check('i30-b03: health tops out lower with age, and the Health card says so', async () => {
+  const r = await ev(() => { fresh('two', { health: 70 }); S.ageMonths = 85 * 12; adj({ health: 30 }); const capped = S.health;
+    tab = 'home'; render(); const lab = document.querySelector('[data-stat="health"]').getAttribute('aria-label'); return { c40: maxHealth(40), c85: maxHealth(85), capped, lab }; });
+  assert(r.c40 === 100 && near(r.c85, 75) && near(r.capped, 75) && /tops out at 75/.test(r.lab), JSON.stringify(r));
+});
+await t.check('i30-b04: home comforts stop lifting happiness in the high 80s', async () => {
+  const r = await ev(() => { fresh('two', { partner: true, dog: true }); S.happy = 60; const lo = comfortF(); S.happy = 90; return [lo, comfortF()]; });
+  assert(r[0] > 0.9 && r[1] === 0, JSON.stringify(r));
+});
+await t.check('i15-a02/i38-a11/i26-b02: visits taper in the 80s, no health at 70+, cheap visits limited', async () => {
+  const r = await ev(() => { fresh('two', { money: 5000, health: 60, happy: 50 }); visit('yoga', 'class'); const yLow = [S.health, S.happy];
+    S.turn++; S.health = 75; visit('yoga', 'class'); const yHi = S.health;
+    S.turn++; S.happy = 90; const h0 = S.happy; visit('pasta', 'dinner'); const taper = S.happy - h0;
+    S.turn++; S.community = 30; visit('mcgrub', 'counter'); const m1 = S.community; S.turn += 2; visit('mcgrub', 'counter'); const m2 = S.community;
+    S.turn += 13; visit('mcgrub', 'counter'); const m3 = S.community;
+    S.turn++; const b0 = S.community; visit('basket', 'shop'); const b1 = S.community; S.turn += 2; visit('basket', 'shop'); const b2 = S.community;
+    return { yLow, yHi, taper, m: [m1 - 30, m2 - m1, m3 - m2], b: [b1 - b0, b2 - b1] }; });
+  assert(r.yLow[0] > 60 && r.yHi === 75 && r.taper > 0 && r.taper < 6 * 0.28 * 0.5 && r.m[0] > 0 && r.m[1] === 0 && r.m[2] > 0 && r.b[0] > 0 && r.b[1] === 0, JSON.stringify(r));
 });
 
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });
