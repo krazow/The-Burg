@@ -39,7 +39,7 @@ const titleMonth = () => { const g = slots().filter(Boolean).sort((a, b) => (b.s
 const diffCard = (k, on) => `<button class="dcard${on ? ' on' : ''}" data-diff="${k}" aria-pressed="${on}"><b>${DIFFS[k].ic} ${DIFFS[k].label}</b><span>${DIFFS[k].blurb}</span></button>`;
 function renderTitle(){
   histSync();
-  const all = slots(), used = all.filter(Boolean).length;
+  const all = slots(), used = all.filter((g, i) => g || prevLife(i)).length;
   const more = !!prefs().moreOpts;
   let len = 'half', um = prefs().unlockMode === 'all' ? 'all' : 'go';   // i31-b20: open as I go, or everything open
   $('#app').innerHTML = `<div class="title">
@@ -48,11 +48,11 @@ function renderTitle(){
     <div class="sub">Make a life in Waitsburg, Washington.</div>
     <div id="tnotes"></div>
     ${used ? `<label class="field">Your lives (${used}/${SLOT_COUNT})</label>
-      <div class="slots">${all.map((g,i) => g ? slotCard(g, i, `<div class="slotbtns"><button class="sm" data-cont="${i}">Continue</button><button class="sm alt" data-del="${i}" aria-label="Delete ${esc(g.name)}'s life">🗑</button></div>`) : '').join('')}</div>
+      <div class="slots">${all.map((g,i) => g ? slotCard(g, i, `<div class="slotbtns"><button class="sm" data-cont="${i}">Continue</button><button class="sm alt" data-del="${i}" aria-label="Delete ${esc(g.name)}'s life">🗑</button></div>`) : prevCard(i)).join('')}</div>
       <div class="muted" style="margin:18px 0 0">— or start a new life —</div>` : ''}
     ${titleExtras()}
     <label class="field" for="nm">Your citizen's name</label>
-    <input type="text" id="nm" maxlength="20" placeholder="e.g. Dusty" autocomplete="off">
+    <input type="text" id="nm" maxlength="20" placeholder="e.g. Dusty" autocomplete="off" enterkeyhint="go" autocapitalize="words" autocorrect="off" spellcheck="false">
     <label class="field">Game length</label>
     <div class="lengths">${Object.entries(LENGTHS).map(([k,L]) =>
       `<button class="len ${k===len?'on':''}" data-len="${k}" aria-pressed="${k===len}"><b>${L.label}</b><span>${L.sub}</span><small>⏱ ${L.mins}</small></button>`).join('')}</div>
@@ -84,6 +84,7 @@ function renderTitle(){
     <button class="btn ghost" id="newphone">📱 I'm the new phone</button>
     <button class="btn ghost" id="settings">⚙️ Settings</button>
     <div class="muted" style="margin-top:14px;font-size:0.75rem">v${APP_VERSION}</div>
+    ${updateNote()}
   </div>`;
   let bg = 'fresh', dif = 'normal', aim = 'all', rules = {};
   const md = () => DIFF_MODE[dif];
@@ -121,9 +122,13 @@ function renderTitle(){
   document.querySelectorAll('[data-cont]').forEach(b => b.onclick = () => loadSlot(b.dataset.cont === WEEKLY_SLOT ? WEEKLY_SLOT : +b.dataset.cont));
   wireTitleExtras();
   document.querySelectorAll('[data-del]').forEach(b => b.onclick = () => askDelete(+b.dataset.del));
+  // i59-a11: the keyboard's Go key starts the life
+  $('#nm').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); $('#start').click(); } });
+  document.querySelectorAll('[data-prev]').forEach(b => b.onclick = () => usePrev(+b.dataset.prev));
+  wireUpdate();
   // the start as picked right now (name, length, background, mode, aim), run now or after the practice life
   const startNow = () => { const name = ($('#nm').value.trim() || 'Dusty').slice(0,20), l = len, o = { bg, diff: dif, aim, rules, unlock: um };
-    return () => { const free = slots().indexOf(null); if (free < 0) return askReplace(name, l, o); newGame(name, l, free, o); }; };
+    return () => { const free = freeSlot(); if (free < 0) return askReplace(name, l, o); newGame(name, l, free, o); }; };
   $('#start').onclick = () => {
     const go = startNow();
     if (isBrandNew()) return newHereSheet(go);      // i23-a01: the very first start offers the practice life
@@ -241,39 +246,49 @@ function newbieSheet(set){
 function pruneWeekly(){
   { const w = readSlot(WEEKLY_SLOT); if (w && w.weekly !== isoWeek()) writeSlot(WEEKLY_SLOT, null); }   // i73-b11: the challenge week is over
   const best = store.get(BEST_KEY); if (!best) return;
-  const cur = `wk-${isoWeek()}`, stale = Object.keys(best).filter(k => k.startsWith('wk-') && k !== cur);
+  const cur = `wk-${isoWeek()}`, stale = Object.keys(best).filter(k => { const r = parseRecKey(k).rest; return r.startsWith('wk-') && r !== cur; });   // D7: on any shelf
   if (stale.length) { stale.forEach(k => delete best[k]); store.set(BEST_KEY, best); }
 }
 function hasRecords(){
   const best = store.get(BEST_KEY) || {};
   return Object.keys(best).some(k => bestLabel(k)) || Object.keys(store.get(CHALLENGE_KEY) || {}).length > 0 || ends().length > 0;
 }
-// the best-score table, shown in the Challenges sheet
+// the best-score table, shown in the Challenges sheet. to-do 2 D7: one column per difficulty; Classic lives get their own list
 function recordsTable(){
-  const best = store.get(BEST_KEY) || {}, mds = ['relaxed', 'normal', 'hard'];
+  const best = store.get(BEST_KEY) || {}, ds = DIFF_LIST;
   const notes = store.get(BEST_NOTE_KEY) || {};   // i63-a20: a best life's comeback line
   const cell = (v, k) => v == null ? '<span class="muted" aria-label="none yet">–</span>' : `<b>${v}</b>${notes[k] ? `<br><small class="muted comeback">${esc(notes[k])}</small>` : ''}`;
-  return `<table class="rec"><caption>Best score by game length and mode</caption>
-      <thead><tr><th scope="col">Length</th>${mds.map(m => `<th scope="col">${MODES[m].ic} ${MODES[m].name}</th>`).join('')}</tr></thead>
-      <tbody>${Object.entries(LENGTHS).map(([k, L]) => `<tr><th scope="row">${L.label}</th>${mds.map(m => `<td>${cell(best[bestKey(k, m)], bestKey(k, m))}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
-
+  const td = (len, d) => d === 'easy' && !LENGTHS[len].easy ? '<td><span class="muted" aria-label="not in Easy">·</span></td>' : `<td>${cell(best[recKey(d, len)], recKey(d, len))}</td>`;
+  return `<table class="rec"><caption>Best score by game length and difficulty</caption>
+      <thead><tr><th scope="col">Length</th>${ds.map(d => `<th scope="col">${shelfName(d)}</th>`).join('')}</tr></thead>
+      <tbody>${Object.entries(LENGTHS).map(([k, L]) => `<tr><th scope="row">${L.label}</th>${ds.map(d => td(k, d)).join('')}</tr>`).join('')}</tbody></table>`;
 }
-// i19-b03: the Custom shelf, kept apart from the table above
+// D7: best scores from lives played before difficulty modes, by length and the old mode, and old challenge bests
+function classicShelf(){
+  const best = store.get(BEST_KEY) || {}, notes = store.get(BEST_NOTE_KEY) || {};
+  const ks = Object.keys(best).filter(k => { const p = parseRecKey(k); return !p.cu && p.shelf === 'classic' && !p.rest.startsWith('wk-') && restLabel(p.rest) && Number.isFinite(best[k]); });
+  return ks.length ? `<h3 style="margin-top:14px">🏛️ Classic</h3><p class="muted">Lives from before Easy, Normal and Hard. They are kept apart.</p>${ks.map(k => `<div class="kv"><span>${esc(restLabel(k))}${notes[k] ? `<br><small class="muted comeback">${esc(notes[k])}</small>` : ''}</span><span>best <b>${best[k]}</b></span></div>`).join('')}` : '';
+}
+// i19-b03: the Custom shelf, kept apart from the table above (each line names its difficulty)
 function customShelf(){
   const best = store.get(BEST_KEY) || {};
-  const cu = Object.keys(best).filter(k => k.startsWith('cu-') && bestLabel(k) && Number.isFinite(best[k]));
-  return cu.length ? `<h3 style="margin-top:14px">🎛️ Custom rules</h3><p class="muted">Lives played with changed rules, kept apart from the table above.</p>${cu.map(k => `<div class="kv"><span>${esc(bestLabel(k.slice(3)))}</span><span>best <b>${best[k]}</b></span></div>`).join('')}` : '';
+  const cu = Object.keys(best).filter(k => parseRecKey(k).cu && bestLabel(k) && Number.isFinite(best[k]))
+    .sort((a, b) => SHELVES.indexOf(parseRecKey(a).shelf) - SHELVES.indexOf(parseRecKey(b).shelf));
+  return cu.length ? `<h3 style="margin-top:14px">🎛️ Custom rules</h3><p class="muted">Lives played with changed rules, kept apart from the table above.</p>${cu.map(k => { const p = parseRecKey(k); return `<div class="kv"><span>${shelfName(p.shelf)} · ${esc(restLabel(p.rest))}</span><span>best <b>${best[k]}</b></span></div>`; }).join('')}` : '';
 }
 // i50-a05: records live in the Challenges sheet
 const recordsSheet = () => challengesSheet();
-// i73-b02: the ten best finished lives on this device, from the stubs finish() leaves
-const top10 = () => ends().map((e, i) => [e, i]).sort((a, b) => b[0].score - a[0].score || a[1] - b[1]).slice(0, 10).map(x => x[0]);
+// i73-b02: the ten best finished lives on this device, from the stubs finish() leaves. D7: ten for each difficulty, then Classic
+const topOf = sh => ends().map((e, i) => [e, i]).filter(([e]) => endShelf(e) === sh).sort((a, b) => b[0].score - a[0].score || a[1] - b[1]).slice(0, 10).map(x => x[0]);
+const top10 = () => SHELVES.flatMap(topOf);   // in the order they are listed (data-end counts through all of them)
 function topLives(){
-  const t = top10(); if (!t.length) return '';
-  return `<h3 style="margin-top:14px">🏅 Your top ${t.length === 10 ? 10 : t.length} ${t.length === 1 ? 'life' : 'lives'}</h3>
-    <table class="rec"><caption>Your best finished lives. Tap one to see how it ended.</caption>
+  const all = top10(); if (!all.length) return '';
+  let i = 0;
+  const table = sh => { const t = topOf(sh); if (!t.length) return '';
+    return `<table class="rec" data-shelf="${sh}"><caption>${shelfName(sh)}: your ${t.length === 1 ? 'best life' : `top ${t.length}`}. Tap one to see how it ended.</caption>
       <thead><tr><th scope="col">Name</th><th scope="col">Length</th><th scope="col">Score</th><th scope="col">Year</th></tr></thead>
-      <tbody>${t.map((e, i) => `<tr><th scope="row"><button class="linkbtn" data-end="${i}" aria-label="${esc(e.name)}, score ${e.score}: see how it ended">${esc(e.name)}</button></th><td>${LENGTHS[e.len] ? LENGTHS[e.len].label : ''}${MODES[e.mode] && e.mode !== 'normal' ? ` ${MODES[e.mode].ic}` : ''}</td><td><b>${e.score}</b> <span class="s">${esc(e.title || '')}</span></td><td>${Number.isFinite(e.to) ? e.to : ''}</td></tr>`).join('')}</tbody></table>`;
+      <tbody>${t.map(e => `<tr><th scope="row"><button class="linkbtn" data-end="${i++}" aria-label="${esc(e.name)}, score ${e.score}: see how it ended">${esc(e.name)}</button></th><td>${LENGTHS[e.len] ? LENGTHS[e.len].label : ''}${sh === 'classic' && MODES[e.mode] && e.mode !== 'normal' ? ` ${MODES[e.mode].ic}` : ''}</td><td><b>${e.score}</b> <span class="s">${esc(e.title || '')}</span></td><td>${Number.isFinite(e.to) ? e.to : ''}</td></tr>`).join('')}</tbody></table>`; };
+  return `<h3 style="margin-top:14px">🏅 Your top lives</h3>${SHELVES.map(table).join('')}`;
 }
 function endSummary(e){
   if (!e) return;
@@ -281,7 +296,7 @@ function endSummary(e){
   sheet(`<h2 style="text-align:center">${esc(e.name)}'s life in the Burg</h2>
     <p class="muted" style="text-align:center">${esc(e.cause || '')}</p>
     <div class="score">${e.score}</div><p style="text-align:center;margin-top:0"><b>${esc(e.title || '')}</b></p>
-    ${row('Played', `${LENGTHS[e.len] ? LENGTHS[e.len].label : ''}${MODES[e.mode] ? ` · ${MODES[e.mode].ic} ${MODES[e.mode].name}` : ''}${BACKGROUNDS[e.bg] ? ` · ${BACKGROUNDS[e.bg].ic} ${BACKGROUNDS[e.bg].name}` : ''}`)}
+    ${row('Played', `${LENGTHS[e.len] ? LENGTHS[e.len].label : ''} · ${endShelf(e) === 'classic' ? `🏛️ Classic${MODES[e.mode] && e.mode !== 'normal' ? ` (${MODES[e.mode].name})` : ''}` : shelfName(endShelf(e))}${BACKGROUNDS[e.bg] ? ` · ${BACKGROUNDS[e.bg].ic} ${BACKGROUNDS[e.bg].name}` : ''}`)}
     ${row('Years', `${e.from ?? ''}–${e.to ?? ''}${Number.isFinite(e.age) ? `, to age ${e.age}` : ''}`)}
     ${['happy', 'health', 'community', 'wealth'].filter(k => Number.isFinite(p[k])).map(k => row({ happy:'Happiness', health:'Health', community:'Community', wealth:'Net worth' }[k], `<b>${p[k]}</b>/100`)).join('')}
     ${row('Work', esc(e.job || ''))}${row('Home', esc(e.home || ''))}
@@ -296,6 +311,20 @@ function titleExtras(){
     ${hs.map((p, i) => `<div class="card tip heirwait">🌳 <b>${esc(p.name)}'s grandkid is ready</b> to carry on in Waitsburg.<div class="slotbtns" style="margin-top:8px"><button class="sm" data-heir="${i}">Start</button><button class="sm alt" data-heirno="${i}" aria-label="Dismiss ${esc(p.name)}'s grandkid">Dismiss</button></div></div>`).join('')}
     ${hasBroken() ? `<div class="card warn">⚠️ <b>A saved life couldn't be read</b> and was kept aside, so nothing overwrote it.<button class="btn ghost" id="brokendl">⬇️ Download the damaged save</button></div>` : ''}`;
 }
+// i3-b04: a slot whose save won't read, but whose copy from a week earlier will, offers that copy
+function prevCard(i){
+  const g = prevLife(i); if (!g) return '';
+  return `<div class="slot prevslot"><div class="slotinfo"><b>${esc(g.name)}</b> <span class="tag">⚠️ save damaged</span>
+    <div class="s">This week's save couldn't be read. The copy from a week earlier is safe: ${slotLine(g)}</div><div class="s">Slot ${i+1}</div></div>
+    <div class="slotbtns"><button class="sm" data-prev="${i}" aria-label="Continue ${esc(g.name)}'s life from a week earlier">Use last week's copy</button></div></div>`;
+}
+function usePrev(i){
+  const g = prevLife(i); if (!g) return renderTitle();
+  if (!store.set(slotKey(i), g)) return toast("Your phone's storage is full: free some space and try again");
+  loadSlot(i); toast(`Back to ${g.name}'s save from a week earlier`);
+}
+// a new life takes an empty slot, but not one holding last week's copy of a damaged life (unless nothing else is free)
+const freeSlot = () => { const a = slots(), i = a.findIndex((g, k) => !g && !prevLife(k)); return i >= 0 ? i : a.indexOf(null); };
 function wireTitleExtras(){
   document.querySelectorAll('[data-heir]').forEach(b => b.onclick = () => { const p = heirs()[+b.dataset.heir]; if (p) legacySheet(p); });
   document.querySelectorAll('[data-heirno]').forEach(b => b.onclick = () => {
@@ -375,6 +404,7 @@ function loadSlot(i){
   const g = readSlot(i); if (!g) return;
   if (S && !S.over && S.slot !== i) save();
   LIFE_UNDO = []; S = migrate(clone(g)); S.slot = i; tab = 'home'; MAPSIDE = null; MAPSEL = null; useDice(); resetFilters();
+  askPersist();
   closeSheet(); render(); window.scrollTo(0,0);
   if (resumePending()) return;
   if (g.savedAt && Date.now() - g.savedAt >= RECAP_AFTER && S.recapAt !== g.savedAt && !S.practice && on('ui.recap')) recapSheet(g.savedAt);
@@ -550,7 +580,7 @@ async function readBackupOne(text){
   const when = typeof d.exported === 'string' || Number.isFinite(d.exported) ? new Date(d.exported) : null;   // H1: a date is shown only if it parses
   // i73-b01: finished-life stubs come along as plain values only
   const endsIn = (Array.isArray(d.ends) ? d.ends : []).filter(e => e && typeof e === 'object' && typeof e.name === 'string' && Number.isFinite(e.score)).slice(0, ENDS_MAX)
-    .map(e => Object.fromEntries(Object.entries(e).map(([k, v]) => [k, typeof v === 'string' ? noTags(v).slice(0, 200) : Number.isFinite(v) || v == null ? v ?? null : k === 'parts' && obj(v) ? Object.fromEntries(Object.entries(v).filter(([, x]) => Number.isFinite(x))) : null])));
+    .map(e => Object.fromEntries(Object.entries(e).map(([k, v]) => [k, typeof v === 'string' ? noTags(v).slice(0, 200) : typeof v === 'boolean' || Number.isFinite(v) || v == null ? v ?? null : k === 'parts' && obj(v) ? Object.fromEntries(Object.entries(v).filter(([, x]) => Number.isFinite(x))) : null])));
   return { lives, ends: endsIn, prefs: prefsIn, best: obj(d.best), badges: obj(d.badges), challenges: obj(d.challenges), exported: when && !isNaN(when) ? when.toISOString() : null };
 }
 // i63-b22: lives in a backup that are an earlier week of a life already on this phone (same life id)
@@ -568,7 +598,7 @@ function restoreBackup(b, mode){
   for (const [g] of olderCopies(b)) g.rewound = true;            // i63-b22: it still plays, but its ending sets no records
   { const have = ends(), seen = new Set(have.map(e => `${e.name}|${e.at}|${e.score}`));
     const add = (b.ends || []).filter(e => !seen.has(`${e.name}|${e.at}|${e.score}`));
-    if (add.length) store.set(ENDS_KEY, keepEnds([...have, ...add].sort((x, y) => (y.at || 0) - (x.at || 0)))); }
+    if (add.length) store.set(ENDS_KEY, keepEnds([...have, ...add].sort((x, y) => (y.at || 0) - (x.at || 0)))); migrateRecords(); }
   // i62-a10: seen tips are added together; a setting this phone already has stays as it is
   if (b.prefs) { const p = prefs();
     for (const [k, v] of Object.entries(b.prefs)) { if (k === 'tips' && Array.isArray(v)) p.tips = [...new Set([...(Array.isArray(p.tips) ? p.tips : []), ...v])]; else if (p[k] === undefined) p[k] = v; }
@@ -585,26 +615,38 @@ function restoreBackup(b, mode){
   const landed = want.reduce((n, g, i) => n + (g && now[i] && now[i].name === g.name && now[i].savedAt === g.savedAt && (mode === 'replace' || !cur[i]) ? 1 : 0), 0);
   return { skipped, meant, landed, dupes, slots: want.map((g, i) => g && (mode === 'replace' || !cur[i]) ? i : -1).filter(i => i >= 0) };
 }
+// i59-a20: in the phone app (and phone browsers) a file goes to the share sheet: Drive, email, Messages.
+// Elsewhere it downloads. Returns 'shared', 'saved' or 'cancel'.
+const canShareFiles = () => { try { return !!(navigator.canShare && typeof File === 'function' && navigator.canShare({ files: [new File(['x'], 'x.json', { type: 'application/json' })] })); } catch(e){ return false; } };
+async function shareFile(blob, name, title, text){
+  const file = typeof File === 'function' ? new File([blob], name, { type: blob.type }) : null;
+  try { if (file && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title, ...(text ? { text } : {}) }); return 'shared'; } }
+  catch(e){ if (e && e.name === 'AbortError') return 'cancel'; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  return 'saved';
+}
 // the backup sheet; onClose (i63-b08's nudge) runs when it's closed, so the week carries on
 function backupSheet(onClose = null){
   if (S && !S.over && !S.practice) save();
   const c = localCounts(), n = hasBackupStuff(c);   // i62-a03: records and badges are worth a backup too
   sheet(`<h2>📤 Back up or restore</h2>
     <p class="muted">Your lives, records and badges are saved on this device. A backup lets you keep a copy or move them to another phone or computer.</p>
+    ${PERSIST === true ? '<p class="saveline">🔒 <b>Saves protected:</b> your phone won\'t clear them to free up space.</p>'
+      : PERSIST === false ? '<p class="saveline">⚠️ Your phone may clear saves when it runs low on space. A backup file keeps them safe.</p>' : ''}
     <h3>Back up (${countWords(c)})</h3>
-    <button class="btn primary" id="bkfile" ${n ? '' : 'disabled'}>⬇️ Download a backup file</button>
+    <button class="btn primary" id="bkfile" ${n ? '' : 'disabled'}>${canShareFiles() ? '📤 Share a backup file' : '⬇️ Download a backup file'}</button>
     <button class="btn ghost" id="bkcode" ${n ? '' : 'disabled'}>📋 Copy a backup code</button>
     <div id="bkout"></div>
     ${onClose ? '' : `<button class="btn ghost" id="bkmove" ${n ? '' : 'disabled'}>📱 Moving to a new phone</button>
     <h3 style="margin-top:14px">Restore</h3>
     <button class="btn ghost" id="bkrestore">📥 Restore from a backup</button>`}
     <button class="btn ghost" id="no">Close</button>`);
-  $('#bkfile').onclick = () => {
+  $('#bkfile').onclick = async () => {
     const blob = new Blob([JSON.stringify(backupData(), null, 1)], { type: 'application/json' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-    a.download = backupFileName();
-    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    toast('Backup file downloaded'); announce('Backup file downloaded');
+    const how = await shareFile(blob, backupFileName(), 'The Burg backup');
+    if (how === 'cancel') return;
+    const m = how === 'shared' ? 'Backup file shared' : 'Backup file downloaded'; toast(m); announce(m);
   };
   $('#bkcode').onclick = async () => {
     const code = await backupCode(backupData());
@@ -631,7 +673,9 @@ async function checkUpdate(out){
     const w = reg.installing || reg.waiting;
     if (!w) return say('No newer version yet. Try again later, or restore this backup on the phone that made it.');
     say('Found an update. Getting it ready, then the game reopens: paste your backup again after that.');
-    await new Promise(r => { if (w.state === 'activated') return r(); w.addEventListener('statechange', () => { if (w.state === 'activated') r(); }); setTimeout(r, 20000); });
+    // i3-b08: a new version waits for a go-ahead; asking for the update here is that go-ahead
+    await new Promise(r => { const step = () => { if (w.state === 'installed') { try { w.postMessage({ type: 'skip' }); } catch(_){} } if (w.state === 'activated') r(); };
+      step(); w.addEventListener('statechange', step); setTimeout(r, 20000); });
     location.reload();
   } catch (e) { say('Couldn\'t check right now. Connect to the internet and try again.'); }
 }
@@ -811,6 +855,7 @@ function newGame(name, len, slot = 0, opts = {}){
   log(S.bg === 'fresh' ? `${name} turns 18 and rents a room above Main Street in Waitsburg. Time to find a job.`
     : `${name} starts a new life in Waitsburg: ${BACKGROUNDS[S.bg].name.toLowerCase()}. ${BACKGROUNDS[S.bg].desc}`);
   tab = S.jobId ? 'home' : 'jobs'; save(); render();
+  if (!opts.practice) askPersist();
   if (!opts.practice) playedFlag(true);            // i63-b05
   if (!opts.practice) toast('Welcome to the Burg! Start by finding a job.');
 }
@@ -873,15 +918,15 @@ function render(){
   const nar = S.practice ? '' : ' skipx';          // i2-a23: on narrow phones the ⏩ buttons hide behind a long press on End Week
   $('#app').innerHTML = `
   <header class="top">
-    <div class="row"><h2>${esc(S.name)}${S.practice ? ' <span class="tag">Practice</span>' : ''}${(S.classic ? mode() !== 'normal' : diff() !== 'normal') && !S.practice ? ` <span class="tag">${S.classic ? `${MODES[mode()].ic} ${MODES[mode()].name}` : diffTag()}</span>` : ''}${S.scenario ? ` <span class="tag">🏁</span>` : ''}${S.weekly ? ` <span class="tag">📅</span>` : ''}${S.gen > 1 ? ` <span class="tag">🌳 ${S.gen}</span>` : ''}</h2><div class="hdr-r"><button class="money" id="moneybtn" aria-label="Cash ${fmt(S.money)}: this week's money in and out" aria-haspopup="dialog">${fmt(S.money)}</button><button id="helpbtn" aria-label="Help and tutorial">?</button></div></div>
+    <div class="row"><h2>${esc(S.name)}${S.practice ? ' <span class="tag">Practice</span>' : ''}${(S.classic ? mode() !== 'normal' : diff() !== 'normal') && !S.practice ? ` <span class="tag">${S.classic ? `${MODES[mode()].ic} ${MODES[mode()].name}` : diffTag()}</span>` : ''}${S.scenario ? ` <span class="tag">🏁</span>` : ''}${S.weekly ? ` <span class="tag">📅</span>` : ''}${S.gen > 1 ? ` <span class="tag">🌳 ${S.gen}</span>` : ''}</h2><div class="hdr-r">${tab === 'home' ? updateNote(true) : ''}<button class="money" id="moneybtn" aria-label="Cash ${fmt(S.money)}: this week's money in and out" aria-haspopup="dialog">${fmt(S.money)}</button><button id="helpbtn" aria-label="Help and tutorial">?</button></div></div>
     <div class="meta"><span>${dateLabel()} · age ${age()}</span><span>${left}</span></div>
     <div class="progress"><i style="width:${pct}%"></i></div>
   </header>
   <main id="main"></main>
   ${tab==='home' ? `${S.run ? `<button class="weekstrip" id="strip" aria-label="${esc(runWords())}. Details"><span class="wl">${S.run.weeks > 1 ? `Last ${S.run.weeks} wks` : 'Last week'}</span><span class="wc">${runChips()}</span><span class="more">›</span></button>` : ''}
     <div class="endbar${ROLL ? ' rolling' : ''}">${ROLL ? `<button class="btn primary" id="stoproll">⏹ Stop<small>${S.run.weeks} of up to ${ROLL.n} weeks</small></button>`
-      : `<button class="btn primary" id="end" aria-keyshortcuts="Shift+Enter" aria-description="Press and hold, or Shift+Enter, for more ways to skip ahead">End Week →<small>${FOCUS[S.focus].ic} ${FOCUS_SHORT[S.focus]}${S.trip && CITIES[S.trip.city] ? ` + 🚗 ${CITIES[S.trip.city].name}` : ''}</small></button>
-    ${on('ui.auto') ? `<button class="btn ghost${nar}" id="ff4" aria-label="Skip 4 weeks">⏩ 4</button>${big ? `<button class="btn ghost${nar}" id="ff13" aria-label="Skip 13 weeks">⏩ 13</button>` : ''}<button class="btn ghost" id="auto" aria-label="Auto: play until ${autoUntil() === 'event' ? 'something needs you' : AUTO_UNTIL[autoUntil()].short + ' or something needs you'}. Press and hold for options">⏭ Auto</button>` : ''}`}</div>` : ''}
+      : `<div class="endwrap"><button class="btn primary" id="end" aria-keyshortcuts="Shift+Enter" aria-description="Press and hold, or Shift+Enter, for more ways to skip ahead">End Week →<small>${FOCUS_SHORT[S.focus]}${S.trip && CITIES[S.trip.city] ? ` + 🚗 ${CITIES[S.trip.city].name}` : ''}</small></button><button class="endf" id="endf" aria-expanded="${FOCUS_ROW}" aria-controls="focusrow" aria-label="Change this week's focus, now ${FOCUS_SHORT[S.focus]}"><span aria-hidden="true">${FOCUS[S.focus].ic}</span><span class="caret" aria-hidden="true">${FOCUS_ROW ? '▴' : '▾'}</span></button></div>
+    ${on('ui.auto') ? `<button class="btn ghost${nar}" id="ff4" aria-label="Skip 4 weeks">⏩ 4</button><button class="btn ghost" id="auto" aria-label="Auto: play until ${autoUntil() === 'event' ? 'something needs you' : AUTO_UNTIL[autoUntil()].short + ' or something needs you'}. Press and hold for options">⏭ Auto</button>` : ''}`}</div>${FOCUS_ROW && !ROLL ? focusRow() : ''}` : ''}
   <nav><div class="in">
     ${[['home','🏠','Home'],['jobs','💼','Jobs'],['life','🌾','Life'],['log','📜','Journal']].map(([k,ic,l]) => { const nw = tab !== k && tabHasNew(k);   // i31-b15: a dot for something new there
       return `<button data-tab="${k}" class="${tab===k?'on':''}${nw ? ' hasnew' : ''}"${tab===k?' aria-current="page"':''}${nw ? ` aria-label="${l}, new"` : ''}><span class="ic" aria-hidden="true">${ic}</span>${l}${nw ? '<span class="ndot" aria-hidden="true"></span>' : ''}</button>`; }).join('')}
@@ -895,10 +940,12 @@ function render(){
   $('#moneybtn').onclick = cashSheet;
   if ($('#end')) { $('#end').onclick = e => { if (holdDone(e)) return; tapPlay(1, e); }; holdOpens($('#end'), skipSheet); }
   if ($('#ff4')) $('#ff4').onclick = e => tapPlay(4, e);
-  if ($('#ff13')) $('#ff13').onclick = e => focusCheck(() => tapPlay(13, e), () => playWeeks(13), e);
   if ($('#auto')) { $('#auto').onclick = e => { if (holdDone(e)) return; focusCheck(() => tapPlay('auto', e), autoPlay, e); }; holdOpens($('#auto'), skipSheet); }
   if ($('#stoproll')) $('#stoproll').onclick = stopRoll;
   if ($('#strip')) $('#strip').onclick = showRunDetails;
+  if ($('#endf')) $('#endf').onclick = () => { FOCUS_ROW = !FOCUS_ROW; render(); const b = FOCUS_ROW ? $(`#focusrow [data-qf="${S.focus}"]`) : $('#endf'); if (b) b.focus({ preventScroll: true }); if (FOCUS_ROW) announce('Pick a focus for this week'); };
+  document.querySelectorAll('#focusrow [data-qf]').forEach(b => b.onclick = () => { FOCUS_ROW = false; handFocus(b.dataset.qf); const e = $('#endf'); if (e) e.focus({ preventScroll: true }); announce(`This week: ${FOCUS[S.focus].name}`); });
+  wireUpdate();
   FIRST_SLOT = 'open';
   ({home:renderHome, jobs:renderJobs, life:renderLife, log:renderLog})[tab]();
   FIRST_SLOT = null;
@@ -907,6 +954,45 @@ function render(){
   document.querySelectorAll('[data-locked]').forEach(b => b.onclick = () => explainLocked(b.dataset.locked));
   chipFade();
   histSync();
+}
+// i49-a04: the focus label on End Week opens a row of the six focuses right above the bar
+let FOCUS_ROW = false;
+function focusRow(){
+  const j = job();
+  return `<div class="focusrow" id="focusrow" role="group" aria-label="This week's focus">${Object.entries(FOCUS).filter(([k]) => focusOpen(k)).map(([k, x]) => {   // i31: only focuses that are open
+    const dis = (x.needsJob && (!j || S.retired)) || (x.study && !canStudy());
+    return `<button class="qf${S.focus === k ? ' on' : ''}" data-qf="${k}" aria-pressed="${S.focus === k}"${dis ? ' disabled' : ''}><span class="ic" aria-hidden="true">${x.ic}</span>${FOCUS_SHORT[k]}</button>`;
+  }).join('')}</div>`;
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && FOCUS_ROW && $('#modal').classList.contains('hidden')) { FOCUS_ROW = false; if (S) render(); const b = $('#endf'); if (b) b.focus(); } });
+// a tap anywhere else folds the row away (removed in place, so the tap still lands where it was aimed)
+document.addEventListener('pointerdown', e => {
+  if (!FOCUS_ROW || !e.target.closest || e.target.closest('#focusrow, #endf')) return;
+  FOCUS_ROW = false; const r = $('#focusrow'); if (r) r.remove(); const b = $('#endf'); if (b) b.setAttribute('aria-expanded', 'false');
+}, true);
+/* ---------- i3-b08: a new version waits until you tap "Update ready" on Home or the title screen ---------- */
+let UPDATE_REG = null, UPDATING = false;
+const updateNote = inHeader => !UPDATE_REG || UPDATING ? '' : inHeader
+  ? '<button class="updpill" id="updnow" aria-label="Update ready: tap to refresh">🔄 Update</button>'
+  : '<button class="btn ghost" id="updnow">🔄 Update ready: tap to refresh</button>';
+function wireUpdate(){ if ($('#updnow')) $('#updnow').onclick = applyUpdate; }
+function updateFound(reg){
+  if (UPDATE_REG === reg) return;
+  UPDATE_REG = reg;
+  if ($('#modal').classList.contains('hidden') && $('#helpview').classList.contains('hidden') && !(typeof TUT !== 'undefined' && TUT)) {
+    if (!S) renderTitle(); else if (tab === 'home' && !ROLL) { const y = window.scrollY; render(); window.scrollTo(0, y); }
+  }
+}
+function applyUpdate(){
+  const reg = UPDATE_REG; if (!reg || UPDATING || !$('#modal').classList.contains('hidden')) return;
+  if (S && !S.over) save();
+  UPDATING = true; toast('Updating…', true);
+  const go = () => location.reload();
+  const w = reg.waiting;
+  if (!w) return go();
+  navigator.serviceWorker.addEventListener('controllerchange', go, { once: true });
+  try { w.postMessage({ type: 'skip' }); } catch(e){ go(); }
+  applyUpdate.t = setTimeout(go, 4000);
 }
 // i23-a03: the header's countdown; the final week says so plainly
 const weeksLeftLabel = n => n <= 1 ? 'Last week!' : `${n} weeks left`;
@@ -948,7 +1034,7 @@ function holdOpens(el, fn){
   el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); e.stopPropagation(); fn(); } });
 }
 const holdDone = e => { const el = e.currentTarget; if (el && el._held) { el._held = false; return true; } return false; };
-// i48-b06: before ⏩ 13 or Auto, after 4+ weeks of one focus (it starts to fade), ask once per run of that focus
+// i48-b06: before Auto, after 4+ weeks of one focus (it starts to fade), ask once per run of that focus
 let FOCUS_ASKED = null;
 function focusCheck(now, later, e){
   const f = S && S.focus, key = S && `${S.name}|${S.streakF}|${S.turn - S.streakN}`;
@@ -973,15 +1059,15 @@ function lowFocus(cur = S.focus){
   const map = { happy:'outdoors', health:'rest', community:'community' };
   return Object.keys(map).sort((a, b) => S[a] - S[b]).map(k => map[k]).filter(k => k !== cur);
 }
-// the skip options: ⏩ 4 and ⏩ 13, what ⏭ Auto plays until (i2-a11), and whether to watch the weeks go by (i2-a28)
+// the skip options: ⏩ 4, what ⏭ Auto plays until (i2-a11), and whether to watch the weeks go by (i2-a28)
+// i50-a14: the ⏩ 13 skip is gone: ⏩ 4 and Auto cover it
 function skipSheet(){
   if (!S || S.over || ROLL || !on('ui.auto')) return;
-  const L = LENGTHS[S.len], big = L.turns === Infinity || L.turns >= 104;
   const k = autoUntil(), sp = watchWeeks() ? 'watch' : 'instant', rm = reducedMotion();
   const opt = (grp, val, on, label, dis) => `<button class="btn ghost opt${on ? ' on' : ''}" role="radio" aria-checked="${on}" data-${grp}="${val}"${dis ? ' disabled' : ''}>${on ? '✓ ' : ''}${label}</button>`;
   sheet(`<h2>Skip ahead</h2>
-    <p class="muted">Skips keep your ${S.plan && S.plan.length ? 'focus plan' : 'focus'} and stop when something needs you: an event with a choice, a milestone or New Year. Events with only one way to go play out on their own.</p>
-    <div class="skiprow"><button class="btn primary" id="sk4">⏩ 4 weeks</button>${big ? '<button class="btn primary" id="sk13">⏩ 13 weeks</button>' : ''}</div>
+    <p class="muted">Skips keep your ${S.plan && S.plan.length ? 'focus plan' : 'focus'} and stop when something needs you: an event with a choice, news you need to act on, or New Year. Good news waits for the next stop. Events with only one way to go, or with an answer rule, play out on their own.</p>
+    <div class="skiprow"><button class="btn primary" id="sk4">⏩ 4 weeks</button></div>
     <h3 style="margin-top:14px" id="untilh">⏭ Auto plays up to ${AUTO_MAX} weeks, until…</h3>
     <div role="radiogroup" aria-labelledby="untilh">${Object.entries(AUTO_UNTIL).map(([key, o]) => opt('until', key, k === key, o.name)).join('')}</div>
     <h3 style="margin-top:14px" id="speedh">While skipping</h3>
@@ -990,7 +1076,6 @@ function skipSheet(){
     <button class="btn primary" id="skauto">⏭ Auto now</button>
     <button class="btn ghost" id="close">Close</button>`);
   $('#sk4').onclick = () => { closeSheet(); playWeeks(4); };
-  if ($('#sk13')) $('#sk13').onclick = () => { closeSheet(); playWeeks(13); };
   $('#skauto').onclick = () => { closeSheet(); autoPlay(); };
   $('#close').onclick = closeSheet;
   const keep = sel => { const id = document.activeElement && document.activeElement.dataset; skipSheet(); const b = id && $(`#sheet [data-${sel}="${id[sel]}"]`); if (b) setTimeout(() => b.focus(), 40); };
@@ -1084,7 +1169,7 @@ function renderHome(){
     <button class="stat statbtn" data-stat="net" aria-label="Net worth ${fmt(netWorth())}: what counts"><label><span>Net worth <span class="info">ⓘ</span></span></label><div style="font-weight:800;font-size:1.125rem;margin-top:2px">${fmt(netWorth())}</div></button>
   </div>${scoreButton()}</div>
   ${unlockCard()}${cl}${hint ? `<div class="card next"><div>👉 <b>Next step:</b> ${hint.t}</div><button class="sm" data-next="${hint.go}">${hint.b}</button></div>` : ''}
-  ${installReady() ? `<div class="card tip installcard"><div>📲 <b>Enjoying the Burg?</b> Install it: it opens from your home screen like an app and plays offline.</div><div class="slotbtns"><button class="sm" id="install">Install</button><button class="sm alt" id="installno">Not now</button></div></div>` : ''}
+  ${S.practice ? '' : upNextLine()}
   ${privateCard()}
   ${!j && !S.retired ? noPayCard() : ''}
   ${S.happy < 30 ? sugg('happy', 'outdoors', `😟 Happiness is low (${Math.round(S.happy)}).`) : ''}
@@ -1103,7 +1188,8 @@ function renderHome(){
     ${mapView() ? previewLine(S.focus) : ''}
     ${planLine()}
     ${isOpen('out') ? outButton() : ''}
-  </div>${walkCard()}</div>
+  </div>${walkCard()}
+  ${installReady() ? `<div class="card tip installcard"><div>📲 <b>Enjoying the Burg?</b> Install it: it opens from your home screen like an app and plays offline.</div><div class="slotbtns"><button class="sm" id="install">Install</button><button class="sm alt" id="installno">Not now</button></div></div>` : ''}</div>
   <aside class="hside" aria-label="At a glance">
   <div class="card sumrow">
     <button class="sumchip" data-go="jobs">${work}</button>
@@ -1122,6 +1208,7 @@ function renderHome(){
   if ($('#planbtn')) $('#planbtn').onclick = planSheet;
   walkWire();
   document.querySelectorAll('[data-stat]').forEach(b => b.onclick = () => showStatInfo(b.dataset.stat));
+  if ($('#upnext')) $('#upnext').onclick = upNextSheet;
   if ($('#scorenow')) $('#scorenow').onclick = showScoreNow;
   document.querySelectorAll('[data-sugg]').forEach(b => b.onclick = () => handFocus(b.dataset.sugg, true));
   { const pc = perkChips(); document.querySelectorAll('[data-perk]').forEach(b => b.onclick = () => { const c = pc[+b.dataset.perk]; if (c) c.go(); }); }
@@ -1272,11 +1359,59 @@ const STATINFO = {
   community: { t:'🤝 Community', up:['Show up for town', 'Working in Waitsburg (a little in Dayton)', 'Kids at home, a council seat, helping in events'],
     down:['It fades slowly if you don\'t show up', 'Skipping out on neighbors'], note:'Counts for 20% of your Life Score. Higher standing helps you get hired.' }
 };
+/* ---------- i15-b02/b03: small charts from S.hist, drawn as plain SVG ---------- */
+const HIST_COL = { money:1, net:2, happy:3, health:4, community:5 };
+const TREND_WEEKS = 26;
+function trendSVG(k){
+  const rows = (S.hist || []).slice(-TREND_WEEKS), c = HIST_COL[k], name = { happy:'Happiness', health:'Health', community:'Community' }[k];
+  if (rows.length < 2) return '<p class="muted trend">Play a few weeks and a trend line shows up here.</p>';
+  const W0 = 300, H0 = 84, x = i => 4 + i * (W0 - 8) / (rows.length - 1), y = v => 4 + (100 - v) * (H0 - 8) / 100;
+  const vals = rows.map(r => r[c]), lo = Math.min(...vals);
+  const mark = (v, l) => `<line x1="0" x2="${W0}" y1="${y(v)}" y2="${y(v)}" stroke="var(--muted)" stroke-dasharray="4 4" stroke-width="1"/><text x="${W0 - 2}" y="${y(v) - 3}" text-anchor="end" font-size="10" fill="var(--muted)">${l}</text>`;
+  return `<figure class="trend"><svg viewBox="0 0 ${W0} ${H0}" role="img" aria-label="${name} over the last ${rows.length} weeks: from ${vals[0]} to ${vals[vals.length - 1]}, lowest ${lo}.">
+    ${mark(30, '30: low')}${k === 'health' ? mark(0, '0: hospital') : ''}
+    <polyline fill="none" stroke="var(--barn)" stroke-width="2.5" stroke-linejoin="round" points="${rows.map((r, i) => `${x(i).toFixed(1)},${y(r[c]).toFixed(1)}`).join(' ')}"/>
+    <circle cx="${x(rows.length - 1)}" cy="${y(vals[vals.length - 1])}" r="3.5" fill="var(--barn)"/></svg>
+    <figcaption class="muted">The last ${rows.length} weeks${lo < 30 ? `, lowest ${lo}` : ''}.</figcaption></figure>`;
+}
+const MONEY_PTS = 120;
+function moneyChart(){
+  const all = S.hist || [];
+  if (all.length < 2) return '<p class="muted trend">Play a few weeks and a chart of your cash and net worth shows up here.</p>';
+  const step = Math.ceil(all.length / MONEY_PTS), rows = all.filter((r, i) => i % step === 0 || i === all.length - 1);
+  const W0 = 320, H0 = 170, L0 = 6, R0 = 74, vs = rows.flatMap(r => [r[1], r[2]]);
+  let lo = Math.min(0, ...vs), hi = Math.max(1, ...vs); if (hi - lo < 100) hi = lo + 100;
+  const x = i => L0 + i * (W0 - L0 - R0) / (rows.length - 1), y = v => 8 + (hi - v) * (H0 - 16) / (hi - lo);
+  const line = (c, dash, col) => `<polyline fill="none" stroke="${col}" stroke-width="2.5" ${dash ? 'stroke-dasharray="6 4"' : ''} stroke-linejoin="round" points="${rows.map((r, i) => `${x(i).toFixed(1)},${y(r[c]).toFixed(1)}`).join(' ')}"/>`;
+  const end = rows[rows.length - 1], ly = [y(end[2]), y(end[1])];
+  if (Math.abs(ly[0] - ly[1]) < 12) { if (ly[0] <= ly[1]) ly[1] = ly[0] + 12; else ly[0] = ly[1] + 12; }   // labels don't sit on each other
+  return `<figure class="trend money"><svg id="mchart" viewBox="0 0 ${W0} ${H0}" aria-hidden="true">
+    ${lo < 0 ? `<line x1="${L0}" x2="${W0 - R0}" y1="${y(0)}" y2="${y(0)}" stroke="var(--muted)" stroke-dasharray="4 4" stroke-width="1"/><text x="${L0 + 2}" y="${y(0) - 3}" font-size="10" fill="var(--muted)">$0</text>` : ''}
+    ${line(2, false, 'var(--soil)')}${line(1, true, 'var(--sky)')}
+    <text x="${W0 - R0 + 4}" y="${ly[0] + 4}" font-size="11" font-weight="700" fill="var(--soil)">Net worth</text>
+    <text x="${W0 - R0 + 4}" y="${ly[1] + 4}" font-size="11" font-weight="700" fill="var(--sky)">- - Cash</text>
+    <line id="mpick" x1="0" x2="0" y1="4" y2="${H0 - 4}" stroke="var(--muted)" stroke-width="1"/></svg>
+    <label class="mrange"><span class="sr-only">Pick a week on the chart</span><input type="range" id="mweek" min="0" max="${rows.length - 1}" value="${rows.length - 1}"></label>
+    <p id="mread" aria-live="polite"></p><figcaption class="sr-only">Since ${MONTHS[histDate(rows[0]).getMonth()]} ${histDate(rows[0]).getFullYear()}, cash went from ${fmt(rows[0][1])} to ${fmt(end[1])} and net worth from ${fmt(rows[0][2])} to ${fmt(end[2])}.</figcaption></figure>`;
+}
+function moneyChartWire(){
+  const all = S.hist || [], sv = $('#mchart'), r = $('#mweek'); if (!sv || !r) return;
+  const step = Math.ceil(all.length / MONEY_PTS), rows = all.filter((x, i) => i % step === 0 || i === all.length - 1);
+  const W0 = 320, L0 = 6, R0 = 74, x = i => L0 + i * (W0 - L0 - R0) / (rows.length - 1);
+  const show = i => { const row = rows[i], d = histDate(row);
+    $('#mpick').setAttribute('x1', x(i)); $('#mpick').setAttribute('x2', x(i));
+    $('#mread').textContent = `Week of ${MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}, ${d.getFullYear()}: cash ${fmt(row[1])}, net worth ${fmt(row[2])}`; };
+  r.oninput = () => show(+r.value);
+  sv.onclick = e => { const b = sv.getBoundingClientRect(), fx = (e.clientX - b.left) / b.width * W0;
+    const i = clamp(Math.round((fx - L0) / ((W0 - L0 - R0) / (rows.length - 1))), 0, rows.length - 1); r.value = i; show(i); };
+  show(rows.length - 1);
+}
 function showStatInfo(k){
   if (k === 'net') {
     const loan = S.loanLeft > 0 ? S.loanLeft * (S.loanPay || CARS.truck.pay) * 0.85 : 0;
-    const t = LENGTHS[S.len].target;
+    const t = lenTarget();
     sheet(`<h2>💰 Net worth</h2><p class="muted">Everything you own minus what you owe.</p>
+      <h3>Money over time</h3>${moneyChart()}
       <div class="kv"><span>Cash</span><span>${fmt(S.money)}</span></div>
       <div class="kv"><span>${term('equity')}</span><span>${fmt(S.equity)}</span></div>
       <div class="kv"><span>${CARS[S.car].name}</span><span>${fmt(S.carValue)}</span></div>
@@ -1290,9 +1425,10 @@ function showStatInfo(k){
       <div class="kv"><span><b>Net worth</b></span><span><b>${fmt(netWorth())}</b></span></div>
       <p class="muted">Counts for 30% of your ${term('lifescore')}: ${fmt(t)} (in ${term('dollars')}) or more by the end gets full points.</p>
       <button class="btn primary" id="ok">Got it</button>`);
+    moneyChartWire();
   } else {
     const x = STATINFO[k];
-    sheet(`<h2>${x.t}: ${Math.round(S[k])}</h2>
+    sheet(`<h2>${x.t}: ${Math.round(S[k])}</h2>${trendSVG(k)}
       <h3>Goes up with</h3>${x.up.map(u => `<div class="logitem">▲ ${u}</div>`).join('')}
       <h3 style="margin-top:10px">Goes down with</h3>${x.down.map(u => `<div class="logitem">▼ ${u}</div>`).join('')}
       ${k === 'health' ? `<p><b>${maxHealth() < 100 ? `At ${age()}, health tops out at ${Math.round(maxHealth())}.` : 'Health can reach 100 until 55; after that it tops out a little lower each year.'}</b></p>` : ''}
@@ -1326,6 +1462,31 @@ function jobRow(x){
     <div class="s">${x.where ? esc(x.where) + ', ' : ''}${c.name}${c.miles ? ` · ${c.miles} mi` : ' · no commute'} · pay ${wk(payNow(x, cur))}${c.miles ? `, gas ${wk(commuteCost(c.miles, CARS[S.car], x))}` : ''}${tags.length ? ` · ${tags.join(' · ')}` : ''}</div></div>
     <div style="text-align:right"><div class="pay">${fmt(th)}/wk</div>
     <div class="s">${cur ? 'take-home' : base && Math.abs(diff) >= 1 ? `<span class="${diff>0?'upt':'downt'}">${diff>0?'▲':'▼'} ${fmt(Math.abs(diff))}</span>` : 'take-home'}</div>${btn}</div></div>`;
+}
+/* ---------- i15-b08: two jobs side by side, in words rather than raw numbers ---------- */
+const riskWord = x => { const r = (LAYOFF_RISK[x.id] ?? .5) * (x.union ? 0.5 : 1); return r <= 0.05 ? 'very steady' : r <= 0.25 ? 'steady' : r <= 0.6 ? 'some risk' : 'shaky'; };
+const stressWord = x => x.stress < 0.35 ? 'calm' : x.stress < 0.65 ? 'some stress' : 'stressful';
+const wearWord = x => x.wear < 0.25 ? 'easy on your body' : x.wear < 0.65 ? 'some wear' : 'hard on your body';
+function compareSheet(a, b){
+  const cur = job() && !S.retired ? job() : null, list = JOBS;
+  a = jobById(a) || cur || list[0];
+  b = jobById(b) || [...list].filter(x => x.id !== a.id && x.edu <= S.edu && !extraLock(x)).sort((p, q) => takeHome(q) - takeHome(p))[0] || list.find(x => x.id !== a.id);
+  const sel = (id, v) => `<label><span class="sr-only">${id === 'cmpa' ? 'First' : 'Second'} job</span><select id="${id}">${list.map(x => `<option value="${x.id}"${x.id === v.id ? ' selected' : ''}>${x.id === (cur && cur.id) ? '★ ' : ''}${esc(x.title)} (${CITIES[x.city].name})</option>`).join('')}</select></label>`;
+  const col = x => { const c = CITIES[x.city], lock = S.edu < x.edu ? EDU[x.edu] : extraLock(x);
+    return { 'Take-home': `<b>${fmt(takeHome(x))}/wk</b><small>after taxes and gas</small>`, Pay: wk(payNow(x, S.jobId === x.id)),
+      Commute: c.miles ? `${c.miles} mi each way<small>gas ${wk(commuteCost(c.miles, CARS[S.car], x))}</small>` : 'none', Stress: stressWord(x), 'On your body': wearWord(x),
+      Layoffs: `${riskWord(x)}${x.union ? '<small>union: half the risk</small>' : ''}${x.season ? `<small>seasonal: ${seasonWords(x)}</small>` : ''}`,
+      'You need': lock ? `🔒 ${esc(lock)}` : x.id === (cur && cur.id) ? 'your job now' : '✅ can apply' }; };
+  const A = col(a), B = col(b);
+  sheet(`<h2>⚖️ Compare two jobs</h2>
+    <div class="cmpsel">${sel('cmpa', a)}${sel('cmpb', b)}</div>
+    <table class="cmpgrid"><caption class="sr-only">${esc(a.title)} compared with ${esc(b.title)}</caption>
+      <thead><tr><td></td><th scope="col">${esc(a.title)}</th><th scope="col">${esc(b.title)}</th></tr></thead>
+      <tbody>${Object.keys(A).map(k => `<tr><th scope="row">${k}</th><td>${A[k]}</td><td>${B[k]}</td></tr>`).join('')}</tbody></table>
+    <button class="btn primary" id="ok">Close</button>`);
+  $('#cmpa').onchange = () => { compareSheet($('#cmpa').value, b.id); setTimeout(() => $('#cmpa') && $('#cmpa').focus(), 40); };
+  $('#cmpb').onchange = () => { compareSheet(a.id, $('#cmpb').value); setTimeout(() => $('#cmpb') && $('#cmpb').focus(), 40); };
+  $('#ok').onclick = closeSheet;
 }
 let jobOK = false, jobNear = false;
 function explainLocked(id){
@@ -1407,7 +1568,7 @@ function renderJobs(){
     `<button class="chip ${jobCity===k?'on':''}" data-c="${k}">${l}</button>`).join('')}</div>
   ${jobCity!=='all' ? `<div class="card muted">${CITIES[jobCity].blurb}</div>` : ''}
   <div class="card">
-    <h3>Job board <span class="tag">${S.applied ? 'Applied this week' : '1 application per week'}</span></h3>
+    <h3>Job board <span class="tag">${S.applied ? 'Applied this week' : '1 application per week'}</span> <button class="sm alt" id="cmpjobs" aria-haspopup="dialog">⚖️ Compare</button></h3>
     <p class="muted" style="margin:0 0 4px;font-size:0.8125rem">${term('takehome')} is pay after taxes and gas${job() && !S.retired ? ', with ▲▼ against your current job' : ''}.${GOOD_JOBS.length ? ' ⭐ Good first jobs are close to home: the top of the list can mean an hour on the road each way, and long drives wear down happiness.' : ''}</p>
     ${boardHTML(list)}
   </div>`}
@@ -1419,6 +1580,7 @@ function renderJobs(){
   ${LENGTHS[S.len].turns===Infinity && age()>=62 && !S.retired && on('retire.income') ? `<button class="btn primary" id="retire">Retire (Social Security ${wk(ssPay())}${pensionVested()?` + pension ${wk(pensionPay())}`:''}${S.k401>0?` + 401(k) ${wk(S.k401*drawRate()/12)}`:''})</button>` : ''}`;
   document.querySelectorAll('.chip[data-c]').forEach(b => b.onclick = () => { jobCity = b.dataset.c; render(); });
   if ($('#jobok')) $('#jobok').onclick = () => { jobOK = !jobOK; render(); };
+  if ($('#cmpjobs')) $('#cmpjobs').onclick = () => compareSheet();
   if ($('#jobnear')) $('#jobnear').onclick = () => { jobNear = false; render(); announce('Showing all jobs'); };
   if ($('#carpool')) $('#carpool').onclick = () => { S.carpool = !S.carpool; S.carpoolJob = S.carpool ? S.jobId : null; save(); render(); toast(S.carpool ? '🚙 You joined a carpool' : 'Driving alone again'); };
   document.querySelectorAll('[data-apply]').forEach(b => b.onclick = () => apply(b.dataset.apply));
@@ -1691,7 +1853,9 @@ function showMenu(){
     <p class="muted" style="margin-top:12px">${esc(S.name)}'s life is in ${slotName(S.slot)} and also saves itself after every week.</p>
     <button class="btn ghost" id="settings">⚙️ Settings</button>
     <button class="btn ghost" id="skipopts">⏩ Skip and Auto options</button>
+    ${S.ansRules && Object.keys(S.ansRules).length ? `<button class="btn ghost" id="ansrules">🔁 Answer rules (${Object.keys(S.ansRules).length})</button>` : ''}
     <button class="btn ghost" id="help">❓ Help & tutorial</button>
+    <button class="btn ghost" id="done">👋 Done for now</button>
     <button class="btn ghost" id="title">Back to title screen</button>
     <button class="btn ghost" id="retireNow">End this life now (see score)</button>
     <button class="btn ghost" id="close">Close</button>`);
@@ -1701,10 +1865,50 @@ function showMenu(){
   $('#movephone').onclick = movePhoneSheet;
   $('#settings').onclick = () => settingsSheet(true);
   $('#skipopts').onclick = skipSheet;
+  if ($('#ansrules')) $('#ansrules').onclick = ansRulesSheet;
+  $('#done').onclick = doneSheet;
   $('#help').onclick = showHelp;
   $('#title').onclick = () => { save(); closeSheet(); S = null; renderTitle(); };
   $('#retireNow').onclick = confirmRetire;
   $('#close').onclick = closeSheet;
+}
+
+/* ---------- i49-a05: Done for now: save, one small card about this sitting, then the title screen ---------- */
+// a sitting starts the first time a life is played after it's opened (kept in memory only, not in the save)
+let SIT = null;
+const sitKey = () => `${S.lifeId || ''}|${S.slot}|${S.gen || 1}`;
+function sitting(){
+  if (!S) return null;
+  if (!SIT || SIT.key !== sitKey() || S.turn < SIT.turn) {
+    const top = S.log[0];
+    SIT = { key: sitKey(), turn: S.turn, date: dateLabel(), score: S.practice ? null : lifeScore().score, top: top ? top.d + '|' + top.m : null };
+  }
+  return SIT;
+}
+// the best moment: a milestone from this sitting's Journal, or else its first event
+function sitBest(st){
+  const fresh = [];
+  for (const e of S.log) { if (st.top && e.d + '|' + e.m === st.top) break; fresh.push(e); }
+  const mile = fresh.filter(isMile);
+  const e = mile[mile.length - 1] || fresh.filter(x => (x.k || logKind(x.m)) === 'ev').pop();
+  return e ? `${e.d}: ${e.m}` : '';
+}
+function doneSheet(){
+  save();
+  const st = SIT && SIT.key === sitKey() ? SIT : null, n = st ? S.turn - st.turn : 0;
+  const now = S.practice ? null : lifeScore().score, best = st && n ? sitBest(st) : '';
+  sheet(`<h2>👋 Done for now</h2>
+    <p class="muted">${esc(S.name)}'s life is saved in ${slotName(S.slot)}. Continue any time from the title screen.</p>
+    ${n ? `<div class="kv"><span>Weeks played this sitting</span><span><b>${n}</b></span></div>
+      <div class="kv"><span>From</span><span>${st.date}</span></div>
+      <div class="kv"><span>To</span><span>${dateLabel()}</span></div>
+      ${now != null && st.score != null ? `<div class="kv"><span>Life Score</span><span>${st.score} → <b>${now}</b> <span class="delta ${now > st.score ? 'up' : now < st.score ? 'down' : 'flat'}">${now === st.score ? '±0' : (now > st.score ? '▲' : '▼') + Math.abs(now - st.score)}</span></span></div>` : ''}
+      ${best ? `<h3 style="margin-top:10px">⭐ Best moment</h3><div class="logitem">${best}</div>` : ''}`
+      : `<p>No weeks played this sitting.${now != null ? ` Life Score so far: <b>${now}</b>.` : ''}</p>`}
+    <button class="btn primary" id="ok">To the title screen</button>
+    <button class="btn ghost" id="back">Keep playing</button>`);
+  $('#ok').onclick = () => { closeSheet(); SIT = null; S = null; renderTitle(); };
+  $('#back').onclick = closeSheet;
 }
 
 /* ---------- ⚙️ Settings (i2-a03): comfort options in one place; none of them changes the game ---------- */
@@ -1714,7 +1918,7 @@ const SETTING_ROWS = [
   ['sound', '🎵 Sounds', 'Small sounds for a new week, events and badges. Quiet while ⏩ and Auto play.'],
   ['vibrate', '📳 Vibration', 'A short buzz for events and badges, on phones that can (not iPhones).'],
   ['swipe', '👆 Swipes', 'Swipe left or right to change tabs, and swipe a pop-up\'s handle down to close it.'],
-  ['skipAsk', '⏩ Focus check', 'Before ⏩ 13 or Auto, ask about a focus you\'ve kept 4 weeks or more.'],
+  ['skipAsk', '⏩ Focus check', 'Before Auto, ask about a focus you\'ve kept 4 weeks or more.'],
   ['srWeek', '🗣️ Week summary (screen readers)', 'What a screen reader says after End Week: one short sentence, or every number.'],
   ['motion', '✨ Animations', 'Stat bars that slide, cash that counts up after a week, and confetti for badges. Always off when your device asks for reduced motion.']
 ];
@@ -1800,16 +2004,33 @@ function closeSheet(){
   if (wasOpen && typeof PLAY_AT !== 'undefined') PLAY_AT = -1e9;   // a sheet in between means the next End Week tap is on purpose
   $('#modal').classList.add('hidden');
   if (wasOpen) { SHEET_SHUT = performance.now(); lockScroll(false); const f = lastFocus; lastFocus = null; setTimeout(() => refocus(f), 30); }
+  if (wasOpen && TOAST_Q.length) setTimeout(flushToasts, 60);    // i20-a04: toasts held back during an event
   histSync();
 }
 // a sheet that asks you to choose (an event): Back and Escape keep it open
 const mustChoose = (sh = $('#sheet')) => !!sh.querySelector('[data-i]');
-function pickOne(){ toast('Pick one to go on'); announce('Pick one to go on'); }
+// i59-a03: the choices give a small shake, so it's clear the event is waiting for you
+function pickOne(){
+  toast('Pick one to go on', true); announce('Pick one to go on');
+  const c = $('#sheet .evchoices') || $('#sheet'); if (!c || calmMotion()) return;
+  c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); setTimeout(() => c.classList.remove('shake'), 500);
+}
 /* ---------- i64-a01: the phone's Back button closes the top thing (a sheet, Help, then a tab) and stays in the game ---------- */
 // One history entry per open layer; history.state.burg says how many are on the stack.
-let HIST_T = null, HIST_SKIP = 0, HIST_BOOTED = false;
-const histDepth = () => (S && !S.over && tab !== 'home' ? 1 : 0) + ($('#modal').classList.contains('hidden') ? 0 : 1)
+// i59-a01: in a life, one more entry sits under Home, so Back on Home asks first instead of leaving.
+// i59-a02: the tutorial counts as a layer too, so Back there asks to skip the tour.
+let HIST_T = null, HIST_SKIP = 0, HIST_BOOTED = false, LEAVE_ARMED = null;
+const LEAVE_MS = 3000;
+const histDepth = () => (S && !S.over && !LEAVE_ARMED ? 1 : 0) + (S && !S.over && tab !== 'home' ? 1 : 0)
+  + (typeof TUT !== 'undefined' && TUT ? 1 : 0)
+  + ($('#modal').classList.contains('hidden') ? 0 : 1)
   + ($('#helpview') && !$('#helpview').classList.contains('hidden') ? 1 : 0);
+function armLeave(){
+  save();
+  clearTimeout(LEAVE_ARMED); LEAVE_ARMED = setTimeout(() => { LEAVE_ARMED = null; histSync(); }, LEAVE_MS);
+  const m = 'Press Back again to leave. Your week is saved.'; toast(m, true); announce(m);
+}
+const disarmLeave = () => { if (LEAVE_ARMED) { clearTimeout(LEAVE_ARMED); LEAVE_ARMED = null; } };
 const histAt = () => (history.state && history.state.burg) || 0;
 function histSync(){
   if (HIST_T) return;
@@ -1829,13 +2050,14 @@ addEventListener('popstate', () => {
   if (HIST_SKIP) { HIST_SKIP--; return histSync(); }
   if (histDepth() <= histAt()) return histSync();
   const coach = document.querySelector('#coach:not(.hidden)');
-  if (coach || (typeof TUT !== 'undefined' && TUT)) endTutorial(false);
+  if (coach || (typeof TUT !== 'undefined' && TUT)) askSkipTour();
   else if (!$('#modal').classList.contains('hidden')) {
     const b = mustChoose() ? null : ['#no', '#n', '#close', '#back', '#ok'].map(q => $('#sheet ' + q)).find(Boolean);
     if (b) b.click(); else pickOne();
   }
-  else if (!$('#helpview').classList.contains('hidden')) closeHelp();
+  else if (!$('#helpview').classList.contains('hidden')) helpBack();
   else if (S && tab !== 'home') { tab = 'home'; MAPSIDE = null; MAPSEL = null; render(); window.scrollTo(0, 0); announce('Home tab'); }
+  else if (S && !S.over) armLeave();
   histSync();
 });
 const sheetCloser = (sh = $('#sheet')) => sh.querySelector('[data-i]') ? null : ['#no', '#close', '#back', '#ok'].map(q => sh.querySelector(q)).find(Boolean) || null;
@@ -1888,6 +2110,35 @@ document.addEventListener('pointermove', e => {
   const dy = Math.max(0, e.clientY - swipeAt.y); $('#sheet').style.transform = dy ? `translateY(${dy}px)` : '';
 });
 document.addEventListener('pointercancel', () => { if (swipeAt && swipeAt.kind === 'sheet') $('#sheet').style.transform = ''; swipeAt = null; });
+// i70-b02: on a sheet scrolled to the top, a downward swipe anywhere closes it (not only on the handle)
+let SHEET_PULL = null;
+const PULL_CLOSE = 90;
+document.addEventListener('touchstart', e => {
+  SHEET_PULL = null;
+  const sh = $('#sheet'), t = e.target;
+  if (e.touches.length !== 1 || !swipeOK() || $('#modal').classList.contains('hidden') || !t.closest || !t.closest('#sheet') || t.closest('.grab')) return;
+  if (t.closest('input, textarea, select, .mapsvg, .chips') || sh.scrollTop > 0 || !sheetCloser(sh)) return;
+  SHEET_PULL = { x: e.touches[0].clientX, y: e.touches[0].clientY, dy: 0, on: false };
+}, { passive: true });
+document.addEventListener('touchmove', e => {
+  const p = SHEET_PULL; if (!p || e.touches.length !== 1) return;
+  const sh = $('#sheet'), dx = e.touches[0].clientX - p.x, dy = e.touches[0].clientY - p.y;
+  if (!p.on) {
+    if (dy < -6 || Math.abs(dx) > Math.abs(dy) + 6 || sh.scrollTop > 0) { SHEET_PULL = null; return; }   // scrolling up or sideways
+    if (dy < 12) return;
+    p.on = true;
+  }
+  p.dy = Math.max(0, dy); sh.style.transform = p.dy ? `translateY(${p.dy}px)` : '';
+  if (e.cancelable) e.preventDefault();                 // no page scroll or pull-to-refresh while pulling the sheet
+}, { passive: false });
+const pullEnd = close => {
+  const p = SHEET_PULL; SHEET_PULL = null; if (!p || !p.on) return;
+  $('#sheet').style.transform = '';
+  const b = sheetCloser();
+  if (close && p.dy >= PULL_CLOSE && b) b.click();
+};
+document.addEventListener('touchend', () => pullEnd(true));
+document.addEventListener('touchcancel', () => pullEnd(false));
 document.addEventListener('pointerup', e => {
   const s0 = swipeAt; swipeAt = null;
   if (!s0 || e.pointerId !== s0.id) return;

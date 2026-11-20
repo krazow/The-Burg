@@ -9,10 +9,13 @@ import { serve, launch, runner, seedScript } from './helpers.mjs';
 import { guardJobs, guardChecks } from './sim-guards.mjs';
 
 const SCALE = Number(process.env.SIM_SCALE || (process.env.GITHUB_EVENT_NAME === 'pull_request' ? 0.5 : 1));
-const FILTERED = !!(process.env.SIM_ONLY || process.env.SIM_LEN || process.env.SIM_VARIANTS || process.env.SIM_AIMS);   // a tuning run: no balance ceilings
+const FILTERED = !!(process.env.SIM_DIFF || process.env.SIM_ONLY || process.env.SIM_LEN || process.env.SIM_VARIANTS || process.env.SIM_AIMS);   // a tuning run: no balance ceilings
 const CEILING = { careless: 62, idle: 52 };
 const AIM_SPREAD = 5;                                            // i20-b23: fitted aim medians must sit within 5 points                     // the targets (60 and 50) plus a small margin for dice
 let GAMES = { half: 6, two: 4, five: 2, life: 1 };              // per strategy, times SIM_SCALE
+// to-do 2 D7: SIM_DIFF=easy|normal|hard plays the main games as new lives on that difficulty (a tuning run; Easy has no Lifetime)
+const SIM_DIFF = process.env.SIM_DIFF || '';
+if (SIM_DIFF === 'easy') delete GAMES.life;
 let STRATEGIES = ['planner', 'homebody', 'commuter', 'student', 'hustler', 'careless', 'idle', 'tripper', 'roadie', 'rotation'];
 // for tuning: SIM_ONLY=commuter,hustler and/or SIM_LEN=five,two run a subset (CI always runs everything)
 if (process.env.SIM_ONLY) STRATEGIES = STRATEGIES.filter(x => process.env.SIM_ONLY.split(',').includes(x));
@@ -54,14 +57,15 @@ if (!(process.env.SIM_ONLY || process.env.SIM_LEN || process.env.SIM_AIMS) || pr
 }
 const RULE_LENS = { half: 1, two: Math.max(1, Math.round(SCALE)) };
 const JOBS_LIST = [];
-for (const len of Object.keys(GAMES)) for (const strat of STRATEGIES) for (let g = 0; g < Math.max(1, Math.round(GAMES[len] * SCALE)); g++) JOBS_LIST.push({ len, strat, g, opts: {}, label: 'normal' });
+for (const len of Object.keys(GAMES)) for (const strat of STRATEGIES) for (let g = 0; g < Math.max(1, Math.round(GAMES[len] * SCALE)); g++) JOBS_LIST.push({ len, strat, g, opts: SIM_DIFF ? { diff: SIM_DIFF } : {}, label: 'normal' });
 for (const v of [...VARIANTS, ...AIM_RUNS]) for (let g = 0; g < (v.n || 4); g++) JOBS_LIST.push({ ...v, g });
 for (const rs of RULE_SETS) for (const [strat, lens] of [['planner', { five: 1 }], ['careless', RULE_LENS], ['idle', RULE_LENS]]) for (const [len, n] of Object.entries(lens)) for (let g = 0; g < n; g++)
   JOBS_LIST.push({ len, strat, g, opts: { rules: rs.rules }, label: `rules:${rs.label}`, tier: rs.tier });
 // wave 1 balance guards (tests/sim-guards.mjs): extra bots, challenges, per-length ceilings and the swap table, for
-// each difficulty in SIM_DIFF (default: Classic, today's game). They run in the full sim; in a filtered tuning run only
+// the difficulty in SIM_DIFF (default: Classic, today's game), measured against the main games played in it. They run in
+// the full sim; in a filtered tuning run (SIM_DIFF is one) only
 // with SIM_GUARDS=1 (or a list: bots,lengths,challenges,swap). The swap table runs only off pull requests, or with SIM_SWAP=1.
-const GUARD_DIFFS = (process.env.SIM_DIFF || 'classic').split(',');
+const GUARD_DIFFS = [process.env.SIM_DIFF || 'classic'];
 const GUARD_GROUPS = new Set(process.env.SIM_GUARDS && process.env.SIM_GUARDS !== '1' ? process.env.SIM_GUARDS.split(',')
   : !FILTERED || process.env.SIM_GUARDS ? ['bots', 'lengths', 'challenges', 'swap'] : []);
 if (process.env.GITHUB_EVENT_NAME === 'pull_request' && !process.env.SIM_SWAP) GUARD_GROUPS.delete('swap');
@@ -223,7 +227,7 @@ for (const { len, strat, g, opts, label, tier, seedAs, bot, diff, bg, scenario, 
         }
         const sc = lifeScore(), scen = SCENARIOS[S.scenario], scWin = scen ? !!(S.scWon || scen.win()) : null;
         if (scWin && scWeek == null) scWeek = weeks;
-        return { scWin, scWeek, weeks, ending, bad, events, score: sc.score, parts: sc.parts, cardAvg: sc.cardAvg, snap: sc.snap, aimPart: Math.round(sc.aim), drag: sc.drag, good: S.goodWeeks, nw: Math.round(sc.real), age: age(), edu: S.edu, kids: S.kids.length,
+        return { scWin, scWeek, weeks, ending, bad, events, score: sc.score, parts: sc.parts, cardAvg: sc.cardAvg, snap: sc.snap, aimPart: Math.round(sc.aim), drag: sc.drag, bonus: sc.bonus, good: S.goodWeeks, nw: Math.round(sc.real), age: age(), edu: S.edu, kids: S.kids.length,
                  debt: /debt/.test(ending || ''), endedOk: !!ending, cash: Math.round(S.money), bk: S.bk != null, climbed, nw65,
                  src: Object.fromEntries(Object.entries(src).map(([k, v]) => [k, Math.round(v)])),
                  choiceFx, wxCost: Math.round((S.wxLife || {}).cost || 0), wxSaved: Math.round((S.wxLife || {}).saved || 0), yrs: Math.max(0.5, S.turn / 52),
@@ -488,13 +492,14 @@ if (!process.env.SIM_ONLY || process.env.SIM_ONLY.split(',').includes('rotator')
 
 // ---- wave 1 balance guards, per difficulty (tests/sim-guards.mjs) ----
 if (GUARD_GROUPS.size) for (const d of GUARD_DIFFS) {
-  // the plain bots this difficulty is measured against: for Classic the normal games above
-  const base = (st, l) => results.filter(r => (d === 'classic' ? r.label === 'normal' : r.label === `diff:${d}`) && r.strat === st && (!l || r.len === l));
+  // the plain bots this difficulty is measured against: the main games above (played in SIM_DIFF when it's set)
+  const base = (st, l) => results.filter(r => r.label === 'normal' && r.strat === st && (!l || r.len === l));
   md += await guardChecks(t, results, d, { base, scenarios: SCENARIO_LIST, check: !FILTERED || !!process.env.SIM_GUARDS });
 }
 
 fs.mkdirSync('test-results', { recursive: true });
 fs.writeFileSync('test-results/balance-report.md', md);
+if (SIM_DIFF) fs.writeFileSync(`test-results/sim-${SIM_DIFF}.json`, JSON.stringify(results.map(({ events, choiceFx, opened, src, ...r }) => r)));
 if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md + '\n');
 
 await browser.close();

@@ -362,7 +362,7 @@ function scenarioLine(){
 // i20-a30: Start sits under each description (no more clipping at 360 wide), with the length and your best as tags.
 // i50-a05: the weekly challenge and your records moved here from the title screen.
 function challengesSheet(){
-  const won = store.get(CHALLENGE_KEY) || {}, best = store.get(BEST_KEY) || {}, wk = best[`wk-${isoWeek()}`];
+  const won = store.get(CHALLENGE_KEY) || {}, best = store.get(BEST_KEY) || {}, wk = best[recKey('normal', `wk-${isoWeek()}`)];   // D7: the weekly is a Normal life
   const nWon = Object.keys(SCENARIOS).filter(k => won[k]).length;
   const diffBadge = d => `<span class="tag">${DIFFS[d].ic} ${DIFFS[d].label}</span>`;
   const tags = (len, b) => `<span class="tag">${LENGTHS[len].label}</span>${b != null ? `<span class="tag">Your best ${b}</span>` : ''}`;
@@ -373,14 +373,14 @@ function challengesSheet(){
       <button class="sm" id="weekly">Start the weekly challenge</button></div>
     <h3 style="margin-top:14px">Story challenges <span class="tag">${nWon}/${Object.keys(SCENARIOS).length} completed</span>${diffBadge('hard')}</h3>
     <p class="muted" style="margin:2px 0">Story challenges play on ${DIFFS.hard.label}.</p>
-    ${Object.entries(SCENARIOS).map(([k,sc]) => `<div class="chrow"><div class="t">${sc.ic} ${sc.name}${won[k] ? ' ✅' : ''} ${tags(sc.len, best['sc-' + k])}</div><div class="s">${sc.desc}</div><button class="sm" data-sc="${k}" aria-label="Start: ${esc(sc.name)}">Start</button></div>`).join('')}
-    ${hasRecords() ? `<h3 style="margin-top:14px">🏆 Your records</h3><p class="muted" style="margin:2px 0">Your best Life Scores on this device.</p>${recordsTable()}${customShelf()}${topLives()}` : ''}
+    ${Object.entries(SCENARIOS).map(([k,sc]) => `<div class="chrow"><div class="t">${sc.ic} ${sc.name}${won[k] ? ' ✅' : ''} ${tags(sc.len, best[recKey('hard', 'sc-' + k)])}</div><div class="s">${sc.desc}</div><button class="sm" data-sc="${k}" aria-label="Start: ${esc(sc.name)}">Start</button></div>`).join('')}
+    ${hasRecords() ? `<h3 style="margin-top:14px">🏆 Your records</h3><p class="muted" style="margin:2px 0">Your best Life Scores on this device. Each difficulty keeps its own.</p>${recordsTable()}${customShelf()}${classicShelf()}${topLives()}` : ''}
     ${badgeLine()}
     <button class="btn ghost" id="n">Close</button>`);
   $('#weekly').onclick = () => { if (readSlot(WEEKLY_SLOT)) return weeklySheet(); const name = (($('#nm') && $('#nm').value.trim()) || 'Dusty').slice(0,20); closeSheet(); startWeekly(name); };
   document.querySelectorAll('[data-end]').forEach(b => b.onclick = () => endSummary(top10()[+b.dataset.end]));   // i73-b02
   document.querySelectorAll('[data-sc]').forEach(b => b.onclick = () => {
-    const sc = SCENARIOS[b.dataset.sc], name = (($('#nm') && $('#nm').value.trim()) || 'Dusty').slice(0,20), free = slots().indexOf(null);
+    const sc = SCENARIOS[b.dataset.sc], name = (($('#nm') && $('#nm').value.trim()) || 'Dusty').slice(0,20), free = freeSlot();
     closeSheet();
     const opts = { bg: sc.bg, diff: 'hard', scenario: b.dataset.sc };   // to-do 2 D2: story challenges are a Hard feature
     if (free < 0) return askReplace(name, sc.len, opts);
@@ -879,13 +879,13 @@ function scoreCard(){
   g.fillStyle = '#fff'; g.textAlign = 'center'; g.font = 'bold 110px Georgia, serif'; g.fillText('The Burg', 540, 170);
   g.fillStyle = '#3d2b1f'; g.font = '600 52px system-ui, sans-serif'; g.fillText(`${S.name}'s life in Waitsburg`, 540, 380);
   g.font = '40px system-ui, sans-serif'; g.fillStyle = '#6b5b4e';
-  g.fillText(`${LENGTHS[S.len].label}${S.weekly ? ` · Weekly challenge ${S.weekly}` : ''}${mode() !== 'normal' ? ` · ${MODES[mode()].name} mode` : ''}`, 540, 450);
+  g.fillText(`${LENGTHS[S.len].label} · ${diffName()}${S.classic && mode() !== 'normal' ? ` (${MODES[mode()].name})` : ''}${S.weekly ? ` · Weekly challenge ${S.weekly}` : ''}`, 540, 450);   // D7: the difficulty
   g.fillStyle = '#9b2f1f'; g.font = 'bold 300px Georgia, serif'; g.fillText(String(score), 540, 810);
-  g.fillStyle = '#3d2b1f'; g.font = '600 60px system-ui, sans-serif'; g.fillText(mode() !== 'normal' ? `${title} (${MODES[mode()].name})` : title, 540, 900);
+  g.fillStyle = '#3d2b1f'; g.font = '600 60px system-ui, sans-serif'; g.fillText(title, 540, 900);
   g.font = '40px system-ui, sans-serif'; g.fillStyle = '#6b5b4e';
   { const back = comebackLine(), a = AIMS[S.aim] || AIMS.all;   // i63-a20 the comeback, i20-b01 the aim, i20-b05 good weeks
     g.font = 'italic 38px Georgia, serif'; if (back) g.fillText(back, 540, 955);
-    g.font = '36px system-ui, sans-serif'; g.fillText(`${a.ic} ${a.name} · ${S.goodWeeks || 0} of ${tallyWeeks()} good weeks`, 540, 510); g.font = '40px system-ui, sans-serif'; }
+    g.font = '36px system-ui, sans-serif'; g.fillText(`${on('score.aims') ? `${a.ic} ${a.name} · ` : ''}${S.goodWeeks || 0} of ${tallyWeeks()} good weeks`, 540, 510); g.font = '40px system-ui, sans-serif'; }
   const bs = BADGES.filter(b => S.badges && S.badges[b.id]).map(b => b.ic).join(' ');
   if (bs) g.fillText(bs, 540, 1010);
   g.fillText(`Age ${age()} · ${EDU[S.edu]} · ${fmt(netWorth())}`, 540, 1100);
@@ -899,15 +899,18 @@ function scoreCard(){
 }
 // i73-b18: a short line of text goes with the picture (Messages and Facebook show it under the picture)
 const weekOf = w => { const m = /^(\d{4})-W(\d\d)$/.exec(w || ''); if (!m) return w; const j4 = new Date(Date.UTC(+m[1], 0, 4)), d = new Date(j4 - ((j4.getUTCDay() || 7) - 1) * 864e5 + (+m[2] - 1) * 7 * 864e5); return `${MONTHS[d.getUTCMonth()].slice(0, 3)} ${d.getUTCDate()}`; };
+// D7: "a 2-year life on Easy", "a lifetime on Hard", "a 2-year life (Classic)"
+function lifeWords(){
+  const L = { half: '6-month', two: '2-year', five: '5-year' }[S.len];
+  return `${L ? `a ${L} life` : 'a lifetime'}${shelfOf() === 'classic' ? ' (Classic)' : ` on ${DIFFS[diff()].label}`}`;
+}
 function shareText(){
-  const { score, title } = lifeScore(), L = { half: '6-month', two: '2-year', five: '5-year' }[S.len];
-  return `${S.name} scored ${score}, ${title}, in ${L ? `a ${L} life` : 'a lifetime'} in The Burg${S.weekly ? ` (Weekly challenge, week of ${weekOf(S.weekly)})` : ''}. krazow.github.io/The-Burg`;
+  const { score, title } = lifeScore();
+  return `${S.name} scored ${score}, ${title}, in ${lifeWords()} in The Burg${S.weekly ? ` (Weekly challenge, week of ${weekOf(S.weekly)})` : ''}. krazow.github.io/The-Burg`;
 }
 async function shareCard(){
   const c = scoreCard(), blob = await new Promise(r => c.toBlob(r, 'image/png')), name = `the-burg-${S.name.replace(/\W+/g, '-').toLowerCase()}.png`, text = shareText();
-  const file = typeof File === 'function' ? new File([blob], name, { type:'image/png' }) : null;
-  try { if (file && navigator.canShare && navigator.canShare({ files:[file] })) { await navigator.share({ files:[file], title:'My life in The Burg', text }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  if (await shareFile(blob, name, 'My life in The Burg', text) !== 'saved') return;   // i59-a20: the share sheet where there is one
   toast('Score card saved');
   // where a picture can't be shared, the words can still be copied to post with it
   const sh = $('#share');
@@ -981,10 +984,11 @@ function startLegacy(parent, name = heirName(parent.name)){
 }
 
 /* ---------- 🏆 Life Score so far (#67) ---------- */
-// R16: Relaxed and Hard scores are labeled as such, and kept apart from Normal best scores
+// R16, to-do 2 D7: each difficulty's scores are kept on their own shelf; a life from before difficulty modes is Classic
 function modeScoreNote(){
-  const md = mode(); if (md === 'normal') return '';
-  return `<p class="muted modenote" style="text-align:center">${MODES[md].ic} <b>${MODES[md].name} mode score.</b> ${md === 'relaxed' ? 'Debt never ends a Relaxed life, so' : 'Hard'} scores are kept separately from Normal ones and aren't compared with them.</p>`;
+  if (S.practice) return '';
+  if (shelfOf() === 'classic') return `<p class="muted modenote" style="text-align:center">🏛️ <b>Classic score.</b> This life began before Easy, Normal and Hard, so it goes on its own Classic shelf.</p>`;
+  return `<p class="muted modenote" style="text-align:center">${shelfName(diff())} <b>score.</b> Easy, Normal and Hard scores each have their own shelf, and they are not compared.</p>`;
 }
 // B10: how far through the game you are (Lifetime: age 18 to 65), for an "on track" net-worth target
 function gameProgress(){
@@ -992,7 +996,7 @@ function gameProgress(){
   return L.turns === Infinity ? lifeProgress() : clamp(S.turn / L.turns, 0, 1);
 }
 function wealthTrack(real){
-  const L = LENGTHS[S.len], p = gameProgress(), want = L.target * p;
+  const p = gameProgress(), want = lenTarget() * p;
   if (p < 0.02) return '';
   const ok = real >= want;
   return `<div class="kv"><span>${ok ? '✅' : '⏳'} Net worth on track?<br><small class="muted">By now (${Math.round(p * 100)}% of the way) you'd want about ${fmt(want)} in ${term('dollars')}</small></span><span><b>${ok ? 'On track' : `${Math.round(real / want * 100)}% there`}</b></span></div>`;
@@ -1009,6 +1013,7 @@ const SCORE_TIPS = {
   health:'Health is your weakest part. Rest, Get outside and a doctor checkup help; physical jobs and overtime wear you down.',
   community:'Community is your weakest part. Show up for town, help in events, work in Waitsburg, or join a carpool.',
   wealth:'Net worth is your weakest part. A better-paying job, the 401(k), owning a home and stock-up grocery runs add up.',
+  wealthEasy:'Net worth is your weakest part. A better-paying job, owning a home and stock-up grocery runs add up.',
   debt:'Debt is costing you the most. Every week below -$1,000 counts against you, and getting back to $0 by the end wins most of it back: steady work, fewer trips and paying down the card come first.',
   debtNW:'Debt is costing you the most. Net worth below $0 pulls your score down, and getting back to $0 by the end wins most of it back: steady work, fewer trips and paying down the card come first.'
 };
@@ -1017,7 +1022,7 @@ const PART_NAMES = { happy:'Happiness', health:'Health', community:'Community', 
 const goodLine = () => `${S.goodWeeks || 0} of ${tallyWeeks()} weeks were good ones`;
 // the lines of "How the score adds up", shared by Life Score so far and the end sheet. end: the life is over
 function scoreLines(sc, end){
-  const L = LENGTHS[S.len], w = sc.w;
+  const w = sc.w, target = lenTarget();
   // i20-a28: four tight columns (Stat · Score · Weight · Points), the range notes in small text under each stat
   const part = (l, sub, v, wt) => `<tr><th scope="row">${l}<small>${sub}</small></th><td>${v}</td><td>${wt}%</td><td>${Math.round(v * wt / 100)}</td></tr>`;
   const so = end ? '' : ' so far', dc = debtCost(sc);
@@ -1027,7 +1032,7 @@ function scoreLines(sc, end){
     ${part('Happiness', `average ${Math.round(sc.avgH)}${so}${end ? ' (30 → 0, 90 → 100)' : ''}`, sc.parts.happy, w.happy)}
     ${part('Health', `average ${Math.round(sc.avgHe)}${so}${end ? ' (40 → 0, 95 → 100)' : ''}`, sc.parts.health, w.health)}
     ${part('Community', `average ${Math.round(sc.avgC)}${so}${end ? ' (10 → 0, 90 → 100)' : `, now ${Math.round(S.community)}`}`, sc.parts.community, w.community)}
-    ${part('Net worth', `${fmt(sc.nw)}${S.col > 1.05 ? ` (${fmt(sc.real)} in 2027 dollars)` : ''} of ${fmt(L.target)}${end ? '' : ' by the end'}${S.sloanLeft > 0 ? '; student loans count at half' : ''}`, Math.max(0, sc.parts.wealth), Math.round(w.wealth))}
+    ${part('Net worth', `${fmt(sc.nw)}${S.col > 1.05 ? ` (${fmt(sc.real)} in 2027 dollars)` : ''} of ${fmt(target)}${end ? '' : ' by the end'}${S.sloanLeft > 0 ? '; student loans count at half' : ''}`, Math.max(0, sc.parts.wealth), Math.round(w.wealth))}
     ${w.aim > 0 ? part(aims.length === 1 ? `${AIMS[aims[0]].ic} ${AIMS[aims[0]].name}` : '🧭 Your aims', `your life aim${aims.length > 1 ? `s, by the weeks you held each (${aims.map(k => `${AIMS[k].name} ${Math.round(sh[k] * 100)}%`).join(', ')})` : ''}`, Math.round(sc.aim), Math.round(w.aim)) : ''}</tbody></table>
     ${dc ? `<div class="kv debt"><span>💳 Debt<br><small>${dc.cost ? `Debt is costing you ${dc.cost} point${dc.cost === 1 ? '' : 's'}.` : 'Debt costs you nothing more right now.'}${!end && dc.back ? ` Back to $0 by the end wins back ${dc.back}.` : ''}${sc.drag ? ` ${S.deepWeeks} week${S.deepWeeks === 1 ? '' : 's'} below ${fmtc(-DEEP_DEBT)}.` : ''}</small></span><span><b>−${dc.cost}</b></span></div>` : ''}
     <div class="kv"><span>⚖️ Weakest part: ${PART_NAMES[weakestPart(sc)]}<br><small class="muted">A balanced life counts more: the weakest part counts ${WEAK_SHARE * 100}% on its own</small></span><span><b>${Math.round(sc.weakest)}</b>/100</span></div>
@@ -1042,12 +1047,12 @@ function showScoreNow(){
   const tip = dc && dc.cost >= 3 ? 'debt' : weakestPart(sc);
   const title = S.turn < 4 ? 'Just getting started' : sc.title;
   sheet(`<h2>🏆 Life Score so far: ${sc.score}</h2>
-    <p class="muted">${title}${mode() !== 'normal' ? ` (${MODES[mode()].name})` : ''} · aim: ${aimLabel()}. This is the ${term('lifescore')} you'd get if the game ended today.${S.scoreQ != null ? ` At the last report card it was ${S.scoreQ}.` : ''}</p>
+    <p class="muted">${title} (${lifeDiffLabel()})${on('score.aims') ? ` · aim: ${aimLabel()}` : ''}. This is the ${term('lifescore')} you'd get if the game ended today.${S.scoreQ != null ? ` At the last report card it was ${S.scoreQ}.` : ''}</p>
     <p class="muted">☀️ ${goodLine()} so far.</p>
     ${scoreLines(sc, false)}
     ${wealthTrack(sc.real)}
     ${modeScoreNote()}
-    <div class="card tip" style="margin-top:10px"><div>💡 ${SCORE_TIPS[tip === 'debt' && !on('score.debtDrag') ? 'debtNW' : tip]}</div></div>
+    <div class="card tip" style="margin-top:10px"><div>💡 ${tip === 'wealth' && !on('money.k401') ? SCORE_TIPS.wealthEasy : SCORE_TIPS[tip === 'debt' && !on('score.debtDrag') ? 'debtNW' : tip]}</div></div>
     ${on('score.reportCards') ? `<p class="muted">A report card goes in your Journal every 13 weeks, and the report cards count for ${CARD_SHARE * 100}% of the final score.</p>` : '<p class="muted">Your final score comes from your averages and net worth when the life ends.</p>'}
     <button class="btn primary" id="ok">Close</button>`);
   $('#ok').onclick = closeSheet;
@@ -1103,6 +1108,7 @@ function storyHTML(){
   if (!on('score.history')) return '';
   const st = lifeStory(); if (!st.rows.length && !st.first) return '';
   return `<section class="story" id="story" aria-labelledby="storyh"><div class="storyhead"><h3 id="storyh">📖 ${esc(S.name)}'s story</h3><button class="sm alt" id="skipstory">Skip to the score</button></div>
+    <p class="muted storydiff">${lifeWords().replace(/^a/, 'A')}.</p>
     ${st.first ? `<p>${esc(st.first)}</p>` : ''}
     <ol class="storyl">${st.rows.map(r => `<li><b>${r.year}${r.age != null ? ` · age ${r.age}` : ''}</b> ${r.text.map(esc).join(' ')}</li>`).join('')}</ol>
     ${st.best.length ? `<p class="muted">${st.best.join(' ')}</p>` : ''}</section>`;
@@ -1195,10 +1201,10 @@ const debtFloor = () => DEBT_FLOOR[mode()] ?? -33;
 // one snapshot of the parts. o.p: a report card's progress (the net-worth target scales with it);
 // o.real: a what-if net worth (the debt line asks "what if you were back at $0?")
 function scoreSnap(o = {}){
-  const L = LENGTHS[S.len], mp = S.monthsPlayed || 0, p = o.p == null ? 1 : Math.max(0.1, o.p);
+  const T = lenTarget(), mp = S.monthsPlayed || 0, p = o.p == null ? 1 : Math.max(0.1, o.p);   // D7: the target for this difficulty
   const avg = (sum, now) => mp > 0 && sum != null ? sum / mp : now;   // i5-a02: over the months actually played
   const avgH = avg(S.happySum, S.happy), avgHe = avg(S.healthSum, S.health), avgC = avg(S.commSum, S.community);
-  const real = o.real ?? scoredReal(), scale = real < 0 ? Math.min(L.target, DEBT_SCALE) : L.target * Math.pow(p, CARD_POW);
+  const real = o.real ?? scoredReal(), scale = real < 0 ? Math.min(T, DEBT_SCALE) : T * Math.pow(p, CARD_POW);
   const wealth = clamp(real / scale * 100, debtFloor(), 100);
   const hp = clamp((avgH - 30) / 60 * 100), he = clamp((avgHe - 40) / 55 * 100), cm = clamp((avgC - 10) / 80 * 100);
   const sh = aimShares(), allShare = sh.all || 0, aimW = AIM_W * (1 - allShare);
@@ -1282,7 +1288,9 @@ function finish(reason, opts = {}){
   if (sc && scWin) markChallenge(S.scenario);
   const best = store.get(BEST_KEY) || {};
   const tier = sc || S.weekly ? 'standard' : lifeTier();   // i19-b03: Custom rules get their own shelf, a sandbox is never recorded
-  const bk = sc ? `sc-${S.scenario}` : S.weekly ? `wk-${S.weekly}` : (tier === 'custom' ? 'cu-' : '') + bestKey(S.len, mode());
+  // to-do 2 D7: the best goes on this life's difficulty shelf; a Classic life keeps the old key (length and mode)
+  const sh = shelfOf(), rest = sc ? `sc-${S.scenario}` : S.weekly ? `wk-${S.weekly}` : sh === 'classic' ? bestKey(S.len, mode()) : S.len;
+  const bk = (tier === 'custom' ? 'cu-' : '') + recKey(sh, rest);
   const isBest = tier !== 'sandbox' && (!best[bk] || score > best[bk]) && !S.rewound;     // i63-b22: a rewound life sets no best score
   if (isBest && !S.practice) { best[bk] = score; store.set(BEST_KEY, best); const nt = store.get(BEST_NOTE_KEY) || {}; if (back) nt[bk] = back; else delete nt[bk]; store.set(BEST_NOTE_KEY, nt); }
   const heir = heirOK(opts), stub = endStub(reason, { score, title, parts });
@@ -1299,11 +1307,11 @@ function finish(reason, opts = {}){
   sheet(`<h2 style="text-align:center">${esc(S.name)}'s life in the Burg</h2>
     <p class="muted" style="text-align:center">${esc(reason)}</p>
     ${S.practice ? '' : storyHTML()}
-    ${S.bg !== 'fresh' || mode() !== 'normal' ? `<p class="muted" style="text-align:center">${BACKGROUNDS[S.bg].ic} ${BACKGROUNDS[S.bg].name} · ${MODES[mode()].ic} ${MODES[mode()].name}</p>` : ''}
+    ${S.practice ? '' : `<p class="muted" style="text-align:center" id="enddiff">${LENGTHS[S.len].label} · ${lifeDiffLabel()}${S.bg !== 'fresh' ? ` · ${BACKGROUNDS[S.bg].ic} ${BACKGROUNDS[S.bg].name}` : ''}</p>`}
     <div class="score" id="finalscore" tabindex="-1" aria-label="Life Score ${score}">${score}</div>
-    <p style="text-align:center;margin-top:0"><b>${title}</b>${mode() !== 'normal' ? ` <span class="tag">${MODES[mode()].ic} ${MODES[mode()].name} score</span>` : ''}${isBest ? ` · <span class="tag cur">New best${mode() !== 'normal' ? ` (${MODES[mode()].name})` : ''}!</span>` : ''}</p>
+    <p style="text-align:center;margin-top:0"><b>${title}</b>${S.practice ? '' : ` <span class="tag">${lifeDiffLabel()} score</span>`}${isBest && !S.practice ? ` · <span class="tag cur">New best (${diffName()})!</span>` : ''}</p>
     ${back ? `<p class="comeback" style="text-align:center;margin-top:-6px">${back}</p>` : ''}
-    <p class="goodweeks" style="text-align:center"><b>☀️ ${goodLine()}.</b><br><span class="muted">Played for: ${aimLabel()}</span></p>
+    <p class="goodweeks" style="text-align:center"><b>☀️ ${goodLine()}.</b>${on('score.aims') ? `<br><span class="muted">Played for: ${aimLabel()}</span>` : ''}</p>
     ${modeScoreNote()}
     ${tier !== 'standard' && !S.practice ? `<p class="muted" style="text-align:center" id="tiernote">${TIERS[tier].ic} This life counted toward ${TIERS[tier].shelf}. ${esc(rulesSummary(S.rules))}.</p>` : ''}
     ${S.rewound ? '<p class="muted" style="text-align:center">⏪ This life was rewound from an older backup, so its score and badges don\'t go in your records.</p>' : ''}
@@ -1805,6 +1813,50 @@ EVENTS.push(...PLAN_EVENTS);
 Object.assign(EVENT_PLACE, { 'Long-term care insurance':['T','mainst'], 'Who will care for you?':['T','home'], 'Winter in Arizona?':['T','home'],
   'Scholarship night at Waitsburg High':['T','school'], 'Wine weekend guests':['T','home'], 'A rough guest':['T','home'] });
 
+/* ---------- i15-b06: Up next: dated things in the next 8 weeks, behind one line on Home ---------- */
+const UP_WEEKS = 8;
+const wksTo = t => Math.ceil((t - S.date) / (7 * 864e5) - 1e-9);
+const inWks = n => n <= 0 ? 'this week' : n === 1 ? 'next week' : `in ${n} weeks`;
+function upNext(){
+  if (!S || S.over) return [];
+  const out = [], d = new Date(S.date), y = d.getFullYear();
+  const add = (n, ic, t) => { if (n >= 0 && n <= UP_WEEKS) out.push({ n, ic, t }); };
+  // vehicle tabs: every January
+  { const jan = d.getMonth() === 0 && S.tabsYear !== y ? S.date : new Date(y + 1, 0, 1).getTime();
+    add(Math.max(0, wksTo(jan)), '🪪', `Vehicle tabs at the DMV, about ${fmt(vehicleTabs())}`); }
+  // the oil change: breakdowns rise after 26 weeks, and more after a year
+  { const w = S.turn - (S.svc ?? 0);
+    if (w < 26) add(26 - w, '🔧', 'An oil change is due: after that, breakdowns get more likely. Car care is on a trip to Dayton, Walla Walla or the Tri-Cities.');
+    else if (w < 52) add(52 - w, '🔧', 'A year since the last oil change: breakdowns get even more likely after that.'); }
+  // the wheat lease
+  if (S.biz && S.biz.type === 'wheat') { const end = S.biz.lease ?? LEASE_WEEKS, left = end - S.biz.weeks;
+    if (left > 0) add(left, '🌾', `The wheat lease is up: renew it on the Life tab for about ${fmt(leaseCost())}.`);
+    else add(end + LEASE_GRACE - S.biz.weeks - 1, '🌾', `Last chance to renew the wheat lease (${fmt(leaseCost())}) before it ends.`); }
+  // loans paid off
+  if (S.loanLeft > 0) add(Math.ceil(S.loanLeft / W) - 1, '🛻', 'The last truck payment.');
+  if (S.sloanLeft > 0) add(Math.ceil(S.sloanLeft / W) - 1, '🎓', 'The last student loan payment.');
+  // this season's town goal
+  { const g = seasonGoal();
+    if (g && !S.practice) { const st = S.sgoal && S.sgoal.id === seasonId(g) ? S.sgoal : { prog:0, done:false };
+      let n = 0; while (n < 20 && g.months.includes(new Date(S.date + (n + 1) * 7 * 864e5).getMonth())) n++;
+      if (!st.done) add(n, g.ic, `The town goal ends (${g.name}): ${g.need - st.prog} more week${g.need - st.prog === 1 ? '' : 's'} of ${g.what} needed.`); } }
+  // New Year and the year in review
+  if (LENGTHS[S.len].turns > 26) add(Math.max(0, wksTo(new Date(y + 1, 0, 1).getTime()) - 1), '📅', `New Year: your ${y} in review.`);
+  return out.sort((a, b) => a.n - b.n);
+}
+function upNextLine(){
+  const u = upNext(); if (!u.length) return '';
+  return `<button class="card upnext" id="upnext" aria-haspopup="dialog"><span>📆 ${u.length} thing${u.length === 1 ? '' : 's'} coming up</span><span aria-hidden="true">›</span></button>`;
+}
+function upNextSheet(){
+  const u = upNext();
+  sheet(`<h2>📆 Coming up in the next ${UP_WEEKS} weeks</h2>
+    ${u.length ? u.map(x => `<div class="kv"><span>${x.ic} ${x.t}</span><span class="tag">${inWks(x.n)}</span></div>`).join('') : '<p>Nothing dated in the next 8 weeks.</p>'}
+    ${S.practice ? '' : '<button class="btn ghost" id="outlook">📅 Money outlook: next 13 weeks</button>'}
+    <button class="btn primary" id="ok">Close</button>`);
+  $('#ok').onclick = closeSheet;
+  if ($('#outlook')) $('#outlook').onclick = () => outlookSheet(upNextSheet);
+}
 // i3-a28: the next 13 weeks of regular money, read-only, from the same bill lines weekTick uses
 function moneyOutlook(n = 13){
   const out = [], j = S.retired ? null : job(), f = FOCUS[S.focus] || FOCUS.rest, d0 = new Date(S.date);

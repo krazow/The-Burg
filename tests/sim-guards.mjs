@@ -47,7 +47,7 @@ const LENS = ['half', 'two', 'five', 'life'];
 export function guardJobs(diff = 'classic', o = {}) {
   const scale = o.scale || 1, n = k => Math.max(1, Math.round(k * scale)), dOpts = diff === 'classic' ? {} : { diff };
   const groups = o.groups || new Set(['bots', 'lengths', 'challenges']);
-  const label = `guard:${diff}`, jobs = [];
+  const label = `guard:${diff}`, jobs = [], LENS_D = diff === 'easy' ? LENS.filter(l => l !== 'life') : LENS;   // Easy has no Lifetime
   const add = (len, bot, count, opts = {}, extra = {}, g0 = 0) => {
     const b = GUARD_BOTS[bot] || { play: bot, seedAs: bot };
     for (let g = g0; g < g0 + count; g++) jobs.push({ len, strat: b.play, seedAs: b.seedAs, bot, g, opts: { ...dOpts, ...opts }, label, diff, ...extra });
@@ -61,13 +61,13 @@ export function guardJobs(diff = 'classic', o = {}) {
   if (groups.has('lengths')) for (const bg of ['farm', 'grad', 'transplant', 'parent']) add('five', 'careless', n(2), { bg }, { bg });
   // i38-a18: more careless and idle games (new dice) where a length's median is a single game (Lifetime) or sits close to
   // the ceiling (6 months), so one game can't decide the check
-  if (groups.has('lengths')) for (const bot of ['careless', 'idle']) { add('life', bot, 2, {}, { extraLen: true }, 10); add('half', bot, 6, {}, { extraLen: true }, 10); }
+  if (groups.has('lengths')) for (const bot of ['careless', 'idle']) { if (LENS_D.includes('life')) add('life', bot, 2, {}, { extraLen: true }, 10); add('half', bot, 6, {}, { extraLen: true }, 10); }
   // i35-b04: story challenges are always Hard lives, so they're played once (in Classic and Hard runs)
   if (groups.has('challenges') && (diff === 'classic' || diff === 'hard'))
     for (const [k, sc] of Object.entries(o.scenarios || {})) for (const [bot, play] of [['good', 'planner'], ['struggling', 'struggler'], ['idle', 'idle']])
       for (let g = 0; g < 4; g++) jobs.push({ len: sc.len, strat: play, seedAs: play, bot: `sc-${bot}`, g, opts: { bg: sc.bg, scenario: k }, label, diff, scenario: k });
   // i59-b04: the swap family, paired dice (the planner's game 0), one game per length
-  if (groups.has('swap')) for (const len of LENS) for (const sw of SWAPS)
+  if (groups.has('swap')) for (const len of LENS_D) for (const sw of SWAPS)
     jobs.push({ len, strat: 'planner', seedAs: 'planner', bot: `swap:${sw}`, g: 0, opts: { ...dOpts, swap: sw }, label, diff, swap: sw });
   return jobs;
 }

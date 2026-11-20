@@ -515,10 +515,10 @@ await t.check('Relaxed softens drains and never ends in debt; Hard costs more an
   assert(/debt/.test(r.hEnd || '') && near(r.hCost, -(650 + 700 + 220) * 0.1 * W) && near(r.lay, r.layN * 1.6), JSON.stringify(r));
 });
 
-await t.check('best scores are kept per mode', async () => {
+await t.check('best scores are kept per difficulty (to-do 2 D7; an old mode key reads as Classic)', async () => {
   const r = await ev(() => { localStorage.clear(); newGame('A', 'half', 0, { mode: 'hard' }); S.noEvents = true; weeks(26); finish('done'); closeSheet();
-    const b = store.get(BEST_KEY); return { keys: Object.keys(b), label: bestLabel('half-hard') }; });
-  assert(r.keys.includes('half-hard') && !r.keys.includes('half') && r.label === '6 Months (Hard)', JSON.stringify(r));
+    const b = store.get(BEST_KEY); return { keys: Object.keys(b), label: bestLabel('hard.half'), old: bestLabel('half-hard') }; });
+  assert(r.keys.includes('hard.half') && !r.keys.includes('half') && r.label === '🔥 Hard · 6 Months' && r.old === '🏛️ Classic · 6 Months (Hard)', JSON.stringify(r));
 });
 
 await t.check('a season goal counts weeks of the right focus and pays out once', async () => {
@@ -815,12 +815,12 @@ await t.check('R13: businesses lose 5% of their value a year; the wheat lease mu
   assert(r.gone, 'an unrenewed lease should end after the grace weeks');
 });
 
-await t.check('R16: the end screen and score sheet label Relaxed and Hard scores', async () => {
+await t.check('R16, to-do 2 D7: the end screen and score sheet name the difficulty (Relaxed is now Easy)', async () => {
   const r = await ev(() => { localStorage.clear(); newGame('R', 'half', 0, { mode: 'relaxed' }); S.noEvents = true; weeks(3); showScoreNow(); const now = document.querySelector('#sheet').textContent; closeSheet();
     finish('done'); const end = document.querySelector('#sheet').textContent; closeSheet();
     newGame('N', 'half', 0); finish('done'); const normal = document.querySelector('#sheet').textContent; closeSheet(); return { now, end, normal }; });
-  assert(/Relaxed mode score/.test(r.end) && /Relaxed mode score/.test(r.now) && /New best \(Relaxed\)/.test(r.end), r.end.slice(0, 300));
-  assert(!/mode score/.test(r.normal), 'Normal games need no label');
+  assert(/Easy score/.test(r.end) && /Easy score/.test(r.now) && /New best \(Easy\)/.test(r.end), r.end.slice(0, 300));
+  assert(/Normal score/.test(r.normal) && !/Easy/.test(r.normal.replace(/Easy, Normal and Hard/g, '')), 'a Normal life is labeled Normal');
 });
 
 await t.check('B2: a 6-month life starts with a little less happiness and health', async () => {
@@ -1151,6 +1151,70 @@ await t.check('skips play one-choice events on their own and list them, but stop
   });
   assert(r.a.weeks === 4 && r.a.auto === 4 && !r.a.sheet, `one-choice: ${JSON.stringify(r.a)}`);
   assert(r.b.weeks === 1 && r.b.sheet, `real choice: ${JSON.stringify(r.b)}`);
+});
+
+await t.check('i49-a03: good-news notes ride along on a skip and show on the next sheet; notes that need you still stop it', async () => {
+  const r = await ev(() => {
+    const ok = e => e.choices().filter(c => !c.if || c.if()), two = EVENTS.find(e => !e.once && ok(e).length >= 2), real = rollEvent;
+    fresh('two', { jobId: 'farmhand', loanLeft: W * 1.5, loanPay: 400 }); S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1]));
+    playWeeks(4); const a = { weeks: S.run.weeks, txt: $('#sheet').textContent, open: !$('#modal').classList.contains('hidden') }; closeSheet();
+    fresh('two', { jobId: 'farmhand', loanLeft: W * 1.5, loanPay: 400 }); S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1])); S.noEvents = false;
+    let n = 0; rollEvent = () => ++n === 3 ? two : null;
+    playWeeks(4); const b = { weeks: S.run.weeks, ride: ($('#sheet .ridealong') || {}).textContent || '', title: ($('#sheet h2') || {}).textContent }; closeSheet(); rollEvent = real;
+    fresh('two', { jobId: 'farmhand', focus: 'work', streakF: 'work', streakN: RUT_WEEKS - 1 }); S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1]));
+    playWeeks(4); const c = { weeks: S.run.weeks, txt: $('#sheet').textContent }; closeSheet();
+    return { a, b, c, rides: rides('🛻 The truck is paid off!'), stops: rides('🏥 You ended up in the hospital.') };
+  });
+  assert(r.rides && !r.stops, 'the note kinds are wrong');
+  assert(r.a.weeks === 4 && r.a.open && /truck is paid off/.test(r.a.txt), `the skip should run on and end on the note: ${JSON.stringify(r.a).slice(0, 200)}`);
+  assert(r.b.weeks === 3 && /truck is paid off/.test(r.b.ride) && !!r.b.title, `the note should sit on top of the event: ${JSON.stringify(r.b)}`);
+  assert(r.c.weeks < 4 && /rut/.test(r.c.txt), `a rut still stops the skip: ${JSON.stringify(r.c).slice(0, 200)}`);
+});
+
+await t.check('i49-a11: an answer rule settles a small event during skips (a line in the strip) but not on a plain End Week', async () => {
+  const r = await ev(() => {
+    const ok = e => e.choices().filter(c => !c.if || c.if()), real = rollEvent;
+    fresh('two', { jobId: 'farmhand' }); S.noEvents = false; S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1]));
+    const two = EVENTS.find(e => ruleOK(e) && ok(e).length >= 2), pick = ok(two)[1];
+    S.ansRules = { [two.title]: { k: ruleKey(pick.label), l: pick.label } };
+    rollEvent = () => two; playWeeks(4);
+    const a = { weeks: S.run.weeks, rule: S.run.happened.filter(h => h.rule).length, strip: (() => { closeSheet(); showRunDetails(); return $('#sheet').textContent; })() }; closeSheet();
+    playWeeks(1); const b = { evSheet: !!$('#sheet [data-i]') }; closeSheet();
+    rollEvent = real;
+    return { a, b, key: ruleKey('Pay $1,250 to fix it'), key2: ruleKey('Pay $1,400 to fix it'), big: ruleOK(EVENTS.find(e => e.title === 'Starting a family?')) };
+  });
+  assert(r.a.weeks === 4 && r.a.rule === 4 && /your rule/.test(r.a.strip), JSON.stringify(r.a).slice(0, 300));
+  assert(r.b.evSheet, 'a plain End Week should still ask');
+  assert(r.key === r.key2 && !r.big, `rule keys ${r.key} / ${r.key2}, big ${r.big}`);
+});
+
+await t.check('i15-b01/b05: a small weekly history (weekly for 2 years, then monthly and yearly) and the last 4 weeks by kind', async () => {
+  const r = await ev(() => {
+    fresh('life', { jobId: 'farmhand' }); for (let i = 0; i < 1500; i++) { weekTick(false); if (S.health < 30) S.health = 70; }
+    const h = S.hist, last = h.slice(-HIST_WEEKS);
+    return { n: h.length, size: JSON.stringify(h).length, weekly: last.every((x, i) => !i || x[0] - last[i - 1][0] === 1), end: h[h.length - 1][0] === S.turn && h[h.length - 1][1] === Math.round(S.money),
+      spend: S.spend4.length, kinds: Object.keys(S.spend4[0]), rent: spendKind('Rent', -100), tabs: spendKind('Vehicle tabs (DMV)', -60) };
+  });
+  assert(r.n > 104 && r.n < 400 && r.size < 12000 && r.weekly && r.end, JSON.stringify(r));
+  assert(r.spend === 4 && r.kinds.includes('pay') && r.kinds.includes('home') && r.rent === 'home' && r.tabs === 'ride', JSON.stringify(r));
+});
+
+await t.check('i15-b06: up next lists dated things in the next 8 weeks (tabs, New Year, a last truck payment)', async () => {
+  const r = await ev(() => {
+    fresh('two', { jobId: 'farmhand', loanLeft: W * 2.5, loanPay: 400 }); S.date = new Date(2027, 11, 6).getTime(); S.tabsYear = 2027;
+    const a = upNext().map(x => x.ic + x.n);
+    fresh('two', { jobId: 'farmhand' }); S.date = new Date(2027, 4, 3).getTime(); S.svc = -30; S.sgoal = { id: seasonId(seasonGoal()), prog: 6, done: true };
+    return { a, b: upNext().map(x => x.ic + x.n) };
+  });
+  assert(r.a.includes('📅3') && r.a.includes('🪪4') && r.a.includes('🛻2'), JSON.stringify(r.a));
+  assert(!r.b.length, JSON.stringify(r.b));
+});
+
+await t.check('i15-b01 / i49-a11: an older save without the history, the rules or the spend list loads with empty ones', async () => {
+  const r = await ev(() => { fresh('two'); const o = JSON.parse(JSON.stringify(S)); delete o.hist; delete o.ansRules; delete o.spend4; o.ansRules = undefined;
+    const m = migrate(o); const bad = migrate({ ...JSON.parse(JSON.stringify(S)), hist: [[1, 'x']], ansRules: { a: 5, b: { k: '<b>x</b>', l: 'y' } } });
+    return { m: [m.hist, m.ansRules, m.spend4], bad: [bad.hist.length, Object.keys(bad.ansRules), bad.ansRules.b.k] }; });
+  assert(JSON.stringify(r.m) === '[[],{},[]]' && JSON.stringify(r.bad) === '[0,["b"],"x"]', JSON.stringify(r));
 });
 
 await t.check('a double tap on End Week plays one week, not two', async () => {
@@ -2237,9 +2301,9 @@ await t.check('i63-b08: 4 weeks before a 2-year or 5-year life ends, the week of
 
 await t.check('i73-b18: the shared score card comes with a short text (and the week for a weekly challenge)', async () => {
   const r = await ev(() => { fresh('two'); const a = shareText(); S.len = 'half'; S.weekly = '2026-W47'; const b = shareText(); S.weekly = null; S.len = 'life'; const c = shareText(); return { a, b, c }; });
-  assert(/^Rules scored \d+, [A-Z][\w ]+, in a 2-year life in The Burg\. krazow\.github\.io\/The-Burg$/.test(r.a), r.a);
-  assert(r.b.includes('in a 6-month life in The Burg (Weekly challenge, week of Nov 16).'), r.b);
-  assert(r.c.includes('in a lifetime in The Burg'), r.c);
+  assert(/^Rules scored \d+, [A-Z][\w ]+, in a 2-year life on (Normal|Hard) in The Burg\. krazow\.github\.io\/The-Burg$/.test(r.a), r.a);
+  assert(/in a 6-month life on (Normal|Hard) in The Burg \(Weekly challenge, week of Nov 16\)\./.test(r.b), r.b);
+  assert(/in a lifetime on (Normal|Hard) in The Burg/.test(r.c), r.c);
 });
 
 // i56-b16: every event has a way to happen. Each event needs a row: a setup (job, month, health, home, chain step…)
@@ -2558,9 +2622,9 @@ await t.check('i19-b03: the end screen puts Custom lives on their own shelf and 
     const std = end({}), cu = end({ start: 'comfy' });
     const cuNote = (() => { localStorage.clear(); newGame('R', 'half', 0, { rules: { start: 'comfy' } }); S.noEvents = true; finish('Done.'); const n = document.querySelector('#tiernote'); const t = n ? n.textContent : ''; closeSheet(); return t; })();
     const sb = end({ events: 'none' });
-    return { std: Object.keys(std.best), cu: Object.keys(cu.best), sb: Object.keys(sb.best), cuNote, label: bestLabel('cu-half') };
+    return { std: Object.keys(std.best), cu: Object.keys(cu.best), sb: Object.keys(sb.best), cuNote, label: bestLabel('cu-normal.half') };
   });
-  assert(JSON.stringify(r.std) === '["half"]' && JSON.stringify(r.cu) === '["cu-half"]' && r.sb.length === 0, JSON.stringify(r));
+  assert(JSON.stringify(r.std) === '["normal.half"]' && JSON.stringify(r.cu) === '["cu-normal.half"]' && r.sb.length === 0, JSON.stringify(r));
   assert(/Custom shelf/.test(r.cuNote) && /Starting money: Comfortable/.test(r.cuNote), r.cuNote);
   assert(/6 Months/.test(r.label) && /Custom rules/.test(r.label), r.label);
 });
