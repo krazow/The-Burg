@@ -69,6 +69,10 @@ input[type=text]:focus{outline:none;border-color:var(--wheat-d)}
 .len{padding:14px 6px;border-radius:12px;border:2px solid var(--edge);background:var(--paper)}
 .len b{display:block;font-size:1.0625rem}.len span{font-size:0.75rem;color:var(--muted)}
 .len.on{border-color:var(--barn);background:var(--tint)}
+.diffs{display:grid;gap:8px}
+.dcard{padding:10px 12px;border-radius:12px;border:2px solid var(--edge);background:var(--paper);text-align:left;color:inherit;font:inherit}
+.dcard b{display:block;font-size:1.0625rem}.dcard span{display:block;font-size:0.8125rem;color:var(--muted);margin-top:2px}
+.dcard.on{border-color:var(--barn);background:var(--tint)}
 .btn{display:block;width:100%;padding:15px;border-radius:14px;font-weight:700;font-size:1.0625rem;margin-top:12px}
 .btn.primary{background:var(--barn);color:#fff;box-shadow:0 3px 0 var(--barn-d)}
 .btn.primary:active{transform:translateY(2px);box-shadow:0 1px 0 var(--barn-d)}
@@ -90,7 +94,7 @@ input[type=text]:focus{outline:none;border-color:var(--wheat-d)}
 .top{background:var(--barn);color:#fff;padding:calc(var(--safe-t) + 12px) 16px 12px;position:sticky;top:0;z-index:5}
 .top .row{display:flex;justify-content:space-between;align-items:baseline}
 .top h2{font-size:1.25rem}
-.top .money{font-weight:800;font-size:1.25rem}
+.top .money{font-weight:800;font-size:1.25rem;color:inherit;background:none;border:0;padding:0 4px;min-height:44px;min-width:44px;border-bottom:2px dotted rgba(255,255,255,.6);border-radius:0;font-family:inherit}
 .top .meta{font-size:0.8125rem;opacity:.85;margin-top:2px;display:flex;justify-content:space-between}
 .progress{height:4px;background:rgba(255,255,255,.25);border-radius:2px;margin-top:8px;overflow:hidden}
 .progress i{display:block;height:100%;background:var(--wheat)}
@@ -134,11 +138,30 @@ main{flex:1;padding:14px 14px calc(var(--safe-b) + 32px + 10.5rem)}
 .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px;scrollbar-width:none}
 .chip{white-space:nowrap;padding:7px 12px;border-radius:20px;border:1.5px solid var(--edge);background:var(--card);font-size:0.875rem}
 .chip.on{background:var(--soil);color:var(--paper);border-color:var(--soil)}
+/* i20-a01/a02: chips keep their words and the row scrolls, with a soft fade while there's more to the right */
+.chips .chip{flex-shrink:0}
+.chips.more{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 32px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 32px),transparent)}
+.chip .n{display:inline-block;margin-left:5px;font-size:0.75rem;font-weight:800;opacity:.8}
+/* i20-a09: job board sections */
+.boardh{margin:14px 0 2px;font-size:0.9375rem;display:flex;align-items:center;gap:6px}.boardh:first-of-type{margin-top:6px}
+/* i20-a14: Buy over the down payment, the same width on every row */
+.sm.buy2{width:8.25em;white-space:normal;line-height:1.15;padding:6px 8px;text-align:center;flex-shrink:0}.sm.buy2 small{display:block;font-weight:600;font-size:0.75rem}
+/* i20-a23: a slim header that stays at the top of a long sheet */
+.sheethead{position:sticky;top:0;z-index:2;background:var(--paper);margin:-8px -18px 6px;padding:8px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.sheethead h2{font-size:1.125rem;margin:0;flex:1;min-width:0}.sheethead .cnt{font-size:0.8125rem;font-weight:700;color:var(--muted);white-space:nowrap}.sheethead .sm{flex-shrink:0}
+/* i20-a28: the end screen's score math */
+.rec.scoremath td,.rec.scoremath th{padding:7px 4px}.rec.scoremath th[scope=row]{font-weight:700}.rec.scoremath th[scope=row] small{display:block;font-weight:400;font-size:0.75rem;color:var(--muted)}
+.rec.scoremath td:last-child{font-weight:800}
+/* i20-a30: challenge rows put Start under the description */
+.chrow{padding:10px 0;border-bottom:1px dashed var(--line)}.chrow .t{font-weight:700}.chrow .s{font-size:0.8125rem;color:var(--muted);margin:2px 0 6px}.chrow .sm{width:100%}
+/* i2-a01: what an event choice does, under its label */
+.evchoices .btn small.hint{display:block;font-weight:500;font-size:0.8125rem;margin-top:2px}
 .job{display:flex;justify-content:space-between;gap:10px;align-items:center}
 .job .t{font-weight:700}.job .s{font-size:0.8125rem;color:var(--muted)}
 .job .pay{font-weight:800;color:var(--up);white-space:nowrap}
 .job > .sm,.tip > .sm{flex-shrink:0}.tip.first{flex-wrap:wrap}.tip.first .slotbtns{margin-left:auto}
 .maptog.wrap{flex-wrap:wrap}.maptog.wrap button{min-width:calc(50% - 3px)}
+.rulerow{margin:4px 0 12px}.rulerow .t{font-weight:700;margin-bottom:4px}.rulerow .rp{font-size:0.8125rem}
 .sm{padding:8px 12px;border-radius:10px;font-weight:700;font-size:0.875rem;background:var(--barn);color:#fff;white-space:nowrap}
 .sm.alt{background:var(--card);border:1.5px solid var(--edge);color:var(--soil)}
 .sm[disabled]{background:var(--off);color:#fff;pointer-events:none}
@@ -155,6 +178,13 @@ main{flex:1;padding:14px 14px calc(var(--safe-b) + 32px + 10.5rem)}
 #app > nav button{flex:1;padding:8px 0 10px;font-size:0.75rem;color:var(--muted);font-weight:600}
 #app > nav button .ic{display:block;font-size:1.25rem}
 #app > nav button.on{color:var(--accent)}
+/* i31: open as you go: New tags, the nav dot, a focus that opens soon, the unlock card */
+.newtag{display:inline-block;font-size:0.6875rem;font-weight:800;padding:1px 6px;border-radius:8px;background:var(--barn);color:#fff;margin-left:4px;vertical-align:middle}
+#app > nav button{position:relative}
+#app > nav .ndot{position:absolute;top:6px;left:calc(50% + 10px);width:9px;height:9px;border-radius:50%;background:var(--barn)}
+.fgrid .fbtn.fsoon{border-style:dashed;color:var(--muted);background:transparent}
+.fgrid .fbtn.fsoon .ic{opacity:.6}
+.unlockcard{flex-wrap:wrap}.unlockcard > div:first-child{flex:1 1 220px}.unlockcard .s{margin-top:2px}
 
 /* Modal */
 .modal{position:fixed;inset:0;background:rgba(40,25,15,.55);display:flex;align-items:flex-end;justify-content:center;z-index:20;animation:fade .2s}
@@ -325,6 +355,11 @@ html.ts-l .job,html.ts-xl .job{flex-wrap:wrap}.job > div:first-child{min-width:0
 /* i2 clarity: focus preview, why lines, celebrations, checklist, next step, glossary, confirmations, life story */
 .preview{font-size:0.84375rem;margin-top:8px;padding:8px 10px;background:var(--pale);border:1px solid var(--line);border-radius:10px;color:var(--soil);line-height:1.4}
 .preview .s,.fdesc .preview .s{display:block;color:var(--muted);font-size:0.78125rem;margin-top:2px}
+.otnote{font-size:0.84375rem;margin:8px 0 0;padding:8px 10px;background:var(--tint);border:1px solid var(--warnline);border-radius:10px;color:var(--soil);line-height:1.4}
+.nopay .cashline{margin:6px 0;font-weight:500;color:var(--soil)}.nopay .cashline.low{color:var(--barn-d);font-weight:700}
+.len small{display:block;font-size:0.6875rem;color:var(--muted);margin-top:2px}
+.newq .maptog{margin-bottom:6px}
+.goodjob{color:var(--accent-d);font-weight:700}
 .fbtn small.fade{color:var(--barn-d);font-weight:700;font-size:0.75rem;display:block}
 .kv.whyrow{width:100%;text-align:left;align-items:center;min-height:44px;font-size:0.9375rem}
 .whytext{font-size:0.84375rem;color:var(--soil);background:var(--pale);border-left:3px solid var(--wheat-d);padding:6px 8px;margin:2px 0 6px}
@@ -354,6 +389,7 @@ ol.storyl{list-style:none;padding:0;margin:6px 0}ol.storyl li{padding:6px 0;bord
 <div id="helpview" class="helpview hidden" role="dialog" aria-label="Help"></div>
 
 <script src="js/state.js"></script>
+<script src="js/difficulty.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/turn.js"></script>
 <script src="js/events.js"></script>
