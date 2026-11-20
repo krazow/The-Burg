@@ -811,7 +811,7 @@ const TODDLER_EVENTS = [
       {label:'Back off for a month', go:() => { adj({happy:-1}); return 'Diapers for a while longer. They\'ll get there.'; }}
     ]},
   { ic:'📚', title:'Story time at the library', yr:1, w:3, when:() => toddlerHome(),
-    text:'The Weller Public Library has toddler story time on Wednesday mornings: songs, a puppet and a pile of picture books.',
+    text:'The Weller Public Library has story time for small kids each Wednesday. There are songs, a puppet and a big pile of books.',
     choices:() => [
       {label:working() ? `Go every Wednesday this month (-${fmt(dayPay() * 2)} in missed work)` : 'Go every Wednesday this month', go:() => { adj({money:-Math.round(dayPay() * 2), happy:2, community:3}); return 'Your toddler knows every song now, and you know every parent in town.'; }},
       {label:'Read at home instead', go:() => { adj({happy:1}); return 'The same dinosaur book, eleven nights in a row.'; }}
