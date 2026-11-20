@@ -2736,10 +2736,10 @@ await t.check('i17-a04: staying with family: $200 rent, chores, a happiness cap,
 });
 await t.check('i17-a20: the FAFSA files January to March, halves tuition under the pay line, and reminds you in January', async () => {
   const r = await ev(() => {
-    newGame('F', 'two', 0, {}); S.noEvents = true; S.jobId = 'teller';
+    newGame('F', 'two', 0, {}); S.noEvents = true; S.jobId = 'insure';   // pay over the full-grant line, under the Pell line
     const before = tuitionNow(), open = fafsaOpen(), ok = fileFafsa(), again = fileFafsa(), after = tuitionNow();
     S.jobId = 'rn'; const high = pellShare();
-    S.jobId = 'teller'; S.date = new Date(2028, 3, 3).getTime(); const nextApril = fafsaOn(), late = fileFafsa();
+    S.jobId = 'insure'; S.date = new Date(2028, 3, 3).getTime(); const nextApril = fafsaOn(), late = fileFafsa();
     newGame('G', 'two', 0, {}); S.noEvents = true; weekTick(false); const note = S.log.some(e => /FAFSA is open/.test(e.m));
     return { before, after, open, ok, again, high, nextApril, late, note };
   });
@@ -2767,7 +2767,7 @@ await t.check('i17-a03 / i17-a14: the opening weeks have their own pool (once ea
     for (let i = 0; i < 400; i++) { S.turn = 2; const e = startEvent(0); if (e) { start++; titles[e.title] = (titles[e.title] || 0) + 1; resolveChoice(e, e.choices()[0]); } }
     S.turn = 8; const after = startEvent(0);
     newGame('Y', 'two', 0, {}); S.noEvents = true; S.turn = 30; S.date = new Date(2027, 7, 28).getTime();
-    const go = fixedEvent(7); resolveChoice(go, go.choices()[0]); S.turn = 46; S.date = new Date(2027, 10, 22).getTime(); const tg = fixedEvent(10); const h0 = S.happy; resolveChoice(tg, tg.choices()[0]);
+    const go = fixedEvent(7); resolveChoice(go, go.choices()[0]); S.turn = 46; S.date = new Date(2027, 10, 26).getTime(); const tg = fixedEvent(10); const h0 = S.happy; resolveChoice(tg, tg.choices()[0]);   // Nov 26 is the month's last week: it comes for sure
     newGame('P', 'two', 0, { bg: 'parent' }); S.turn = 30; S.date = new Date(2027, 7, 28).getTime(); const parent = fixedEvent(7);
     return { start, titles, after, go: go && go.title, tg: tg && tg.title, up: S.happy, h0, sent: true, parent: parent && parent.title };
   });

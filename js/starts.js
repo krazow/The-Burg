@@ -267,7 +267,7 @@ const DIS_EVENTS = [
       {label:'Head to the river with friends', go:() => { adj({happy:3, community:1}); return 'A whole afternoon on the Touchet. You\'ll remember this one.'; }},
       {label:'Get ahead on chores', go:() => { adj({happy:1, health:1}); return 'Laundry, dishes and the porch, all done. It feels good to be ahead.'; }}]},
   { ic:'🧏', title:'No interpreter at the meeting', cat:'work', w:2, when:() => hasDis('deaf') && working(),
-    text:'There\'s a big staff meeting today. Nobody booked an ASL interpreter.',
+    text:'It\'s a big work day with a long meeting. No one booked an ASL interpreter.',
     choices:() => [
       {label:'Ask your boss to book one', go:() => { adj({happy:1, community:1}); return 'They moved the meeting an hour and booked one. Next time it\'s on the list.'; }},
       {label:'Read the notes later', go:() => { adj({happy:-1}); return 'The notes left out half of it, but you caught up.'; }}]},

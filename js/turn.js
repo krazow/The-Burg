@@ -463,6 +463,7 @@ function weekTick(auto){
   }
 
   // ---- advance one week ----
+  if (S.home === 'family' && S.happy > FAM_CAP) S.happy = FAM_CAP;   // i17-a04: the family home's happiness cap holds after the week's extras
   S.happySum += S.happy * m; S.healthSum += S.health * m; S.commSum = (S.commSum || 0) + S.community * m; S.monthsPlayed += m;   // i15-a01: community is a life average too
   scoreWeek(trip);                                 // good weeks, debt weeks, aim weeks and the aim tallies (wave 1 score)
   const oldAge = age(), oldYear = new Date(S.date).getFullYear();

@@ -184,7 +184,7 @@ await t.check('every event\'s every choice works and shows a result', async () =
   }
   assert(tried >= titles.length, `only ${tried} choices across ${titles.length} events`);
   const cats = await page.evaluate(() => ['road', 'work'].map(c => EVENTS.filter(e => e.cat === c).length));
-  assert(cats[0] === 32 && cats[1] === 37, `expected 32 road and 37 work events (with the contract vote, the federal shutdown, a personal day, desk stiffness and round 75's wind on Highway 12, smoke rule, de-icing and Hanford heat), got ${cats}`);
+  assert(cats[0] === 32 && cats[1] === 38, `expected 32 road and 38 work events (with the contract vote, the federal shutdown, a personal day, desk stiffness and round 75's wind on Highway 12, smoke rule, de-icing, Hanford heat and the missing ASL interpreter), got ${cats}`);
   console.log(`     (${tried} choices across ${titles.length} events)`);
 });
 
