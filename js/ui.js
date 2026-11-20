@@ -2252,5 +2252,9 @@ document.addEventListener('focusin', e => {
   const tops = ['#strip', '.endbar', '#app > nav'].map(q => document.querySelector(q)).filter(Boolean).map(x => x.getBoundingClientRect().top).filter(t => t > 0);
   if (!tops.length) return;
   const lim = Math.min(...tops) - 8, b = a.getBoundingClientRect();
-  if (b.bottom > lim) window.scrollBy(0, b.bottom - lim);
+  if (b.bottom <= lim) return;
+  window.scrollBy(0, b.bottom - lim);
+  // at the very bottom of the page there may be no room left to scroll: make room under Home, then scroll again
+  const left = a.getBoundingClientRect().bottom - lim, m = $('#main');
+  if (left > 0 && m) { m.style.paddingBottom = `${parseFloat(getComputedStyle(m).paddingBottom) + left + 8}px`; window.scrollBy(0, left + 8); }
 });
