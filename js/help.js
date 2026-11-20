@@ -277,10 +277,13 @@ function guideHTML(){
   ];
   return `<div class="guide">
     <h2 class="gt">📖 Game guide</h2>
-    <nav class="toc" aria-label="Guide contents">${S2.map(([id,t]) => `<button onclick="document.getElementById('g-${id}').scrollIntoView({behavior:'smooth'})">${t}</button>`).join('')}</nav>
+    <nav class="toc" aria-label="Guide contents">${S2.map(([id,t]) => `<button onclick="helpJump('${id}')">${t}</button>`).join('')}</nav>
     ${S2.map(([id,t,b]) => sec(id, t, b)).join('')}
   </div>`;
 }
+// i43-b03: guide sections lay out only when scrolled near (content-visibility); a contents jump lays them all out
+// first so it lands on the right spot
+function helpJump(id){ const g = document.querySelector('#helpview .guide'); if (g) g.classList.add('full'); const el = document.getElementById('g-' + id); if (el) el.scrollIntoView({ behavior: 'smooth' }); }
 function showHelp(){
   // i54-a04/a07: remember what to go back to; Help opened from a sheet (the Menu) goes back to what opened that sheet
   if (!lastHelpFocus) { const a = document.activeElement; lastHelpFocus = a && a.closest && a.closest('#sheet') ? lastFocus : opener(a); }

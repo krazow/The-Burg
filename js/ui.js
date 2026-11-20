@@ -1136,7 +1136,7 @@ const mustChoose = (sh = $('#sheet')) => !!sh.querySelector('[data-i]');
 function pickOne(){ toast('Pick one to go on'); announce('Pick one to go on'); }
 /* ---------- i64-a01: the phone's Back button closes the top thing (a sheet, Help, then a tab) and stays in the game ---------- */
 // One history entry per open layer; history.state.burg says how many are on the stack.
-let HIST_T = null, HIST_SKIP = 0;
+let HIST_T = null, HIST_SKIP = 0, HIST_BOOTED = false;
 const histDepth = () => (S && !S.over && tab !== 'home' ? 1 : 0) + ($('#modal').classList.contains('hidden') ? 0 : 1)
   + ($('#helpview') && !$('#helpview').classList.contains('hidden') ? 1 : 0);
 const histAt = () => (history.state && history.state.burg) || 0;
@@ -1146,8 +1146,10 @@ function histSync(){
     HIST_T = null;
     if (HIST_SKIP) return;
     const want = histDepth(), cur = histAt();
+    const booted = HIST_BOOTED; HIST_BOOTED = true;
     try {
       if (want > cur) for (let i = cur + 1; i <= want; i++) history.pushState({ burg: i }, '');
+      else if (want < cur && !booted) history.replaceState({ burg: want }, '');   // after a reload, start from here without stepping back
       else if (want < cur) { HIST_SKIP++; history.go(want - cur); }
     } catch(_){}
   }, 0);
