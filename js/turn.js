@@ -4,7 +4,7 @@ function endTurn(){ playWeeks(1); }
 
 let ROLL = null;              // i2-a28: weeks rolling by on screen (null when not)
 let PLAY_AT = -1e9;           // when the last End Week or skip finished, so a double tap plays one week
-const ROLL_MS = 260, LOW_STOP = 35, AUTO_MAX = 26;
+const ROLL_MS = 260, LOW_STOP = 35, AUTO_MAX = 26, RUT_AGAIN = 13, RED_AT = 25, RED_REARM = 35;
 // i2-a11: what ⏭ Auto plays until, besides anything that needs you (an event with a choice, a milestone, New Year)
 const AUTO_UNTIL = {
   event:  { name:'Something needs me', short:'' },
@@ -37,6 +37,7 @@ function playWeeks(n, stop = null){
   const step = () => {
     res = weekTick(n > 1); S.run.weeks++;
     if (res.ending || res.ev || res.notes.length || res.review) return true;
+    if (n > 1 && moneyTalkDue()) return true;      // i63-a13: going under for the first time stops a skip for the money talk
     if (stop && (why = stop(st))) return true;
     return S.run.weeks >= n;
   };
@@ -67,6 +68,7 @@ function finishRun(res, why, n){
     const next = () => {
       if (res.ev) showEvent(res.ev, res.review);     // a year in review that week comes after the event
       else if (res.review) showReview(res.review);
+      else if (moneyTalkDue()) moneyTalk();
     };
     // i2-a10: badges and skill levels get one celebration card after the week, then the week goes on
     if (S.newBadges && S.newBadges.length) { const won = S.newBadges; S.newBadges = []; save(); sfx('badge'); buzz('badge'); celebrate(won, next); }
@@ -76,12 +78,22 @@ function finishRun(res, why, n){
     announce(`${r.weeks > 1 ? r.weeks + ' weeks' : 'Week'} done. Cash ${dm >= 0 ? 'up' : 'down'} ${fmt(Math.abs(dm))}, now ${fmt(S.money)}. ${ch('Happiness', S.happy - r.happy)}, ${ch('health', S.health - r.health)}, ${ch('community', S.community - r.community)}. ${own ? `${own} event${own > 1 ? 's' : ''} with no choice to make played out: see the week strip. ` : ''}${dateLabel()}.`);
   };
   if (notes.length) {
+    const fix = res.ending ? [] : noteFixes(res);
     sheet(`<h2>${S.run.weeks > 1 ? S.run.weeks + ' weeks later' : 'This week'}</h2>
       ${notes.map(t => `<p><b>${t}</b></p>`).join('')}
       <p>${runChips()}</p>
-      <button class="btn primary" id="ok">Continue</button>`);
+      ${fix.length ? `<p class="muted" style="margin-bottom:4px">Switch your focus in one tap:</p><div class="skiprow">${fix.map(k => `<button class="btn ghost" data-sugg="${k}">${FOCUS[k].ic} ${FOCUS_SHORT[k]}</button>`).join('')}</div>` : ''}
+      <button class="btn primary" id="ok">${fix.length ? `Keep ${FOCUS_SHORT[S.focus]}` : 'Continue'}</button>`);
     $('#ok').onclick = () => { closeSheet(); after(); };
+    document.querySelectorAll('#sheet [data-sugg]').forEach(b => b.onclick = () => { S.focus = b.dataset.sugg; save(); closeSheet(); after(); toast(`This week: ${FOCUS[S.focus].name}`); });
   } else after();
+}
+// i48-b04/b05: the focus buttons a rut or a stat in the red gets (the same fixes as the Home cards), never the current focus
+function noteFixes(res){
+  if (!res.rut && !(res.red && res.red.length)) return [];
+  const map = { happy:'outdoors', health:'rest', community:'community' };
+  const want = [...(res.red || []).map(k => map[k]), ...(res.rut ? lowFocus(S.focus) : [])];
+  return [...new Set(want)].filter(k => k !== S.focus && !(FOCUS[k].needsJob && (!job() || S.retired))).slice(0, 3);
 }
 // what the last End Week / skip did, counting events resolved since
 function runChips(){
@@ -284,6 +296,7 @@ function lateLine(l, v, why = ''){
 function weekTick(auto){
   const L = LENGTHS[S.len], m = W, k = 0.28;
   const lines = [], notes = [];
+  let rut = false;
   LIFE_UNDO = [];                                  // i2-a25: a played week can't be undone
   jobWeekStart(notes);                             // i3: an interview's answer, notice, seasons and recalls
   const f = FOCUS[S.focus] || FOCUS.rest, j = S.retired ? null : job();
@@ -399,7 +412,8 @@ function weekTick(auto){
   S.last.why = why;
   if (S.focus !== 'study' && S.streakN > RUT_WEEKS) {
     adj({happy: -1.2});
-    if (S.streakN === RUT_WEEKS + 1) notes.push(`🔁 ${S.streakN - 1} weeks of "${f.name}" in a row. You're in a rut: try a different focus.`);
+    // i48-b03: the note (and a stop for skips) comes back every 13 weeks while the same focus runs on
+    if ((S.streakN - RUT_WEEKS - 1) % RUT_AGAIN === 0) { rut = true; notes.push(`🔁 ${S.streakN - 1} weeks of "${f.name}" in a row. You're in a rut: −1.2 happiness every week until you switch.`); }
   }
   if (trip) adj(trip.fx);
   seasonWeek(notes);
@@ -469,7 +483,16 @@ function weekTick(auto){
   let debt = false;
   if (!ending && debtEnd != null && S.money < debtEnd) { ending = `Buried in debt, ${S.name} packed up and left Waitsburg.`; debt = true; }
   if (debtEnd == null && S.money < RELAXED_FLOOR) S.money = RELAXED_FLOOR;   // Relaxed: a debt counselor stops the slide
-  return { ev, notes, ending, review, debt, death };
+  // i48-b05: a stat falling into the red says so once (and stops a skip); it warns again after it climbs back above 35
+  const red = [];
+  if (!ending) {
+    const rl = S.redLow = S.redLow && typeof S.redLow === 'object' ? S.redLow : {};
+    for (const [k, n] of [['happy', 'Happiness'], ['health', 'Health'], ['community', 'Community']]) {
+      if (S[k] > RED_REARM) delete rl[k];
+      else if (S[k] < RED_AT && !rl[k]) { rl[k] = 1; red.push(k); notes.push(`🟥 ${n} dropped into the red (${Math.round(S[k])}).`); }
+    }
+  }
+  return { ev, notes, ending, review, debt, death, rut, red };
 }
 
 function deltaChips(before){

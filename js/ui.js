@@ -484,7 +484,7 @@ function loadSheet(){
   $('#no').onclick = closeSheet;
 }
 // i54-a08: the Journal and job filters belong to one life, so loading or starting another starts them fresh
-function resetFilters(){ logFilter = 'all'; jobCity = 'all'; }
+function resetFilters(){ logFilter = 'all'; jobCity = 'all'; jobNear = false; }
 function newGame(name, len, slot = 0, opts = {}){
   LIFE_UNDO = []; PLAY_AT = -1e9; resetFilters();
   S = blankLife(name, len, slot);                 // road and work events (health plan, ski pass, job-hunt help and more) included
@@ -532,8 +532,8 @@ function render(){
   $('#helpbtn').onclick = showHelp;
   if ($('#end')) { $('#end').onclick = e => { if (holdDone(e)) return; tapPlay(1, e); }; holdOpens($('#end'), skipSheet); }
   if ($('#ff4')) $('#ff4').onclick = e => tapPlay(4, e);
-  if ($('#ff13')) $('#ff13').onclick = e => tapPlay(13, e);
-  if ($('#auto')) { $('#auto').onclick = e => { if (holdDone(e)) return; tapPlay('auto', e); }; holdOpens($('#auto'), skipSheet); }
+  if ($('#ff13')) $('#ff13').onclick = e => focusCheck(() => tapPlay(13, e), () => playWeeks(13), e);
+  if ($('#auto')) { $('#auto').onclick = e => { if (holdDone(e)) return; focusCheck(() => tapPlay('auto', e), autoPlay, e); }; holdOpens($('#auto'), skipSheet); }
   if ($('#stoproll')) $('#stoproll').onclick = stopRoll;
   if ($('#strip')) $('#strip').onclick = showRunDetails;
   FIRST_SLOT = 'open';
@@ -554,6 +554,31 @@ function holdOpens(el, fn){
   el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); e.stopPropagation(); fn(); } });
 }
 const holdDone = e => { const el = e.currentTarget; if (el && el._held) { el._held = false; return true; } return false; };
+// i48-b06: before ⏩ 13 or Auto, after 4+ weeks of one focus (it starts to fade), ask once per run of that focus
+let FOCUS_ASKED = null;
+function focusCheck(now, later, e){
+  const f = S && S.focus, key = S && `${S.name}|${S.streakF}|${S.turn - S.streakN}`;
+  if (!S || S.over || ROLL || (e && e.detail > 1) || (typeof TUT !== 'undefined' && TUT) || setting('skipAsk') === 'off' || f === 'study' || S.streakF !== f || S.streakN < 4
+    || (S.plan && S.plan.length) || FOCUS_ASKED === key) return now();
+  FOCUS_ASKED = key;
+  const two = lowFocus(f).slice(0, 2);
+  sheet(`<h2>Keep ${FOCUS_SHORT[f]}, or switch?</h2>
+    <p>${FOCUS[f].ic} ${FOCUS_SHORT[f]} fades after 4 weeks in a row. You've done it ${S.streakN} weeks, so it works at ${Math.round(focusEffect(f, S.streakN + 1) * 100)}% now.</p>
+    <div class="skiprow">${two.map(k => `<button class="btn primary" data-fc="${k}">${FOCUS[k].ic} ${FOCUS_SHORT[k]}</button>`).join('')}</div>
+    <button class="btn ghost" id="ok">Keep ${FOCUS_SHORT[f]}</button>
+    <button class="btn ghost" id="fcoff">Don't ask again</button>
+    <button class="btn ghost" id="no">Cancel</button>`);
+  const go = () => { closeSheet(); later(); };
+  document.querySelectorAll('#sheet [data-fc]').forEach(b => b.onclick = () => { S.focus = b.dataset.fc; save(); go(); });
+  $('#ok').onclick = go;
+  $('#no').onclick = closeSheet;
+  $('#fcoff').onclick = () => { setPref('skipAsk', 'off'); toast('OK. Turn it back on in Settings.'); go(); };
+}
+// the focuses for your lowest stats (classes don't fade, so they aren't suggested), not the one you're on
+function lowFocus(cur = S.focus){
+  const map = { happy:'outdoors', health:'rest', community:'community' };
+  return Object.keys(map).sort((a, b) => S[a] - S[b]).map(k => map[k]).filter(k => k !== cur);
+}
 // the skip options: ⏩ 4 and ⏩ 13, what ⏭ Auto plays until (i2-a11), and whether to watch the weeks go by (i2-a28)
 function skipSheet(){
   if (!S || S.over || ROLL) return;
@@ -669,6 +694,7 @@ function renderHome(){
     <button class="sumchip" data-go="life">🛻 ${CARS[S.car].name}</button>
     <button class="sumchip" data-go="life">🎓 ${EDU[S.edu].replace(' diploma','')}</button>
     <button class="sumchip${S.trip ? ' on' : ''}" id="tripchip">${tripChip()}</button>
+    ${perkChips().map((c, i) => `<button class="sumchip on perk" data-perk="${i}" aria-label="${c.say}">${c.t}</button>`).join('')}
   </div>
   ${S.log.length ? `<div class="card wideonly"><h3>📜 Lately</h3>${S.log.slice(0, 6).map(e => `<div class="logitem"><em>${esc(e.d)}</em>${esc(e.m)}</div>`).join('')}<button class="sm alt" data-go="log" style="margin-top:8px">Open the Journal</button></div>` : ''}
   </aside></div>`;
@@ -680,12 +706,45 @@ function renderHome(){
   document.querySelectorAll('[data-stat]').forEach(b => b.onclick = () => showStatInfo(b.dataset.stat));
   if ($('#scorenow')) $('#scorenow').onclick = showScoreNow;
   document.querySelectorAll('[data-sugg]').forEach(b => b.onclick = () => handFocus(b.dataset.sugg, true));
+  { const pc = perkChips(); document.querySelectorAll('[data-perk]').forEach(b => b.onclick = () => { const c = pc[+b.dataset.perk]; if (c) c.go(); }); }
   document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { tab = b.dataset.go; render(); window.scrollTo(0,0); });
   document.querySelectorAll('[data-cl], [data-next]').forEach(b => b.onclick = () => goTo(b.dataset.cl || b.dataset.next));
   if ($('#clhide')) $('#clhide').onclick = () => { setPref('clHide', true); renderHome(); announce('Checklist hidden. It\'s in the Help guide under Finding your way.'); };
   if ($('#install')) $('#install').onclick = installNow;
   if ($('#installno')) $('#installno').onclick = () => { setPref('installNo', Date.now()); renderHome(); announce('OK. Help has the install steps any time.'); };
 }
+// i5-a05: perks you've picked up that run out, with the weeks left; a tap opens where you use them
+function perkChips(){
+  const out = [], wks = n => n <= 1 ? 'this week' : `${n} wks`, tabTo = t => () => { tab = t; render(); window.scrollTo(0, 0); };
+  const add = (ic, name, left, go, why) => out.push({ t: `${ic} ${name}: ${wks(left)}`, say: `${name}, ${left <= 1 ? 'this week only' : left + ' weeks left'}. ${why}`, go });
+  if ((S.hireBy ?? -1) >= S.turn && !S.retired) add('🤝', 'Sure-thing interview', S.hireBy - S.turn + 1, tabTo('jobs'), 'Your next application is a sure thing. Opens the Jobs tab.');
+  if (tradeBonus()) add('🛻', 'Trade-in bonus', 1, tabTo('life'), 'Opens your vehicles on the Life tab.');
+  if (S.out && outLookBonus()) add('💇', 'Looking sharp', LOOK_WEEKS - (S.turn - S.out.look), tabTo('jobs'), 'Better odds on job applications. Opens the Jobs tab.');
+  if (S.out && outAdBoost() > 1) add('📣', 'Hustle ad', AD_WEEKS - (S.turn - S.out.ad), () => goTo('focus'), 'Side-hustle pay is up. Opens your focus.');
+  if (S.turn < (S.stockUntil ?? -1)) add('🛒', 'Stocked up', S.stockUntil - S.turn, () => { toast(`🛒 Groceries cost ${STOCK_OFF * 100}% less for ${wks(S.stockUntil - S.turn)}.`); }, 'Groceries cost less.');
+  return out;
+}
+// i63-a13: the first time cash drops below -$1,000, three things you can do this week with no loan
+const MONEY_TALK_AT = 1000;
+const moneyTalkDue = () => !!S && !S.over && !S.practice && !S.moneyTalk && S.money < -cost(MONEY_TALK_AT);
+const tradeDownOK = () => S.car === 'truck' && !(S.loanLeft > 0);
+function moneyTalk(){
+  S.moneyTalk = true; save();
+  const near = nearJobs(), hustle = S.focus === 'hustle';
+  sheet(`<h2>💬 Let's talk money</h2>
+    <p>You're ${fmt(-S.money)} below zero. That happens. Interest adds up, so here are three things you can do this week, no loan needed.</p>
+    ${S.retired ? '' : `<button class="btn primary" id="mtjobs">💼 See jobs that start this week${near.length ? ` (${near.length})` : ''}</button>`}
+    <button class="btn ${S.retired ? 'primary' : 'ghost'}" id="mthustle"${hustle ? ' disabled' : ''}>🔧 ${hustle ? 'Side hustles are already your focus' : 'Pick up side hustles this week'}</button>
+    ${tradeDownOK() ? '<button class="btn ghost" id="mtcar">🛻 Trade the truck down</button>' : ''}
+    <button class="btn ghost" id="no">Not now</button>`);
+  if ($('#mtjobs')) $('#mtjobs').onclick = () => { closeSheet(); jobNear = true; tab = 'jobs'; render(); window.scrollTo(0, 0); announce(`Jobs tab: ${near.length} jobs you can start near home`); };
+  $('#mthustle').onclick = () => { closeSheet(); handFocus('hustle', true); };
+  if ($('#mtcar')) $('#mtcar').onclick = () => { closeSheet(); tab = 'life'; render(); const c = document.querySelector('[data-car]'); if (c) { c.scrollIntoView({ block: 'center' }); c.focus({ preventScroll: true }); } };
+  $('#no').onclick = closeSheet;
+}
+// jobs your schooling allows, open this season, within 15 miles of home
+const NEAR_MILES = 15;
+const nearJobs = () => JOBS.filter(x => x.edu <= S.edu && !extraLock(x) && jobInSeason(x) && CITIES[x.city].miles <= NEAR_MILES && x.id !== S.jobId);
 // i2-a30: offer to install at a good moment: after a couple of months of play, when no other tip is showing,
 // and never when it's already installed (home-screen app or the Android app) or the browser can't install it
 const INSTALL_AFTER = 8, INSTALL_SNOOZE = 14 * 864e5;
@@ -791,7 +850,7 @@ function jobRow(x){
     <div style="text-align:right"><div class="pay">${fmt(th)}/wk</div>
     <div class="s">${cur ? 'take-home' : base && Math.abs(diff) >= 1 ? `<span class="${diff>0?'upt':'downt'}">${diff>0?'▲':'▼'} ${fmt(Math.abs(diff))}</span>` : 'take-home'}</div>${btn}</div></div>`;
 }
-let jobOK = false;
+let jobOK = false, jobNear = false;
 function explainLocked(id){
   const x = jobById(id); if (!x) return;
   if (S.edu >= x.edu && extraLock(x)) {         // i3-a02/a03: a certificate or a program
@@ -847,12 +906,13 @@ function renderJobs(){
   syncCarpool();
   const j = job();
   const cur = S.jobId && !S.retired ? S.jobId : null;
-  const list = JOBS.filter(x => (jobCity === 'all' || x.city === jobCity) && (!jobOK || (x.edu <= S.edu && !extraLock(x))))
+  const near = jobNear ? new Set(nearJobs().map(x => x.id)) : null;
+  const list = JOBS.filter(x => (jobCity === 'all' || x.city === jobCity) && (!jobOK || (x.edu <= S.edu && !extraLock(x))) && (!near || near.has(x.id) || x.id === cur))
     .sort((a, b) => (b.id === cur) - (a.id === cur) || (a.edu > S.edu || !!extraLock(a)) - (b.edu > S.edu || !!extraLock(b)) || (a.edu > S.edu ? a.edu - b.edu : 0) || takeHome(b) - takeHome(a));
   const mapOn = !!prefs().mapView;
   $('#main').innerHTML = `${myJobCard()}${mapToggle()}
   ${mapOn ? `<div class="card"><h3>Job board <span class="tag">${S.applied ? 'Applied this week' : '1 application per week'}</span></h3>${mapBlock('R')}</div>` : `
-  <div class="chips"><button class="chip ok ${jobOK?'on':''}" id="jobok" aria-pressed="${jobOK}">✅ Can apply</button>${[['all','All towns'], ...Object.entries(CITIES).map(([k,c]) => [k,c.name])].map(([k,l]) =>
+  <div class="chips">${jobNear ? `<button class="chip ok on" id="jobnear" aria-pressed="true">📍 Start now, ${NEAR_MILES} mi ✕</button>` : ''}<button class="chip ok ${jobOK?'on':''}" id="jobok" aria-pressed="${jobOK}">✅ Can apply</button>${[['all','All towns'], ...Object.entries(CITIES).map(([k,c]) => [k,c.name])].map(([k,l]) =>
     `<button class="chip ${jobCity===k?'on':''}" data-c="${k}">${l}</button>`).join('')}</div>
   ${jobCity!=='all' ? `<div class="card muted">${CITIES[jobCity].blurb}</div>` : ''}
   <div class="card">
@@ -868,6 +928,7 @@ function renderJobs(){
   ${LENGTHS[S.len].turns===Infinity && age()>=62 && !S.retired ? `<button class="btn primary" id="retire">Retire (Social Security ${wk(ssPay())}${pensionVested()?` + pension ${wk(pensionPay())}`:''}${S.k401>0?` + 401(k) ${wk(S.k401*drawRate()/12)}`:''})</button>` : ''}`;
   document.querySelectorAll('.chip[data-c]').forEach(b => b.onclick = () => { jobCity = b.dataset.c; render(); });
   if ($('#jobok')) $('#jobok').onclick = () => { jobOK = !jobOK; render(); };
+  if ($('#jobnear')) $('#jobnear').onclick = () => { jobNear = false; render(); announce('Showing all jobs'); };
   if ($('#carpool')) $('#carpool').onclick = () => { S.carpool = !S.carpool; S.carpoolJob = S.carpool ? S.jobId : null; save(); render(); toast(S.carpool ? '🚙 You joined a carpool' : 'Driving alone again'); };
   document.querySelectorAll('[data-apply]').forEach(b => b.onclick = () => apply(b.dataset.apply));
   // i3-a09: how you leave decides your reference
@@ -1148,6 +1209,7 @@ const SETTING_ROWS = [
   ['sound', '🎵 Sounds', 'Small sounds for a new week, events and badges. Quiet while ⏩ and Auto play.'],
   ['vibrate', '📳 Vibration', 'A short buzz for events and badges, on phones that can (not iPhones).'],
   ['swipe', '👆 Swipes', 'Swipe left or right to change tabs, and swipe a pop-up\'s handle down to close it.'],
+  ['skipAsk', '⏩ Focus check', 'Before ⏩ 13 or Auto, ask about a focus you\'ve kept 4 weeks or more.'],
   ['motion', '✨ Animations', 'Stat bars that slide, cash that counts up after a week, and confetti for badges. Always off when your device asks for reduced motion.']
 ];
 function settingsSheet(fromMenu = false, keep = null){
