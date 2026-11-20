@@ -2012,7 +2012,7 @@ await t.check('i70-b21: the install offer never redraws Home; its card sits belo
 await t.check('i20-a03 / i20-a04: a toast sits above the strip, fades, and waits while an event is open', async () => {
   await life({ jobId: 'farmhand' });
   await page.click('#end'); await clearSheets();
-  await page.evaluate(() => toast('Hello there'));
+  await page.evaluate(() => { TOAST_Q.length = 0; toast('Hello there'); });   // i17-a03: week one's start events can leave toasts queued
   const r = await page.evaluate(() => ({ t: $('#toast').getBoundingClientRect().bottom, s: ($('#strip') || $('.endbar')).getBoundingClientRect().top }));
   assert(r.t <= r.s, JSON.stringify(r));
   await page.waitForFunction(() => $('#toast').classList.contains('hidden'), null, { timeout: 4000 });
