@@ -274,6 +274,11 @@ function lineWhy(l, f, j){
   if (l === (FOCUS[S.focus] || {}).name) return `Your focus this week, ${l}, costs a little.`;
   return '';
 }
+// i71-b05: money that lands after the week's lines are summed (a collections fee, a hospital bill) still shows as a line
+function lateLine(l, v, why = ''){
+  S.money += v;
+  if (S.last) { S.last.lines.push([l, v, why]); S.last.net += v; }
+}
 function weekTick(auto){
   const L = LENGTHS[S.len], m = W, k = 0.28;
   const lines = [], notes = [];
@@ -303,6 +308,7 @@ function weekTick(auto){
   let gig = null;
   const truckTime = S.biz && S.biz.type === 'truck' && [3,4,5,6,7,8,9].includes(curMonth());
   if (f.hustle && !truckTime) { gig = currentGig(); lines.push([`Side hustle: ${gig.name}`, hustlePay(gig, Math.random()), `Gigs follow the seasons. ${S.hustleWeeks ? `${S.hustleWeeks} weeks of experience add ${Math.round((hustleXp() - 1) * 100)}% to your pay.` : 'Pay grows as you get good at it.'}`]); S.hustleWeeks = (S.hustleWeeks || 0) + 1; S.hustleLast = S.turn; }
+  else if (f.hustle && truckTime) S.hustleLast = S.turn;   // i22-a12: a food-truck weekend keeps your hustle skills fresh
   else if (S.hustleWeeks > 0 && S.turn - (S.hustleLast ?? S.turn) > HUSTLE_FADE_AFTER) S.hustleWeeks = Math.max(0, S.hustleWeeks - HUSTLE_FADE);   // B9: rusty after 6 months off
   const home = HOMES[S.home];
   wxWeek(lines, notes);                            // i75: this year's weather, gray weeks and the weather bill
@@ -388,6 +394,7 @@ function weekTick(auto){
   S.recentF = [S.focus, ...(S.recentF || [])].slice(0, 4);
   const eff = focusEffect();
   adj(focusFx(S.focus, eff, trip && trip.away ? (trip.van ? VAN_TIME : true) : false));
+  if (skiWeek()) { adj({happy:2, health:1}); why.push('⛷️ A ski day at Bluewood on your season pass: ▲ happiness and health, no lift ticket.'); }   // i66-b16
   S.last.why = why;
   if (S.focus !== 'study' && S.streakN > RUT_WEEKS) {
     adj({happy: -1.2});
@@ -398,6 +405,7 @@ function weekTick(auto){
   if (gig && gig.fx) adj(Object.fromEntries(Object.entries(gig.fx).map(([st, v]) => [st, v * k])));
   skillWeek(notes, gig);
 
+  eventUpkeep();                                   // i71-b04: promotion stress counts in quiet weeks too
   // ---- maybe an event this week ----
   const dice = eventDice();         // R8: events roll their own dice, so a weekly challenge brings everyone the same events
   let ev = S.noEvents || awaySouth() ? null : rollEvent(curMonth(), trip);   // i3-a30: nothing happens in town while you're in Arizona   // town, road and work events, paced by category
@@ -447,7 +455,7 @@ function weekTick(auto){
     if (S.yearStart) S.years = [...(S.years || []), { year: oldYear, age: age(), start: S.yearStart, end: snap, m: yearMilestones(oldYear) }].slice(-120);   // i2-a29: for the life story
     S.yearStart = snap; S.yearEvents = 0;
     // i3-a10: union jobs get a step raise every January after 6 months on the job
-    if (working() && job().union && !S.strike && (S.tenure || 0) >= 6) { bumpPay(1.015); log(`Union step raise: 1.5% at the ${job().title.toLowerCase()} job.`); }
+    if (working() && job().union && !S.strike && (S.tenure || 0) >= 6) { const g = bumpPay(1.015); if (g > 0.0005) log(`Union step raise: ${pctTxt(g)} at the ${job().title.toLowerCase()} job.`); }
   }
 
   badgeWeek(notes); scenarioWeek(notes);
@@ -455,7 +463,7 @@ function weekTick(auto){
   let ending = null;
   if (S.health <= 0) {
     if (L.turns === Infinity && age() >= 50) ending = `${S.name}'s health finally gave out at age ${age()}.`;
-    else { const ride = ambRide(), bill = Math.round(cost(6500)) + ride; S.money -= bill; S.health = 30; adj({happy:-10});   // i74-a04: the ambulance ride, unless you're a member
+    else { const ride = ambRide(), bill = Math.round(cost(6500)) + ride; lateLine('🏥 Hospital bill', -bill, ride ? `The hospital stay in Walla Walla, ${fmt(ride)} of it for the ambulance ride.` : 'The hospital stay in Walla Walla; your ambulance district membership covered the ride.'); S.health = 30; adj({happy:-10});   // i74-a04: the ambulance ride, unless you're a member
       notes.push(`🏥 You ended up in the hospital. The bill was ${fmt(bill)}${ride ? `, ${fmt(ride)} of it for the ambulance ride` : ', and your ambulance district membership covered the ride'}.`); log('Spent a week in the hospital in Walla Walla.'); }
   }
   if (!ending && L.turns === Infinity && age() >= 60) {
@@ -463,10 +471,10 @@ function weekTick(auto){
     if (chance(p) || age() >= 102) ending = `${S.name} passed peacefully at age ${age()}, with the whole town at the service.`;
   }
   if (!ending && S.turn >= L.turns) ending = `${L.label} in the Burg is in the books.`;
-  const debtEnd = mode() === 'hard' ? -25000 : -40000;
+  const debtEnd = debtLimit();                     // i60-a12: the same limit the Home card and Help name
   let debt = false;
-  if (!ending && mode() !== 'relaxed' && S.money < debtEnd) { ending = `Buried in debt, ${S.name} packed up and left Waitsburg.`; debt = true; }
-  if (mode() === 'relaxed' && S.money < -40000) S.money = -40000;   // Relaxed: a debt counselor stops the slide
+  if (!ending && debtEnd != null && S.money < debtEnd) { ending = `Buried in debt, ${S.name} packed up and left Waitsburg.`; debt = true; }
+  if (debtEnd == null && S.money < RELAXED_FLOOR) S.money = RELAXED_FLOOR;   // Relaxed: a debt counselor stops the slide
   return { ev, notes, ending, review, debt };
 }
 

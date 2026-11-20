@@ -13,7 +13,7 @@
    ============================================================ */
 const PLACES_CHECKED = '2026-11-18';
 const OUT_MAX = 2, OUT_FX = TRIP_FX, OUT_REPEAT = REPEAT_WEEKS, OUT_WEEK_CAP = 3, LOOK_WEEKS = 2, AD_WEEKS = 8, AD_BOOST = 0.15;
-const jamWeek = () => !!S && S.turn % 2 === 0;           // Tonnage's bluegrass jam: every other week
+const jamWeek = (t = S && S.turn) => !!S && t % 2 === 0;           // Tonnage's bluegrass jam: every other week
 const festivalWeek = () => !!S && curMonth() === 4;       // Celebration Days in May
 const WINTER_BREAK = [0, 1];                               // January and February
 const MONTH_SPAN = ms => `${MONTHS[ms[0]]}–${MONTHS[ms[ms.length - 1]]}`;
@@ -297,7 +297,7 @@ Object.assign(WORK_SPOT, { diner:'gulch', barista:'mainst', grocer:'mainst', rep
 
 /* ---- business events (#51) ---- */
 const OUT_EVENTS = [
-  { ic:'🪕', title:'Bluegrass jam at Tonnage', biz:'tonnage', w:2, when:() => jamWeek(),
+  { ic:'🪕', title:'Bluegrass jam at Tonnage', biz:'tonnage', w:2, when:() => jamWeek(S.turn + 1),   // i22-a13: rolled this week, shown next week (after the turn ticks)
     text:'Tonnage Coffee & Strings is a private space most days, but every other week it opens its doors for a bluegrass jam. Bring an instrument or just listen.',
     choices:() => [
       {label:`Go listen (-${fmtc(5)} in the tip jar)`, go:() => { adj({money:-cost(5), happy:3, community:2}); return 'A banjo, two fiddles and half the town tapping their feet.'; }},
