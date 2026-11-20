@@ -285,6 +285,7 @@ function blankLife(name, len, slot = 0){
     earnYears:0, earnSum:0, pensionYears:0, pensionPay:0, ltc:null, care:null, snowbird:null, scholar:null, will:false, probate:null, roomHost:false, hostLast:-99,
     skills:{}, biz:null, weekly:null, rng:null, rngEv:null, gen:1, goalAt:{}, carpoolJob:null, hustleLast:0, highWater:null, recentF:[], out:outDefault(), years:[],
     plan:[], planI:0,                              // i2-a12: a weekly focus rotation (empty = no plan)
+    hireJoy:null, bgRest:null,                     // i38-a01: the week of the last hiring cheer; i37-b06: a background's community resting point
     ...SCORE_STATE(),                              // wave 1: the Life Score's running tallies and the life aim
     // jobs and school (round 3): ladder rung, months in this job, program and major, certificates, seasonal recall,
     // a pending interview, your reference, notice, sign-on bonus, union contract, strike, furlough, clearance, fiber, bus
@@ -389,7 +390,15 @@ const turnWord = () => 'Week';
 function adj(o){
   if (o.money) S.money += o.money;
   ['happy','health','community'].forEach(k => { if (o[k]) S[k] = clamp(S[k] + o[k]); });
+  if (o.health > 0) S.health = Math.min(S.health, Math.max(maxHealth(), S.health - o.health));   // i30-b03: gains stop at the age cap
 }
+// i30-b03: health's ceiling comes down with age: 100 until 55, about 75 at 85, 60 past 100
+const maxHealth = (a = age()) => clamp(100 - Math.max(0, a - 55) * 25 / 30, 60, 100);
+// i35-b05/i37-b06: where happiness and community drift back to, and where Rest and Get outside top out
+const happyRest = () => mode() === 'hard' ? 48 : 52;
+const commRest = () => { const base = mode() === 'hard' ? 20 : 25; return S.bgRest != null && S.turn < BG_REST_WEEKS ? Math.min(base, S.bgRest) : base; };
+const restTop = () => mode() === 'hard' ? 76 : 86;
+const BG_REST_WEEKS = 52, HIRE_JOY_WEEKS = 26;
 // G8: each Journal entry has a kind (k) for the filter chips: 'money', 'ev' (events), 'mile' (milestones) or 'trip'.
 // Callers can pass one; otherwise (and for entries from older saves) simple text rules decide.
 function logKind(m){
@@ -517,14 +526,14 @@ const BACKGROUNDS = {
   grad:       { ic:'🎓', name:'Grad coming home', hint:'Head start, with debt', desc:'21, back from college with a trade certificate, 20 weeks of classes short of an associate degree, and $36,000 in student loans (about $380 a month for 10 years).',
     set:s => { s.ageMonths = 21*12; s.edu = 1; s.studyProg = 20; s.money = 500; s.community = 20; s.happy = 56; s.sloanLeft = 120; s.sloanPay = 380; } },
   transplant: { ic:'🏙️', name:'Seattle transplant', hint:'Money, but lonely', desc:'Moved over the mountains with $6,000 saved and a used sedan. Nobody in town knows you yet, and you miss the city.',
-    set:s => { s.money = 6000; s.community = 5; s.happy = 50; s.car = 'sedan'; s.carValue = 9000; s.ageMonths = 24*12; } },
+    set:s => { s.money = 6000; s.community = 5; s.happy = 50; s.car = 'sedan'; s.carValue = 9000; s.ageMonths = 24*12; s.bgRest = 10; } },   // i37-b06: lonely for the first year
   parent:     { ic:'👶', name:'Young parent', hint:'Tight money, full heart', desc:'20, with a two-year-old. Money is tight and every week counts, but the town looks out for you.',
     set:s => { s.ageMonths = 20*12; s.kids = [s.ageMonths - 24]; s.money = 800; s.community = 36; s.happy = 64; } }
 };
 const MODES = {
   relaxed: { ic:'🌤️', name:'Relaxed', desc:'Stats wear down slower, debt grows slower and never ends your game. For playing at your own pace.' },
   normal:  { ic:'⚖️', name:'Normal', desc:'The game as designed.' },
-  hard:    { ic:'🔥', name:'Hard', desc:'Stats wear down faster, more events, layoffs more likely, rent, food and insurance cost 10% more, and debt ends the game at -$25,000.' }
+  hard:    { ic:'🔥', name:'Hard', desc:'Stats wear down faster and settle lower, more events, layoffs more likely, rent, food and insurance cost 10% more, and debt ends the game at -$25,000.' }
 };
 const mode = () => (S && S.mode) || 'normal';
 // i60-a12: where debt ends a life in this mode (null: Relaxed, where a debt counselor stops it at RELAXED_FLOOR), and where Home warns
@@ -541,13 +550,13 @@ const bestLabel = k => { if (k.startsWith('wk-')) return `📅 ${k.slice(3)}`; i
    ============================================================ */
 const fmtc = n => fmt(cost(n));       // a price that rises with the cost of living, for event labels
 const SEASON_GOALS = [
-  { key:'spring', ic:'🌸', name:'Get Celebration Days ready', months:[2,3,4], focus:['community'], need:6, fx:{community:6, happy:3},
+  { key:'spring', ic:'🌸', name:'Get Celebration Days ready', months:[2,3,4], focus:['community'], need:9, fx:{community:6, happy:3},
     what:'Show up for town', done:'Celebration Days went off without a hitch, and people know you helped.' },
-  { key:'summer', ic:'🌾', name:'Bring in the harvest', months:[5,6,7], focus:['work','hustle','community'], need:5, fx:{community:5, happy:2},
+  { key:'summer', ic:'🌾', name:'Bring in the harvest', months:[5,6,7], focus:['work','hustle','community'], need:8, fx:{community:5, happy:2},
     what:'Work extra, Side hustle or Show up for town', done:'The wheat is in. The whole valley breathes out, and you were part of it.' },
-  { key:'fall', ic:'🍂', name:'Stock the food bank before winter', months:[8,9,10], focus:['community'], need:5, fx:{community:6, happy:3},
+  { key:'fall', ic:'🍂', name:'Stock the food bank before winter', months:[8,9,10], focus:['community'], need:8, fx:{community:6, happy:3},
     what:'Show up for town', done:'The food bank shelves are full going into winter.' },
-  { key:'winter', ic:'❄️', name:'Holiday food drive and shoveling for neighbors', months:[11,0,1], focus:['community','outdoors'], need:4, fx:{community:5, happy:4},
+  { key:'winter', ic:'❄️', name:'Holiday food drive and shoveling for neighbors', months:[11,0,1], focus:['community','outdoors'], need:7, fx:{community:5, happy:4},
     what:'Show up for town or Get outside', done:'Every older neighbor on your street had a clear walk and a full pantry.' }
 ];
 const seasonGoal = () => SEASON_GOALS.find(g => g.months.includes(curMonth()));
