@@ -975,11 +975,11 @@ function moneyTalk(){
     ${S.retired ? '' : `<button class="btn primary" id="mtjobs">💼 See jobs that start this week${near.length ? ` (${near.length})` : ''}</button>`}
     <button class="btn ${S.retired ? 'primary' : 'ghost'}" id="mthustle"${hustle ? ' disabled' : ''}>🔧 ${hustle ? 'Side hustles are already your focus' : 'Pick up side hustles this week'}</button>
     ${tradeDownOK() ? '<button class="btn ghost" id="mtcar">🛻 Trade the truck down</button>' : ''}
-    <button class="btn ghost" id="no">Not now</button>`);
+    <button class="btn ghost" id="ok">Not now</button>`);
   if ($('#mtjobs')) $('#mtjobs').onclick = () => { closeSheet(); jobNear = true; tab = 'jobs'; render(); window.scrollTo(0, 0); announce(`Jobs tab: ${near.length} jobs you can start near home`); };
   $('#mthustle').onclick = () => { closeSheet(); handFocus('hustle', true); };
   if ($('#mtcar')) $('#mtcar').onclick = () => { closeSheet(); tab = 'life'; render(); const c = document.querySelector('[data-car]'); if (c) { c.scrollIntoView({ block: 'center' }); c.focus({ preventScroll: true }); } };
-  $('#no').onclick = closeSheet;
+  $('#ok').onclick = closeSheet;
 }
 // jobs your schooling allows, open this season, within 15 miles of home
 const NEAR_MILES = 15;

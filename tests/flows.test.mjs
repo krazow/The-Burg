@@ -1331,6 +1331,7 @@ await t.check('i63-b15: Moving to a new phone is a two-step guide: send yourself
   await page.waitForSelector('#rsadd'); await page.click('#rsadd');
   const names = await page.evaluate(() => slots().map(g => g && g.name).join());
   assert(names === 'Flow,Copy1,,,', `new phone has ${names}`);
+  await page.click(`${open} #ok`);   // i62-a08: the restore sheet
 });
 
 await t.check('i63-b02: a backup from a newer Burg offers Check for an update', async () => {
@@ -1651,7 +1652,7 @@ await t.check('i48-b06: ⏩ 13 after 4+ weeks of one focus asks to keep or switc
   assert(await page.evaluate(() => setting('skipAsk')) === 'off', 'setting not saved');
   await setup(() => { closeSheet(); S.focus = 'rest'; S.streakF = 'rest'; S.streakN = 7; S.turn = 0; render(); });
   await page.evaluate(() => $('#ff13').click());
-  assert(!/or switch/.test(await page.textContent('body')), 'asked again after Don\'t ask again');
+  assert(!(await page.$(open)) || !/or switch/.test(await page.textContent(`${open} h2`)), 'asked again after Don\'t ask again');
   await setup(() => { closeSheet(); setPref('skipAsk', 'on'); });
 });
 
