@@ -98,7 +98,7 @@ input[type=text]:focus{outline:none;border-color:var(--wheat-d)}
 .top .meta{font-size:0.8125rem;opacity:.85;margin-top:2px;display:flex;justify-content:space-between}
 .progress{height:4px;background:rgba(255,255,255,.25);border-radius:2px;margin-top:8px;overflow:hidden}
 .progress i{display:block;height:100%;background:var(--wheat)}
-main{flex:1;padding:14px 14px calc(var(--safe-b) + 32px + 10.5rem)}
+main{flex:1;padding:14px 14px calc(var(--safe-b) + 32px + 12rem)}   /* i43-a04: room for the last button to scroll above the strip, End Week and the tabs */
 .card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
 .card.wxcard{padding:8px 10px;margin:6px 0;border-left:4px solid #4f7da8}
 .card h3{font-size:1.0625rem;margin-bottom:8px}
@@ -382,15 +382,15 @@ html,body,.helpview{overscroll-behavior-y:contain}
 .saveline{font-size:0.875rem;padding:6px 10px;border-radius:10px;background:var(--pale);color:var(--soil)}
 @media (max-height:700px) and (max-width:600px) and (orientation:portrait){
   #app > nav button{padding:4px 0 6px}
-  .endbar{bottom:calc(var(--safe-b) + 58px)}
+  .endbar{bottom:calc(var(--safe-b) + 38px + 1.25rem)}   /* clears the tab bar, which grows with the text size */
   .endbar .btn{min-height:50px;padding-top:6px;padding-bottom:6px}
-  .weekstrip{left:14px;transform:none;width:66px;bottom:calc(var(--safe-b) + 58px);min-height:50px;padding:4px 6px;gap:2px;justify-content:center}
+  .weekstrip{left:14px;transform:none;width:66px;bottom:calc(var(--safe-b) + 38px + 1.25rem);min-height:50px;padding:4px 6px;gap:2px;justify-content:center}
   .weekstrip .wl{display:none}.weekstrip .wc{flex:0 1 auto;justify-content:center}.weekstrip .wc .delta:not(:first-child){display:none}
   .weekstrip .delta{font-size:12px;padding:2px 3px}.weekstrip .more{display:none}
   .weekstrip ~ .endbar{left:86px;transform:none;width:calc(100% - 100px)}
   .endbar .endwrap #end{font-size:15px}
-  .focusrow{bottom:calc(var(--safe-b) + 112px)}
-  main{padding-bottom:calc(var(--safe-b) + 140px)}
+  .focusrow{bottom:calc(var(--safe-b) + 92px + 1.25rem)}
+  main{padding-bottom:calc(var(--safe-b) + 120px + 1.25rem)}
 }
 @media (prefers-reduced-motion: reduce){.shake{animation:none}.toast{transition:none}}
 </style>
