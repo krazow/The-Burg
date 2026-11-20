@@ -75,6 +75,7 @@ function renderTitle(){
     </div>
     <button class="btn ghost" id="chal">🏁 Challenges${hasRecords() ? ' and records' : ''}</button>
     <button class="btn ghost" id="how">❓ Help & tutorial</button>
+    ${hasBackupStuff() ? '<button class="btn ghost" id="tbackup">📤 Back up</button>' : ''}
     <button class="btn ghost" id="restore">📥 Restore from a backup</button>
     <button class="btn ghost" id="newphone">📱 I'm the new phone</button>
     <button class="btn ghost" id="settings">⚙️ Settings</button>
@@ -126,6 +127,7 @@ function renderTitle(){
   $('#how').onclick = showHelp;
   $('#chal').onclick = challengesSheet;   // i50-a05: the weekly challenge and your records live in the Challenges sheet
   $('#restore').onclick = restoreSheet;
+  if ($('#tbackup')) $('#tbackup').onclick = () => backupSheet();
   $('#newphone').onclick = newPhoneSheet;
   $('#settings').onclick = () => settingsSheet(false);
   titleNotes();
@@ -450,7 +452,30 @@ function saveCopySheet(){
 // into a message to yourself); codes are gzip-compressed when the browser can.
 // i63-b02: v is the format; minReader is the oldest app format that can read it. A backup newer than BACKUP_V asks you to update.
 const BACKUP_V = 2;
-function backupData(){ return { app: 'theburg', kind: 'backup', v: BACKUP_V, minReader: 1, version: APP_VERSION, exported: new Date().toISOString(), slots: slots(), best: store.get(BEST_KEY) || {}, badges: store.get(BADGE_KEY) || {}, challenges: store.get(CHALLENGE_KEY) || {}, ends: ends() }; }
+function backupData(){ return { app: 'theburg', kind: 'backup', v: BACKUP_V, minReader: 1, version: APP_VERSION, exported: new Date().toISOString(), slots: slots(), best: store.get(BEST_KEY) || {}, badges: store.get(BADGE_KEY) || {}, challenges: store.get(CHALLENGE_KEY) || {}, ends: ends(), prefs: prefs() }; }   // i62-a10: settings and seen tips come along
+// i62-a03/a07: what a backup (or this phone) holds besides lives
+function backupCounts(b){
+  const o = x => x && typeof x === 'object' ? x : {};
+  return { lives: (b.lives || b.slots || []).filter(Boolean).length, records: Object.keys(o(b.best)).filter(k => bestLabel(k)).length,
+    badges: Object.keys(o(b.badges)).filter(k => BADGES.some(x => x.id === k)).length, wins: Object.keys(o(b.challenges)).filter(k => SCENARIOS[k]).length };
+}
+const plural = (n, one, many = one + 's') => `${n} ${n === 1 ? one : many}`;
+const countWords = c => [plural(c.lives, 'life', 'lives'), ...(c.records ? [plural(c.records, 'record')] : []), ...(c.badges ? [plural(c.badges, 'badge')] : []), ...(c.wins ? [plural(c.wins, 'challenge win')] : [])].join(', ');
+const localCounts = () => backupCounts({ slots: slots(), best: store.get(BEST_KEY), badges: store.get(BADGE_KEY), challenges: store.get(CHALLENGE_KEY) });
+const hasBackupStuff = (c = localCounts()) => c.lives + c.records + c.badges + c.wins > 0;
+// i62-a02: the same life, saved at the same moment (name, length, the day it began, when it was saved)
+const lifeKey = g => `${g.name}|${g.len}|${Math.round(((g.date || 0) - (g.turn || 0) * 7 * 864e5) / 864e5)}|${g.savedAt || 0}`;
+// i62-a02/a09: where each of a backup's lives lands when added to the empty slots (or that it is already here)
+function restorePlan(b){
+  const cur = slots(), have = new Map(cur.map((g, i) => [g && lifeKey(g), i]).filter(([k]) => k)), free = cur.map((g, i) => g ? -1 : i).filter(i => i >= 0);
+  return b.lives.map(g => { if (!g) return null; const dup = have.get(lifeKey(g)); if (dup != null) return { g, dup }; have.set(lifeKey(g), -1); return { g, slot: free.length ? free.shift() : null }; });
+}
+// i62-a11: a backup file named for the local time and who's inside
+function backupFileName(){
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  const who = slots().filter(Boolean).slice(0, 3).map(g => String(g.name).toLowerCase().normalize('NFD').replace(/[^a-z]+/g, '-').replace(/^-|-$/g, '')).filter(Boolean);
+  return `the-burg-backup-${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${who.length ? '-' + who.join('-') : ''}.json`;
+}
 const b64 = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(s); };
 const unb64 = text => Uint8Array.from(atob(text.replace(/\s+/g, '')), c => c.charCodeAt(0));
 const CRC_T = [...Array(256)].map((_, n) => { for (let k = 0; k < 8; k++) n = n & 1 ? 0xEDB88320 ^ (n >>> 1) : n >>> 1; return n >>> 0; });
@@ -464,7 +489,7 @@ async function backupCode(obj){
   return `BURG2:${b64(bytes)}.${bytes.length}.${crc32(bytes).toString(16).padStart(8, '0')}`;
 }
 const gunzip = async bytes => {
-  if (!window.DecompressionStream) throw new Error('This browser can\'t open compressed codes. Use the backup file instead.');
+  if (!window.DecompressionStream) throw Object.assign(new Error('This browser can\'t open compressed codes. Use the backup file instead.'), { plain: true });
   return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
 };
 const backupErr = (msg, extra = {}) => Object.assign(new Error(msg), extra);
@@ -477,7 +502,24 @@ async function unpackBurg2(text){
   if (bytes.length !== +m[2] || crc32(bytes).toString(16).padStart(8, '0') !== m[3].toLowerCase()) throw backupErr('One piece of this code was changed (a letter retyped or swapped). Copy the code again from the original and paste it here.', { part: 'changed' });
   return bytes[0] === 0x1f && bytes[1] === 0x8b ? gunzip(bytes) : new TextDecoder().decode(bytes);
 }
+// i62-a06: a code with words, quotes or line breaks around it still reads; i62-a01: a damaged one says so in plain words
+const BK_DAMAGED = 'This backup code is damaged: part of it is missing or was changed on the way. Copy the whole code again, right to the end, and paste it here.';
+const BK_FILE_DAMAGED = 'This backup file is damaged or cut short. Download it again from the phone that made it.';
+const BK_NOT = 'That doesn\'t look like a backup from The Burg.';
+function backupTries(text){
+  text = String(text || '').trim();
+  const m = !text.startsWith('{') && text.match(/BURG\d+:[A-Za-z0-9+\/=.\s]+/);
+  if (!m) return [text];
+  const parts = m[0].split(/\s+/).filter(Boolean), out = [parts.join(''), m[0].trim().replace(/ /g, '+').replace(/\s+/g, '')];   // + often turns into a space on the way
+  for (let k = parts.length - 1; k >= 1; k--) out.push(parts.slice(0, k).join(''));            // words after the code
+  return [...new Set(out)];
+}
 async function readBackup(text){
+  let first = null;
+  for (const t of backupTries(text)) { try { return await readBackupOne(t); } catch (e) { first = first || e; } }
+  throw first;
+}
+async function readBackupOne(text){
   text = (text || '').trim();
   let d;
   try {
@@ -487,19 +529,21 @@ async function readBackup(text){
     else if (text.startsWith('BURG0:')) d = JSON.parse(new TextDecoder().decode(unb64(text.slice(6))));
     else if (/^BURG\d+:/.test(text)) throw backupErr('This backup is from a newer Burg. Update the game first, then restore it.', { newer: true });
     else throw new Error('');
-  } catch (e) { throw e.part || e.newer ? e : new Error(e.message || 'That doesn\'t look like a backup from The Burg.'); }
+  } catch (e) { throw e.part || e.newer ? e : new Error(e.plain ? e.message : /^BURG\d+:/.test(text) ? BK_DAMAGED : text.startsWith('{') ? BK_FILE_DAMAGED : BK_NOT); }
   if (!d || d.app !== 'theburg' || !Array.isArray(d.slots)) throw new Error('That doesn\'t look like a backup from The Burg.');
   const need = Number.isFinite(d.minReader) ? d.minReader : Number.isFinite(d.v) ? d.v : 1;
   if (need > BACKUP_V) throw backupErr('This backup is from a newer Burg. Update the game first, then restore it.', { newer: true });
   const ok = isLife;   // H1: anything else a thin backup is missing, migrate() fills in
   const lives = d.slots.slice(0, SLOT_COUNT).map(g => ok(g) ? migrate(g) : null);
-  if (!lives.some(Boolean)) throw new Error('That backup has no saved lives in it.');
   const obj = x => x && typeof x === 'object' && !Array.isArray(x) ? x : {};
+  if (!lives.some(Boolean) && !hasBackupStuff(backupCounts({ best: obj(d.best), badges: obj(d.badges), challenges: obj(d.challenges) }))) throw new Error('That backup has no saved lives, records or badges in it.');   // i62-a03
+  // i62-a10: settings as plain values only
+  const prefsIn = Object.fromEntries(Object.entries(obj(d.prefs)).filter(([k, v]) => /^[\w-]{1,30}$/.test(k) && (['string', 'number', 'boolean'].includes(typeof v) || (Array.isArray(v) && v.every(x => typeof x === 'string')) || (k === 'cl' && v && typeof v === 'object'))));
   const when = typeof d.exported === 'string' || Number.isFinite(d.exported) ? new Date(d.exported) : null;   // H1: a date is shown only if it parses
   // i73-b01: finished-life stubs come along as plain values only
   const endsIn = (Array.isArray(d.ends) ? d.ends : []).filter(e => e && typeof e === 'object' && typeof e.name === 'string' && Number.isFinite(e.score)).slice(0, ENDS_MAX)
     .map(e => Object.fromEntries(Object.entries(e).map(([k, v]) => [k, typeof v === 'string' ? noTags(v).slice(0, 200) : Number.isFinite(v) || v == null ? v ?? null : k === 'parts' && obj(v) ? Object.fromEntries(Object.entries(v).filter(([, x]) => Number.isFinite(x))) : null])));
-  return { lives, ends: endsIn, best: obj(d.best), badges: obj(d.badges), challenges: obj(d.challenges), exported: when && !isNaN(when) ? when.toISOString() : null };
+  return { lives, ends: endsIn, prefs: prefsIn, best: obj(d.best), badges: obj(d.badges), challenges: obj(d.challenges), exported: when && !isNaN(when) ? when.toISOString() : null };
 }
 // i63-b22: lives in a backup that are an earlier week of a life already on this phone (same life id)
 const olderCopies = b => b.lives.filter(Boolean).map(g => [g, slots().find(x => x && x.lid && x.lid === g.lid && (x.turn || 0) > (g.turn || 0))]).filter(([, x]) => x);
@@ -517,25 +561,29 @@ function restoreBackup(b, mode){
   { const have = ends(), seen = new Set(have.map(e => `${e.name}|${e.at}|${e.score}`));
     const add = (b.ends || []).filter(e => !seen.has(`${e.name}|${e.at}|${e.score}`));
     if (add.length) store.set(ENDS_KEY, keepEnds([...have, ...add].sort((x, y) => (y.at || 0) - (x.at || 0)))); }
-  let skipped = 0, want;
+  // i62-a10: seen tips are added together; a setting this phone already has stays as it is
+  if (b.prefs) { const p = prefs();
+    for (const [k, v] of Object.entries(b.prefs)) { if (k === 'tips' && Array.isArray(v)) p.tips = [...new Set([...(Array.isArray(p.tips) ? p.tips : []), ...v])]; else if (p[k] === undefined) p[k] = v; }
+    store.set(PREF_KEY, p); applyPrefs(); }
+  let skipped = 0, dupes = 0, want;
   if (mode === 'replace') want = b.lives.map((g, i) => g ? { ...g, slot: i } : null).concat(Array(SLOT_COUNT).fill(null)).slice(0, SLOT_COUNT);
   else {
     want = cur.slice();
-    for (const g of b.lives.filter(Boolean)) { const i = want.indexOf(null); if (i < 0) { skipped++; continue; } want[i] = { ...g, slot: i }; }
+    for (const x of restorePlan(b).filter(Boolean)) { if (x.dup != null) { dupes++; continue; } if (x.slot == null) { skipped++; continue; } want[x.slot] = { ...x.g, slot: x.slot }; }   // i62-a02: no twin lives
   }
   writeSlots(want);
   // i57-a18: read the slots back: how many of the lives meant to land really did
   const now = slots(), meant = want.filter((g, i) => g && (mode === 'replace' || !cur[i])).length;
   const landed = want.reduce((n, g, i) => n + (g && now[i] && now[i].name === g.name && now[i].savedAt === g.savedAt && (mode === 'replace' || !cur[i]) ? 1 : 0), 0);
-  return { skipped, meant, landed };
+  return { skipped, meant, landed, dupes, slots: want.map((g, i) => g && (mode === 'replace' || !cur[i]) ? i : -1).filter(i => i >= 0) };
 }
 // the backup sheet; onClose (i63-b08's nudge) runs when it's closed, so the week carries on
 function backupSheet(onClose = null){
   if (S && !S.over && !S.practice) save();
-  const n = slots().filter(Boolean).length;
+  const c = localCounts(), n = hasBackupStuff(c);   // i62-a03: records and badges are worth a backup too
   sheet(`<h2>📤 Back up or restore</h2>
-    <p class="muted">Your lives are saved on this device. A backup lets you keep a copy or move them to another phone or computer.</p>
-    <h3>Back up (${n} ${n === 1 ? 'life' : 'lives'})</h3>
+    <p class="muted">Your lives, records and badges are saved on this device. A backup lets you keep a copy or move them to another phone or computer.</p>
+    <h3>Back up (${countWords(c)})</h3>
     <button class="btn primary" id="bkfile" ${n ? '' : 'disabled'}>⬇️ Download a backup file</button>
     <button class="btn ghost" id="bkcode" ${n ? '' : 'disabled'}>📋 Copy a backup code</button>
     <div id="bkout"></div>
@@ -546,7 +594,7 @@ function backupSheet(onClose = null){
   $('#bkfile').onclick = () => {
     const blob = new Blob([JSON.stringify(backupData(), null, 1)], { type: 'application/json' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-    a.download = `the-burg-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = backupFileName();
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
     toast('Backup file downloaded'); announce('Backup file downloaded');
   };
@@ -596,10 +644,11 @@ function restoreSheet(){
 async function backupCheck(text, out){
   try {
     const b = await readBackup(text);
-    const lives = b.lives.filter(Boolean), free = slots().filter(g => !g).length;
-    out.innerHTML = `<p><b>This backup has ${lives.length} ${lives.length === 1 ? 'life' : 'lives'}</b>${b.exported ? ` (saved ${new Date(b.exported).toLocaleDateString()})` : ''}:</p>
-      <div class="slots">${b.lives.map((g, i) => g ? slotCard(g, i, '') : '').join('')}</div>
-      <button class="btn primary" id="rsadd" ${free ? '' : 'disabled'}>Add to my empty slots (${free} free)</button>
+    const lives = b.lives.filter(Boolean), free = slots().filter(g => !g).length, plan = restorePlan(b), fresh = plan.filter(x => x && x.dup == null).length;
+    out.innerHTML = `<p><b>This backup has ${countWords(backupCounts(b))}</b>${b.exported ? ` (saved ${new Date(b.exported).toLocaleDateString()})` : ''}${lives.length ? ':' : '.'}</p>
+      <div class="slots">${plan.map((x, i) => x ? slotCard(x.g, i, `<span class="tag${x.dup != null ? ' cur' : ''}">${x.dup != null ? 'Already on this phone' : x.slot != null ? `Goes to slot ${x.slot + 1}` : 'No free slot'}</span>`) : '').join('')}</div>
+      ${recordsLine(b)}
+      <button class="btn primary" id="rsadd" ${free || !fresh ? '' : 'disabled'}>${lives.length && fresh ? `Add to my empty slots (${free} free)` : 'Add the records and badges'}</button>
       <button class="btn ghost" id="rsrep">Replace all my lives with these</button>`;
     // i63-b22: an earlier week of a life already here asks first
     const rewind = go => {
@@ -628,15 +677,28 @@ async function backupCheck(text, out){
   }
 }
 function finishRestore(b, mode){
-  const { skipped, meant, landed } = restoreBackup(b, mode);
+  const { skipped, meant, landed, dupes, slots: at } = restoreBackup(b, mode);
   closeSheet();
   if (mode === 'replace' || !S) { S = null; renderTitle(); }
   else render();
   const lives = n => `${n} ${n === 1 ? 'life' : 'lives'}`;
   const msg = landed < meant ? `⚠️ Only ${lives(landed)} of ${meant} could be saved: your phone's storage may be full. Keep the backup.`
-    : skipped ? `Restored ${lives(landed)}. ${lives(skipped)} didn't fit: free up a slot and restore again.` : `Backup restored: ${lives(landed)}`;
-  if (landed < meant) sheet(`<h2>Restore didn't finish</h2><p>${msg}</p><button class="btn primary" id="ok">OK</button>`), $('#ok').onclick = closeSheet;
-  toast(msg); announce(msg);
+    : `Backup restored: ${lives(landed)}${skipped ? `. ${lives(skipped)} didn't fit: free up a slot and restore again` : ''}${dupes ? `. ${lives(dupes)} ${dupes === 1 ? 'was' : 'were'} already on this phone` : ''}`;
+  if (landed < meant) { sheet(`<h2>Restore didn't finish</h2><p>${msg}</p><button class="btn primary" id="ok">OK</button>`); $('#ok').onclick = closeSheet; toast(msg); announce(msg); return; }
+  // i62-a08: open the life you brought back
+  const back = (at || []).map(i => [readSlot(i), i]).filter(([g]) => g);
+  sheet(`<h2>📥 ${esc(msg)}</h2>
+    ${back.length ? `<div class="slots">${back.map(([g, i]) => slotCard(g, i, `<div class="slotbtns"><button class="sm" data-rsopen="${i}">Play</button></div>`)).join('')}</div>` : `<p>${countWords(backupCounts(b))} checked and kept.</p>`}
+    <button class="btn ${back.length ? 'ghost' : 'primary'}" id="ok">OK</button>`);
+  document.querySelectorAll('#sheet [data-rsopen]').forEach(x => x.onclick = () => { closeSheet(); loadSlot(+x.dataset.rsopen); });
+  $('#ok').onclick = closeSheet;
+  announce(msg);
+}
+// i62-a07: the best scores and badges in a backup, the best few by name
+function recordsLine(b){
+  const c = backupCounts(b); if (!c.records && !c.badges) return '';
+  const best = Object.entries(b.best || {}).filter(([k, v]) => bestLabel(k) && Number.isFinite(v)).sort((x, y) => y[1] - x[1]).slice(0, 3);
+  return `<p class="muted">${best.length ? `🏆 ${best.map(([k, v]) => `${esc(bestLabel(k))}: ${v}`).join(' · ')}` : ''}${best.length && c.badges ? '<br>' : ''}${c.badges ? `🏅 ${BADGES.filter(x => (b.badges || {})[x.id]).slice(0, 12).map(x => x.ic).join(' ')} (${plural(c.badges, 'badge')})` : ''}</p>`;
 }
 /* ---------- 📱 moving to a new phone (i63-b15): a two-screen guide around the backup code and file ---------- */
 function movePhoneSheet(){
@@ -664,7 +726,7 @@ function movePhoneSheet(){
     $('#mvfile').onclick = () => {
       const blob = new Blob([JSON.stringify(backupData(), null, 1)], { type: 'application/json' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-      a.download = `the-burg-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = backupFileName();
       document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
       toast('Backup file downloaded'); announce('Backup file downloaded');
     };
@@ -713,7 +775,7 @@ function loadSheet(){
   $('#no').onclick = closeSheet;
 }
 // i54-a08: the Journal and job filters belong to one life, so loading or starting another starts them fresh
-function resetFilters(){ logFilter = 'all'; jobCity = 'all'; }
+function resetFilters(){ logFilter = 'all'; jobCity = 'all'; jobNear = false; }
 function newGame(name, len, slot = 0, opts = {}){
   LIFE_UNDO = []; PLAY_AT = -1e9; resetFilters();
   // to-do 2 D2: what the difficulty doesn't have can't be picked (Easy: no Lifetime, Fresh start only, All-around only)
@@ -819,8 +881,8 @@ function render(){
   $('#moneybtn').onclick = cashSheet;
   if ($('#end')) { $('#end').onclick = e => { if (holdDone(e)) return; tapPlay(1, e); }; holdOpens($('#end'), skipSheet); }
   if ($('#ff4')) $('#ff4').onclick = e => tapPlay(4, e);
-  if ($('#ff13')) $('#ff13').onclick = e => tapPlay(13, e);
-  if ($('#auto')) { $('#auto').onclick = e => { if (holdDone(e)) return; tapPlay('auto', e); }; holdOpens($('#auto'), skipSheet); }
+  if ($('#ff13')) $('#ff13').onclick = e => focusCheck(() => tapPlay(13, e), () => playWeeks(13), e);
+  if ($('#auto')) { $('#auto').onclick = e => { if (holdDone(e)) return; focusCheck(() => tapPlay('auto', e), autoPlay, e); }; holdOpens($('#auto'), skipSheet); }
   if ($('#stoproll')) $('#stoproll').onclick = stopRoll;
   if ($('#strip')) $('#strip').onclick = showRunDetails;
   FIRST_SLOT = 'open';
@@ -872,6 +934,31 @@ function holdOpens(el, fn){
   el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); e.stopPropagation(); fn(); } });
 }
 const holdDone = e => { const el = e.currentTarget; if (el && el._held) { el._held = false; return true; } return false; };
+// i48-b06: before ⏩ 13 or Auto, after 4+ weeks of one focus (it starts to fade), ask once per run of that focus
+let FOCUS_ASKED = null;
+function focusCheck(now, later, e){
+  const f = S && S.focus, key = S && `${S.name}|${S.streakF}|${S.turn - S.streakN}`;
+  if (!S || S.over || ROLL || (e && e.detail > 1) || (typeof TUT !== 'undefined' && TUT) || setting('skipAsk') === 'off' || f === 'study' || S.streakF !== f || S.streakN < 4
+    || (S.plan && S.plan.length) || FOCUS_ASKED === key) return now();
+  FOCUS_ASKED = key;
+  const two = lowFocus(f).slice(0, 2);
+  sheet(`<h2>Keep ${FOCUS_SHORT[f]}, or switch?</h2>
+    <p>${FOCUS[f].ic} ${FOCUS_SHORT[f]} fades after 4 weeks in a row. You've done it ${S.streakN} weeks, so it works at ${Math.round(focusEffect(f, S.streakN + 1) * 100)}% now.</p>
+    <div class="skiprow">${two.map(k => `<button class="btn primary" data-fc="${k}">${FOCUS[k].ic} ${FOCUS_SHORT[k]}</button>`).join('')}</div>
+    <button class="btn ghost" id="ok">Keep ${FOCUS_SHORT[f]}</button>
+    <button class="btn ghost" id="fcoff">Don't ask again</button>
+    <button class="btn ghost" id="no">Cancel</button>`);
+  const go = () => { closeSheet(); later(); };
+  document.querySelectorAll('#sheet [data-fc]').forEach(b => b.onclick = () => { S.focus = b.dataset.fc; save(); go(); });
+  $('#ok').onclick = go;
+  $('#no').onclick = closeSheet;
+  $('#fcoff').onclick = () => { setPref('skipAsk', 'off'); toast('OK. Turn it back on in Settings.'); go(); };
+}
+// the focuses for your lowest stats (classes don't fade, so they aren't suggested), not the one you're on
+function lowFocus(cur = S.focus){
+  const map = { happy:'outdoors', health:'rest', community:'community' };
+  return Object.keys(map).sort((a, b) => S[a] - S[b]).map(k => map[k]).filter(k => k !== cur);
+}
 // the skip options: ⏩ 4 and ⏩ 13, what ⏭ Auto plays until (i2-a11), and whether to watch the weeks go by (i2-a28)
 function skipSheet(){
   if (!S || S.over || ROLL || !on('ui.auto')) return;
@@ -1009,6 +1096,7 @@ function renderHome(){
     <button class="sumchip" data-go="life">🛻 ${CARS[S.car].name}</button>
     <button class="sumchip" data-go="life">🎓 ${EDU[S.edu].replace(' diploma','')}</button>
     <button class="sumchip${S.trip ? ' on' : ''}" id="tripchip">${tripChip()}</button>
+    ${perkChips().map((c, i) => `<button class="sumchip on perk" data-perk="${i}" aria-label="${c.say}">${c.t}</button>`).join('')}
   </div>
   ${S.log.length ? `<div class="card wideonly"><h3>📜 Lately</h3>${S.log.slice(0, 6).map(e => `<div class="logitem"><em>${esc(e.d)}</em>${esc(e.m)}</div>`).join('')}<button class="sm alt" data-go="log" style="margin-top:8px">Open the Journal</button></div>` : ''}
   </aside></div>`;
@@ -1020,6 +1108,7 @@ function renderHome(){
   document.querySelectorAll('[data-stat]').forEach(b => b.onclick = () => showStatInfo(b.dataset.stat));
   if ($('#scorenow')) $('#scorenow').onclick = showScoreNow;
   document.querySelectorAll('[data-sugg]').forEach(b => b.onclick = () => handFocus(b.dataset.sugg, true));
+  { const pc = perkChips(); document.querySelectorAll('[data-perk]').forEach(b => b.onclick = () => { const c = pc[+b.dataset.perk]; if (c) c.go(); }); }
   document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { tab = b.dataset.go; render(); window.scrollTo(0,0); });
   document.querySelectorAll('[data-cl], [data-next]').forEach(b => b.onclick = () => goTo(b.dataset.cl || b.dataset.next));
   if ($('#clhide')) $('#clhide').onclick = () => { setPref('clHide', true); renderHome(); announce('Checklist hidden. It\'s in the Help guide under Finding your way.'); };
@@ -1027,6 +1116,38 @@ function renderHome(){
   if ($('#privok')) { $('#privok').onclick = () => { PRIVATE_HOME_SEEN = true; renderHome(); }; $('#privbk').onclick = () => { PRIVATE_HOME_SEEN = true; backupSheet(); }; }
   if ($('#installno')) $('#installno').onclick = () => { setPref('installNo', Date.now()); renderHome(); announce('OK. Help has the install steps any time.'); };
 }
+// i5-a05: perks you've picked up that run out, with the weeks left; a tap opens where you use them
+function perkChips(){
+  const out = [], wks = n => n <= 1 ? 'this week' : `${n} wks`, tabTo = t => () => { tab = t; render(); window.scrollTo(0, 0); };
+  const add = (ic, name, left, go, why) => out.push({ t: `${ic} ${name}: ${wks(left)}`, say: `${name}, ${left <= 1 ? 'this week only' : left + ' weeks left'}. ${why}`, go });
+  if ((S.hireBy ?? -1) >= S.turn && !S.retired) add('🤝', 'Sure-thing interview', S.hireBy - S.turn + 1, tabTo('jobs'), 'Your next application is a sure thing. Opens the Jobs tab.');
+  if (tradeBonus()) add('🛻', 'Trade-in bonus', 1, tabTo('life'), 'Opens your vehicles on the Life tab.');
+  if (S.out && outLookBonus()) add('💇', 'Looking sharp', LOOK_WEEKS - (S.turn - S.out.look), tabTo('jobs'), 'Better odds on job applications. Opens the Jobs tab.');
+  if (S.out && outAdBoost() > 1) add('📣', 'Hustle ad', AD_WEEKS - (S.turn - S.out.ad), () => goTo('focus'), 'Side-hustle pay is up. Opens your focus.');
+  if (S.turn < (S.stockUntil ?? -1)) add('🛒', 'Stocked up', S.stockUntil - S.turn, () => { toast(`🛒 Groceries cost ${STOCK_OFF * 100}% less for ${wks(S.stockUntil - S.turn)}.`); }, 'Groceries cost less.');
+  return out;
+}
+// i63-a13: the first time cash drops below -$1,000, three things you can do this week with no loan
+const MONEY_TALK_AT = 1000;
+const moneyTalkDue = () => !!S && !S.over && !S.practice && !S.moneyTalk && S.money < -cost(MONEY_TALK_AT);
+const tradeDownOK = () => S.car === 'truck' && !(S.loanLeft > 0);
+function moneyTalk(){
+  S.moneyTalk = true; save();
+  const near = nearJobs(), hustle = S.focus === 'hustle';
+  sheet(`<h2>💬 Let's talk money</h2>
+    <p>You're ${fmt(-S.money)} below zero. That happens. Interest adds up, so here are three things you can do this week, no loan needed.</p>
+    ${S.retired ? '' : `<button class="btn primary" id="mtjobs">💼 See jobs that start this week${near.length ? ` (${near.length})` : ''}</button>`}
+    <button class="btn ${S.retired ? 'primary' : 'ghost'}" id="mthustle"${hustle ? ' disabled' : ''}>🔧 ${hustle ? 'Side hustles are already your focus' : 'Pick up side hustles this week'}</button>
+    ${tradeDownOK() ? '<button class="btn ghost" id="mtcar">🛻 Trade the truck down</button>' : ''}
+    <button class="btn ghost" id="ok">Not now</button>`);
+  if ($('#mtjobs')) $('#mtjobs').onclick = () => { closeSheet(); jobNear = true; tab = 'jobs'; render(); window.scrollTo(0, 0); announce(`Jobs tab: ${near.length} jobs you can start near home`); };
+  $('#mthustle').onclick = () => { closeSheet(); handFocus('hustle', true); };
+  if ($('#mtcar')) $('#mtcar').onclick = () => { closeSheet(); tab = 'life'; render(); const c = document.querySelector('[data-car]'); if (c) { c.scrollIntoView({ block: 'center' }); c.focus({ preventScroll: true }); } };
+  $('#ok').onclick = closeSheet;
+}
+// jobs your schooling allows, open this season, within 15 miles of home
+const NEAR_MILES = 15;
+const nearJobs = () => JOBS.filter(x => x.edu <= S.edu && !extraLock(x) && jobInSeason(x) && CITIES[x.city].miles <= NEAR_MILES && x.id !== S.jobId);
 // i2-a30: offer to install at a good moment: after a couple of months of play, when no other tip is showing,
 // and never when it's already installed (home-screen app or the Android app) or the browser can't install it
 const INSTALL_AFTER = 8, INSTALL_SNOOZE = 14 * 864e5;
@@ -1140,7 +1261,7 @@ function jobRow(x){
     <div style="text-align:right"><div class="pay">${fmt(th)}/wk</div>
     <div class="s">${cur ? 'take-home' : base && Math.abs(diff) >= 1 ? `<span class="${diff>0?'upt':'downt'}">${diff>0?'▲':'▼'} ${fmt(Math.abs(diff))}</span>` : 'take-home'}</div>${btn}</div></div>`;
 }
-let jobOK = false;
+let jobOK = false, jobNear = false;
 function explainLocked(id){
   const x = jobById(id); if (!x) return;
   if (S.edu >= x.edu && extraLock(x)) {         // i3-a02/a03: a certificate or a program
@@ -1209,12 +1330,13 @@ function renderJobs(){
   syncCarpool(); GOOD_JOBS = goodFirstJobs();
   const j = job();
   const cur = S.jobId && !S.retired ? S.jobId : null;
-  const list = JOBS.filter(x => (jobCity === 'all' || x.city === jobCity) && (!jobOK || (x.edu <= S.edu && !extraLock(x))))
+  const near = jobNear ? new Set(nearJobs().map(x => x.id)) : null;
+  const list = JOBS.filter(x => (jobCity === 'all' || x.city === jobCity) && (!jobOK || (x.edu <= S.edu && !extraLock(x))) && (!near || near.has(x.id) || x.id === cur))
     .sort((a, b) => (b.id === cur) - (a.id === cur) || (a.edu > S.edu || !!extraLock(a)) - (b.edu > S.edu || !!extraLock(b)) || (a.edu > S.edu ? a.edu - b.edu : 0) || takeHome(b) - takeHome(a));
   const mapOn = !!prefs().mapView;
   $('#main').innerHTML = `${myJobCard()}${mapToggle()}
   ${mapOn ? `<div class="card"><h3>Job board <span class="tag">${S.applied ? 'Applied this week' : '1 application per week'}</span></h3>${mapBlock('R')}</div>` : `
-  <div class="chips"><button class="chip ok ${jobOK?'on':''}" id="jobok" aria-pressed="${jobOK}">✅ Can apply</button>${[['all','All towns'], ...Object.entries(CITIES).map(([k,c]) => [k,c.name])].map(([k,l]) =>
+  <div class="chips">${jobNear ? `<button class="chip ok on" id="jobnear" aria-pressed="true">📍 Start now, ${NEAR_MILES} mi ✕</button>` : ''}<button class="chip ok ${jobOK?'on':''}" id="jobok" aria-pressed="${jobOK}">✅ Can apply</button>${[['all','All towns'], ...Object.entries(CITIES).map(([k,c]) => [k,c.name])].map(([k,l]) =>
     `<button class="chip ${jobCity===k?'on':''}" data-c="${k}">${l}</button>`).join('')}</div>
   ${jobCity!=='all' ? `<div class="card muted">${CITIES[jobCity].blurb}</div>` : ''}
   <div class="card">
@@ -1230,6 +1352,7 @@ function renderJobs(){
   ${LENGTHS[S.len].turns===Infinity && age()>=62 && !S.retired && on('retire.income') ? `<button class="btn primary" id="retire">Retire (Social Security ${wk(ssPay())}${pensionVested()?` + pension ${wk(pensionPay())}`:''}${S.k401>0?` + 401(k) ${wk(S.k401*drawRate()/12)}`:''})</button>` : ''}`;
   document.querySelectorAll('.chip[data-c]').forEach(b => b.onclick = () => { jobCity = b.dataset.c; render(); });
   if ($('#jobok')) $('#jobok').onclick = () => { jobOK = !jobOK; render(); };
+  if ($('#jobnear')) $('#jobnear').onclick = () => { jobNear = false; render(); announce('Showing all jobs'); };
   if ($('#carpool')) $('#carpool').onclick = () => { S.carpool = !S.carpool; S.carpoolJob = S.carpool ? S.jobId : null; save(); render(); toast(S.carpool ? '🚙 You joined a carpool' : 'Driving alone again'); };
   document.querySelectorAll('[data-apply]').forEach(b => b.onclick = () => apply(b.dataset.apply));
   // i3-a09: how you leave decides your reference
@@ -1523,6 +1646,7 @@ const SETTING_ROWS = [
   ['sound', '🎵 Sounds', 'Small sounds for a new week, events and badges. Quiet while ⏩ and Auto play.'],
   ['vibrate', '📳 Vibration', 'A short buzz for events and badges, on phones that can (not iPhones).'],
   ['swipe', '👆 Swipes', 'Swipe left or right to change tabs, and swipe a pop-up\'s handle down to close it.'],
+  ['skipAsk', '⏩ Focus check', 'Before ⏩ 13 or Auto, ask about a focus you\'ve kept 4 weeks or more.'],
   ['srWeek', '🗣️ Week summary (screen readers)', 'What a screen reader says after End Week: one short sentence, or every number.'],
   ['motion', '✨ Animations', 'Stat bars that slide, cash that counts up after a week, and confetti for badges. Always off when your device asks for reduced motion.']
 ];
