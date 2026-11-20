@@ -378,7 +378,7 @@ function challengesSheet(){
   $('#weekly').onclick = () => { if (readSlot(WEEKLY_SLOT)) return weeklySheet(); const name = (($('#nm') && $('#nm').value.trim()) || 'Dusty').slice(0,20); closeSheet(); startWeekly(name); };
   document.querySelectorAll('[data-end]').forEach(b => b.onclick = () => endSummary(top10()[+b.dataset.end]));   // i73-b02
   document.querySelectorAll('[data-sc]').forEach(b => b.onclick = () => {
-    const sc = SCENARIOS[b.dataset.sc], name = (($('#nm') && $('#nm').value.trim()) || 'Dusty').slice(0,20), free = slots().indexOf(null);
+    const sc = SCENARIOS[b.dataset.sc], name = (($('#nm') && $('#nm').value.trim()) || 'Dusty').slice(0,20), free = freeSlot();
     closeSheet();
     const opts = { bg: sc.bg, diff: 'hard', scenario: b.dataset.sc };   // to-do 2 D2: story challenges are a Hard feature
     if (free < 0) return askReplace(name, sc.len, opts);
@@ -903,9 +903,7 @@ function shareText(){
 }
 async function shareCard(){
   const c = scoreCard(), blob = await new Promise(r => c.toBlob(r, 'image/png')), name = `the-burg-${S.name.replace(/\W+/g, '-').toLowerCase()}.png`, text = shareText();
-  const file = typeof File === 'function' ? new File([blob], name, { type:'image/png' }) : null;
-  try { if (file && navigator.canShare && navigator.canShare({ files:[file] })) { await navigator.share({ files:[file], title:'My life in The Burg', text }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  if (await shareFile(blob, name, 'My life in The Burg', text) !== 'saved') return;   // i59-a20: the share sheet where there is one
   toast('Score card saved');
   // where a picture can't be shared, the words can still be copied to post with it
   const sh = $('#share');

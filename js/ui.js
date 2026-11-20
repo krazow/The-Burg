@@ -39,7 +39,7 @@ const titleMonth = () => { const g = slots().filter(Boolean).sort((a, b) => (b.s
 const diffCard = (k, on) => `<button class="dcard${on ? ' on' : ''}" data-diff="${k}" aria-pressed="${on}"><b>${DIFFS[k].ic} ${DIFFS[k].label}</b><span>${DIFFS[k].blurb}</span></button>`;
 function renderTitle(){
   histSync();
-  const all = slots(), used = all.filter(Boolean).length;
+  const all = slots(), used = all.filter((g, i) => g || prevLife(i)).length;
   const more = !!prefs().moreOpts;
   let len = 'half', um = prefs().unlockMode === 'all' ? 'all' : 'go';   // i31-b20: open as I go, or everything open
   $('#app').innerHTML = `<div class="title">
@@ -48,11 +48,11 @@ function renderTitle(){
     <div class="sub">Make a life in Waitsburg, Washington.</div>
     <div id="tnotes"></div>
     ${used ? `<label class="field">Your lives (${used}/${SLOT_COUNT})</label>
-      <div class="slots">${all.map((g,i) => g ? slotCard(g, i, `<div class="slotbtns"><button class="sm" data-cont="${i}">Continue</button><button class="sm alt" data-del="${i}" aria-label="Delete ${esc(g.name)}'s life">🗑</button></div>`) : '').join('')}</div>
+      <div class="slots">${all.map((g,i) => g ? slotCard(g, i, `<div class="slotbtns"><button class="sm" data-cont="${i}">Continue</button><button class="sm alt" data-del="${i}" aria-label="Delete ${esc(g.name)}'s life">🗑</button></div>`) : prevCard(i)).join('')}</div>
       <div class="muted" style="margin:18px 0 0">— or start a new life —</div>` : ''}
     ${titleExtras()}
     <label class="field" for="nm">Your citizen's name</label>
-    <input type="text" id="nm" maxlength="20" placeholder="e.g. Dusty" autocomplete="off">
+    <input type="text" id="nm" maxlength="20" placeholder="e.g. Dusty" autocomplete="off" enterkeyhint="go" autocapitalize="words" autocorrect="off" spellcheck="false">
     <label class="field">Game length</label>
     <div class="lengths">${Object.entries(LENGTHS).map(([k,L]) =>
       `<button class="len ${k===len?'on':''}" data-len="${k}" aria-pressed="${k===len}"><b>${L.label}</b><span>${L.sub}</span><small>⏱ ${L.mins}</small></button>`).join('')}</div>
@@ -84,6 +84,7 @@ function renderTitle(){
     <button class="btn ghost" id="newphone">📱 I'm the new phone</button>
     <button class="btn ghost" id="settings">⚙️ Settings</button>
     <div class="muted" style="margin-top:14px;font-size:0.75rem">v${APP_VERSION}</div>
+    ${updateNote()}
   </div>`;
   let bg = 'fresh', dif = 'normal', aim = 'all', rules = {};
   const md = () => DIFF_MODE[dif];
@@ -121,9 +122,13 @@ function renderTitle(){
   document.querySelectorAll('[data-cont]').forEach(b => b.onclick = () => loadSlot(b.dataset.cont === WEEKLY_SLOT ? WEEKLY_SLOT : +b.dataset.cont));
   wireTitleExtras();
   document.querySelectorAll('[data-del]').forEach(b => b.onclick = () => askDelete(+b.dataset.del));
+  // i59-a11: the keyboard's Go key starts the life
+  $('#nm').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); $('#start').click(); } });
+  document.querySelectorAll('[data-prev]').forEach(b => b.onclick = () => usePrev(+b.dataset.prev));
+  wireUpdate();
   // the start as picked right now (name, length, background, mode, aim), run now or after the practice life
   const startNow = () => { const name = ($('#nm').value.trim() || 'Dusty').slice(0,20), l = len, o = { bg, diff: dif, aim, rules, unlock: um };
-    return () => { const free = slots().indexOf(null); if (free < 0) return askReplace(name, l, o); newGame(name, l, free, o); }; };
+    return () => { const free = freeSlot(); if (free < 0) return askReplace(name, l, o); newGame(name, l, free, o); }; };
   $('#start').onclick = () => {
     const go = startNow();
     if (isBrandNew()) return newHereSheet(go);      // i23-a01: the very first start offers the practice life
@@ -296,6 +301,20 @@ function titleExtras(){
     ${hs.map((p, i) => `<div class="card tip heirwait">🌳 <b>${esc(p.name)}'s grandkid is ready</b> to carry on in Waitsburg.<div class="slotbtns" style="margin-top:8px"><button class="sm" data-heir="${i}">Start</button><button class="sm alt" data-heirno="${i}" aria-label="Dismiss ${esc(p.name)}'s grandkid">Dismiss</button></div></div>`).join('')}
     ${hasBroken() ? `<div class="card warn">⚠️ <b>A saved life couldn't be read</b> and was kept aside, so nothing overwrote it.<button class="btn ghost" id="brokendl">⬇️ Download the damaged save</button></div>` : ''}`;
 }
+// i3-b04: a slot whose save won't read, but whose copy from a week earlier will, offers that copy
+function prevCard(i){
+  const g = prevLife(i); if (!g) return '';
+  return `<div class="slot prevslot"><div class="slotinfo"><b>${esc(g.name)}</b> <span class="tag">⚠️ save damaged</span>
+    <div class="s">This week's save couldn't be read. The copy from a week earlier is safe: ${slotLine(g)}</div><div class="s">Slot ${i+1}</div></div>
+    <div class="slotbtns"><button class="sm" data-prev="${i}" aria-label="Continue ${esc(g.name)}'s life from a week earlier">Use last week's copy</button></div></div>`;
+}
+function usePrev(i){
+  const g = prevLife(i); if (!g) return renderTitle();
+  if (!store.set(slotKey(i), g)) return toast("Your phone's storage is full: free some space and try again");
+  loadSlot(i); toast(`Back to ${g.name}'s save from a week earlier`);
+}
+// a new life takes an empty slot, but not one holding last week's copy of a damaged life (unless nothing else is free)
+const freeSlot = () => { const a = slots(), i = a.findIndex((g, k) => !g && !prevLife(k)); return i >= 0 ? i : a.indexOf(null); };
 function wireTitleExtras(){
   document.querySelectorAll('[data-heir]').forEach(b => b.onclick = () => { const p = heirs()[+b.dataset.heir]; if (p) legacySheet(p); });
   document.querySelectorAll('[data-heirno]').forEach(b => b.onclick = () => {
@@ -375,6 +394,7 @@ function loadSlot(i){
   const g = readSlot(i); if (!g) return;
   if (S && !S.over && S.slot !== i) save();
   LIFE_UNDO = []; S = migrate(clone(g)); S.slot = i; tab = 'home'; MAPSIDE = null; MAPSEL = null; useDice(); resetFilters();
+  askPersist();
   closeSheet(); render(); window.scrollTo(0,0);
   if (resumePending()) return;
   if (g.savedAt && Date.now() - g.savedAt >= RECAP_AFTER && S.recapAt !== g.savedAt && !S.practice && on('ui.recap')) recapSheet(g.savedAt);
@@ -585,26 +605,38 @@ function restoreBackup(b, mode){
   const landed = want.reduce((n, g, i) => n + (g && now[i] && now[i].name === g.name && now[i].savedAt === g.savedAt && (mode === 'replace' || !cur[i]) ? 1 : 0), 0);
   return { skipped, meant, landed, dupes, slots: want.map((g, i) => g && (mode === 'replace' || !cur[i]) ? i : -1).filter(i => i >= 0) };
 }
+// i59-a20: in the phone app (and phone browsers) a file goes to the share sheet: Drive, email, Messages.
+// Elsewhere it downloads. Returns 'shared', 'saved' or 'cancel'.
+const canShareFiles = () => { try { return !!(navigator.canShare && typeof File === 'function' && navigator.canShare({ files: [new File(['x'], 'x.json', { type: 'application/json' })] })); } catch(e){ return false; } };
+async function shareFile(blob, name, title, text){
+  const file = typeof File === 'function' ? new File([blob], name, { type: blob.type }) : null;
+  try { if (file && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title, ...(text ? { text } : {}) }); return 'shared'; } }
+  catch(e){ if (e && e.name === 'AbortError') return 'cancel'; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  return 'saved';
+}
 // the backup sheet; onClose (i63-b08's nudge) runs when it's closed, so the week carries on
 function backupSheet(onClose = null){
   if (S && !S.over && !S.practice) save();
   const c = localCounts(), n = hasBackupStuff(c);   // i62-a03: records and badges are worth a backup too
   sheet(`<h2>📤 Back up or restore</h2>
     <p class="muted">Your lives, records and badges are saved on this device. A backup lets you keep a copy or move them to another phone or computer.</p>
+    ${PERSIST === true ? '<p class="saveline">🔒 <b>Saves protected:</b> your phone won\'t clear them to free up space.</p>'
+      : PERSIST === false ? '<p class="saveline">⚠️ Your phone may clear saves when it runs low on space. A backup file keeps them safe.</p>' : ''}
     <h3>Back up (${countWords(c)})</h3>
-    <button class="btn primary" id="bkfile" ${n ? '' : 'disabled'}>⬇️ Download a backup file</button>
+    <button class="btn primary" id="bkfile" ${n ? '' : 'disabled'}>${canShareFiles() ? '📤 Share a backup file' : '⬇️ Download a backup file'}</button>
     <button class="btn ghost" id="bkcode" ${n ? '' : 'disabled'}>📋 Copy a backup code</button>
     <div id="bkout"></div>
     ${onClose ? '' : `<button class="btn ghost" id="bkmove" ${n ? '' : 'disabled'}>📱 Moving to a new phone</button>
     <h3 style="margin-top:14px">Restore</h3>
     <button class="btn ghost" id="bkrestore">📥 Restore from a backup</button>`}
     <button class="btn ghost" id="no">Close</button>`);
-  $('#bkfile').onclick = () => {
+  $('#bkfile').onclick = async () => {
     const blob = new Blob([JSON.stringify(backupData(), null, 1)], { type: 'application/json' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-    a.download = backupFileName();
-    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-    toast('Backup file downloaded'); announce('Backup file downloaded');
+    const how = await shareFile(blob, backupFileName(), 'The Burg backup');
+    if (how === 'cancel') return;
+    const m = how === 'shared' ? 'Backup file shared' : 'Backup file downloaded'; toast(m); announce(m);
   };
   $('#bkcode').onclick = async () => {
     const code = await backupCode(backupData());
@@ -631,7 +663,9 @@ async function checkUpdate(out){
     const w = reg.installing || reg.waiting;
     if (!w) return say('No newer version yet. Try again later, or restore this backup on the phone that made it.');
     say('Found an update. Getting it ready, then the game reopens: paste your backup again after that.');
-    await new Promise(r => { if (w.state === 'activated') return r(); w.addEventListener('statechange', () => { if (w.state === 'activated') r(); }); setTimeout(r, 20000); });
+    // i3-b08: a new version waits for a go-ahead; asking for the update here is that go-ahead
+    await new Promise(r => { const step = () => { if (w.state === 'installed') { try { w.postMessage({ type: 'skip' }); } catch(_){} } if (w.state === 'activated') r(); };
+      step(); w.addEventListener('statechange', step); setTimeout(r, 20000); });
     location.reload();
   } catch (e) { say('Couldn\'t check right now. Connect to the internet and try again.'); }
 }
@@ -811,6 +845,7 @@ function newGame(name, len, slot = 0, opts = {}){
   log(S.bg === 'fresh' ? `${name} turns 18 and rents a room above Main Street in Waitsburg. Time to find a job.`
     : `${name} starts a new life in Waitsburg: ${BACKGROUNDS[S.bg].name.toLowerCase()}. ${BACKGROUNDS[S.bg].desc}`);
   tab = S.jobId ? 'home' : 'jobs'; save(); render();
+  if (!opts.practice) askPersist();
   if (!opts.practice) playedFlag(true);            // i63-b05
   if (!opts.practice) toast('Welcome to the Burg! Start by finding a job.');
 }
@@ -873,15 +908,15 @@ function render(){
   const nar = S.practice ? '' : ' skipx';          // i2-a23: on narrow phones the ⏩ buttons hide behind a long press on End Week
   $('#app').innerHTML = `
   <header class="top">
-    <div class="row"><h2>${esc(S.name)}${S.practice ? ' <span class="tag">Practice</span>' : ''}${(S.classic ? mode() !== 'normal' : diff() !== 'normal') && !S.practice ? ` <span class="tag">${S.classic ? `${MODES[mode()].ic} ${MODES[mode()].name}` : diffTag()}</span>` : ''}${S.scenario ? ` <span class="tag">🏁</span>` : ''}${S.weekly ? ` <span class="tag">📅</span>` : ''}${S.gen > 1 ? ` <span class="tag">🌳 ${S.gen}</span>` : ''}</h2><div class="hdr-r"><button class="money" id="moneybtn" aria-label="Cash ${fmt(S.money)}: this week's money in and out" aria-haspopup="dialog">${fmt(S.money)}</button><button id="helpbtn" aria-label="Help and tutorial">?</button></div></div>
+    <div class="row"><h2>${esc(S.name)}${S.practice ? ' <span class="tag">Practice</span>' : ''}${(S.classic ? mode() !== 'normal' : diff() !== 'normal') && !S.practice ? ` <span class="tag">${S.classic ? `${MODES[mode()].ic} ${MODES[mode()].name}` : diffTag()}</span>` : ''}${S.scenario ? ` <span class="tag">🏁</span>` : ''}${S.weekly ? ` <span class="tag">📅</span>` : ''}${S.gen > 1 ? ` <span class="tag">🌳 ${S.gen}</span>` : ''}</h2><div class="hdr-r">${tab === 'home' ? updateNote(true) : ''}<button class="money" id="moneybtn" aria-label="Cash ${fmt(S.money)}: this week's money in and out" aria-haspopup="dialog">${fmt(S.money)}</button><button id="helpbtn" aria-label="Help and tutorial">?</button></div></div>
     <div class="meta"><span>${dateLabel()} · age ${age()}</span><span>${left}</span></div>
     <div class="progress"><i style="width:${pct}%"></i></div>
   </header>
   <main id="main"></main>
   ${tab==='home' ? `${S.run ? `<button class="weekstrip" id="strip" aria-label="${esc(runWords())}. Details"><span class="wl">${S.run.weeks > 1 ? `Last ${S.run.weeks} wks` : 'Last week'}</span><span class="wc">${runChips()}</span><span class="more">›</span></button>` : ''}
     <div class="endbar${ROLL ? ' rolling' : ''}">${ROLL ? `<button class="btn primary" id="stoproll">⏹ Stop<small>${S.run.weeks} of up to ${ROLL.n} weeks</small></button>`
-      : `<button class="btn primary" id="end" aria-keyshortcuts="Shift+Enter" aria-description="Press and hold, or Shift+Enter, for more ways to skip ahead">End Week →<small>${FOCUS[S.focus].ic} ${FOCUS_SHORT[S.focus]}${S.trip && CITIES[S.trip.city] ? ` + 🚗 ${CITIES[S.trip.city].name}` : ''}</small></button>
-    ${on('ui.auto') ? `<button class="btn ghost${nar}" id="ff4" aria-label="Skip 4 weeks">⏩ 4</button>${big ? `<button class="btn ghost${nar}" id="ff13" aria-label="Skip 13 weeks">⏩ 13</button>` : ''}<button class="btn ghost" id="auto" aria-label="Auto: play until ${autoUntil() === 'event' ? 'something needs you' : AUTO_UNTIL[autoUntil()].short + ' or something needs you'}. Press and hold for options">⏭ Auto</button>` : ''}`}</div>` : ''}
+      : `<div class="endwrap"><button class="btn primary" id="end" aria-keyshortcuts="Shift+Enter" aria-description="Press and hold, or Shift+Enter, for more ways to skip ahead">End Week →<small>${FOCUS_SHORT[S.focus]}${S.trip && CITIES[S.trip.city] ? ` + 🚗 ${CITIES[S.trip.city].name}` : ''}</small></button><button class="endf" id="endf" aria-expanded="${FOCUS_ROW}" aria-controls="focusrow" aria-label="Change this week's focus, now ${FOCUS_SHORT[S.focus]}"><span aria-hidden="true">${FOCUS[S.focus].ic}</span><span class="caret" aria-hidden="true">${FOCUS_ROW ? '▴' : '▾'}</span></button></div>
+    ${on('ui.auto') ? `<button class="btn ghost${nar}" id="ff4" aria-label="Skip 4 weeks">⏩ 4</button>${big ? `<button class="btn ghost${nar}" id="ff13" aria-label="Skip 13 weeks">⏩ 13</button>` : ''}<button class="btn ghost" id="auto" aria-label="Auto: play until ${autoUntil() === 'event' ? 'something needs you' : AUTO_UNTIL[autoUntil()].short + ' or something needs you'}. Press and hold for options">⏭ Auto</button>` : ''}`}</div>${FOCUS_ROW && !ROLL ? focusRow() : ''}` : ''}
   <nav><div class="in">
     ${[['home','🏠','Home'],['jobs','💼','Jobs'],['life','🌾','Life'],['log','📜','Journal']].map(([k,ic,l]) => { const nw = tab !== k && tabHasNew(k);   // i31-b15: a dot for something new there
       return `<button data-tab="${k}" class="${tab===k?'on':''}${nw ? ' hasnew' : ''}"${tab===k?' aria-current="page"':''}${nw ? ` aria-label="${l}, new"` : ''}><span class="ic" aria-hidden="true">${ic}</span>${l}${nw ? '<span class="ndot" aria-hidden="true"></span>' : ''}</button>`; }).join('')}
@@ -899,6 +934,9 @@ function render(){
   if ($('#auto')) { $('#auto').onclick = e => { if (holdDone(e)) return; focusCheck(() => tapPlay('auto', e), autoPlay, e); }; holdOpens($('#auto'), skipSheet); }
   if ($('#stoproll')) $('#stoproll').onclick = stopRoll;
   if ($('#strip')) $('#strip').onclick = showRunDetails;
+  if ($('#endf')) $('#endf').onclick = () => { FOCUS_ROW = !FOCUS_ROW; render(); const b = FOCUS_ROW ? $(`#focusrow [data-qf="${S.focus}"]`) : $('#endf'); if (b) b.focus({ preventScroll: true }); if (FOCUS_ROW) announce('Pick a focus for this week'); };
+  document.querySelectorAll('#focusrow [data-qf]').forEach(b => b.onclick = () => { FOCUS_ROW = false; handFocus(b.dataset.qf); const e = $('#endf'); if (e) e.focus({ preventScroll: true }); announce(`This week: ${FOCUS[S.focus].name}`); });
+  wireUpdate();
   FIRST_SLOT = 'open';
   ({home:renderHome, jobs:renderJobs, life:renderLife, log:renderLog})[tab]();
   FIRST_SLOT = null;
@@ -907,6 +945,45 @@ function render(){
   document.querySelectorAll('[data-locked]').forEach(b => b.onclick = () => explainLocked(b.dataset.locked));
   chipFade();
   histSync();
+}
+// i49-a04: the focus label on End Week opens a row of the six focuses right above the bar
+let FOCUS_ROW = false;
+function focusRow(){
+  const j = job();
+  return `<div class="focusrow" id="focusrow" role="group" aria-label="This week's focus">${Object.entries(FOCUS).filter(([k]) => focusOpen(k)).map(([k, x]) => {   // i31: only focuses that are open
+    const dis = (x.needsJob && (!j || S.retired)) || (x.study && !canStudy());
+    return `<button class="qf${S.focus === k ? ' on' : ''}" data-qf="${k}" aria-pressed="${S.focus === k}"${dis ? ' disabled' : ''}><span class="ic" aria-hidden="true">${x.ic}</span>${FOCUS_SHORT[k]}</button>`;
+  }).join('')}</div>`;
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && FOCUS_ROW && $('#modal').classList.contains('hidden')) { FOCUS_ROW = false; if (S) render(); const b = $('#endf'); if (b) b.focus(); } });
+// a tap anywhere else folds the row away (removed in place, so the tap still lands where it was aimed)
+document.addEventListener('pointerdown', e => {
+  if (!FOCUS_ROW || !e.target.closest || e.target.closest('#focusrow, #endf')) return;
+  FOCUS_ROW = false; const r = $('#focusrow'); if (r) r.remove(); const b = $('#endf'); if (b) b.setAttribute('aria-expanded', 'false');
+}, true);
+/* ---------- i3-b08: a new version waits until you tap "Update ready" on Home or the title screen ---------- */
+let UPDATE_REG = null, UPDATING = false;
+const updateNote = inHeader => !UPDATE_REG || UPDATING ? '' : inHeader
+  ? '<button class="updpill" id="updnow" aria-label="Update ready: tap to refresh">🔄 Update</button>'
+  : '<button class="btn ghost" id="updnow">🔄 Update ready: tap to refresh</button>';
+function wireUpdate(){ if ($('#updnow')) $('#updnow').onclick = applyUpdate; }
+function updateFound(reg){
+  if (UPDATE_REG === reg) return;
+  UPDATE_REG = reg;
+  if ($('#modal').classList.contains('hidden') && $('#helpview').classList.contains('hidden') && !(typeof TUT !== 'undefined' && TUT)) {
+    if (!S) renderTitle(); else if (tab === 'home' && !ROLL) { const y = window.scrollY; render(); window.scrollTo(0, y); }
+  }
+}
+function applyUpdate(){
+  const reg = UPDATE_REG; if (!reg || UPDATING || !$('#modal').classList.contains('hidden')) return;
+  if (S && !S.over) save();
+  UPDATING = true; toast('Updating…', true);
+  const go = () => location.reload();
+  const w = reg.waiting;
+  if (!w) return go();
+  navigator.serviceWorker.addEventListener('controllerchange', go, { once: true });
+  try { w.postMessage({ type: 'skip' }); } catch(e){ go(); }
+  applyUpdate.t = setTimeout(go, 4000);
 }
 // i23-a03: the header's countdown; the final week says so plainly
 const weeksLeftLabel = n => n <= 1 ? 'Last week!' : `${n} weeks left`;
@@ -1084,7 +1161,6 @@ function renderHome(){
     <button class="stat statbtn" data-stat="net" aria-label="Net worth ${fmt(netWorth())}: what counts"><label><span>Net worth <span class="info">ⓘ</span></span></label><div style="font-weight:800;font-size:1.125rem;margin-top:2px">${fmt(netWorth())}</div></button>
   </div>${scoreButton()}</div>
   ${unlockCard()}${cl}${hint ? `<div class="card next"><div>👉 <b>Next step:</b> ${hint.t}</div><button class="sm" data-next="${hint.go}">${hint.b}</button></div>` : ''}
-  ${installReady() ? `<div class="card tip installcard"><div>📲 <b>Enjoying the Burg?</b> Install it: it opens from your home screen like an app and plays offline.</div><div class="slotbtns"><button class="sm" id="install">Install</button><button class="sm alt" id="installno">Not now</button></div></div>` : ''}
   ${privateCard()}
   ${!j && !S.retired ? noPayCard() : ''}
   ${S.happy < 30 ? sugg('happy', 'outdoors', `😟 Happiness is low (${Math.round(S.happy)}).`) : ''}
@@ -1103,7 +1179,8 @@ function renderHome(){
     ${mapView() ? previewLine(S.focus) : ''}
     ${planLine()}
     ${isOpen('out') ? outButton() : ''}
-  </div>${walkCard()}</div>
+  </div>${walkCard()}
+  ${installReady() ? `<div class="card tip installcard"><div>📲 <b>Enjoying the Burg?</b> Install it: it opens from your home screen like an app and plays offline.</div><div class="slotbtns"><button class="sm" id="install">Install</button><button class="sm alt" id="installno">Not now</button></div></div>` : ''}</div>
   <aside class="hside" aria-label="At a glance">
   <div class="card sumrow">
     <button class="sumchip" data-go="jobs">${work}</button>
@@ -1800,16 +1877,33 @@ function closeSheet(){
   if (wasOpen && typeof PLAY_AT !== 'undefined') PLAY_AT = -1e9;   // a sheet in between means the next End Week tap is on purpose
   $('#modal').classList.add('hidden');
   if (wasOpen) { SHEET_SHUT = performance.now(); lockScroll(false); const f = lastFocus; lastFocus = null; setTimeout(() => refocus(f), 30); }
+  if (wasOpen && TOAST_Q.length) setTimeout(flushToasts, 60);    // i20-a04: toasts held back during an event
   histSync();
 }
 // a sheet that asks you to choose (an event): Back and Escape keep it open
 const mustChoose = (sh = $('#sheet')) => !!sh.querySelector('[data-i]');
-function pickOne(){ toast('Pick one to go on'); announce('Pick one to go on'); }
+// i59-a03: the choices give a small shake, so it's clear the event is waiting for you
+function pickOne(){
+  toast('Pick one to go on', true); announce('Pick one to go on');
+  const c = $('#sheet .evchoices') || $('#sheet'); if (!c || calmMotion()) return;
+  c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); setTimeout(() => c.classList.remove('shake'), 500);
+}
 /* ---------- i64-a01: the phone's Back button closes the top thing (a sheet, Help, then a tab) and stays in the game ---------- */
 // One history entry per open layer; history.state.burg says how many are on the stack.
-let HIST_T = null, HIST_SKIP = 0, HIST_BOOTED = false;
-const histDepth = () => (S && !S.over && tab !== 'home' ? 1 : 0) + ($('#modal').classList.contains('hidden') ? 0 : 1)
+// i59-a01: in a life, one more entry sits under Home, so Back on Home asks first instead of leaving.
+// i59-a02: the tutorial counts as a layer too, so Back there asks to skip the tour.
+let HIST_T = null, HIST_SKIP = 0, HIST_BOOTED = false, LEAVE_ARMED = null;
+const LEAVE_MS = 3000;
+const histDepth = () => (S && !S.over && !LEAVE_ARMED ? 1 : 0) + (S && !S.over && tab !== 'home' ? 1 : 0)
+  + (typeof TUT !== 'undefined' && TUT ? 1 : 0)
+  + ($('#modal').classList.contains('hidden') ? 0 : 1)
   + ($('#helpview') && !$('#helpview').classList.contains('hidden') ? 1 : 0);
+function armLeave(){
+  save();
+  clearTimeout(LEAVE_ARMED); LEAVE_ARMED = setTimeout(() => { LEAVE_ARMED = null; histSync(); }, LEAVE_MS);
+  const m = 'Press Back again to leave. Your week is saved.'; toast(m, true); announce(m);
+}
+const disarmLeave = () => { if (LEAVE_ARMED) { clearTimeout(LEAVE_ARMED); LEAVE_ARMED = null; } };
 const histAt = () => (history.state && history.state.burg) || 0;
 function histSync(){
   if (HIST_T) return;
@@ -1829,13 +1923,14 @@ addEventListener('popstate', () => {
   if (HIST_SKIP) { HIST_SKIP--; return histSync(); }
   if (histDepth() <= histAt()) return histSync();
   const coach = document.querySelector('#coach:not(.hidden)');
-  if (coach || (typeof TUT !== 'undefined' && TUT)) endTutorial(false);
+  if (coach || (typeof TUT !== 'undefined' && TUT)) askSkipTour();
   else if (!$('#modal').classList.contains('hidden')) {
     const b = mustChoose() ? null : ['#no', '#n', '#close', '#back', '#ok'].map(q => $('#sheet ' + q)).find(Boolean);
     if (b) b.click(); else pickOne();
   }
-  else if (!$('#helpview').classList.contains('hidden')) closeHelp();
+  else if (!$('#helpview').classList.contains('hidden')) helpBack();
   else if (S && tab !== 'home') { tab = 'home'; MAPSIDE = null; MAPSEL = null; render(); window.scrollTo(0, 0); announce('Home tab'); }
+  else if (S && !S.over) armLeave();
   histSync();
 });
 const sheetCloser = (sh = $('#sheet')) => sh.querySelector('[data-i]') ? null : ['#no', '#close', '#back', '#ok'].map(q => sh.querySelector(q)).find(Boolean) || null;
@@ -1888,6 +1983,35 @@ document.addEventListener('pointermove', e => {
   const dy = Math.max(0, e.clientY - swipeAt.y); $('#sheet').style.transform = dy ? `translateY(${dy}px)` : '';
 });
 document.addEventListener('pointercancel', () => { if (swipeAt && swipeAt.kind === 'sheet') $('#sheet').style.transform = ''; swipeAt = null; });
+// i70-b02: on a sheet scrolled to the top, a downward swipe anywhere closes it (not only on the handle)
+let SHEET_PULL = null;
+const PULL_CLOSE = 90;
+document.addEventListener('touchstart', e => {
+  SHEET_PULL = null;
+  const sh = $('#sheet'), t = e.target;
+  if (e.touches.length !== 1 || !swipeOK() || $('#modal').classList.contains('hidden') || !t.closest || !t.closest('#sheet') || t.closest('.grab')) return;
+  if (t.closest('input, textarea, select, .mapsvg, .chips') || sh.scrollTop > 0 || !sheetCloser(sh)) return;
+  SHEET_PULL = { x: e.touches[0].clientX, y: e.touches[0].clientY, dy: 0, on: false };
+}, { passive: true });
+document.addEventListener('touchmove', e => {
+  const p = SHEET_PULL; if (!p || e.touches.length !== 1) return;
+  const sh = $('#sheet'), dx = e.touches[0].clientX - p.x, dy = e.touches[0].clientY - p.y;
+  if (!p.on) {
+    if (dy < -6 || Math.abs(dx) > Math.abs(dy) + 6 || sh.scrollTop > 0) { SHEET_PULL = null; return; }   // scrolling up or sideways
+    if (dy < 12) return;
+    p.on = true;
+  }
+  p.dy = Math.max(0, dy); sh.style.transform = p.dy ? `translateY(${p.dy}px)` : '';
+  if (e.cancelable) e.preventDefault();                 // no page scroll or pull-to-refresh while pulling the sheet
+}, { passive: false });
+const pullEnd = close => {
+  const p = SHEET_PULL; SHEET_PULL = null; if (!p || !p.on) return;
+  $('#sheet').style.transform = '';
+  const b = sheetCloser();
+  if (close && p.dy >= PULL_CLOSE && b) b.click();
+};
+document.addEventListener('touchend', () => pullEnd(true));
+document.addEventListener('touchcancel', () => pullEnd(false));
 document.addEventListener('pointerup', e => {
   const s0 = swipeAt; swipeAt = null;
   if (!s0 || e.pointerId !== s0.id) return;
