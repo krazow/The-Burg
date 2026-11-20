@@ -5,7 +5,7 @@
 const APP_VERSION = '0.2.1';   // the release kit stamps the exact version (with -beta.N) into every release
 // every storage key starts with KEY_PREFIX: the beta (served under /beta/) keeps its lives apart from the live game's (H3)
 const KEY_PREFIX = (typeof location !== 'undefined' && String(location.pathname).includes('/beta/')) ? 'theburgbeta.' : 'theburg.';
-const SAVE_KEY = KEY_PREFIX + 'save.v2', BEST_KEY = KEY_PREFIX + 'best.v2';
+const SAVE_KEY = KEY_PREFIX + 'save.v2', BEST_KEY = KEY_PREFIX + 'best.v2', BEST_NOTE_KEY = KEY_PREFIX + 'bestNote.v1';   // i63-a20: a best life's comeback line
 const store = {
   get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } },
   set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} },
@@ -260,6 +260,9 @@ let S = null;                 // game state
 let tab = 'home', jobCity = 'all';
 
 /* ---------- helpers on state ---------- */
+// wave 1: the Life Score's running tallies (features.js scoreWeek) and the life aim (i20-b01)
+const SCORE_STATE = () => ({ commSum:0, cardSum:0, cardCount:0, cardSeed:false, goodWeeks:0, deepWeeks:0, debtLow:0, tallyFrom:0,
+  aim:'all', aimWeeks:{}, aimAt:0, townWeeks:0, outWeeks:0, tripsN:0, bizWeeks:0, bizSold:false });
 // i5-a01: whole years from months; 52 weeks of 12/52 add up to 11.99999..., so a tiny nudge keeps birthdays on time
 const yrsOf = mo => Math.floor(mo / 12 + 1e-6);
 const age = () => yrsOf(S.ageMonths);
@@ -283,6 +286,7 @@ function blankLife(name, len, slot = 0){
     skills:{}, biz:null, weekly:null, rng:null, rngEv:null, gen:1, goalAt:{}, carpoolJob:null, hustleLast:0, highWater:null, recentF:[], out:outDefault(), years:[],
     plan:[], planI:0,                              // i2-a12: a weekly focus rotation (empty = no plan)
     opened:{}, unlockQ:[], unlockMode:'go',        // i31: systems open as you go ({id: {w: week, how}}), unlock cards waiting, or everything open
+    ...SCORE_STATE(),                              // wave 1: the Life Score's running tallies and the life aim
     // jobs and school (round 3): ladder rung, months in this job, program and major, certificates, seasonal recall,
     // a pending interview, your reference, notice, sign-on bonus, union contract, strike, furlough, clearance, fiber, bus
     rung:0, tenure:0, program:null, major:null, certs:{}, certStudy:null, recall:null, interview:null, ref:null, notice:null, bonus:null,
@@ -330,6 +334,10 @@ function migrate(s){
   if (s.goals && !s.goalAt) s.goalAt = Object.fromEntries(s.goals.map(id => [id, 0]));
   const r = { goalAt:{}, skills:{}, biz:null, weekly:null, rng:null, rngEv:null, carpoolJob:s.jobId ?? null, hustleLast:s.turn || 0, highWater:null, recentF:[], gen:1, badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false, bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0, carpool:false, hustleWeeks:0, scoreQ:null, trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, dentist:s.turn || 0, stopLast:{}, out:null, tabsYear:new Date(s.date || Date.now()).getFullYear() };
   for (const k in r) if (s[k] === undefined) s[k] = r[k];
+  // wave 1 score: an older life's averages and rates start from what it has now; earlier report cards are filled in at the next one
+  const t0 = s.turn || 0, sc = { ...SCORE_STATE(), commSum:(s.community || 0) * (s.monthsPlayed || 0), tallyFrom:t0, debtLow:Math.min(0, (s.money || 0) / (s.col || 1)),
+    aimWeeks:{ all:t0 }, aimAt:-52, cardSeed:t0 >= 13 };
+  for (const k in sc) if (s[k] === undefined) s[k] = sc[k];
   for (const [k, v] of Object.entries(EVENT_STATE())) if (s[k] === undefined) s[k] = v;
   for (const [k, v] of Object.entries(WX_STATE())) if (s[k] === undefined) s[k] = v;   // i75: weather (rolled on the next tick)
   // i3-a24/a25: lives from before work history count about three of every four adult years as worked, at their current job's pay
