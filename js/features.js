@@ -213,21 +213,24 @@ function badgeWeek(notes){
 }
 // a goal counts only if it was pinned before the badge was earned (no pinning old badges in the last week)
 const goalCounts = id => !!(S.badges && S.badges[id] != null && (S.goalAt || {})[id] != null && S.badges[id] > S.goalAt[id]);
+// i22-a07: a goal you already meet (badges are only checked at the week's end) can't be newly pinned for free points
+const goalMetNow = id => { const b = badgeById(id); return !!(b && !(S.goals || []).includes(id) && !(S.badges && S.badges[id] != null) && b.test()); };
 const goalBonus = () => (S.goals || []).filter(goalCounts).length * GOAL_POINTS;
 function goalsSheet(){
   let sel = [...(S.goals || [])];
   sheet(`<h2>🎯 Pick your life goals</h2>
     <p class="muted">Pin up to ${GOAL_MAX}. Each one you reach <b>after</b> pinning it adds ${GOAL_POINTS} points to your Life Score. You can change them any time.</p>
     ${BADGES.map(b => { const got = S.badges && S.badges[b.id];
-      const pinnedEarly = (S.goals || []).includes(b.id) && goalCounts(b.id);
-      return `<button class="stopbtn${sel.includes(b.id) ? ' on' : ''}" data-goal="${b.id}" aria-pressed="${sel.includes(b.id)}"><span class="t">${b.ic} ${b.name}${got ? ' ✅' : ''}</span><span class="s">${b.desc}${got && !pinnedEarly ? ' · Already earned, so it won\'t add points' : ''}</span></button>`; }).join('')}
+      const pinnedEarly = (S.goals || []).includes(b.id) && goalCounts(b.id), met = goalMetNow(b.id);
+      return `<button class="stopbtn${sel.includes(b.id) ? ' on' : ''}" data-goal="${b.id}" data-met="${met ? 1 : ''}" aria-pressed="${sel.includes(b.id)}"><span class="t">${b.ic} ${b.name}${got ? ' ✅' : ''}</span><span class="s">${b.desc}${got && !pinnedEarly ? ' · Already earned, so it won\'t add points' : met ? ' · You already meet this, so it can\'t be a goal' : ''}</span></button>`; }).join('')}
     <p id="goalsum" class="tripsum" aria-live="polite"></p>
     <button class="btn primary" id="ok">Save my goals</button><button class="btn ghost" id="n">Cancel</button>`);
   const sum = () => { $('#goalsum').textContent = `${sel.length} of ${GOAL_MAX} picked`;
-    document.querySelectorAll('[data-goal]').forEach(b => { const on = sel.includes(b.dataset.goal); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.disabled = !on && sel.length >= GOAL_MAX; }); };
+    document.querySelectorAll('[data-goal]').forEach(b => { const on = sel.includes(b.dataset.goal); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.disabled = !on && (sel.length >= GOAL_MAX || !!b.dataset.met); }); };
   document.querySelectorAll('[data-goal]').forEach(b => b.onclick = () => { const id = b.dataset.goal;
-    sel = sel.includes(id) ? sel.filter(x => x !== id) : sel.length < GOAL_MAX ? [...sel, id] : sel; sum(); });
+    sel = sel.includes(id) ? sel.filter(x => x !== id) : sel.length < GOAL_MAX && !goalMetNow(id) ? [...sel, id] : sel; sum(); });
   $('#ok').onclick = () => {
+    sel = sel.filter(id => !goalMetNow(id));
     const at = {}; for (const id of sel) at[id] = (S.goalAt || {})[id] ?? S.turn;   // keep the week each goal was first pinned
     S.goals = sel; S.goalAt = at; save(); closeSheet(); render(); toast(sel.length ? '🎯 Life goals saved' : 'No life goals pinned'); };
   $('#n').onclick = closeSheet;
@@ -394,7 +397,7 @@ const truckPay = (roll = 1) => cost(TRUCK_PAY) * (1 + skillLv('cook') * TRUCK_CO
 // i75-b18: the wheat ground is hired farmed: custom farming, seed and fertilizer each April (about 80% of an average crop)
 const WHEAT_FARMING = 5400;
 const BIZ = {
-  wheat: { ic:'🌾', name:'Lease wheat ground', cost:6000, desc:'Lease 80 acres and hire it farmed (the farming bill comes each April). The crop comes in each August, more or less depending on the weather: sell it at that summer\'s price or store it at the elevator and sell later. The lease runs 5 years, then renewing costs a quarter of the price.',
+  wheat: { ic:'🌾', name:'Lease wheat ground', cost:6000, desc:'Lease 80 acres and hire it farmed (the farming bill comes each April). The crop comes in each August, more or less depending on the weather: sell it at that summer\'s price or store it at the elevator and sell later. Lease by March to farm this year\'s crop; later in the year, your first crop is next August. The lease runs 5 years, then renewing costs a quarter of the price. What it sells for shrinks as the lease runs down.',
     yearly:() => cost(6000) * wheatYield() * wheatPriceF(), month:7 },
   // i75-b17: a season's base pay of $1,700 a month in Side hustle weeks, and a county health permit each April
   truck: { ic:'🚚', name:'Food truck', cost:9000, desc:`Weekends at the fairgrounds and events, April through October. Takes your Side hustle weeks and pays more than a side hustle, more again with the Cook skill. The county health permit is ${fmtc(TRUCK_PERMIT)} each April.`,
@@ -425,13 +428,17 @@ function sellStoredWheat(why = ''){
 }
 const CATTLE_COWS = 6, CALF_PRICE = 1450, PASTURE = 220, HAY = 60, COW_CARE = 90;   // i75-b16: real cow-calf prices; COW_CARE is per cow a year
 const herdChecked = (weeks = 6) => S.biz && S.turn - (S.biz.check ?? S.turn) < weeks;
-const bizValue = () => S.biz ? cost(BIZ[S.biz.type].cost) * 0.6 * (S.biz.dep ?? 1) * (S.biz.type === 'cattle' ? (S.biz.cows ?? CATTLE_COWS) / CATTLE_COWS : 1) : 0;
+// i22-a06: a wheat lease is worth what's left of it, from what this term cost (a renewal is a quarter of a new lease)
+const leaseLeftF = () => clamp(((S.biz.lease ?? LEASE_WEEKS) - S.biz.weeks) / LEASE_WEEKS, 0, 1);
+const leaseBase = () => S.biz.leaseBase ?? ((S.biz.lease ?? LEASE_WEEKS) > LEASE_WEEKS ? BIZ.wheat.cost * LEASE_RENEW : BIZ.wheat.cost);
+const bizValue = () => !S.biz ? 0 : S.biz.type === 'wheat' ? cost(leaseBase()) * 0.6 * (S.biz.dep ?? 1) * leaseLeftF()
+  : cost(BIZ[S.biz.type].cost) * 0.6 * (S.biz.dep ?? 1) * (S.biz.type === 'cattle' ? (S.biz.cows ?? CATTLE_COWS) / CATTLE_COWS : 1);
 const leaseCost = () => cost(BIZ.wheat.cost) * LEASE_RENEW;
 const leaseDue = () => !!(S.biz && S.biz.type === 'wheat' && S.biz.weeks >= (S.biz.lease ?? LEASE_WEEKS));
 function renewLease(){
   if (!leaseDue()) return '';
   const c = leaseCost(); if (S.money < c) return `You need ${fmt(c)} on hand.`;
-  S.money -= c; S.biz.lease = S.biz.weeks + LEASE_WEEKS; log(`Renewed the wheat lease for 5 more years (${fmt(c)}).`);
+  S.money -= c; S.biz.lease = S.biz.weeks + LEASE_WEEKS; S.biz.leaseBase = BIZ.wheat.cost * LEASE_RENEW; log(`Renewed the wheat lease for 5 more years (${fmt(c)}).`);
   return '';
 }
 function bizWeek(lines, notes){
@@ -510,7 +517,12 @@ function bizCard(){
 function startBiz(k){
   const b = BIZ[k], c = cost(b.cost);
   if (S.money < c) return toast(`You need ${fmt(c)} on hand.`);
-  S.money -= c; S.biz = { type:k, weeks:0, earned:0, paidYear:null, dep:1, lease: k === 'wheat' ? LEASE_WEEKS : null, ...(k === 'cattle' ? { cows:CATTLE_COWS, check:S.turn } : {}) }; adj({happy:3}); log(`Started a business: ${b.name.toLowerCase()}.`, 'money');
+  S.money -= c; S.biz = { type:k, weeks:0, earned:0, paidYear:null, dep:1, lease: k === 'wheat' ? LEASE_WEEKS : null, ...(k === 'cattle' ? { cows:CATTLE_COWS, check:S.turn } : {}) };
+  if (k === 'wheat') {                             // i22-a04: a lease taken after March misses this year's crop (no farming bill, no August check)
+    const y = new Date(S.date).getFullYear(); Object.assign(S.biz, { startTurn:S.turn, startMonth:curMonth(), leaseBase:BIZ.wheat.cost });
+    if (curMonth() > 2) Object.assign(S.biz, { paidYear:y, farmYear:y, insYear:y });
+  }
+  adj({happy:3}); log(`Started a business: ${b.name.toLowerCase()}.`, 'money');
   save(); render(); toast(`${b.ic} You started a ${b.name.toLowerCase()}!`);
 }
 function sellBiz(){
@@ -720,7 +732,7 @@ function debtWeek(notes){
   if (S.money < 0) {
     S.debtWeeks = (S.debtWeeks || 0) + 1;
     if (S.debtWeeks === COLLECT_WEEKS + 1) {
-      S.money -= cost(COLLECT_FEE);
+      lateLine('📞 Collections fee', -cost(COLLECT_FEE), `Your debt went to collections after ${COLLECT_WEEKS} weeks below $0.`);   // i71-b05
       notes.push(`📞 After ${COLLECT_WEEKS} weeks in debt, it went to collections: a ${fmtc(COLLECT_FEE)} fee and calls every day. Banks and bosses will see it until you're back above $0.`);
       log('The debt went to collections.', 'money');
     }
@@ -884,7 +896,7 @@ function modeScoreNote(){
 // B10: how far through the game you are (Lifetime: age 18 to 65), for an "on track" net-worth target
 function gameProgress(){
   const L = LENGTHS[S.len];
-  return L.turns === Infinity ? clamp((S.ageMonths / 12 - 18) / (65 - 18), 0, 1) : clamp(S.turn / L.turns, 0, 1);
+  return L.turns === Infinity ? lifeProgress() : clamp(S.turn / L.turns, 0, 1);
 }
 function wealthTrack(real){
   const L = LENGTHS[S.len], p = gameProgress(), want = L.target * p;
@@ -1132,6 +1144,7 @@ function startJob(id, back = null){
   Object.assign(S, { jobId:id, jobMonths:0, raise:1, rung:0, tenure:0, appWeeks:0, notice:null, strike:null, retired:false });
   if (back) Object.assign(S, { raise:back.raise || 1, rung:back.rung || 0, tenure:back.tenure || 0 });
   if (S.recall && S.recall.job === id) S.recall = null;
+  S.ui = 0;                                        // i22-a03: benefits stop with a new paycheck; leftover months aren't banked
   S.clearAt = CLEARANCE.includes(id) && !back ? S.turn + CLEAR_WEEKS : -1;
   if (x.union) S.contractAt = S.turn + ri(78, 156);
   if (x.remote === 5 && !S.fiber) { const c = Math.round(cost(FIBER_COST)); S.money -= c; S.fiber = true; log(`Had fiber internet put in at home for the remote job (${fmt(c)}).`, 'money'); }
@@ -1338,7 +1351,8 @@ function certWeek(n, notes){
 }
 // i3-a02: finishing a diploma; the program you studied becomes your major
 function graduate(){
-  S.studyProg = 0; S.edu++;
+  const extra = Math.max(0, S.studyProg - STUDY_NEED[S.edu]); S.edu++;   // i22-a15: extra class weeks carry into the next program
+  S.studyProg = S.edu < 3 ? Math.min(extra, STUDY_NEED[S.edu] - 1) : 0;
   if (S.program && PROGRAMS[S.program]) { S.major = S.program; log(`Graduated with a ${EDU[S.edu]} in ${PROGRAMS[S.program].name.toLowerCase()}.`); }
   else log(`Graduated with a ${EDU[S.edu]}.`);
   adj({happy:8});

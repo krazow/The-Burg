@@ -81,6 +81,18 @@ follows Washington's 2027 prices, and each year brings its own weather. Your bod
   never touches your live saves.
 - A double tap on End Week plays one week, not two.
 - Escape now closes any pop-up that has a Cancel or Never mind button.
+- Starting a new job ends any unemployment left over from your last layoff, so it can't be saved up for later.
+- A wheat lease taken after March skips that year's farming bill, crop insurance and harvest. Selling a lease pays
+  for the time left on it, so renewing and then selling right away loses money.
+- A life goal whose badge you've already earned can't be pinned for extra points (it shows, but greyed out).
+- Buying a vehicle no longer carries the old one's winter tires over.
+- Food-truck weekends count as side-hustle work, so truck owners' hustle skill doesn't fade.
+- Extra class weeks carry over into your next program when you graduate.
+- The Lifetime progress bar and the score's on-track target use the same measure (age 18 to 65).
+- The debt warning and the debt limit agree everywhere: Hard mode warns at -$10,000 and names the -$25,000 limit, and
+  Relaxed no longer mentions having to leave town.
+- The collections fee and the hospital bill now show as lines in the week, so the lines add up to the change in cash.
+- The stress of a promotion counts every week, even weeks with no event or when you're away.
 
 ## 0.2.0 (2026-11-18)
 
