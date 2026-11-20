@@ -275,6 +275,7 @@ for (const nb of NEWBIES) {
       let f = nb.plan[w % nb.plan.length];
       if ((f === 'work' && !s.jobId) || (f === 'study' && s.edu >= 3)) f = 'rest';
       await ev(() => { closeSheet(); tab = 'home'; render(); });
+      if (!(await page.$(`#main [data-f="${f}"]`))) f = 'rest';   // i31: a focus that hasn't opened yet
       if (s.focus !== f) await page.click(`[data-f="${f}"]`);
       await ev(() => { PLAY_AT = -1e9; });
       await page.click('#end'); await page.waitForTimeout(120);
