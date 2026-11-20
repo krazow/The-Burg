@@ -139,7 +139,7 @@ for (const [label, w, h, nightXL] of SIZES) {
     ['restore', async () => { await page.evaluate(() => { closeSheet(); restoreSheet(); }); }],
     ['glossary', async () => { await page.evaluate(() => { closeSheet(); tab = 'jobs'; render(); }); await page.click('#main .term').catch(() => {}); }],
     ['tutorial', async () => { await page.evaluate(() => { closeSheet(); startTutorial(); }); await page.waitForTimeout(500); await page.click('#cnext'); await page.waitForTimeout(600); }],
-    // the newer pop-ups (G3): life goals, the end screen, the title screen's options, challenges, weekly challenge, records and What's new
+    // the newer pop-ups (G3): life goals, the end screen, the title screen's options, challenges (with the weekly challenge and records) and What's new
     ['life-goals', async () => { await page.evaluate(() => { endTutorial(false); $('#toast').classList.add('hidden'); tab = 'life'; render(); }); await page.click('#goals'); }],
     ['money-outlook', async () => { await page.evaluate(() => { closeSheet(); S.home = 'fixer'; S.mortgage = 950; S.roomHost = true; S.money = 200; S.jobId = null; tab = 'life'; render(); outlookSheet(); }); }],
     ['life-planning', async () => { await page.evaluate(() => { closeSheet(); S.money = 200000; S.scholar = { y: 2027, n: 2 }; S.pensionYears = 6; S.pensionPay = 3500; render(); document.querySelector('#outlook').scrollIntoView({ block: 'center' }); }); }],
@@ -149,8 +149,7 @@ for (const [label, w, h, nightXL] of SIZES) {
     ['title-options', async () => { await page.evaluate(() => { closeSheet(); S = null; useDice(); renderTitle(); }); await page.click('#moreopts'); }],
     ['rules', async () => { await page.click('#rulesbtn'); await page.evaluate(() => document.querySelector('[data-rule="start"][data-opt="comfy"]').click()); }],   // i19-b02..b05
     ['challenges', async () => { await page.evaluate(() => closeSheet()); await page.click('#chal'); }],
-    ['weekly', async () => { await page.evaluate(() => closeSheet()); await page.click('#weekly'); }],
-    ['records', async () => { await page.evaluate(() => { closeSheet(); store.set(CHALLENGE_KEY, { farm: 1 }); const b = store.get(BEST_KEY) || {}; b['half-hard'] = 41; b['sc-farm'] = 77; b['wk-' + isoWeek()] = 63; store.set(BEST_KEY, b); renderTitle(); }); await page.click('#records'); }],
+    ['records', async () => { await page.evaluate(() => { closeSheet(); store.set(CHALLENGE_KEY, { farm: 1 }); const b = store.get(BEST_KEY) || {}; b['half-hard'] = 41; b['sc-farm'] = 77; b['wk-' + isoWeek()] = 63; store.set(BEST_KEY, b); renderTitle(); }); await page.click('#chal'); }],   // i50-a05: the weekly challenge and records live in Challenges
     ['whats-new', async () => { await page.evaluate(() => { closeSheet(); store.set(SEEN_KEY, '0.1.0'); whatsNew(); }); }]
   ];
   SCREEN_COUNT = screens.length;

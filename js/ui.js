@@ -77,14 +77,11 @@ function renderTitle(){
       <label class="field">Rules</label>
       <button class="moreopts" id="rulesbtn" aria-haspopup="dialog"><span><b>🎛️ Change the rules</b><span class="s" id="rulesum">Normal rules · 🏆 counts toward the normal records</span></span><span class="caret" aria-hidden="true">›</span></button>
     </div>
-    <button class="btn ghost" id="chal">🏁 Challenges</button>
-    <button class="btn ghost" id="weekly">📅 Weekly challenge (${isoWeek()})</button>
-    ${hasRecords() ? '<button class="btn ghost" id="records">🏆 Your records</button>' : ''}
+    <button class="btn ghost" id="chal">🏁 Challenges${hasRecords() ? ' and records' : ''}</button>
     <button class="btn ghost" id="how">❓ Help & tutorial</button>
     <button class="btn ghost" id="restore">📥 Restore from a backup</button>
     <button class="btn ghost" id="newphone">📱 I'm the new phone</button>
     <button class="btn ghost" id="settings">⚙️ Settings</button>
-    ${Object.keys(store.get(BADGE_KEY) || {}).length ? `<div class="muted" style="margin-top:10px;font-size:0.8125rem">🏅 Badges collected across your lives: ${BADGES.filter(b => (store.get(BADGE_KEY) || {})[b.id]).map(b => b.ic).join(' ')} (${Object.keys(store.get(BADGE_KEY) || {}).length}/${BADGES.length})</div>` : ''}
     <div class="muted" style="margin-top:14px;font-size:0.75rem">v${APP_VERSION}</div>
   </div>`;
   let bg = 'fresh', md = 'normal', aim = 'all', rules = {};
@@ -125,19 +122,19 @@ function renderTitle(){
     len: k => { const b = document.querySelector(`.len[data-len="${k}"]`); if (b) b.click(); },
     mode: k => { const b = document.querySelector(`[data-mode="${k}"]`); if (b) b.click(); }, startNow });
   $('#how').onclick = showHelp;
-  $('#chal').onclick = challengesSheet;
-  $('#weekly').onclick = () => {
-    const cur = readSlot(WEEKLY_SLOT);
-    sheet(`<h2>📅 Weekly challenge ${isoWeek()}</h2><p>A 6-month life where everyone gets the same events and dice this week. Play it, then share your score card and compare with friends.</p><p class="muted">It has its own place, so it doesn't use one of your ${SLOT_COUNT} slots.${cur ? ` Starting again replaces ${esc(cur.name)}'s challenge in progress.` : ''}</p><p class="muted">🎛️ Everyone plays the weekly with the same rules: Normal, whatever you set under Change the rules.</p>${cur ? '<button class="btn primary" id="wcont">Continue this week\'s challenge</button>' : ''}<button class="btn ${cur ? 'ghost' : 'primary'}" id="y">${cur ? 'Start over' : 'Start'}</button><button class="btn ghost" id="n">Not now</button>`);
-    if ($('#wcont')) $('#wcont').onclick = () => loadSlot(WEEKLY_SLOT);
-    $('#y').onclick = () => { const name = (($('#nm') && $('#nm').value.trim()) || 'Dusty').slice(0,20); closeSheet(); startWeekly(name); };
-    $('#n').onclick = closeSheet;
-  };
+  $('#chal').onclick = challengesSheet;   // i50-a05: the weekly challenge and your records live in the Challenges sheet
   $('#restore').onclick = restoreSheet;
   $('#newphone').onclick = newPhoneSheet;
   $('#settings').onclick = () => settingsSheet(false);
-  if ($('#records')) $('#records').onclick = recordsSheet;
   titleNotes();
+}
+// the weekly challenge sheet, from Challenges when this week's challenge is already in progress
+function weeklySheet(){
+  const cur = readSlot(WEEKLY_SLOT);
+  sheet(`<h2>📅 Weekly challenge ${isoWeek()}</h2><p>A 6-month life where everyone gets the same events and dice this week. Play it, then share your score card and compare with friends.</p><p class="muted">It has its own place, so it doesn't use one of your ${SLOT_COUNT} slots.${cur ? ` Starting again replaces ${esc(cur.name)}'s challenge in progress.` : ''}</p><p class="muted">🎛️ Everyone plays the weekly with the same rules: Normal, whatever you set under Change the rules.</p>${cur ? '<button class="btn primary" id="wcont">Continue this week\'s challenge</button>' : ''}<button class="btn ${cur ? 'ghost' : 'primary'}" id="y">${cur ? 'Start over' : 'Start'}</button><button class="btn ghost" id="n">Not now</button>`);
+  if ($('#wcont')) $('#wcont').onclick = () => loadSlot(WEEKLY_SLOT);
+  $('#y').onclick = () => { const name = (($('#nm') && $('#nm').value.trim()) || 'Dusty').slice(0,20); closeSheet(); startWeekly(name); };
+  $('#n').onclick = closeSheet;
 }
 /* ---------- title notes (i63-b04, i63-b05, i73-b12, i73-b13): when this browser may not keep your lives ---------- */
 // every key this game keeps (through length/key(), so the beta's storage wrapper is respected)
@@ -239,27 +236,24 @@ function hasRecords(){
   const best = store.get(BEST_KEY) || {};
   return Object.keys(best).some(k => bestLabel(k)) || Object.keys(store.get(CHALLENGE_KEY) || {}).length > 0 || ends().length > 0;
 }
-function recordsSheet(){
-  const best = store.get(BEST_KEY) || {}, won = store.get(CHALLENGE_KEY) || {}, mds = ['relaxed', 'normal', 'hard'];
+// the best-score table, shown in the Challenges sheet
+function recordsTable(){
+  const best = store.get(BEST_KEY) || {}, mds = ['relaxed', 'normal', 'hard'];
   const notes = store.get(BEST_NOTE_KEY) || {};   // i63-a20: a best life's comeback line
   const cell = (v, k) => v == null ? '<span class="muted" aria-label="none yet">–</span>' : `<b>${v}</b>${notes[k] ? `<br><small class="muted comeback">${esc(notes[k])}</small>` : ''}`;
-  const nWon = Object.keys(SCENARIOS).filter(k => won[k]).length, wk = best[`wk-${isoWeek()}`];
-  const cu = Object.keys(best).filter(k => k.startsWith('cu-') && bestLabel(k) && Number.isFinite(best[k]));   // i19-b03: the Custom shelf
-  sheet(`<h2>🏆 Your records</h2>
-    <p class="muted">Your best Life Scores on this device.</p>
-    <table class="rec"><caption>Best score by game length and mode</caption>
+  return `<table class="rec"><caption>Best score by game length and mode</caption>
       <thead><tr><th scope="col">Length</th>${mds.map(m => `<th scope="col">${MODES[m].ic} ${MODES[m].name}</th>`).join('')}</tr></thead>
-      <tbody>${Object.entries(LENGTHS).map(([k, L]) => `<tr><th scope="row">${L.label}</th>${mds.map(m => `<td>${cell(best[bestKey(k, m)], bestKey(k, m))}</td>`).join('')}</tr>`).join('')}</tbody></table>
-    ${cu.length ? `<h3 style="margin-top:14px">🎛️ Custom rules</h3><p class="muted">Lives played with changed rules, kept apart from the table above.</p>${cu.map(k => `<div class="kv"><span>${esc(bestLabel(k.slice(3)))}</span><span>best <b>${best[k]}</b></span></div>`).join('')}` : ''}
-    <h3 style="margin-top:14px">🏁 Challenges <span class="tag">${nWon}/${Object.keys(SCENARIOS).length} completed</span></h3>
-    ${Object.entries(SCENARIOS).map(([k, sc]) => `<div class="kv"><span>${sc.ic} ${sc.name}${won[k] ? ' ✅' : ''}</span><span>${best['sc-' + k] != null ? `best <b>${best['sc-' + k]}</b>` : '<span class="muted">not played</span>'}</span></div>`).join('')}
-    <h3 style="margin-top:14px">📅 This week's challenge (${isoWeek()})</h3>
-    <div class="kv"><span>Your best this week</span><span>${wk != null ? `<b>${wk}</b>` : '<span class="muted">not played yet</span>'}</span></div>
-    ${topLives()}
-    <button class="btn primary" id="ok">Close</button>`);
-  $('#ok').onclick = closeSheet;
-  document.querySelectorAll('[data-end]').forEach(b => b.onclick = () => endSummary(top10()[+b.dataset.end]));
+      <tbody>${Object.entries(LENGTHS).map(([k, L]) => `<tr><th scope="row">${L.label}</th>${mds.map(m => `<td>${cell(best[bestKey(k, m)], bestKey(k, m))}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+
 }
+// i19-b03: the Custom shelf, kept apart from the table above
+function customShelf(){
+  const best = store.get(BEST_KEY) || {};
+  const cu = Object.keys(best).filter(k => k.startsWith('cu-') && bestLabel(k) && Number.isFinite(best[k]));
+  return cu.length ? `<h3 style="margin-top:14px">🎛️ Custom rules</h3><p class="muted">Lives played with changed rules, kept apart from the table above.</p>${cu.map(k => `<div class="kv"><span>${esc(bestLabel(k.slice(3)))}</span><span>best <b>${best[k]}</b></span></div>`).join('')}` : '';
+}
+// i50-a05: records live in the Challenges sheet
+const recordsSheet = () => challengesSheet();
 // i73-b02: the ten best finished lives on this device, from the stubs finish() leaves
 const top10 = () => ends().map((e, i) => [e, i]).sort((a, b) => b[0].score - a[0].score || a[1] - b[1]).slice(0, 10).map(x => x[0]);
 function topLives(){
@@ -306,6 +300,8 @@ function wireTitleExtras(){
     toast('Damaged save downloaded');
   };
 }
+const badgeLine = () => { const got = store.get(BADGE_KEY) || {}, n = Object.keys(got).length;
+  return n ? `<p class="muted" style="font-size:0.8125rem">🏅 Badges collected across your lives: ${BADGES.filter(b => got[b.id]).map(b => b.ic).join(' ')} (${n}/${BADGES.length})</p>` : ''; };
 /* ---------- ✨ What's new (G6): a one-time card after an update, once per version ---------- */
 const SEEN_KEY = KEY_PREFIX + 'seenVersion';
 const WHATS_NEW = {
@@ -793,18 +789,18 @@ function render(){
   const L = LENGTHS[S.len];
   const pct = L.turns === Infinity ? lifeProgress() * 100 : S.turn / L.turns * 100;   // i22-a19: the same 18-to-65 span the score uses
   const big = L.turns === Infinity || L.turns >= 104;
-  const left = L.turns === Infinity ? `Age ${age()}` : `${L.turns - S.turn} weeks left`;
+  const left = L.turns === Infinity ? `Age ${age()}` : weeksLeftLabel(L.turns - S.turn);
   const nar = S.practice ? '' : ' skipx';          // i2-a23: on narrow phones the ⏩ buttons hide behind a long press on End Week
   $('#app').innerHTML = `
   <header class="top">
-    <div class="row"><h2>${esc(S.name)}${S.practice ? ' <span class="tag">Practice</span>' : ''}${mode() !== 'normal' && !S.practice ? ` <span class="tag">${MODES[mode()].ic} ${MODES[mode()].name}</span>` : ''}${S.scenario ? ` <span class="tag">🏁</span>` : ''}${S.weekly ? ` <span class="tag">📅</span>` : ''}${S.gen > 1 ? ` <span class="tag">🌳 ${S.gen}</span>` : ''}</h2><div class="hdr-r"><div class="money">${fmt(S.money)}</div><button id="helpbtn" aria-label="Help and tutorial">?</button></div></div>
+    <div class="row"><h2>${esc(S.name)}${S.practice ? ' <span class="tag">Practice</span>' : ''}${mode() !== 'normal' && !S.practice ? ` <span class="tag">${MODES[mode()].ic} ${MODES[mode()].name}</span>` : ''}${S.scenario ? ` <span class="tag">🏁</span>` : ''}${S.weekly ? ` <span class="tag">📅</span>` : ''}${S.gen > 1 ? ` <span class="tag">🌳 ${S.gen}</span>` : ''}</h2><div class="hdr-r"><button class="money" id="moneybtn" aria-label="Cash ${fmt(S.money)}: this week's money in and out" aria-haspopup="dialog">${fmt(S.money)}</button><button id="helpbtn" aria-label="Help and tutorial">?</button></div></div>
     <div class="meta"><span>${dateLabel()} · age ${age()}</span><span>${left}</span></div>
     <div class="progress"><i style="width:${pct}%"></i></div>
   </header>
   <main id="main"></main>
   ${tab==='home' ? `${S.run ? `<button class="weekstrip" id="strip" aria-label="${esc(runWords())}. Details"><span class="wl">${S.run.weeks > 1 ? `Last ${S.run.weeks} wks` : 'Last week'}</span><span class="wc">${runChips()}</span><span class="more">›</span></button>` : ''}
     <div class="endbar${ROLL ? ' rolling' : ''}">${ROLL ? `<button class="btn primary" id="stoproll">⏹ Stop<small>${S.run.weeks} of up to ${ROLL.n} weeks</small></button>`
-      : `<button class="btn primary" id="end" aria-keyshortcuts="Shift+Enter" aria-description="Press and hold, or Shift+Enter, for more ways to skip ahead">End Week →<small>${FOCUS[S.focus].ic} ${FOCUS_SHORT[S.focus]}</small></button>
+      : `<button class="btn primary" id="end" aria-keyshortcuts="Shift+Enter" aria-description="Press and hold, or Shift+Enter, for more ways to skip ahead">End Week →<small>${FOCUS[S.focus].ic} ${FOCUS_SHORT[S.focus]}${S.trip && CITIES[S.trip.city] ? ` + 🚗 ${CITIES[S.trip.city].name}` : ''}</small></button>
     <button class="btn ghost${nar}" id="ff4" aria-label="Skip 4 weeks">⏩ 4</button>${big ? `<button class="btn ghost${nar}" id="ff13" aria-label="Skip 13 weeks">⏩ 13</button>` : ''}<button class="btn ghost" id="auto" aria-label="Auto: play until ${autoUntil() === 'event' ? 'something needs you' : AUTO_UNTIL[autoUntil()].short + ' or something needs you'}. Press and hold for options">⏭ Auto</button>`}</div>` : ''}
   <nav><div class="in">
     ${[['home','🏠','Home'],['jobs','💼','Jobs'],['life','🌾','Life'],['log','📜','Journal']].map(([k,ic,l]) => { const nw = tab !== k && tabHasNew(k);   // i31-b15: a dot for something new there
@@ -816,6 +812,7 @@ function render(){
     tab = b.dataset.tab; MAPSIDE = null; MAPSEL = null; render(); window.scrollTo(0,0);
   });
   $('#helpbtn').onclick = showHelp;
+  $('#moneybtn').onclick = cashSheet;
   if ($('#end')) { $('#end').onclick = e => { if (holdDone(e)) return; tapPlay(1, e); }; holdOpens($('#end'), skipSheet); }
   if ($('#ff4')) $('#ff4').onclick = e => tapPlay(4, e);
   if ($('#ff13')) $('#ff13').onclick = e => tapPlay(13, e);
@@ -828,7 +825,38 @@ function render(){
   if (COUNT_FROM) { const from = COUNT_FROM; COUNT_FROM = null; if (tab === 'home') animateStats(from); }
   document.querySelectorAll('[data-apply]').forEach(b => b.onclick = () => apply(b.dataset.apply));
   document.querySelectorAll('[data-locked]').forEach(b => b.onclick = () => explainLocked(b.dataset.locked));
+  chipFade();
   histSync();
+}
+// i23-a03: the header's countdown; the final week says so plainly
+const weeksLeftLabel = n => n <= 1 ? 'Last week!' : `${n} weeks left`;
+// i20-a01: a chip row that scrolls fades at the right edge while there's more to see
+function chipFade(root = document){
+  root.querySelectorAll('.chips').forEach(c => c.classList.toggle('more', c.scrollWidth > c.clientWidth + 2 && c.scrollLeft + c.clientWidth < c.scrollWidth - 2));
+}
+document.addEventListener('scroll', e => { const c = e.target; if (c && c.classList && c.classList.contains('chips')) chipFade(c.parentNode || document); }, true);
+if (typeof window !== 'undefined') window.addEventListener('resize', () => chipFade());
+/* ---------- i72-b06: tap the cash in the header for last week's money in and out, and next week's ---------- */
+function cashSheet(){
+  if (!S) return;
+  const last = S.last && S.last.lines ? S.last.lines : [], ins = last.filter(([, v]) => v > 0), outs = last.filter(([, v]) => v < 0);
+  const sum = a => a.reduce((t, [, v]) => t + v, 0);
+  const o = typeof moneyOutlook === 'function' ? moneyOutlook(1) : null, nx = o && o.weeks[0];
+  const row = (l, v) => `<div class="kv"><span>${esc(l)}</span><span>${v > 0 ? '+' : ''}${fmt(v)}</span></div>`;
+  sheet(`<h2>💵 Cash: ${fmt(S.money)}</h2>
+    ${last.length ? `<h3>Last week</h3>
+      ${ins.length ? `<p class="muted" style="margin:4px 0 0">Money in</p>${ins.map(([l, v]) => row(l, v)).join('')}` : '<p class="muted">No pay came in.</p>'}
+      ${outs.length ? `<p class="muted" style="margin:8px 0 0">Bills out</p>${outs.map(([l, v]) => row(l, v)).join('')}` : ''}
+      <div class="kv"><span><b>Paychecks and bills</b></span><span><b>${S.last.net >= 0 ? '+' : ''}${fmt(S.last.net)}</b></span></div>
+      <p class="muted" style="font-size:0.8125rem">Events, trips and visits are on top of this: tap the strip above End Week for all of it.</p>`
+      : '<p class="muted">End a week and your pay and bills show up here.</p>'}
+    ${nx ? `<h3 style="margin-top:12px">Next week</h3>
+      <div class="kv"><span>Regular pay and bills${nx.big.length ? `<br><small class="muted">${nx.big.map(([l, v]) => `${esc(l)} ${v > 0 ? '+' : ''}${fmt(v)}`).join(' · ')}</small>` : ''}</span><span><b>${nx.net >= 0 ? '+' : ''}${fmt(nx.net)}</b></span></div>
+      <div class="kv"><span>Cash after</span><span>${fmt(nx.cash)}</span></div>` : ''}
+    ${nx ? '<button class="btn primary" id="cashout">📅 Money outlook: next 13 weeks</button>' : ''}
+    <button class="btn ghost" id="ok">Close</button>`);
+  if ($('#cashout')) $('#cashout').onclick = () => outlookSheet(cashSheet);
+  $('#ok').onclick = closeSheet;
 }
 // i2-a23: press and hold (or right-click, or Shift+Enter) opens the skip options; the release after a hold isn't a tap
 function holdOpens(el, fn){
@@ -959,7 +987,7 @@ function renderHome(){
   ${overtimeTip() ? `<div class="card warn">${overtimeTip()}</div>` : ''}
   ${S.money < 0 && !inCollections() ? firstTime('collect') : ''}
   ${S.money < debtWarnAt() ? `<div class="card warn" id="debtwarn">⚠️ Your debt is getting dangerous.${debtLimit() == null ? ` In Relaxed it never ends your life (a debt counselor stops it at ${fmt(RELAXED_FLOOR)}), but the interest keeps eating your cash.` : ` Below ${fmt(debtLimit())} you'll have to leave town${canBankrupt() ? ' or file for bankruptcy' : ''}.`}</div>` : onPlan() ? `<div class="card">📞 <b>On a payment plan.</b> Your debt is still in collections (worse odds on job applications and loans until you're back above $0), but the calls stop while your cash keeps going up.</div>` : inCollections() ? `<div class="card warn">📞 Your debt is in collections: daily calls (−happiness) and worse odds on job applications and loans until you're back above $0. Raise your cash ${PLAN_WEEKS} weeks in a row to get on a payment plan.</div>` : ''}
-  <div class="card"><div class="focushead"><h3>This week's focus</h3>${isOpen('plan') ? `<button class="sm alt" id="planbtn" aria-pressed="${!!(S.plan && S.plan.length)}" aria-label="Focus plan: ${S.plan && S.plan.length ? 'on' : 'off'}${newTag('plan') ? ', new' : ''}">🗓 Plan${S.plan && S.plan.length ? ' ✓' : ''}${newTag('plan')}</button>` : ''}</div>${scenarioLine()}${seasonLine()}${mapToggle()}
+  <div class="card"><div class="focushead"><h3>This week's focus</h3>${isOpen('plan') ? `<button class="sm alt" id="planbtn" aria-pressed="${!!(S.plan && S.plan.length)}" aria-label="Focus plan: ${S.plan && S.plan.length ? 'on' : 'off'}${newTag('plan') ? ', new' : ''}">🗓 Plan${S.plan && S.plan.length ? ' ✓' : ''}${newTag('plan')}</button>` : ''}</div>${scenarioLine() || seasonLine()}${mapToggle()}
     ${prefs().mapView ? mapBlock('T') : `<div class="fgrid">${Object.entries(FOCUS).map(([k,x]) => {
       if (!focusOpen(k)) return soonSlot(UNLOCK_FOCUS[k]);   // i31-b02: a focus not open yet keeps its spot, so the grid doesn't jump
       const dis = (x.needsJob && (!j || S.retired)) || (x.study && !canStudy());
@@ -1212,6 +1240,19 @@ function myJobCard(){
     ${next ? `<p class="muted" style="margin:4px 0">Next step up: ${esc(next.title)}. ${rungNeeds(next) ? `Needs ${rungNeeds(next)}.` : 'You qualify: watch for a promotion offer.'}</p>` : '<p class="muted" style="margin:4px 0">You\'re at the top of this ladder.</p>'}
     ${app}${facts.map(t => `<p class="muted" style="margin:4px 0">${t}</p>`).join('')}${bus}${rec}${refLine}</div>`;
 }
+// i20-a09: the board in three parts, so the jobs you can take now aren't mixed in with the locked ones
+const jobGroup = x => {
+  if (S.edu < x.edu) return x.edu === 1 ? 'cert' : 'degree';
+  if (x.needCert && extraLock(x)) return 'cert';
+  if (extraLock(x)) return 'degree';
+  return 'ok';
+};
+const BOARD_GROUPS = [['ok', '✅ Can apply'], ['cert', '📜 Needs a certificate'], ['degree', '🎓 Needs a degree']];
+function boardHTML(list){
+  if (!list.length) return '<p class="muted">No jobs match.</p>';
+  return BOARD_GROUPS.map(([k, label]) => { const g = list.filter(x => jobGroup(x) === k); if (!g.length) return '';
+    return `<h4 class="boardh">${label} <span class="tag">${g.length}</span></h4>${g.map(jobRow).join('')}`; }).join('');
+}
 function renderJobs(){
   syncCarpool(); GOOD_JOBS = goodFirstJobs();
   const j = job();
@@ -1227,7 +1268,7 @@ function renderJobs(){
   <div class="card">
     <h3>Job board <span class="tag">${S.applied ? 'Applied this week' : '1 application per week'}</span></h3>
     <p class="muted" style="margin:0 0 4px;font-size:0.8125rem">${term('takehome')} is pay after taxes and gas${job() && !S.retired ? ', with ▲▼ against your current job' : ''}.${GOOD_JOBS.length ? ' ⭐ Good first jobs are close to home: the top of the list can mean an hour on the road each way, and long drives wear down happiness.' : ''}</p>
-    ${list.map(jobRow).join('') || '<p class="muted">No jobs match.</p>'}
+    ${boardHTML(list)}
   </div>`}
   ${j && !S.retired && commuteOneWay() >= 20 && !onBus() ? `${firstTime('carpool')}<div class="card"><h3>🚙 Carpool</h3>
     ${S.carpool ? `<p class="muted" style="margin:0 0 6px">You ride with neighbors to ${CITIES[j.city].name}: half the gas, the drive wears on you less, and you stay in the loop (▲ community).</p><button class="sm alt" id="carpool">Drive alone</button>`
@@ -1302,43 +1343,42 @@ function eduCard(){
 }
 function renderLife(){
   const h = HOMES[S.home], u = undoTop();
-  $('#main').innerHTML = `${u ? `<div class="card undo" role="status"><span>↩ ${esc(u.label)}</span><button class="sm" id="undo" aria-label="Undo: ${esc(u.label)}">Undo</button></div>` : ''}${S.practice || !isOpen('goals') ? '' : goalsCard()}${S.practice ? '' : aimCard()}${S.practice || !isOpen('skills') ? '' : skillsCard()}${S.practice || !(isOpen('biz') || S.biz) ? '' : bizCard()}${S.practice ? '' : townLifeCard()}${healthCard()}
-${S.edu < 3 ? firstTime('school') : ''}${S.edu < 3 ? firstTime('program') : ''}${eduCard()}
-  ${h.own ? firstTime('ptax') : ''}<div class="card"><h3>🏡 Home in Waitsburg</h3>
+  const homeCard = `${h.own ? firstTime('ptax') : ''}<div class="card"><h3>🏡 Home in Waitsburg</h3>
     ${Object.entries(HOMES).map(([k,x]) => {
       const cur = S.home === k;
-      let btn = cur ? '<span class="tag cur">Home</span>' : `<button class="sm ${x.own?'':'alt'}" data-home="${k}">${x.own ? `Buy (${fmt(homeDown(k))} down)` : 'Move'}</button>`;
+      let btn = cur ? '<span class="tag cur">Home</span>' : x.own ? `<button class="sm buy2" data-home="${k}" aria-label="Buy the ${esc(x.name.toLowerCase())}: ${fmt(homeDown(k))} down">Buy<small>${fmt(homeDown(k))} down</small></button>` : `<button class="sm alt buy2" data-home="${k}">Move</button>`;   // i20-a14
       return `<div class="kv job"><div><div class="t">${x.name}</div><div class="s">${x.own?'Mortgage':'Rent'} ${wk(cur && x.own && S.mortgage ? S.mortgage : x.own ? newMortgage(k) : cost(x.cost))}${x.own?` · builds equity · worth ${fmt(homeValue(k))}`:''}</div></div>${btn}</div>`;
     }).join('')}
     ${h.own ? `<p class="muted">${term('equity')}: <b>${fmt(S.equity)}</b>. Moving sells your house (6% agent fees).</p>` : ''}
     ${homeMoneyHTML()}
-  </div>
-  <div class="card"><h3>🛡️ Insurance & phone</h3>
+  </div>`;
+  const insCard = `<div class="card"><h3>🛡️ Insurance & phone</h3>
     ${insParts().map(([l, v]) => `<div class="kv"><span>${l}</span><span>${fmtc(v)}/mo</span></div>`).join('')}
     <div class="kv"><span><b>Total</b></span><span><b>${wk(cost(insMonthly()))}</b></span></div>
     <button class="sm alt" id="inssheet">Change coverage</button>
-  </div>
-  ${S.practice ? '' : weatherCard()}
-  ${S.practice ? '' : investCard()}
-  <div class="card"><h3>🛻 Ride</h3>
+  </div>`;
+  const rideCard = `<div class="card"><h3>🛻 Ride</h3>
     ${Object.entries(CARS).map(([k,c]) => {
       const cur = S.car === k;
-      const label = k==='beater' ? 'Starter' : k==='sedan' ? `Buy ${fmt(cost(c.price))}` : `${fmt(cost(c.down))} down`;
-      const btn = cur ? '<span class="tag cur">Yours</span>' : k==='beater' ? '' : `<button class="sm" data-car="${k}" ${S.loanLeft>0?'disabled':''}>${label}</button>`;
+      const label = k==='sedan' ? `${fmt(cost(c.price))}` : `${fmt(cost(c.down))} down`;
+      const btn = cur ? '<span class="tag cur">Yours</span>' : k==='beater' ? '' : `<button class="sm buy2" data-car="${k}" ${S.loanLeft>0?'disabled':''} aria-label="Buy the ${esc(c.name.toLowerCase())}: ${label}">Buy<small>${label}</small></button>`;
       return `<div class="kv job"><div><div class="t">${c.name}</div><div class="s">${c.mpg} mpg${c.pay?` · ${wk(cur && S.loanPay ? S.loanPay : cost(c.pay))} for 5 years`:''}</div></div>${btn}</div>`;
     }).join('')}
     <p class="muted">Trade-in value of your ride: ${fmt(S.carValue)}${tradeBonus() ? ` (+${fmt(tradeBonus())} dealer bonus this week)` : ''}${S.loanLeft>0?` · ${Math.ceil(S.loanLeft/W)} weekly payments left`:''}</p>
     <p class="muted">🔧 ${S.turn - (S.svc ?? 0) <= 26 ? 'Oil changed recently: fewer breakdowns.' : S.turn - (S.svc ?? 0) <= 52 ? `Last oil change ${S.turn - (S.svc ?? 0)} weeks ago.` : 'Overdue for an oil change: breakdowns are more likely.'} ${S.tires === S.car ? '❄️ Winter tires on.' : ''} Get car care on a trip to Dayton, Walla Walla or the Tri-Cities.</p>
-  </div>
-  ${!isOpen('k401') && !S.k401 ? '' : `${S.retired ? '' : firstTime('k401')}<div class="card" id="k401card"><h3>🏦 Retirement savings (${term('k401')})${newTag('k401')}</h3>
+  </div>`;
+  const k401Card = !isOpen('k401') && !S.k401 ? '' : `${S.retired ? '' : firstTime('k401')}<div class="card" id="k401card"><h3>🏦 Retirement savings (${term('k401')})${newTag('k401')}</h3>
     <div class="kv"><span>Balance</span><span><b>${fmt(S.k401)}</b></span></div>
     <div class="kv"><span>After tax (counts in net worth)</span><span>${fmt(S.k401 * K401_AFTER_TAX)}</span></div>
     ${(S.k401match || 0) >= 1 && !S.retired ? `<div class="kv"><span>Employer match not yours yet<br><small class="muted">Vests after ${K401_VEST_MONTHS / 12} years at this job (${Math.max(0, Math.ceil((K401_VEST_MONTHS - (S.tenure || 0)) / 12 * 10) / 10)} years to go). Leave sooner and it goes back.</small></span><span>${fmt(S.k401match)}</span></div>` : ''}
     ${S.retired ? `<p class="muted">You're retired: about ${wk(S.k401*drawRate()/12)} comes out each week (${(drawRate() * 100).toFixed(1)}% this year, rising after 73 like the IRS table), taxed about ${RETIRE_TAX * 100}%.</p>` : `
     <p class="muted" style="margin:6px 0">Put part of each paycheck away before taxes. At 5% or more your employer adds 3%, yours after ${K401_VEST_MONTHS / 12} years at the job. It grows about 6% a year and pays out when you retire, taxed then, so net worth counts it at ${Math.round(K401_AFTER_TAX * 100)}%.</p>
     <div class="maptog">${K401.map((r,i) => `<button class="${S.k401rate===i?'on':''}" data-k401="${i}">${r*100}%</button>`).join('')}</div>`}
-  </div>`}
-  ${planningCard()}
+  </div>`;
+  const pr = S.practice;
+  $('#main').innerHTML = `${u ? `<div class="card undo" role="status"><span>↩ ${esc(u.label)}</span><button class="sm" id="undo" aria-label="Undo: ${esc(u.label)}">Undo</button></div>` : ''}
+  ${homeCard}${rideCard}${k401Card}${planningCard()}${pr ? '' : investCard()}${insCard}
+  ${pr || !isOpen('goals') ? '' : goalsCard()}${pr ? '' : aimCard()}${S.edu < 3 ? firstTime('school') : ''}${S.edu < 3 ? firstTime('program') : ''}${eduCard()}${healthCard()}${pr || !isOpen('skills') ? '' : skillsCard()}${pr || !(isOpen('biz') || S.biz) ? '' : bizCard()}${pr ? '' : weatherCard()}
   <div class="card"><h3>❤️ Household</h3>
     <div class="kv"><span>Partner</span><span>${S.partner ? 'Together 💕' : 'Single'}</span></div>
     <div class="kv"><span>Dog</span><span>${S.dog ? 'One good dog 🐕' : 'None'}</span></div>
@@ -1484,8 +1524,9 @@ function renderLog(){
   const inFilter = e => logFilter === 'all' || (logFilter === 'mile' ? isMile(e) : (e.k || logKind(e.m)) === logFilter);   // i5-a03: big moments show under Milestones too
   const list = S.log.filter(inFilter);
   const label = LOG_FILTERS.find(f => f[0] === logFilter)[1].replace(/^\S+ /, '');
-  $('#main').innerHTML = `<div class="chips" role="group" aria-label="Show in the Journal">${LOG_FILTERS.map(([k, l]) =>
-      `<button class="chip ${logFilter === k ? 'on' : ''}" data-lf="${k}" aria-pressed="${logFilter === k}">${l}</button>`).join('')}</div>
+  const count = k => k === 'all' ? S.log.length : S.log.filter(e => (e.k || logKind(e.m)) === k).length;   // i20-a02
+  $('#main').innerHTML = `<div class="chips" role="group" aria-label="Show in the Journal">${LOG_FILTERS.map(([k, l]) => { const n = count(k);
+      return `<button class="chip ${logFilter === k ? 'on' : ''}" data-lf="${k}" aria-pressed="${logFilter === k}" aria-label="${l.replace(/^\S+ /, '')}, ${n} ${n === 1 ? 'entry' : 'entries'}">${l}<span class="n" aria-hidden="true">${n}</span></button>`; }).join('')}</div>
     <div class="card"><h3>📜 ${esc(S.name)}'s journal</h3>
     ${list.map(e => `<div class="logitem"><em>${esc(e.d)}</em>${esc(e.m)}</div>`).join('') || `<p class="muted">Nothing under ${label.toLowerCase()} yet.</p>`}</div>`;
   document.querySelectorAll('[data-lf]').forEach(b => b.onclick = () => {
@@ -1494,6 +1535,7 @@ function renderLog(){
     announce(`${LOG_FILTERS.find(f => f[0] === logFilter)[1].replace(/^\S+ /, '')}: ${n} ${n === 1 ? 'entry' : 'entries'}`);
     const f = document.querySelector(`[data-lf="${logFilter}"]`); if (f) f.focus({ preventScroll: true });
   });
+  chipFade();
 }
 
 function showMenu(){
