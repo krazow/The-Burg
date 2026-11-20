@@ -3,7 +3,7 @@
   "private": true,
   "description": "The Burg: a life sim set in Waitsburg, WA",
   "scripts": {
-    "test": "node tests/smoke.test.mjs && node tests/rules.test.mjs && node tests/gameplay.test.mjs && node tests/flows.test.mjs && node tests/screens.test.mjs && node tests/offline.test.mjs && node tests/explore.test.mjs && node tests/health.test.mjs && node tests/weather.test.mjs && node tests/sim.test.mjs",
+    "test": "node tests/smoke.test.mjs && node tests/rules.test.mjs && node tests/gameplay.test.mjs && node tests/flows.test.mjs && node tests/screens.test.mjs && node tests/offline.test.mjs && node tests/explore.test.mjs && node tests/health.test.mjs && node tests/weather.test.mjs && node tests/firsthour.test.mjs && node tests/sim.test.mjs",
     "test:smoke": "node tests/smoke.test.mjs",
     "test:rules": "node tests/rules.test.mjs",
     "test:gameplay": "node tests/gameplay.test.mjs",
@@ -13,7 +13,8 @@
     "test:explore": "node tests/explore.test.mjs",
     "test:sim": "node tests/sim.test.mjs",
     "test:health": "node tests/health.test.mjs",
-    "test:weather": "node tests/weather.test.mjs"
+    "test:weather": "node tests/weather.test.mjs",
+    "test:firsthour": "node tests/firsthour.test.mjs"
   },
   "devDependencies": {
     "playwright": "^1.47.0"

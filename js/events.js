@@ -20,7 +20,9 @@ function rollEvent(month, trip){
 }
 function pickEvent(month, cat = 'town'){
   const wt = e => typeof e.w === 'function' ? e.w() : (e.w || 1);
-  const ok = EVENTS.filter(e => evCat(e) === cat && !(S.evCd[e.title] > S.turn) && !(e.once && S.evDone[e.title]) && (!e.when || e.when(month)) && !(e.big && wxCapped()) && wt(e) > 0);   // i75-a23: at most 2 big weather hits a year
+  let ok = EVENTS.filter(e => evCat(e) === cat && !(S.evCd[e.title] > S.turn) && !(e.once && S.evDone[e.title]) && (!e.when || e.when(month)) && !(e.big && wxCapped()) && wt(e) > 0);   // i75-a23: at most 2 big weather hits a year
+  // i52-a10: no repeats in the first year: events already seen this life sit out until week 52 (unless nothing else is left)
+  if (S.turn < 52 && S.evSeen) { const fresh = ok.filter(e => !S.evSeen[e.title]); if (fresh.length) ok = fresh; }
   const total = ok.reduce((a,e) => a + wt(e), 0);
   let r = Math.random() * total;
   for (const e of ok) { r -= wt(e); if (r <= 0) return e; }

@@ -394,7 +394,7 @@ await t.check('Life Score so far opens its breakdown from Home; a commuter can j
 });
 
 await t.check('the title screen starts a life with a background and a mode', async () => {
-  await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); render(); });
+  await page.evaluate(() => { localStorage.clear(); setPref('newHere', 1); S = null; closeSheet(); render(); });
   await page.fill('#nm', 'Kid');
   await page.click('#moreopts');
   await page.click('[data-bg="farm"]'); await page.click('[data-mode="hard"]');
@@ -693,7 +693,7 @@ await t.check('i3-a02/a03: the Life tab picks a program and signs up for a certi
   assert((await S()).program === 'nursing', 'program not set');
   assert((await page.textContent('#main')).includes('registered nurse'), 'matching jobs not listed');
   await page.click('[data-cert="phlebotomy"]');
-  await page.click(`${open} #yes`);
+  await page.click(`${open} #all`);                              // i72-b04: Pay it all now (pay as you go is the first choice)
   const s = await S();
   assert(s.certStudy && s.certStudy.id === 'phlebotomy' && s.money === 2300, JSON.stringify({ c: s.certStudy, m: s.money }));
   assert(await page.$eval('[data-cert="welding"]', b => b.disabled), 'one course at a time');

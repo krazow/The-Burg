@@ -107,10 +107,11 @@ const currentGig = () => GIGS.find(g => g.months.includes(curMonth())) || GIGS[3
 function focusEffect(f = S.focus, n = S.streakF === f ? S.streakN : 1){ return f === 'study' || n <= 4 ? 1 : Math.max(0.3, 1 - 0.12 * (n - 4)); }
 const wk = v => fmt(v*W) + '/wk';
 const LENGTHS = {
-  half: { label:'6 Months', sub:'26 weeks',  turns:26,       target:16000 },
-  two:  { label:'2 Years',  sub:'104 weeks', turns:104,      target:90000 },
-  five: { label:'5 Years',  sub:'260 weeks', turns:260,      target:400000 },   // B1: raised so careless long games don't coast on pay growth
-  life: { label:'Lifetime', sub:'18 to the end', turns:Infinity, target:4000000 }
+  // i49-a01: mins is a real-time guess from timed phone play (390×844, ⏩ where it helps)
+  half: { label:'6 Months', sub:'26 weeks',  turns:26,       target:16000,   mins:'about 4 min' },
+  two:  { label:'2 Years',  sub:'104 weeks', turns:104,      target:90000,   mins:'about 11 min (7 with ⏩)' },
+  five: { label:'5 Years',  sub:'260 weeks', turns:260,      target:400000,  mins:'about 25 min' },   // B1: raised so careless long games don't coast on pay growth
+  life: { label:'Lifetime', sub:'18 to the end', turns:Infinity, target:4000000, mins:'about 4 hours, over many sittings' }
 };
 
 const CITIES = {
@@ -279,6 +280,7 @@ function blankLife(name, len, slot = 0){
     earnYears:0, earnSum:0, pensionYears:0, pensionPay:0, ltc:null, care:null, snowbird:null, scholar:null, will:false, probate:null, roomHost:false, hostLast:-99,
     skills:{}, biz:null, weekly:null, rng:null, rngEv:null, gen:1, goalAt:{}, carpoolJob:null, hustleLast:0, highWater:null, recentF:[], out:outDefault(), years:[],
     plan:[], planI:0,                              // i2-a12: a weekly focus rotation (empty = no plan)
+    evSeen:{}, seenOT:false,                       // i52-a10: events seen this life (no repeats in the first year); i52-a03: the overtime note
     // jobs and school (round 3): ladder rung, months in this job, program and major, certificates, seasonal recall,
     // a pending interview, your reference, notice, sign-on bonus, union contract, strike, furlough, clearance, fiber, bus
     rung:0, tenure:0, program:null, major:null, certs:{}, certStudy:null, recall:null, interview:null, ref:null, notice:null, bonus:null,
@@ -314,7 +316,7 @@ function repairLife(s){
 }
 function migrate(s){
   repairLife(s);
-  const d = { slot:0, evPins:[], streakF:null, streakN:0, run:null, yearEvents:0, yearStart:null, evCd:{}, evDone:{}, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, k401match:0, uiPay:null, mortgage:null, loanPay:0 };   // i75: an older 401(k) counts as vested; old benefits pay the floor
+  const d = { slot:0, evPins:[], streakF:null, streakN:0, run:null, yearEvents:0, yearStart:null, evCd:{}, evDone:{}, evSeen:{}, seenOT:true, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, k401match:0, uiPay:null, mortgage:null, loanPay:0 };   // i75: an older 401(k) counts as vested; old benefits pay the floor
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
   // Around the region (0.3.0): older lives count as just serviced and checked, with this year's tabs paid
   if (s.tenure === undefined) s.tenure = s.jobMonths || 0;          // i3-a01: older lives count the months since the last raise
