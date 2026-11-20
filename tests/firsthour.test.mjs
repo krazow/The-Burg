@@ -207,7 +207,7 @@ await t.check('i68-b10/b11: first-time explainers for the jobs, school and money
   const where = await ev(() => {
     const out = {};
     const firstOn = (k, fn) => { closeSheet(); fn(); const el = document.querySelector(`[data-firstcard="${k}"]`); out[k] = !!el; setPref('first', { ...(prefs().first || {}), [k]: 1 }); };
-    localStorage.clear(); newGame('Ex', 'life', 0, { diff: 'hard' }); S.noEvents = true;   // to-do 2: Hard has every system (ltc is Hard-tier)
+    localStorage.clear(); newGame('Ex', 'life', 0, { diff: 'hard' }); S.noEvents = true;   // Hard: every system's explainer
     setPref('first', { school: 1, goals: 1, skills: 1, biz: 1, k401: 1, carpool: 1 });
     firstOn('interview', () => { S.interview = { id: 'diner', p: 0.5 }; interviewSheet(jobById('diner')); });
     firstOn('offer', () => hired(jobById('cna')));

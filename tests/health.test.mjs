@@ -97,7 +97,7 @@ await t.check('i74-a04 + a08: dental and the ambulance district are on the insur
 });
 
 await t.check('i74-a04/a08 screen: the insurance sheet toggles dental and the ambulance membership', async () => {
-  await ev(() => { fresh('two'); S.noEvents = true; tab = 'life'; render(); document.querySelector('#inssheet').click(); });
+  await ev(() => { fresh('two', { diff: 'hard' }); S.noEvents = true; tab = 'life'; render(); document.querySelector('#inssheet').click(); });
   await page.click('[data-ins="dental"][data-v="true"]');
   await page.click('[data-ins="amb"][data-v="true"]');
   const r = await ev(() => ({ ins: S.ins, txt: document.querySelector('#sheet').textContent, pressed: document.querySelector('[data-ins="amb"][data-v="true"]').getAttribute('aria-pressed') }));
