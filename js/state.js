@@ -17,6 +17,14 @@ const clamp = (v,a=0,b=100) => Math.max(a, Math.min(b, v));
 const ri = (a,b) => a + Math.floor(Math.random()*(b-a+1));
 const chance = p => Math.random() < p;
 const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+// i7-a20: pronouns for you and the person you date. pron('she').they === 'she'; Cap() starts a sentence with one.
+const PRONS = {
+  she:  { they:'she',  them:'her',  their:'her',   self:'herself',  are:'is',  were:'was',  have:'has',  says:'says', label:'she/her' },
+  he:   { they:'he',   them:'him',  their:'his',   self:'himself',  are:'is',  were:'was',  have:'has',  says:'says', label:'he/him' },
+  they: { they:'they', them:'them', their:'their', self:'themself', are:'are', were:'were', have:'have', says:'say',  label:'they/them' }
+};
+const pron = (k = S && S.pron) => PRONS[k] || PRONS.they;
+const Cap = t => String(t).charAt(0).toUpperCase() + String(t).slice(1);
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const SEASON = m => ['Winter','Winter','Spring','Spring','Spring','Summer','Summer','Summer','Fall','Fall','Fall','Winter'][m];
@@ -206,8 +214,9 @@ const TUITION   = [520, 520, 1100];       // per month while studying (i75-b29: 
 const GRANT_FULL = 4000, GRANT_NONE = 6500;
 const grantShare = () => { const j = S && !S.retired && S.jobId ? JOBS.find(x => x.id === S.jobId) : null, p = j ? payNow(j) / (S.wage || 1) : 0;
   return Math.max(0, Math.min(1, (GRANT_NONE - p) / (GRANT_NONE - GRANT_FULL))); };
-const tuitionNow = (lvl = S.edu) => cost(TUITION[lvl]) * (1 - grantShare());
-const tuitionWords = () => { const g = grantShare(); return g >= 0.995 ? `free with the Washington College Grant (${wk(cost(TUITION[S.edu]))} without it)` : `${wk(tuitionNow())}${g > 0.005 ? ` after a ${Math.round(g * 100)}% Washington College Grant` : ''}${S.money < 0 ? ', on your student loan while you\'re below $0' : ''}`; };
+// i17-a20 / i7-a21: a Pell Grant from the FAFSA and DVR each pay half of what's left (extraAid, js/starts.js)
+const tuitionNow = (lvl = S.edu) => cost(TUITION[lvl]) * (1 - grantShare()) * (typeof extraAid === 'function' ? extraAid() : 1);
+const tuitionWords = () => { const g = grantShare(), x = typeof aidWords === 'function' ? aidWords() : ''; return g >= 0.995 ? `free with the Washington College Grant (${wk(cost(TUITION[S.edu]))} without it)` : `${wk(tuitionNow())}${g > 0.005 ? ` after a ${Math.round(g * 100)}% Washington College Grant` : ''}${x ? `${g > 0.005 ? ', and' : ' after'} ${x}` : ''}${S.money < 0 ? ', on your student loan while you\'re below $0' : ''}`; };
 // i75-b23: tuition in a week you're below $0 goes on a federal student loan (about 6.5%, 10 years) instead of the card
 const SLOAN_RATE = 0.065, SLOAN_MONTHS = 120;
 const sloanPerDollar = () => { const r = SLOAN_RATE / 12; return r / (1 - Math.pow(1 + r, -SLOAN_MONTHS)); };
@@ -241,7 +250,9 @@ const HOMES = {
   room:  {name:'Rented room above Main Street', cost:650,  happy:0},
   house: {name:'Rented house on a quiet street', cost:1250, happy:1.5},
   fixer: {name:'Fixer-upper by the Touchet',     cost:950,  happy:1.5, own:true, down:9000,  equityPer:260, value:160000},
-  farm:  {name:'Farmhouse in the wheat hills',   cost:1650, happy:3,   own:true, down:30000, equityPer:520, value:300000}
+  farm:  {name:'Farmhouse in the wheat hills',   cost:1650, happy:3,   own:true, down:30000, equityPer:520, value:300000},
+  // i17-a04: the 'Staying with family' start's home. Only listed while you live there: once you move out, it's gone
+  family:{name:"Your family's house in town",    cost:200,  happy:-1,  family:true}
 };
 const CARS = {
   beater:{name:'1998 pickup',            mpg:15, price:0,     breakdown:.12},
@@ -296,6 +307,7 @@ function blankLife(name, len, slot = 0){
     earnYears:0, earnSum:0, pensionYears:0, pensionPay:0, ltc:null, care:null, snowbird:null, scholar:null, will:false, probate:null, roomHost:false, hostLast:-99,
     skills:{}, biz:null, weekly:null, rng:null, rngEv:null, gen:1, goalAt:{}, carpoolJob:null, hustleLast:0, highWater:null, recentF:[], out:outDefault(), years:[],
     plan:[], planI:0,                              // i2-a12: a weekly focus rotation (empty = no plan)
+    ...START_STATE(),                              // i17 / i7 / i6: pronouns, your look, a disability start, aid and the first weeks (js/starts.js)
     hist:[], spend4:[], ansRules:{},               // i15-b01 weekly history, i15-b05 last 4 weeks by kind, i49-a11 answer rules
     opened:{}, unlockQ:[], unlockMode:'go',        // i31: systems open as you go ({id: {w: week, how}}), unlock cards waiting, or everything open
     hireJoy:null, bgRest:null,                     // i38-a01: the week of the last hiring cheer; i37-b06: a background's community resting point
@@ -325,6 +337,10 @@ function repairLife(s){
   if (s.diff !== undefined && !(typeof DIFFS !== 'undefined' && DIFFS[s.diff])) s.diff = 'hard';   // to-do 2 D1: an unknown difficulty plays the full game
   if (s.bg !== undefined && !BACKGROUNDS[s.bg]) s.bg = 'fresh';
   if (!FOCUS[s.focus]) s.focus = 'rest';
+  if (s.pron !== undefined && !PRONS[s.pron]) s.pron = 'they';                   // i7-a20
+  if (s.partnerPron !== undefined && !PRONS[s.partnerPron]) s.partnerPron = 'they';
+  if (s.partnerName != null) s.partnerName = noTags(s.partnerName).slice(0, 20) || null;
+  if (s.disability != null && !(typeof DISABILITIES !== 'undefined' && DISABILITIES[s.disability])) s.disability = null;   // i7-a21
   if (s.scenario != null && !(typeof SCENARIOS !== 'undefined' && SCENARIOS[s.scenario])) s.scenario = null;
   if (s.biz != null && !(isObj(s.biz) && typeof BIZ !== 'undefined' && BIZ[s.biz.type])) s.biz = null;
   const b = blankLife(s.name, s.len, 0);
@@ -735,7 +751,13 @@ const BACKGROUNDS = {
   transplant: { ic:'🏙️', name:'Seattle transplant', hint:'Money, but lonely', desc:'Moved over the mountains with $6,000 saved and a used sedan. Nobody in town knows you yet, and you miss the city.',
     set:s => { s.money = 6000; s.community = 5; s.happy = 50; s.car = 'sedan'; s.carValue = 9000; s.ageMonths = 24*12; s.bgRest = 10; } },   // i37-b06: lonely for the first year
   parent:     { ic:'👶', name:'Young parent', hint:'Tight money, full heart', desc:'20, with a two-year-old. Money is tight and every week counts, but the town looks out for you.',
-    set:s => { s.ageMonths = 20*12; s.kids = [s.ageMonths - 24]; s.money = 800; s.community = 36; s.happy = 64; } }
+    set:s => { s.ageMonths = 20*12; s.kids = [s.ageMonths - 24]; s.money = 800; s.community = 36; s.happy = 64; } },
+  // i17-a04: back in your old room at home. Cheap rent and chores; after a year it gets cramped unless you're in school or saving to move
+  home:       { ic:'🏠', name:'Staying with family', hint:'Cheap rent, less room', desc:'18, in your old room at your family\'s house in town. Rent is $200 and you help with chores. After a year it feels small, unless you\'re in school or saving to move out.',
+    set:s => { s.home = 'family'; s.money = 900; s.community = 34; s.happy = 58; s.famAt = 0; } },
+  // i7-a21: living with a disability you pick (js/starts.js DISABILITIES). Same score and goals; costs come with supports
+  access:     { ic:'♿', name:'Living with a disability', hint:'Standard, with supports', desc:'18, a ground-floor room on Main Street, $1,500 and the 1998 pickup. You live with a disability you pick below. Some jobs need an accommodation, and Washington\'s job-training office helps pay for school.',
+    set:s => { s.disability = s.disability || 'wheel'; } }
 };
 const MODES = {
   relaxed: { ic:'🌤️', name:'Relaxed', desc:'Stats wear down slower, debt grows slower and never ends your game. For playing at your own pace.' },

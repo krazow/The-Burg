@@ -875,6 +875,7 @@ function scoreCard(){
   const g = c.getContext('2d');
   g.fillStyle = '#fbf6ea'; g.fillRect(0, 0, 1080, 1350); g.fillStyle = '#9b2f1f'; g.fillRect(0, 0, 1080, 260);
   g.fillStyle = '#fff'; g.textAlign = 'center'; g.font = 'bold 110px Georgia, serif'; g.fillText('The Burg', 540, 170);
+  faceCanvas(g, 40, 40, 180);                      // i6-b01: your portrait, as you look at the end
   g.fillStyle = '#3d2b1f'; g.font = '600 52px system-ui, sans-serif'; g.fillText(`${S.name}'s life in Waitsburg`, 540, 380);
   g.font = '40px system-ui, sans-serif'; g.fillStyle = '#6b5b4e';
   g.fillText(`${LENGTHS[S.len].label} · ${diffName()}${S.classic && mode() !== 'normal' ? ` (${MODES[mode()].name})` : ''}${S.weekly ? ` · Weekly challenge ${S.weekly}` : ''}`, 540, 450);   // D7: the difficulty
@@ -1081,7 +1082,7 @@ function nextStep(){
   return null;
 }
 /* ---------- i2-a29: your life story, from the Journal and each year's review ---------- */
-const STORY_SKIP = /^(📋|Applied for|Trip to|Renewed the|The wheat lease came|Refinanced)/;
+const STORY_SKIP = /^(📋|📝|Applied for|Trip to|Renewed the|The wheat lease came|Refinanced)/;
 const storyWorthy = e => e && (e.k || logKind(e.m)) !== 'ev' && !STORY_SKIP.test(e.m) || !!(e && e.mile) || /^(Hired as|Retired at|Moved into|Started dating)/.test(e && e.m || '');
 // at New Year, a few of the year's milestones go into S.years, so the story survives the Journal's 120-entry limit
 function yearMilestones(y){ return S.log.filter(e => e.d.endsWith(String(y)) && storyWorthy(e)).reverse().slice(0, 3).map(e => e.m); }
@@ -1303,9 +1304,11 @@ function finish(reason, opts = {}){
   }
   S.over = true;
   sheet(`<h2 style="text-align:center">${esc(S.name)}'s life in the Burg</h2>
+    ${S.practice ? '' : `<div class="endface">${myFace(84)}</div>`}
     <p class="muted" style="text-align:center">${esc(reason)}</p>
+    ${S.practice ? '' : `<p class="pronline" style="text-align:center">${esc(pronLine())}</p>`}
     ${S.practice ? '' : storyHTML()}
-    ${S.practice ? '' : `<p class="muted" style="text-align:center" id="enddiff">${LENGTHS[S.len].label} · ${lifeDiffLabel()}${S.bg !== 'fresh' ? ` · ${BACKGROUNDS[S.bg].ic} ${BACKGROUNDS[S.bg].name}` : ''}</p>`}
+    ${S.practice ? '' : `<p class="muted" style="text-align:center" id="enddiff">${LENGTHS[S.len].label} · ${lifeDiffLabel()}${S.bg !== 'fresh' ? ` · ${BACKGROUNDS[S.bg].ic} ${BACKGROUNDS[S.bg].name}${dis() ? ` (${dis().name.toLowerCase()})` : ''}` : ''}</p>`}
     <div class="score" id="finalscore" tabindex="-1" aria-label="Life Score ${score}">${score}</div>
     <p style="text-align:center;margin-top:0"><b>${title}</b>${S.practice ? '' : ` <span class="tag">${lifeDiffLabel()} score</span>`}${isBest && !S.practice ? ` · <span class="tag cur">New best (${diffName()})!</span>` : ''}</p>
     ${back ? `<p class="comeback" style="text-align:center;margin-top:-6px">${back}</p>` : ''}
@@ -1442,6 +1445,7 @@ function startJob(id, back = null){
   if (unionJob(x)) S.contractAt = S.turn + ri(78, 156);
   if (remoteDays(x) === 5 && !S.fiber) { const c = Math.round(cost(FIBER_COST)); S.money -= c; S.fiber = true; log(`Had fiber internet put in at home for the remote job (${fmt(c)}).`, 'money'); }
   if (!busOK(x)) S.bus = false;
+  accOnHire(id);                                   // i7-a21: an accommodation, set up by the employer
 }
 
 // i3-a07: the interview. Each answer moves the odds a little; not answering keeps the usual odds.

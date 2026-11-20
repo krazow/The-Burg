@@ -68,7 +68,7 @@ const EVENT_TIERS = {
     'Free training course', 'Employee of the month', 'Holiday party', 'Train the new hire', 'A customer compliment', 'Workplace fundraiser',
     'Conference trip', 'A coworker retires', 'Year-end bonus', 'Lunchroom potluck', 'A recruiter calls', 'A work friend\'s wedding', 'Snow day',
     'Community potluck at Town Hall', '"Lost dog" poster', 'Pour beer at the Celebration Days beer garden', 'Town Hall roof fundraiser',
-    'Adopt a Main Street flower basket', 'Little League needs a coach', 'A cross-country cyclist asks for water', 'Christmas lights contest',
+    'Adopt a Main Street flower basket', 'Little League needs a coach', 'A losing streak', 'The comeback', 'The season party', 'A cross-country cyclist asks for water', 'Christmas lights contest',
     'Barn dance at the fairgrounds', 'Wild turkeys strut down Main Street', 'Graduation party invitations', 'Bluegrass jam at Tonnage',
     'Tonnage opens for Celebration Days', 'Grenache Fest', 'Music night at The Royal Brick', 'All-ages show at The Royal Brick',
     'The grill is open at Laughing Lad', 'Simply Shavings is back', 'The Junque Sisters reopen', 'Spring rush at Dreamy Garden Center',
