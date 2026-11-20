@@ -576,7 +576,8 @@ const SETTINGS = {
   sound:    { def:'off',    opts:[['off','🔇 Off'], ['soft','🔈 Soft'], ['normal','🔊 Normal']] },
   vibrate:  { def:'on',     opts:[['on','On'], ['off','Off']] },
   swipe:    { def:'on',     opts:[['on','On'], ['off','Off']] },
-  motion:   { def:'on',     opts:[['on','On'], ['off','Off']] }     // i2-a08/a10: moving bars, counting cash and confetti
+  motion:   { def:'on',     opts:[['on','On'], ['off','Off']] },    // i2-a08/a10: moving bars, counting cash and confetti
+  srWeek:   { def:'short',  opts:[['short','Short'], ['full','Full']] }   // i7-a02: what a screen reader hears after End Week
 };
 // fewer moving parts when the device asks for reduced motion, or Settings → Animations is off
 const calmMotion = () => setting('motion') === 'off' || !!(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -589,6 +590,7 @@ function applyPrefs(){
   h.classList.toggle('ts-l', ts === 'l'); h.classList.toggle('ts-xl', ts === 'xl');
   h.classList.toggle('night', isNight());
   const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = isNight() ? '#5a170e' : '#9b2f1f';
+  const cs = document.querySelector('meta[name=color-scheme]'); if (cs) cs.content = isNight() ? 'dark' : 'only light';   // i59-a19: phones don't auto-darken the day theme
 }
 if (darkQuery && darkQuery.addEventListener) darkQuery.addEventListener('change', applyPrefs);
 // sounds and buzzes wait for the player's first tap or key, so the browser allows them (and the sim stays silent)

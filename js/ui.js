@@ -349,7 +349,7 @@ function recapSheet(at){
 function askDelete(i){
   const g = slots()[i]; if (!g) return;
   sheet(`<h2>Delete ${esc(g.name)}'s life?</h2><p>${slotLine(g)}</p><p>This can't be undone.</p>
-    <button class="btn primary" id="yes">Delete</button><button class="btn ghost" id="no">Keep it</button>`);
+    <button class="btn primary" id="yes">Delete</button><button class="btn ghost" id="no" data-safe>Keep it</button>`);
   $('#yes').onclick = () => { writeSlot(i, null); closeSheet(); renderTitle(); toast('Deleted'); };
   $('#no').onclick = closeSheet;
 }
@@ -361,7 +361,7 @@ function askReplace(name, len, opts = {}){
     const i = +b.dataset.over, old = slots()[i];
     if (!old) { closeSheet(); return newGame(name, len, i, opts); }
     sheet(`<h2>Replace ${esc(old.name)}'s life?</h2><p>${slotLine(old)}</p><p>Slot ${i+1} will hold ${esc(name)}'s new life instead. This can't be undone.</p>
-      <button class="btn ghost" id="back">Back</button><button class="btn primary" id="yes">Replace it</button>`);
+      <button class="btn primary" id="yes">Replace it</button><button class="btn ghost" id="back" data-safe>Back</button>`);
     $('#yes').onclick = () => { closeSheet(); newGame(name, len, i, opts); };
     $('#back').onclick = () => askReplace(name, len, opts);
   });
@@ -384,7 +384,7 @@ function saveCopySheet(){
     };
     if (!old) return go();
     sheet(`<h2>Replace ${esc(old.name)}'s life?</h2><p>${slotLine(old)}</p><p>Slot ${i+1} will hold the copy instead. This can't be undone.</p>
-      <button class="btn primary" id="yes">Replace it</button><button class="btn ghost" id="back">Back</button>`);
+      <button class="btn primary" id="yes">Replace it</button><button class="btn ghost" id="back" data-safe>Back</button>`);
     $('#yes').onclick = go; $('#back').onclick = saveCopySheet;
   });
   $('#no').onclick = closeSheet;
@@ -691,7 +691,7 @@ function render(){
     <div class="progress"><i style="width:${pct}%"></i></div>
   </header>
   <main id="main"></main>
-  ${tab==='home' ? `${S.run ? `<button class="weekstrip" id="strip" aria-label="What the last ${S.run.weeks > 1 ? S.run.weeks + ' weeks' : 'week'} did: details"><span class="wl">${S.run.weeks > 1 ? `Last ${S.run.weeks} wks` : 'Last week'}</span><span class="wc">${runChips()}</span><span class="more">›</span></button>` : ''}
+  ${tab==='home' ? `${S.run ? `<button class="weekstrip" id="strip" aria-label="${esc(runWords())}. Details"><span class="wl">${S.run.weeks > 1 ? `Last ${S.run.weeks} wks` : 'Last week'}</span><span class="wc">${runChips()}</span><span class="more">›</span></button>` : ''}
     <div class="endbar${ROLL ? ' rolling' : ''}">${ROLL ? `<button class="btn primary" id="stoproll">⏹ Stop<small>${S.run.weeks} of up to ${ROLL.n} weeks</small></button>`
       : `<button class="btn primary" id="end" aria-keyshortcuts="Shift+Enter" aria-description="Press and hold, or Shift+Enter, for more ways to skip ahead">End Week →<small>${FOCUS[S.focus].ic} ${FOCUS_SHORT[S.focus]}</small></button>
     <button class="btn ghost${nar}" id="ff4" aria-label="Skip 4 weeks">⏩ 4</button>${big ? `<button class="btn ghost${nar}" id="ff13" aria-label="Skip 13 weeks">⏩ 13</button>` : ''}<button class="btn ghost" id="auto" aria-label="Auto: play until ${autoUntil() === 'event' ? 'something needs you' : AUTO_UNTIL[autoUntil()].short + ' or something needs you'}. Press and hold for options">⏭ Auto</button>`}</div>` : ''}
@@ -754,14 +754,17 @@ function skipSheet(){
   document.querySelectorAll('#sheet [data-speed]').forEach(b => b.onclick = () => { setPref('speed', b.dataset.speed); keep('speed'); });
 }
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const statColor = v => v >= 60 ? 'var(--sage)' : v >= 35 ? 'var(--wheat-d)' : 'var(--barn)';
-const statBar = (label, v) => `<div class="stat"><label><span>${label}</span><span>${Math.round(v)}</span></label>
-  <div class="bar"><i style="width:${v}%;background:${statColor(v)}"></i></div></div>`;
+// i74-b15: bar colours that keep 3:1 against the track in both themes
+const statColor = v => v >= 60 ? 'var(--bar-good)' : v >= 35 ? 'var(--bar-ok)' : 'var(--bar-low)';
+// i7-a03: every stat also says a word, and its bar has notches where the word changes
+const statWord = v => v >= 80 ? 'Great' : v >= 60 ? 'Good' : v >= 35 ? 'OK' : 'Low';
+const statBar = (label, v) => `<div class="stat"><label><span>${label}</span><span>${Math.round(v)} · ${statWord(v)}</span></label>
+  <div class="bar notched"><i style="width:${v}%;background:${statColor(v)}"></i></div></div>`;
 
 const FOCUS_SHORT = { work:'Work extra', rest:'Rest', community:'Town', study:'Classes', outdoors:'Outside', hustle:'Hustle' };
-const statBtn = (k, label, v) => `<button class="stat statbtn" data-stat="${k}" aria-label="${label} ${Math.round(v)}: what moves it">
-  <label><span>${label} <span class="info">ⓘ</span></span><span>${Math.round(v)}</span></label>
-  <div class="bar"><i style="width:${v}%;background:${statColor(v)}"></i></div></button>`;
+const statBtn = (k, label, v) => `<button class="stat statbtn" data-stat="${k}" aria-label="${label} ${Math.round(v)}, ${statWord(v)}: what moves it">
+  <label><span>${label} <span class="info">ⓘ</span></span><span>${Math.round(v)} · ${statWord(v)}</span></label>
+  <div class="bar notched"><i style="width:${v}%;background:${statColor(v)}"></i></div></button>`;
 // i2-a16: a first-month checklist for new players; finished steps are remembered on this device (prefs().cl), no rewards
 const CHECKLIST = [
   { id:'job', ic:'💼', t:'Get a job', done:() => !!S.jobId || S.retired, go:'jobs', b:'Jobs' },
@@ -817,7 +820,7 @@ function renderHome(){
   <div class="card"><div class="stats">
     ${statBtn('happy','Happiness', S.happy)}${statBtn('health','Health', S.health)}
     ${statBtn('community','Community', S.community)}
-    <button class="stat statbtn" data-stat="net" aria-label="Net worth: what counts"><label><span>Net worth <span class="info">ⓘ</span></span></label><div style="font-weight:800;font-size:1.125rem;margin-top:2px">${fmt(netWorth())}</div></button>
+    <button class="stat statbtn" data-stat="net" aria-label="Net worth ${fmt(netWorth())}: what counts"><label><span>Net worth <span class="info">ⓘ</span></span></label><div style="font-weight:800;font-size:1.125rem;margin-top:2px">${fmt(netWorth())}</div></button>
   </div>${scoreButton()}</div>
   ${cl}${hint ? `<div class="card next"><div>👉 <b>Next step:</b> ${hint.t}</div><button class="sm" data-next="${hint.go}">${hint.b}</button></div>` : ''}
   ${installReady() ? `<div class="card tip installcard"><div>📲 <b>Enjoying the Burg?</b> Install it: it opens from your home screen like an app and plays offline.</div><div class="slotbtns"><button class="sm" id="install">Install</button><button class="sm alt" id="installno">Not now</button></div></div>` : ''}
@@ -1004,7 +1007,7 @@ function myJobCard(){
   const L = ladderOf(j), rung = Math.min(S.rung || 0, 2), next = L[rung + 1];
   const steps = L.map((x, i) => `<li${i === rung ? ' aria-current="step"' : ''}>${i < rung ? '✅' : i === rung ? '➡️' : '⬜'} ${i === rung ? `<b>${esc(x.title)}</b>` : esc(x.title)}${i ? ` <small class="muted">+${Math.round((x.payMult - 1) * 100)}% pay</small>` : ''}</li>`).join('');
   const a = j.apprentice, app = apprenticing(j) ? `<div class="kv"><span>🧰 Apprenticeship: year ${Math.floor((S.appWeeks || 0) / 52) + 1} of ${a.weeks / 52}</span><span>${Math.round(appMult(j, true) * 100)}% pay</span></div>
-    <div class="bar" role="progressbar" aria-label="Apprenticeship progress" aria-valuenow="${S.appWeeks || 0}" aria-valuemin="0" aria-valuemax="${a.weeks}"><i style="width:${(S.appWeeks || 0) / a.weeks * 100}%;background:var(--sky)"></i></div>` : '';
+    <div class="bar" role="progressbar" aria-label="Apprenticeship progress" aria-valuenow="${S.appWeeks || 0}" aria-valuemin="0" aria-valuemax="${a.weeks}"><i style="width:${(S.appWeeks || 0) / a.weeks * 100}%;background:var(--bar-sky)"></i></div>` : '';
   const facts = [clearing() ? `🔐 Clearance pending: ${S.clearAt - S.turn} more weeks at ${Math.round(CLEAR_PAY * 100)}% pay. Heavy debt (below ${fmtc(-5000)}) can sink the check.` : '',
     j.union ? `🪪 Union job: dues ${wk(payNow(j) * UNION_DUES)}, a 1.5% step raise each January, half the layoff risk.${S.strike ? ` On strike for ${S.strike.until - S.turn} more weeks (40% strike pay).` : ''}` : '',
     S.furlough && S.turn < S.furlough.until ? `🏛️ Furloughed for ${S.furlough.until - S.turn} more weeks. Back pay so far: ${fmt(S.furlough.owed)}.` : '',
@@ -1059,7 +1062,7 @@ function renderJobs(){
       <h3>What will change</h3><ul class="changes">${changes.map(l => `<li>${l}</li>`).join('')}</ul>
       <button class="btn primary" id="notice">Give two weeks' notice${ok ? ' (a good reference)' : ''}</button>
       ${!ok ? '<p class="muted">You\'ve been here under 6 months, so there isn\'t much of a reference to give either way.</p>' : ''}
-      <button class="btn ghost" id="y">Walk out today (a bad reference for a year)</button><button class="btn ghost" id="n">Never mind</button>`);
+      <button class="btn ghost" id="y">Walk out today (a bad reference for a year)</button><button class="btn ghost" id="n" data-safe>Never mind</button>`);
     $('#notice').onclick = () => { S.notice = S.turn + 2; log(`Gave two weeks' notice at the ${job().title.toLowerCase()} job.`); closeSheet(); save(); render(); toast('Two weeks to go'); };
     $('#y').onclick = () => { log(`Quit the job as ${job().title}.`); leaveJob('walk'); adj({happy:3}); closeSheet(); save(); render(); };
     $('#n').onclick = closeSheet;
@@ -1092,7 +1095,7 @@ function eduCard(){
   return `<div class="card"><h3>📚 Education</h3>
     <div class="kv"><span>Highest</span><span><b>${EDU[S.edu]}</b>${S.major ? ` <small>(${PROGRAMS[S.major].ic} ${PROGRAMS[S.major].name})</small>` : ''}</span></div>
     ${S.edu < 3 ? `<div class="kv"><span>Next: ${EDU[S.edu+1]}${pr ? ` in ${pr.name.toLowerCase()}` : ''}</span><span>${studyDone()}/${STUDY_NEED[S.edu]} weeks</span></div>
-    <div class="bar"><i style="width:${S.studyProg/STUDY_NEED[S.edu]*100}%;background:var(--sky)"></i></div>
+    <div class="bar"><i style="width:${S.studyProg/STUDY_NEED[S.edu]*100}%;background:var(--bar-sky)"></i></div>
     <p class="muted">Pick "Take classes" as your focus to study through ${SCHOOL[S.edu]} (${tuitionWords()}).${cs ? ' Your certificate course comes first.' : ''}</p>
     <p style="margin:6px 0 2px"><b>Program</b> <small class="muted">Same weeks and tuition. Your diploma counts as a major in it: +${Math.round(MAJOR_PAY * 100)}% pay and better odds at matching jobs.</small></p>
     <div class="chips" role="group" aria-label="Program">${[['', '📘 General studies'], ...Object.entries(PROGRAMS).map(([k, x]) => [k, `${x.ic} ${x.name}`])].map(([k, l]) =>
@@ -1102,7 +1105,7 @@ function eduCard(){
     <h3 style="margin-top:12px">📜 Short certificates</h3>
     <p class="muted" style="margin:0 0 4px">A few weeks of Take classes and a one-time fee open one door, without the whole school ladder.</p>
     ${cs ? `<div class="kv"><span>${cs.ic} ${cs.name}</span><span>${Math.floor(S.certStudy.prog)}/${cs.weeks} weeks</span></div>
-      <div class="bar"><i style="width:${S.certStudy.prog / cs.weeks * 100}%;background:var(--sky)"></i></div>` : ''}
+      <div class="bar"><i style="width:${S.certStudy.prog / cs.weeks * 100}%;background:var(--bar-sky)"></i></div>` : ''}
     ${Object.entries(CERTS).map(([k, c]) => `<div class="kv job"><div><div class="t">${c.ic} ${c.name}</div><div class="s">${c.weeks} weeks · ${fmtc(c.fee)} · ${c.what}</div></div>
       ${(S.certs || {})[k] ? '<span class="tag cur">Earned</span>' : S.certStudy && S.certStudy.id === k ? '<span class="tag">In progress</span>'
         : `<button class="sm" data-cert="${k}" ${S.certStudy ? 'disabled' : ''}>Sign up</button>`}</div>`).join('')}
@@ -1160,7 +1163,7 @@ ${S.edu < 3 ? firstTime('school') : ''}${eduCard()}
   if ($('#undo')) $('#undo').onclick = lifeUndo;
   document.querySelectorAll('[data-biz]').forEach(b => b.onclick = () => startBiz(b.dataset.biz));
   if ($('#renew')) $('#renew').onclick = () => { const err = renewLease(); if (err) return toast(err); save(); render(); toast('🌾 Lease renewed for 5 years'); };
-  if ($('#bizsell')) $('#bizsell').onclick = () => { sheet(`<h2>Sell your business?</h2><p>You'd get about ${fmt(bizValue())}.</p><button class="btn primary" id="y">Sell</button><button class="btn ghost" id="n">Keep it</button>`); $('#y').onclick = () => { closeSheet(); sellBiz(); }; $('#n').onclick = closeSheet; };
+  if ($('#bizsell')) $('#bizsell').onclick = () => { sheet(`<h2>Sell your business?</h2><p>You'd get about ${fmt(bizValue())}.</p><button class="btn primary" id="y">Sell</button><button class="btn ghost" id="n" data-safe>Keep it</button>`); $('#y').onclick = () => { closeSheet(); sellBiz(); }; $('#n').onclick = closeSheet; };
   document.querySelectorAll('[data-prog]').forEach(b => b.onclick = () => { S.program = b.dataset.prog || null; save(); render(); toast(S.program ? `${PROGRAMS[S.program].ic} Studying ${PROGRAMS[S.program].name.toLowerCase()}` : 'General studies'); });
   document.querySelectorAll('[data-cert]').forEach(b => b.onclick = () => { const c = CERTS[b.dataset.cert];
     sheet(`<h2>${c.ic} ${c.name}</h2><p>${c.what}</p><p>${c.weeks} weeks of 📚 Take classes, and ${fmtc(c.fee)} up front. Your diploma classes wait until it's done.</p>
@@ -1327,6 +1330,7 @@ const SETTING_ROWS = [
   ['sound', '🎵 Sounds', 'Small sounds for a new week, events and badges. Quiet while ⏩ and Auto play.'],
   ['vibrate', '📳 Vibration', 'A short buzz for events and badges, on phones that can (not iPhones).'],
   ['swipe', '👆 Swipes', 'Swipe left or right to change tabs, and swipe a pop-up\'s handle down to close it.'],
+  ['srWeek', '🗣️ Week summary (screen readers)', 'What a screen reader says after End Week: one short sentence, or every number.'],
   ['motion', '✨ Animations', 'Stat bars that slide, cash that counts up after a week, and confetti for badges. Always off when your device asks for reduced motion.']
 ];
 function settingsSheet(fromMenu = false, keep = null){
@@ -1350,12 +1354,13 @@ function settingsSheet(fromMenu = false, keep = null){
 }
 
 // H2: ending a life early asks first, with the score so far and 'Keep playing' as the safe choice (Escape = keep playing)
+// i70-b17: on every yes/no sheet that ends or deletes something, the safe answer is the bottom button and gets the first focus
 function confirmRetire(){
   const { score, title } = lifeScore();
   sheet(`<h2>End ${esc(S.name)}'s life now?</h2>
     <p>Life Score so far: <b>${score}</b> (${title}).</p><p>The game ends here and this slot is cleared. This can't be undone.</p>
-    <button class="btn primary" id="no">Keep playing</button>
-    <button class="btn ghost" id="yes">End this life</button>`);
+    <button class="btn ghost" id="yes">End this life</button>
+    <button class="btn primary" id="no" data-safe>Keep playing</button>`);
   $('#no').onclick = closeSheet;
   $('#yes').onclick = () => { closeSheet(); finish('You chose to wrap things up.'); };
 }
@@ -1399,7 +1404,9 @@ function sheet(html){
   const sh = $('#sheet'); sh.className = 'sheet'; sh.style.transform = ''; sh.innerHTML = html; $('#modal').classList.remove('hidden'); sh.scrollTop = 0;
   if (sheetCloser(sh)) sh.insertAdjacentHTML('afterbegin', '<div class="grab" aria-hidden="true"><i></i></div>');   // i2-a22: a handle to swipe it away
   const h = sh.querySelector('h2'); sh.setAttribute('aria-label', h ? h.textContent : 'Message');
-  const first = sh.querySelector('[data-i], button.primary, button');
+  const d = sh.querySelector('[data-desc]');                       // i43-a02: an event's story is read with its title
+  if (d) { d.id = d.id || 'sheetdesc'; sh.setAttribute('aria-describedby', d.id); } else sh.removeAttribute('aria-describedby');
+  const first = sh.querySelector('[data-safe]') || sh.querySelector('[data-i], button.primary, button');   // i74-b02: a yes/no sheet opens on its safe button
   if (first && !(typeof TUT !== 'undefined' && TUT)) setTimeout(() => first.focus({ preventScroll: true }), 30);   // the tutorial places focus itself
   histSync();
 }
@@ -1447,7 +1454,7 @@ addEventListener('popstate', () => {
   histSync();
 });
 const sheetCloser = (sh = $('#sheet')) => sh.querySelector('[data-i]') ? null : ['#no', '#close', '#back', '#ok'].map(q => sh.querySelector(q)).find(Boolean) || null;
-const focusables = root => [...root.querySelectorAll('button:not([disabled]), [tabindex="0"], input, a[href]')].filter(e => e.offsetParent !== null || e.closest('svg'));
+const focusables = root => [...root.querySelectorAll('button:not([disabled]), [tabindex="0"], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href]')].filter(e => e.offsetParent !== null || e.closest('svg'));
 // say something to screen readers without showing it
 function announce(msg){ const r = $('#sr'); if (!r) return; r.textContent = ''; setTimeout(() => { r.textContent = msg; }, 60); }
 document.addEventListener('keydown', e => {
@@ -1459,9 +1466,10 @@ document.addEventListener('keydown', e => {
     if (modalOpen) { e.preventDefault(); if (mustChoose()) return pickOne(); const b = ['#no', '#n', '#close', '#back', '#ok'].map(q => $('#sheet ' + q)).find(Boolean); if (b) b.click(); return; }
     if (helpOpen) { e.preventDefault(); return closeHelp(); }
   }
-  if (e.key === 'Tab' && root) {                               // keep Tab inside the open sheet or help page
-    const f = focusables(root); if (!f.length) return;
+  if (e.key === 'Tab' && (root || coach)) {                    // keep Tab inside the open sheet or help page
+    const f = coach ? coachStops() : focusables(root); if (!f.length) return;   // i43-a05: the tutorial keeps Tab on its lit spot, Next and Skip
     const i = f.indexOf(document.activeElement);
+    if (coach) { e.preventDefault(); f[i === -1 ? 0 : (i + (e.shiftKey ? f.length - 1 : 1)) % f.length].focus(); return; }   // its stops aren't side by side on the page
     if (e.shiftKey && (i <= 0)) { e.preventDefault(); f[f.length - 1].focus(); }
     else if (!e.shiftKey && (i === -1 || i === f.length - 1)) { e.preventDefault(); f[0].focus(); }
   }
