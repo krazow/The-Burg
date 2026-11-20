@@ -58,6 +58,7 @@ function renderTitle(){
       `<button class="len ${k===len?'on':''}" data-len="${k}" aria-pressed="${k===len}"><b>${L.label}</b><span>${L.sub}</span><small>⏱ ${L.mins}</small></button>`).join('')}</div>
     <label class="field" id="difflbl">Difficulty</label>
     <div class="diffs" role="group" aria-labelledby="difflbl">${DIFF_LIST.map(k => diffCard(k, k === 'normal')).join('')}</div>
+    <details class="whichmode" id="whichmode"><summary>🤔 Which mode is for me?</summary>${whichModeHTML()}</details>
     <button class="btn primary bigstart" id="start">Start a new life</button>
     ${used ? '' : '<button class="btn ghost" id="newbie">🌱 Never played one of these?</button>'}
     <button class="moreopts" id="moreopts" aria-expanded="${more}" aria-controls="morepanel"><span><b>More options</b><span class="s" id="moresum"></span></span><span class="caret" aria-hidden="true">${more ? '▴' : '▾'}</span></button>
