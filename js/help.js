@@ -56,7 +56,9 @@ function firstTime(key){
 document.addEventListener('click', e => {
   const b = e.target.closest && e.target.closest('[data-first]'); if (!b) return;
   setPref('first', { ...(prefs().first || {}), [b.dataset.first]: 1 });
-  const c = b.closest('[data-firstcard]'); if (c) c.remove();
+  // i70-b21: the card keeps its space until the screen next redraws, so nothing jumps under your thumb
+  const c = b.closest('[data-firstcard]');
+  if (c) { c.style.minHeight = c.offsetHeight + 'px'; c.classList.add('gone'); c.innerHTML = '<span class="muted">✓ Got it</span>'; }
   announce('Got it');
 });
 
@@ -234,10 +236,11 @@ function guideHTML(){
       <li><b>What the weather cost you:</b> the week's details group weather events on one storm card, and each year in review shows what the weather cost and what getting ready saved.</li></ul>`],
     ['saves', '💾 Saving and loading', `
       <p>You can keep up to <b>5 lives</b>. Each one saves itself after every week.</p>
-      <ul><li><b>Title screen:</b> your lives are listed with Continue and 🗑 Delete. When all 5 slots are full, a new life asks which one to replace. Each life saves on its own, every week and whenever you leave the app; if an event card or an ending was open when the app closed, Continue brings it back. If your phone's storage is full, a warning says the week wasn't saved, and a save that can't be read is kept aside for you to download.</li>
+      <ul><li><b>Title screen:</b> your lives are listed with Continue and 🗑 Delete. When all 5 slots are full, a new life asks which one to replace. Each life saves on its own, every week and whenever you leave the app; if an event card or an ending was open when the app closed, Continue brings it back, with the same outcome waiting. Each slot also keeps last week's save: if this week's save gets damaged, the title screen offers <b>Use last week's copy</b>. If your phone's storage is full, a warning says the week wasn't saved, and a save that can't be read is kept aside for you to download.</li>
       <li><b>Menu → 💾 Save game:</b> Save writes your current life right now. Save here or Replace on another slot makes a copy as a checkpoint you can go back to.</li>
       <li><b>Menu → 📂 Load game:</b> switches to any saved life. The one you're playing is saved first.</li></ul>
-      <p>Finishing a life frees its slot. Saves live on this device and in this browser.</p>
+      <p>Finishing a life frees its slot. Saves live on this device and in this browser. The game asks your phone to keep them even when it's low on space; <b>Menu → 📤 Back up or restore</b> says <b>Saves protected</b>, or suggests a backup if the phone said no. In the phone app, Back up and Share open your phone's share sheet (Drive, email, Messages).</p>
+      <p>If something breaks, a sheet says so: <b>Continue</b> goes back to your last save, and <b>Copy details</b> copies what went wrong so you can send it to us.</p>
       <p><b>Menu → 📤 Back up or restore:</b> download a backup file or copy a backup code, then on another device use <b>📥 Restore from a backup</b> (on the title screen or in the same menu). You can add the backup's lives to empty slots or replace all your lives.</p>`],
     ['score', '🏆 The Life Score', `
       <p><b>Life Score so far:</b> Home shows the score you'd get if the game ended today. Tap it for the breakdown and a tip for your weakest part. A report card goes in your Journal every 13 weeks. In the <b>📜 Journal</b>, the chips at the top show just Money, Events, Milestones (badges, skills, report cards, town goals, stories) or Trips.</p>
@@ -277,11 +280,13 @@ function guideHTML(){
       <li><b>Text size:</b> Normal, Large or Larger.</li>
       <li><b>Sounds:</b> off at first. Soft or Normal plays small sounds made by the game itself (nothing to download, so they work offline): a tick for each week, a chime for events, a fanfare for badges. ⏩ and Auto stay quiet until something happens.</li>
       <li><b>Vibration:</b> a short buzz for events and badges on phones that can (iPhones can't).</li>
-      <li><b>Swipes:</b> swipe left or right on the page to move between Home, Jobs, Life and the Journal. Pull the little handle at the top of a pop-up down to close it. Events that ask you to choose can't be swiped away.</li>
-      <li><b>Back button:</b> your phone's Back closes the pop-up on top, then Help, then takes you to Home; it stays in the game. On an event it just reminds you to pick one, so a stray Back never answers for you.</li></ul>
+      <li><b>Swipes:</b> swipe left or right on the page to move between Home, Jobs, Life and the Journal. Pull a pop-up down to close it, from anywhere on it when it's scrolled to the top. Events that ask you to choose can't be swiped away.</li>
+      <li><b>Back button:</b> your phone's Back closes the pop-up on top, then takes you to Home. In Help it goes to the contents first, then closes Help. In the tutorial it asks <b>Skip the tour?</b> On Home it says <b>Press Back again to leave</b>, and your week is saved. On an event it just reminds you to pick one, so a stray Back never answers for you.</li>
+      <li><b>Quick focus:</b> tap the focus icon on the left of <b>End Week</b> to pick from the six focuses right there, without scrolling.</li></ul>
       <p>On a tablet, a computer or a phone held sideways, Home shows two columns, with your job, home, ride and recent journal entries at the side.</p>`],
     ['install', '📱 Installing and playing offline', `
       <p>The Burg is a web app you can install. On iPhone, open it in Safari, tap Share, then <b>Add to Home Screen</b>. On Android, open it in Chrome and tap <b>Install app</b> (or ⋮ → Add to Home screen). After the first visit it works offline. After you've played a couple of months, Home may offer an <b>Install</b> button where your browser supports it; <b>Not now</b> hides it for two weeks.</p>
+      <p><b>Updates:</b> a new version downloads in the background. When it's ready, a <b>🔄 Update</b> button shows on Home (and the title screen). Tap it between weeks to refresh; until then the game keeps running the version you started with.</p>
       <p>There's also an <b>Android app (APK)</b> and a <b>Windows installer</b> on the game's GitHub releases page: github.com/krazow/The-Burg/releases.</p>
       <p>Version ${APP_VERSION}.</p>`]
   ];
@@ -314,6 +319,12 @@ function showHelp(){
   histSync();
 }
 let lastHelpFocus = null;
+// i59-a02: Back in Help goes to the contents first (from inside a section), then closes Help
+function helpBack(){
+  const v = $('#helpview');
+  if (v.scrollTop > 160) { v.scrollTo({ top: 0 }); const t = v.querySelector('.toc button'); if (t) t.focus({ preventScroll: true }); announce('Help contents'); return; }
+  closeHelp();
+}
 function closeHelp(){
   const wasOpen = !$('#helpview').classList.contains('hidden');
   $('#helpview').classList.add('hidden');
@@ -432,6 +443,16 @@ function placeBubble(b, box, vw, vh, tap){
   const room = Math.max(below, above);
   if (!tap && room < 120) return at({ top: 'auto', bottom: `${m}px` });   // a big area to look at: the bubble may sit over part of it
   at({ maxHeight: `${Math.max(80, room)}px`, overflowY: 'auto', top: below >= above ? `${box.y + box.h + gap}px` : `${Math.max(m, box.y - gap - Math.min(bh, room))}px` });
+}
+// i59-a02: Back during the tutorial asks before ending it; a second Back says yes
+function askSkipTour(){
+  const c = $('#coach'), b = c && !c.classList.contains('hidden') ? c.querySelector('.cbtns') : null;
+  if (!b) return;
+  if ($('#cskipyes')) return endTutorial(false);
+  b.innerHTML = '<span class="chint">Skip the tour?</span><button class="sm" id="cskipyes">Skip it</button><button class="sm alt" id="cskipno">Keep going</button>';
+  $('#cskipyes').onclick = e => { e.stopPropagation(); endTutorial(false); };
+  $('#cskipno').onclick = e => { e.stopPropagation(); drawCoach(); };
+  $('#cskipno').focus({ preventScroll: true }); announce('Skip the tour?');
 }
 function hideCoach(){ const c = $('#coach'); if (c) { c.classList.add('hidden'); c.innerHTML = ''; } }
 // i54-a10: on a look-only step the ringed spot is just for looking: taps, long presses and right-clicks on it do nothing

@@ -6,8 +6,12 @@ const CACHE = VERSION;
 const ASSETS = ['./', './index.html', './js/state.js', './js/ui.js', './js/turn.js', './js/events.js', './js/features.js', './js/outabout.js', './js/townpack1.js', './js/health.js', './js/weather.js', './js/maps.js', './js/help.js', './js/boot.js', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  // i3-b08: the first install takes over at once; a new version waits until the player taps "Update ready"
+  // (the page posts 'skip'), so new files never mix with old ones in the middle of a week
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.registration.active ? undefined : self.skipWaiting()));
 });
+
+self.addEventListener('message', e => { if (e.data && e.data.type === 'skip') self.skipWaiting(); });
 
 self.addEventListener('activate', e => {
   e.waitUntil(

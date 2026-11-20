@@ -353,7 +353,7 @@ function challengesSheet(){
     ${Object.entries(SCENARIOS).map(([k,sc]) => `<div class="kv job"><div><div class="t">${sc.ic} ${sc.name}${won[k] ? ' ✅' : ''}</div><div class="s">${sc.desc} ${LENGTHS[sc.len].label}.</div></div><button class="sm" data-sc="${k}">Start</button></div>`).join('')}
     <button class="btn ghost" id="n">Close</button>`);
   document.querySelectorAll('[data-sc]').forEach(b => b.onclick = () => {
-    const sc = SCENARIOS[b.dataset.sc], name = (($('#nm') && $('#nm').value.trim()) || 'Dusty').slice(0,20), free = slots().indexOf(null);
+    const sc = SCENARIOS[b.dataset.sc], name = (($('#nm') && $('#nm').value.trim()) || 'Dusty').slice(0,20), free = freeSlot();
     closeSheet();
     const opts = { bg: sc.bg, mode: 'normal', scenario: b.dataset.sc };
     if (free < 0) return askReplace(name, sc.len, opts);
@@ -846,10 +846,7 @@ function scoreCard(){
 }
 async function shareCard(){
   const c = scoreCard(), blob = await new Promise(r => c.toBlob(r, 'image/png')), name = `the-burg-${S.name.replace(/\W+/g, '-').toLowerCase()}.png`;
-  const file = typeof File === 'function' ? new File([blob], name, { type:'image/png' }) : null;
-  try { if (file && navigator.canShare && navigator.canShare({ files:[file] })) { await navigator.share({ files:[file], title:'My life in The Burg' }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
-  toast('Score card saved');
+  if (await shareFile(blob, name, 'My life in The Burg') === 'saved') toast('Score card saved');
 }
 
 /* ============================================================

@@ -493,8 +493,35 @@ const isLife = g => !!g && typeof g === 'object' && !Array.isArray(g) && typeof 
 // writes one life (null deletes it); false when the write failed
 function writeSlot(i, game){
   if (i !== WEEKLY_SLOT && rawGet(SLOTS_KEY) != null) importLegacy();
-  if (!game) { store.del(slotKey(i)); return true; }
+  if (!game) { store.del(slotKey(i)); store.del(prevKey(i)); return true; }
+  keepPrev(i, game);
   return store.set(slotKey(i), game);
+}
+// i3-b04: each slot also keeps last week's save. When a new week is written, the save it replaces becomes the
+// copy; a different life in the slot drops the old copy. If the copy can't fit, it goes, never the life itself.
+const prevKey = i => slotKey(i) + '.prev';
+function keepPrev(i, game){
+  const raw = rawGet(slotKey(i)); if (!raw) return;
+  let old; try { old = JSON.parse(raw); } catch(e){ return; }
+  if (!isLife(old)) return;
+  if (old.lifeId !== game.lifeId) { store.del(prevKey(i)); return; }
+  if (old.turn === game.turn) return;
+  try { localStorage.setItem(prevKey(i), raw); } catch(e){ store.del(prevKey(i)); }
+}
+// the copy from a week earlier, or null
+function prevLife(i){
+  const raw = rawGet(prevKey(i)); if (!raw) return null;
+  try { const g = JSON.parse(raw); return isLife(g) ? g : null; } catch(e){ return null; }
+}
+// i3-b03: ask the browser to keep this game's storage, so a phone low on space doesn't clear the lives.
+// PERSIST: true (kept), false (the phone said no) or null (not asked yet, or the browser can't say)
+let PERSIST = null;
+function askPersist(){
+  if (askPersist.done) return; askPersist.done = true;
+  try {
+    const st = navigator.storage; if (!st || !st.persist) return;
+    Promise.resolve(st.persisted ? st.persisted() : false).then(p => p || st.persist()).then(p => { PERSIST = !!p; }).catch(() => {});
+  } catch(e){}
 }
 // all five at once (restoring a backup); true only if every life landed
 function writeSlots(a){ let ok = true; for (let i = 0; i < SLOT_COUNT; i++) ok = writeSlot(i, a[i] || null) && ok; return ok; }
@@ -623,7 +650,37 @@ function sfx(name){
     }
   } catch(e){}
 }
-function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.remove('hidden'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.add('hidden'), 2200); }
+// i20-a03: a toast sits just above the bars at the bottom (never on them), and fades out after 2.5 seconds.
+// i20-a04: while an event is open, toasts wait and show after it closes, so they never cover the event.
+// toast(msg, true) shows at once, even over an event (Pick one to go on).
+const TOAST_MS = 2500, TOAST_Q = [];
+const evOpen = () => { const m = $('#modal'), sh = $('#sheet'); return !!(m && sh && !m.classList.contains('hidden') && sh.classList.contains('ev')); };
+function placeToast(t){
+  let top = Infinity;
+  for (const q of ['#strip', '.endbar', '.focusrow', '#app > nav']) {
+    const e = document.querySelector(q); if (!e) continue;
+    const r = e.getBoundingClientRect(); if (r.height > 0 && r.top < top) top = r.top;
+  }
+  t.style.bottom = top < Infinity && top > 120 ? `${Math.round(innerHeight - top + 8)}px` : '';
+}
+function toast(msg, now){
+  const t = $('#toast'); if (!t) return;
+  if (!now && evOpen()) { if (!TOAST_Q.includes(msg)) TOAST_Q.push(msg); if (TOAST_Q.length > 3) TOAST_Q.shift(); return; }
+  placeToast(t);
+  t.textContent = msg; t.classList.remove('hidden', 'out'); clearTimeout(toast.t); clearTimeout(toast.f);
+  toast.t = setTimeout(() => { t.classList.add('out'); toast.f = setTimeout(() => { t.classList.add('hidden'); t.classList.remove('out'); flushToasts(); }, 300); }, TOAST_MS);
+}
+// an event just opened: a toast already showing waits for it too
+function holdToast(){
+  const t = $('#toast'); if (!t || t.classList.contains('hidden') || !t.textContent) return;
+  clearTimeout(toast.t); clearTimeout(toast.f); t.classList.add('hidden'); t.classList.remove('out');
+  if (!TOAST_Q.includes(t.textContent)) TOAST_Q.unshift(t.textContent);
+}
+function flushToasts(){
+  const t = $('#toast');
+  if (!TOAST_Q.length || !t || !t.classList.contains('hidden') || evOpen()) return;
+  toast(TOAST_Q.shift());
+}
 
 /* ============================================================
    🎬 HOW A LIFE BEGINS (#69) and 🎚️ MODES (#73)

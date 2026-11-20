@@ -47,7 +47,7 @@ function pickEvent(month, cat = 'town'){
 // i71-b03: one way to settle an event, for a tapped choice and for one resolved on its own during a skip: the choice,
 // the weather bill, the Journal, the week strip and the map pin, and only now the event's cooldown (i22-a01)
 function resolveChoice(ev, choice, auto = false){
-  const m0 = S.money, result = choice.go() || '', dm = S.money - m0;
+  const m0 = S.money, d = evDice(ev), result = (() => { try { return choice.go() || ''; } finally { d.done(); } })(), dm = S.money - m0;
   wxTrack(ev, dm);                          // i75-a30: the weather bill
   if (result) { log(`${ev.title}: ${result}`); if (S.evLabel) S.log[0].d = S.evLabel; }   // dated the week it happened
   if (S.run) S.run.happened.push({ ic: ev.ic, title: ev.title, money: dm, wx: !!ev.wx, ...(auto ? { auto: 1 } : {}) });
@@ -58,13 +58,25 @@ function resolveChoice(ev, choice, auto = false){
   S.pendingEv = null; S.evAt = null;
   return { result, dm };
 }
+// i3-b02: an event waiting when the app closed comes back with the same dice: its text, its choices and what a
+// choice does roll from a seed made of this life, the week and the event, so closing the app can't reroll it.
+// Seeded lives (the weekly challenge) already keep their own dice.
+function evDice(ev){
+  if (!S || S.rng != null || S.pendingEv !== ev.title) return { done(){} };
+  const prev = Math.random; let a = weekSeed(`${S.lifeId || S.name}:${S.evAt ?? S.turn}:${ev.title}`);
+  Math.random = () => { const [n, v] = diceStep(a); a = n; return v; };
+  return { done(){ Math.random = prev; } };
+}
 function showEvent(ev, then = null){
   const before = {happy:S.happy, health:S.health, community:S.community};
-  const choices = ev.choices().filter(c => !c.if || c.if());
+  const dice = evDice(ev);
+  let choices, body;
+  try { choices = ev.choices().filter(c => !c.if || c.if()); body = typeof ev.text==='function'?ev.text():ev.text; } finally { dice.done(); }
   const pin = S.evPins && S.evPins[0] && S.evPins[0].t === ev.title ? [S.evPins[0].m, S.evPins[0].k] : eventPlace(ev);
-  sheet(`<div class="big">${ev.ic}</div><h2 style="text-align:center">${ev.title}</h2><p class="evplace">📍 ${esc(placeName(pin))}${pin[0] === 'R' ? ' · on the region map' : ''}</p><p>${typeof ev.text==='function'?ev.text():ev.text}</p>
+  sheet(`<div class="big">${ev.ic}</div><h2 style="text-align:center">${ev.title}</h2><p class="evplace">📍 ${esc(placeName(pin))}${pin[0] === 'R' ? ' · on the region map' : ''}</p><p>${body}</p>
     <div class="evchoices">${choices.map((c,i) => `<button class="btn ${i===0?'primary':'ghost'}" data-i="${i}">${c.label}</button>`).join('')}</div>`);
   $('#sheet').classList.add('ev');            // i2-a24: the choices sit at the bottom of the pop-up, in thumb reach
+  holdToast();                                // i20-a04: a toast already up waits until the event closes
   sfx('event'); buzz('event');
   document.querySelectorAll('#sheet [data-i]').forEach(b => b.onclick = () => {
     const { result, dm } = resolveChoice(ev, choices[+b.dataset.i]);
