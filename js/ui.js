@@ -48,11 +48,13 @@ const titleHour = () => { const g = newestLife(); return g && g.savedAt ? new Da
 // i6-b11: the header band and buttons take a touch of the season's color
 function seasonAccent(m){ try { document.body.dataset.season = SEASON(((m % 12) + 12) % 12); } catch (e) {} }
 
+// to-do 2 D1: a difficulty card on the start screen says in plain words what that difficulty includes
+const diffCard = (k, on) => `<button class="dcard${on ? ' on' : ''}" data-diff="${k}" aria-pressed="${on}"><b>${DIFFS[k].ic} ${DIFFS[k].label}</b><span>${DIFFS[k].blurb}</span></button>`;
 function renderTitle(){
   histSync();
   const all = slots(), used = all.filter(Boolean).length;
   const more = !!prefs().moreOpts;
-  let len = 'half';
+  let len = 'half', um = prefs().unlockMode === 'all' ? 'all' : 'go';   // i31-b20: open as I go, or everything open
   seasonAccent(titleMonth());
   $('#app').innerHTML = `<div class="title">
     ${scene(titleMonth(), titleHour())}
@@ -69,8 +71,11 @@ function renderTitle(){
     <div class="maptog" role="group" aria-label="Pronouns">${Object.entries(PRONS).map(([k, p]) => `<button class="${k === 'they' ? 'on' : ''}" data-pron="${k}" aria-pressed="${k === 'they'}">${p.label}</button>`).join('')}</div>
     <label class="field">Game length</label>
     <div class="lengths">${Object.entries(LENGTHS).map(([k,L]) =>
-      `<button class="len ${k===len?'on':''}" data-len="${k}" aria-pressed="${k===len}"><b>${L.label}</b><span>${L.sub}</span></button>`).join('')}</div>
+      `<button class="len ${k===len?'on':''}" data-len="${k}" aria-pressed="${k===len}"><b>${L.label}</b><span>${L.sub}</span><small>⏱ ${L.mins}</small></button>`).join('')}</div>
+    <label class="field" id="difflbl">Difficulty</label>
+    <div class="diffs" role="group" aria-labelledby="difflbl">${DIFF_LIST.map(k => diffCard(k, k === 'normal')).join('')}</div>
     <button class="btn primary bigstart" id="start">Start a new life</button>
+    ${used ? '' : '<button class="btn ghost" id="newbie">🌱 Never played one of these?</button>'}
     <button class="moreopts" id="moreopts" aria-expanded="${more}" aria-controls="morepanel"><span><b>More options</b><span class="s" id="moresum"></span></span><span class="caret" aria-hidden="true">${more ? '▴' : '▾'}</span></button>
     <div id="morepanel" class="morepanel${more ? '' : ' hidden'}">
       <label class="field">How your life begins</label>
@@ -80,30 +85,29 @@ function renderTitle(){
       <div id="diswrap" class="hidden">${disPicker('wheel')}</div>
       <label class="field">Your look</label>
       <div id="lookwrap">${lookPicker(null)}</div>
-      <label class="field">Mode</label>
-      <div class="maptog" role="group" aria-label="Mode">${Object.entries(MODES).map(([k,m]) =>
-        `<button class="${k==='normal'?'on':''}" data-mode="${k}" aria-pressed="${k==='normal'}">${m.ic} ${m.name}</button>`).join('')}</div>
-      <div class="muted bgdesc" id="modedesc">${MODES.normal.desc}</div>
       <label class="field">What you're playing for</label>
       <div class="bgs" role="group" aria-label="Life aim">${Object.entries(AIMS).map(([k,a]) =>
         `<button class="chip ${k==='all'?'on':''}" data-aim="${k}" aria-pressed="${k==='all'}">${a.ic} ${a.name}</button>`).join('')}</div>
       <div class="muted bgdesc" id="aimdesc">${aimDesc('all')}</div>
+      <label class="field">Systems</label>
+      <div class="maptog" role="group" aria-label="Systems">${Object.entries(UNLOCK_MODES).map(([k,m]) =>
+        `<button class="${k===um?'on':''}" data-um="${k}" aria-pressed="${k===um}">${m.ic} ${m.name}</button>`).join('')}</div>
+      <div class="muted bgdesc" id="umdesc">${UNLOCK_MODES[um].desc}</div>
       <label class="field">Rules</label>
       <button class="moreopts" id="rulesbtn" aria-haspopup="dialog"><span><b>🎛️ Change the rules</b><span class="s" id="rulesum">Normal rules · 🏆 counts toward the normal records</span></span><span class="caret" aria-hidden="true">›</span></button>
     </div>
-    <button class="btn ghost" id="chal">🏁 Challenges</button>
-    <button class="btn ghost" id="weekly">📅 Weekly challenge (${isoWeek()})</button>
-    ${hasRecords() ? '<button class="btn ghost" id="records">🏆 Your records</button>' : ''}
+    <button class="btn ghost" id="chal">🏁 Challenges${hasRecords() ? ' and records' : ''}</button>
     <button class="btn ghost" id="how">❓ Help & tutorial</button>
+    ${hasBackupStuff() ? '<button class="btn ghost" id="tbackup">📤 Back up</button>' : ''}
     <button class="btn ghost" id="restore">📥 Restore from a backup</button>
     <button class="btn ghost" id="newphone">📱 I'm the new phone</button>
     <button class="btn ghost" id="settings">⚙️ Settings</button>
-    ${Object.keys(store.get(BADGE_KEY) || {}).length ? `<div class="muted" style="margin-top:10px;font-size:0.8125rem">🏅 Badges collected across your lives: ${BADGES.filter(b => (store.get(BADGE_KEY) || {})[b.id]).map(b => b.ic).join(' ')} (${Object.keys(store.get(BADGE_KEY) || {}).length}/${BADGES.length})</div>` : ''}
     <div class="muted" style="margin-top:14px;font-size:0.75rem">v${APP_VERSION}</div>
   </div>`;
-  let bg = 'fresh', md = 'normal', aim = 'all', rules = {}, pr = 'they', dsel = 'wheel', face = okFace(null);
+  let bg = 'fresh', dif = 'normal', aim = 'all', rules = {}, pr = 'they', dsel = 'wheel', face = okFace(null);
+  const md = () => DIFF_MODE[dif];
   const moreSum = () => { const t = recordTier(rules), cu = Object.keys(rules).length;
-    $('#moresum').textContent = `${BACKGROUNDS[bg].ic} ${BACKGROUNDS[bg].name} · ${MODES[md].ic} ${MODES[md].name} · ${AIMS[aim].ic} ${AIMS[aim].name}${cu ? ` · 🎛️ ${TIERS[t].name} rules` : ''}`;
+    $('#moresum').textContent = `${BACKGROUNDS[bg].ic} ${BACKGROUNDS[bg].name} · ${DIFFS[dif].ic} ${DIFFS[dif].label} · ${AIMS[aim].ic} ${AIMS[aim].name}${cu ? ` · 🎛️ ${TIERS[t].name} rules` : ''}${um === 'all' ? ` · ${UNLOCK_MODES.all.ic} ${UNLOCK_MODES.all.name}` : ''}`;
     $('#rulesum').textContent = `${rulesSummary(rules)} · ${TIERS[t].ic} counts toward ${TIERS[t].shelf}`; };
   moreSum();
   // G2: starting backgrounds and modes live in a "More options" panel; open or closed is remembered
@@ -124,38 +128,54 @@ function renderTitle(){
     const d = b.dataset; if (d.skin != null) face.skin = +d.skin; if (d.hair) face.hair = d.hair; if (d.hc != null) face.hc = +d.hc; if (d.glasses) face.glasses = !face.glasses;
     const k = Object.keys(d)[0]; $('#lookwrap').innerHTML = lookPicker(face); wireLook(); const n = $(`#lookwrap [data-${k}="${d[k]}"]`); if (n) n.focus(); });
   wireLook();
-  document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { md = b.dataset.mode;
-    document.querySelectorAll('[data-mode]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#modedesc').textContent = MODES[md].desc; moreSum(); });
+  // to-do 2 D2: the picks a difficulty doesn't have are hidden (Easy: no Lifetime, Fresh start only, All-around only)
+  const limits = () => { const ds = { diff: dif };
+    const gate = (attr, key, keep, only) => document.querySelectorAll(`.title [data-${attr}]`).forEach(x => {
+      const v = x.dataset[attr], off = !on(key, ds) && (only ? v === only : v !== keep);
+      x.classList.toggle('hidden', off);
+      if (off && x.classList.contains('on')) { const k = document.querySelector(`.title [data-${attr}="${keep}"]`); if (k) k.click(); } });
+    gate('len', 'lengths.life', 'five', 'life'); gate('bg', 'backgrounds', 'fresh'); gate('aim', 'score.aims', 'all'); };
+  document.querySelectorAll('[data-diff]').forEach(b => b.onclick = () => { dif = b.dataset.diff;   // to-do 2 D1
+    document.querySelectorAll('[data-diff]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
+    const pc = document.querySelector('[data-bg="parent"]'); if (pc) { pc.hidden = !on('family.kids', { diff: dif }); if (pc.hidden && bg === 'parent') document.querySelector('[data-bg="fresh"]').click(); }   // to-do 2: no kids in Easy
+    limits(); moreSum(); });
   document.querySelectorAll('[data-aim]').forEach(b => b.onclick = () => { aim = b.dataset.aim;   // i20-b01
     document.querySelectorAll('[data-aim]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#aimdesc').textContent = aimDesc(aim); moreSum(); });
-  $('#rulesbtn').onclick = () => rulesSheet(rules, { bg, mode: md }, r => { rules = r; moreSum(); });   // i19-b02
+  document.querySelectorAll('[data-um]').forEach(b => b.onclick = () => { um = b.dataset.um; setPref('unlockMode', um);
+    document.querySelectorAll('[data-um]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#umdesc').textContent = UNLOCK_MODES[um].desc; moreSum(); });
+  $('#rulesbtn').onclick = () => rulesSheet(rules, { bg, mode: md() }, r => { rules = r; moreSum(); });   // i19-b02
   document.querySelectorAll('.len').forEach(b => b.onclick = () => {
     len = b.dataset.len; document.querySelectorAll('.len').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
   });
   document.querySelectorAll('[data-cont]').forEach(b => b.onclick = () => loadSlot(b.dataset.cont === WEEKLY_SLOT ? WEEKLY_SLOT : +b.dataset.cont));
   wireTitleExtras();
   document.querySelectorAll('[data-del]').forEach(b => b.onclick = () => askDelete(+b.dataset.del));
+  // the start as picked right now (name, length, background, mode, aim), run now or after the practice life
+  const startNow = () => { const name = ($('#nm').value.trim() || 'Dusty').slice(0,20), l = len, o = { bg, diff: dif, aim, rules, unlock: um, pron: pr, face: { ...face }, dis: bg === 'access' ? dsel : null };
+    return () => { const free = slots().indexOf(null); if (free < 0) return askReplace(name, l, o); newGame(name, l, free, o); }; };
   $('#start').onclick = () => {
-    const name = ($('#nm').value.trim() || 'Dusty').slice(0,20);
-    const free = slots().indexOf(null);
-    const opts = { bg, mode: md, aim, rules, pron: pr, face: { ...face }, dis: bg === 'access' ? dsel : null };
-    if (free < 0) return askReplace(name, len, opts);
-    newGame(name, len, free, opts);
+    const go = startNow();
+    if (isBrandNew()) return newHereSheet(go);      // i23-a01: the very first start offers the practice life
+    go();
   };
+  if ($('#newbie')) $('#newbie').onclick = () => newbieSheet({   // i7-a06
+    len: k => { const b = document.querySelector(`.len[data-len="${k}"]`); if (b) b.click(); },
+    diff: k => { const b = document.querySelector(`[data-diff="${k}"]`); if (b) b.click(); }, startNow });
   $('#how').onclick = showHelp;
-  $('#chal').onclick = challengesSheet;
-  $('#weekly').onclick = () => {
-    const cur = readSlot(WEEKLY_SLOT);
-    sheet(`<h2>📅 Weekly challenge ${isoWeek()}</h2><p>A 6-month life where everyone gets the same events and dice this week. Play it, then share your score card and compare with friends.</p><p class="muted">It has its own place, so it doesn't use one of your ${SLOT_COUNT} slots.${cur ? ` Starting again replaces ${esc(cur.name)}'s challenge in progress.` : ''}</p><p class="muted">🎛️ Everyone plays the weekly with the same rules: Normal, whatever you set under Change the rules.</p>${cur ? '<button class="btn primary" id="wcont">Continue this week\'s challenge</button>' : ''}<button class="btn ${cur ? 'ghost' : 'primary'}" id="y">${cur ? 'Start over' : 'Start'}</button><button class="btn ghost" id="n">Not now</button>`);
-    if ($('#wcont')) $('#wcont').onclick = () => loadSlot(WEEKLY_SLOT);
-    $('#y').onclick = () => { const name = (($('#nm') && $('#nm').value.trim()) || 'Dusty').slice(0,20); closeSheet(); startWeekly(name); };
-    $('#n').onclick = closeSheet;
-  };
+  $('#chal').onclick = challengesSheet;   // i50-a05: the weekly challenge and your records live in the Challenges sheet
   $('#restore').onclick = restoreSheet;
+  if ($('#tbackup')) $('#tbackup').onclick = () => backupSheet();
   $('#newphone').onclick = newPhoneSheet;
   $('#settings').onclick = () => settingsSheet(false);
-  if ($('#records')) $('#records').onclick = recordsSheet;
   titleNotes();
+}
+// the weekly challenge sheet, from Challenges when this week's challenge is already in progress
+function weeklySheet(){
+  const cur = readSlot(WEEKLY_SLOT);
+  sheet(`<h2>📅 Weekly challenge ${isoWeek()}</h2><p>A 6-month life where everyone gets the same events and dice this week. Play it, then share your score card and compare with friends.</p><p class="muted">It has its own place, so it doesn't use one of your ${SLOT_COUNT} slots.${cur ? ` Starting again replaces ${esc(cur.name)}'s challenge in progress.` : ''}</p><p class="muted">🎛️ Everyone plays the weekly with the same rules: Normal, whatever you set under Change the rules.</p>${cur ? '<button class="btn primary" id="wcont">Continue this week\'s challenge</button>' : ''}<button class="btn ${cur ? 'ghost' : 'primary'}" id="y">${cur ? 'Start over' : 'Start'}</button><button class="btn ghost" id="n">Not now</button>`);
+  if ($('#wcont')) $('#wcont').onclick = () => loadSlot(WEEKLY_SLOT);
+  $('#y').onclick = () => { const name = (($('#nm') && $('#nm').value.trim()) || 'Dusty').slice(0,20); closeSheet(); startWeekly(name); };
+  $('#n').onclick = closeSheet;
 }
 /* ---------- title notes (i63-b04, i63-b05, i73-b12, i73-b13): when this browser may not keep your lives ---------- */
 // every key this game keeps (through length/key(), so the beta's storage wrapper is respected)
@@ -208,6 +228,43 @@ function privateCard(){
   if (!PRIVATE_SIGNS || PRIVATE_HOME_SEEN || !S || S.practice) return '';
   return `<div class="card warn" id="privcard">🕶️ <b>${privateText(PRIVATE_SIGNS)}</b> Back up before you close it (Menu → 📤 Back up or restore). <span class="slotbtns"><button class="sm" id="privbk">📤 Back up</button><button class="sm alt" id="privok">Got it</button></span></div>`;
 }
+/* ---------- i23-a01 / i7-a06: a first start offers the practice life; new players can answer three questions ---------- */
+const isBrandNew = () => !slots().some(Boolean) && !hasRecords() && !prefs().newHere;
+function newHereSheet(go){
+  setPref('newHere', 1);                            // shown once on this device
+  sheet(`<h2>👋 New here?</h2><p>A short <b>practice life</b> (about 4 minutes) shows you the ropes: jobs, your weekly focus, the week strip and how the Life Score adds up. A pulsing ring shows what to tap. Nothing in it is saved, and your real life starts right after.</p>
+    <button class="btn primary" id="yes">🎓 Practice life first</button><button class="btn ghost" id="jumpin">Jump right in</button>`);
+  $('#yes').onclick = () => { closeSheet(); startTutorial(go); };
+  $('#jumpin').onclick = () => { closeSheet(); go(); };
+}
+const NEWBIE_Q = [
+  ['len', 'How long do you want to play?', [['half', 'A few minutes'], ['two', 'About 10 minutes'], ['five', 'Longer, over a few sittings']]],
+  ['text', 'How do you like to read?', [['normal', 'Normal text'], ['l', 'Bigger text']]],
+  ['easy', 'Want it easy?', [['normal', 'No, a normal game'], ['easy', 'Yes, go easy on me']]]
+];
+function newbieSheet(set){
+  const pick = { len: 'half', text: setting('textSize') === 'normal' ? 'normal' : 'l', easy: 'normal' };
+  const draw = () => {
+    sheet(`<h2>🌱 New to games like this?</h2><p>Three quick questions, and we'll set up a good first life. You can change any of it later.</p>
+      <div class="newq">${NEWBIE_Q.map(([k, q, opts]) => `<h3 id="nq-${k}">${q}</h3><div class="maptog wrap" role="group" aria-labelledby="nq-${k}">${opts.map(([v, l]) =>
+        `<button data-nq="${k}" data-v="${v}" class="${pick[k] === v ? 'on' : ''}" aria-pressed="${pick[k] === v}">${l}</button>`).join('')}</div>`).join('')}</div>
+      <p class="muted">${LENGTHS[pick.len].label}: ${LENGTHS[pick.len].mins}. ${DIFFS[pick.easy].ic} ${DIFFS[pick.easy].label}: ${DIFFS[pick.easy].blurb}</p>
+      <button class="btn primary" id="yes">Set it up</button><button class="btn ghost" id="no">Back</button>`);
+    document.querySelectorAll('#sheet [data-nq]').forEach(b => b.onclick = () => { pick[b.dataset.nq] = b.dataset.v; const k = b.dataset.nq, v = b.dataset.v; draw();
+      const n = document.querySelector(`#sheet [data-nq="${k}"][data-v="${v}"]`); if (n) n.focus({ preventScroll: true }); });
+    $('#no').onclick = closeSheet;
+    $('#yes').onclick = () => {
+      set.len(pick.len); set.diff(pick.easy); setPref('textSize', pick.text); applyPrefs(); setPref('newHere', 1);
+      const go = set.startNow(), sum = `${LENGTHS[pick.len].label}, ${DIFFS[pick.easy].label}${pick.text === 'l' ? ', bigger text' : ''}`;
+      sheet(`<h2>✅ All set</h2><p>${sum}. Want a short <b>practice life</b> first? It takes about 4 minutes, a pulsing ring shows what to tap, and your real life starts right after.</p>
+        <button class="btn primary" id="yes">🎓 Practice life first</button><button class="btn ghost" id="jumpin">Start my life</button><button class="btn ghost" id="no">Back to the title</button>`);
+      $('#yes').onclick = () => { closeSheet(); startTutorial(go); };
+      $('#jumpin').onclick = () => { closeSheet(); go(); };
+      $('#no').onclick = closeSheet;
+    };
+  };
+  draw();
+}
 /* ---------- 🏆 Your records (G7, R7): best scores by length × mode, challenges, and this week's weekly challenge ---------- */
 // only the current week's weekly-challenge best is kept; older weeks are dropped when the game loads
 function pruneWeekly(){
@@ -220,27 +277,24 @@ function hasRecords(){
   const best = store.get(BEST_KEY) || {};
   return Object.keys(best).some(k => bestLabel(k)) || Object.keys(store.get(CHALLENGE_KEY) || {}).length > 0 || ends().length > 0;
 }
-function recordsSheet(){
-  const best = store.get(BEST_KEY) || {}, won = store.get(CHALLENGE_KEY) || {}, mds = ['relaxed', 'normal', 'hard'];
+// the best-score table, shown in the Challenges sheet
+function recordsTable(){
+  const best = store.get(BEST_KEY) || {}, mds = ['relaxed', 'normal', 'hard'];
   const notes = store.get(BEST_NOTE_KEY) || {};   // i63-a20: a best life's comeback line
   const cell = (v, k) => v == null ? '<span class="muted" aria-label="none yet">–</span>' : `<b>${v}</b>${notes[k] ? `<br><small class="muted comeback">${esc(notes[k])}</small>` : ''}`;
-  const nWon = Object.keys(SCENARIOS).filter(k => won[k]).length, wk = best[`wk-${isoWeek()}`];
-  const cu = Object.keys(best).filter(k => k.startsWith('cu-') && bestLabel(k) && Number.isFinite(best[k]));   // i19-b03: the Custom shelf
-  sheet(`<h2>🏆 Your records</h2>
-    <p class="muted">Your best Life Scores on this device.</p>
-    <table class="rec"><caption>Best score by game length and mode</caption>
+  return `<table class="rec"><caption>Best score by game length and mode</caption>
       <thead><tr><th scope="col">Length</th>${mds.map(m => `<th scope="col">${MODES[m].ic} ${MODES[m].name}</th>`).join('')}</tr></thead>
-      <tbody>${Object.entries(LENGTHS).map(([k, L]) => `<tr><th scope="row">${L.label}</th>${mds.map(m => `<td>${cell(best[bestKey(k, m)], bestKey(k, m))}</td>`).join('')}</tr>`).join('')}</tbody></table>
-    ${cu.length ? `<h3 style="margin-top:14px">🎛️ Custom rules</h3><p class="muted">Lives played with changed rules, kept apart from the table above.</p>${cu.map(k => `<div class="kv"><span>${esc(bestLabel(k.slice(3)))}</span><span>best <b>${best[k]}</b></span></div>`).join('')}` : ''}
-    <h3 style="margin-top:14px">🏁 Challenges <span class="tag">${nWon}/${Object.keys(SCENARIOS).length} completed</span></h3>
-    ${Object.entries(SCENARIOS).map(([k, sc]) => `<div class="kv"><span>${sc.ic} ${sc.name}${won[k] ? ' ✅' : ''}</span><span>${best['sc-' + k] != null ? `best <b>${best['sc-' + k]}</b>` : '<span class="muted">not played</span>'}</span></div>`).join('')}
-    <h3 style="margin-top:14px">📅 This week's challenge (${isoWeek()})</h3>
-    <div class="kv"><span>Your best this week</span><span>${wk != null ? `<b>${wk}</b>` : '<span class="muted">not played yet</span>'}</span></div>
-    ${topLives()}
-    <button class="btn primary" id="ok">Close</button>`);
-  $('#ok').onclick = closeSheet;
-  document.querySelectorAll('[data-end]').forEach(b => b.onclick = () => endSummary(top10()[+b.dataset.end]));
+      <tbody>${Object.entries(LENGTHS).map(([k, L]) => `<tr><th scope="row">${L.label}</th>${mds.map(m => `<td>${cell(best[bestKey(k, m)], bestKey(k, m))}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+
 }
+// i19-b03: the Custom shelf, kept apart from the table above
+function customShelf(){
+  const best = store.get(BEST_KEY) || {};
+  const cu = Object.keys(best).filter(k => k.startsWith('cu-') && bestLabel(k) && Number.isFinite(best[k]));
+  return cu.length ? `<h3 style="margin-top:14px">🎛️ Custom rules</h3><p class="muted">Lives played with changed rules, kept apart from the table above.</p>${cu.map(k => `<div class="kv"><span>${esc(bestLabel(k.slice(3)))}</span><span>best <b>${best[k]}</b></span></div>`).join('')}` : '';
+}
+// i50-a05: records live in the Challenges sheet
+const recordsSheet = () => challengesSheet();
 // i73-b02: the ten best finished lives on this device, from the stubs finish() leaves
 const top10 = () => ends().map((e, i) => [e, i]).sort((a, b) => b[0].score - a[0].score || a[1] - b[1]).slice(0, 10).map(x => x[0]);
 function topLives(){
@@ -287,6 +341,8 @@ function wireTitleExtras(){
     toast('Damaged save downloaded');
   };
 }
+const badgeLine = () => { const got = store.get(BADGE_KEY) || {}, n = Object.keys(got).length;
+  return n ? `<p class="muted" style="font-size:0.8125rem">🏅 Badges collected across your lives: ${BADGES.filter(b => got[b.id]).map(b => b.ic).join(' ')} (${n}/${BADGES.length})</p>` : ''; };
 /* ---------- ✨ What's new (G6): a one-time card after an update, once per version ---------- */
 const SEEN_KEY = KEY_PREFIX + 'seenVersion';
 const WHATS_NEW = {
@@ -327,6 +383,7 @@ const baseVersion = () => APP_VERSION.replace(/-.*/, '');
 // shows the card once per version to players who played before; brand-new players and the tutorial skip it
 const verNum = v => String(v || '0').replace(/-.*/, '').split('.').reduce((a, x) => a * 1000 + (parseInt(x, 10) || 0), 0);
 function whatsNew(){
+  if (!on('help.whatsNew')) return false;
   const cur = baseVersion(), seen = store.get(SEEN_KEY);
   if (seen === cur || (typeof TUT !== 'undefined' && TUT)) return false;
   const played = slots().some(Boolean) || Object.keys(store.get(BEST_KEY) || {}).length > 0;
@@ -349,7 +406,7 @@ function loadSlot(i){
   LIFE_UNDO = []; S = migrate(clone(g)); S.slot = i; tab = 'home'; MAPSIDE = null; MAPSEL = null; useDice(); resetFilters();
   closeSheet(); render(); window.scrollTo(0,0);
   if (resumePending()) return;
-  if (g.savedAt && Date.now() - g.savedAt >= RECAP_AFTER && S.recapAt !== g.savedAt && !S.practice) recapSheet(g.savedAt);
+  if (g.savedAt && Date.now() - g.savedAt >= RECAP_AFTER && S.recapAt !== g.savedAt && !S.practice && on('ui.recap')) recapSheet(g.savedAt);
 }
 // i22-a01 / i22-a02: an ending or an event card that was waiting when the app closed comes back on Continue
 const findEvent = t => [...EVENTS, ...DUE_EVENTS, ...PLAN_DUE].find(e => e.title === t) || null;
@@ -432,7 +489,30 @@ function saveCopySheet(){
 // into a message to yourself); codes are gzip-compressed when the browser can.
 // i63-b02: v is the format; minReader is the oldest app format that can read it. A backup newer than BACKUP_V asks you to update.
 const BACKUP_V = 2;
-function backupData(){ return { app: 'theburg', kind: 'backup', v: BACKUP_V, minReader: 1, version: APP_VERSION, exported: new Date().toISOString(), slots: slots(), best: store.get(BEST_KEY) || {}, badges: store.get(BADGE_KEY) || {}, challenges: store.get(CHALLENGE_KEY) || {}, ends: ends() }; }
+function backupData(){ return { app: 'theburg', kind: 'backup', v: BACKUP_V, minReader: 1, version: APP_VERSION, exported: new Date().toISOString(), slots: slots(), best: store.get(BEST_KEY) || {}, badges: store.get(BADGE_KEY) || {}, challenges: store.get(CHALLENGE_KEY) || {}, ends: ends(), prefs: prefs() }; }   // i62-a10: settings and seen tips come along
+// i62-a03/a07: what a backup (or this phone) holds besides lives
+function backupCounts(b){
+  const o = x => x && typeof x === 'object' ? x : {};
+  return { lives: (b.lives || b.slots || []).filter(Boolean).length, records: Object.keys(o(b.best)).filter(k => bestLabel(k)).length,
+    badges: Object.keys(o(b.badges)).filter(k => BADGES.some(x => x.id === k)).length, wins: Object.keys(o(b.challenges)).filter(k => SCENARIOS[k]).length };
+}
+const plural = (n, one, many = one + 's') => `${n} ${n === 1 ? one : many}`;
+const countWords = c => [plural(c.lives, 'life', 'lives'), ...(c.records ? [plural(c.records, 'record')] : []), ...(c.badges ? [plural(c.badges, 'badge')] : []), ...(c.wins ? [plural(c.wins, 'challenge win')] : [])].join(', ');
+const localCounts = () => backupCounts({ slots: slots(), best: store.get(BEST_KEY), badges: store.get(BADGE_KEY), challenges: store.get(CHALLENGE_KEY) });
+const hasBackupStuff = (c = localCounts()) => c.lives + c.records + c.badges + c.wins > 0;
+// i62-a02: the same life, saved at the same moment (name, length, the day it began, when it was saved)
+const lifeKey = g => `${g.name}|${g.len}|${Math.round(((g.date || 0) - (g.turn || 0) * 7 * 864e5) / 864e5)}|${g.savedAt || 0}`;
+// i62-a02/a09: where each of a backup's lives lands when added to the empty slots (or that it is already here)
+function restorePlan(b){
+  const cur = slots(), have = new Map(cur.map((g, i) => [g && lifeKey(g), i]).filter(([k]) => k)), free = cur.map((g, i) => g ? -1 : i).filter(i => i >= 0);
+  return b.lives.map(g => { if (!g) return null; const dup = have.get(lifeKey(g)); if (dup != null) return { g, dup }; have.set(lifeKey(g), -1); return { g, slot: free.length ? free.shift() : null }; });
+}
+// i62-a11: a backup file named for the local time and who's inside
+function backupFileName(){
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  const who = slots().filter(Boolean).slice(0, 3).map(g => String(g.name).toLowerCase().normalize('NFD').replace(/[^a-z]+/g, '-').replace(/^-|-$/g, '')).filter(Boolean);
+  return `the-burg-backup-${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${who.length ? '-' + who.join('-') : ''}.json`;
+}
 const b64 = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(s); };
 const unb64 = text => Uint8Array.from(atob(text.replace(/\s+/g, '')), c => c.charCodeAt(0));
 const CRC_T = [...Array(256)].map((_, n) => { for (let k = 0; k < 8; k++) n = n & 1 ? 0xEDB88320 ^ (n >>> 1) : n >>> 1; return n >>> 0; });
@@ -446,7 +526,7 @@ async function backupCode(obj){
   return `BURG2:${b64(bytes)}.${bytes.length}.${crc32(bytes).toString(16).padStart(8, '0')}`;
 }
 const gunzip = async bytes => {
-  if (!window.DecompressionStream) throw new Error('This browser can\'t open compressed codes. Use the backup file instead.');
+  if (!window.DecompressionStream) throw Object.assign(new Error('This browser can\'t open compressed codes. Use the backup file instead.'), { plain: true });
   return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
 };
 const backupErr = (msg, extra = {}) => Object.assign(new Error(msg), extra);
@@ -459,7 +539,24 @@ async function unpackBurg2(text){
   if (bytes.length !== +m[2] || crc32(bytes).toString(16).padStart(8, '0') !== m[3].toLowerCase()) throw backupErr('One piece of this code was changed (a letter retyped or swapped). Copy the code again from the original and paste it here.', { part: 'changed' });
   return bytes[0] === 0x1f && bytes[1] === 0x8b ? gunzip(bytes) : new TextDecoder().decode(bytes);
 }
+// i62-a06: a code with words, quotes or line breaks around it still reads; i62-a01: a damaged one says so in plain words
+const BK_DAMAGED = 'This backup code is damaged: part of it is missing or was changed on the way. Copy the whole code again, right to the end, and paste it here.';
+const BK_FILE_DAMAGED = 'This backup file is damaged or cut short. Download it again from the phone that made it.';
+const BK_NOT = 'That doesn\'t look like a backup from The Burg.';
+function backupTries(text){
+  text = String(text || '').trim();
+  const m = !text.startsWith('{') && text.match(/BURG\d+:[A-Za-z0-9+\/=.\s]+/);
+  if (!m) return [text];
+  const parts = m[0].split(/\s+/).filter(Boolean), out = [parts.join(''), m[0].trim().replace(/ /g, '+').replace(/\s+/g, '')];   // + often turns into a space on the way
+  for (let k = parts.length - 1; k >= 1; k--) out.push(parts.slice(0, k).join(''));            // words after the code
+  return [...new Set(out)];
+}
 async function readBackup(text){
+  let first = null;
+  for (const t of backupTries(text)) { try { return await readBackupOne(t); } catch (e) { first = first || e; } }
+  throw first;
+}
+async function readBackupOne(text){
   text = (text || '').trim();
   let d;
   try {
@@ -469,19 +566,21 @@ async function readBackup(text){
     else if (text.startsWith('BURG0:')) d = JSON.parse(new TextDecoder().decode(unb64(text.slice(6))));
     else if (/^BURG\d+:/.test(text)) throw backupErr('This backup is from a newer Burg. Update the game first, then restore it.', { newer: true });
     else throw new Error('');
-  } catch (e) { throw e.part || e.newer ? e : new Error(e.message || 'That doesn\'t look like a backup from The Burg.'); }
+  } catch (e) { throw e.part || e.newer ? e : new Error(e.plain ? e.message : /^BURG\d+:/.test(text) ? BK_DAMAGED : text.startsWith('{') ? BK_FILE_DAMAGED : BK_NOT); }
   if (!d || d.app !== 'theburg' || !Array.isArray(d.slots)) throw new Error('That doesn\'t look like a backup from The Burg.');
   const need = Number.isFinite(d.minReader) ? d.minReader : Number.isFinite(d.v) ? d.v : 1;
   if (need > BACKUP_V) throw backupErr('This backup is from a newer Burg. Update the game first, then restore it.', { newer: true });
   const ok = isLife;   // H1: anything else a thin backup is missing, migrate() fills in
   const lives = d.slots.slice(0, SLOT_COUNT).map(g => ok(g) ? migrate(g) : null);
-  if (!lives.some(Boolean)) throw new Error('That backup has no saved lives in it.');
   const obj = x => x && typeof x === 'object' && !Array.isArray(x) ? x : {};
+  if (!lives.some(Boolean) && !hasBackupStuff(backupCounts({ best: obj(d.best), badges: obj(d.badges), challenges: obj(d.challenges) }))) throw new Error('That backup has no saved lives, records or badges in it.');   // i62-a03
+  // i62-a10: settings as plain values only
+  const prefsIn = Object.fromEntries(Object.entries(obj(d.prefs)).filter(([k, v]) => /^[\w-]{1,30}$/.test(k) && (['string', 'number', 'boolean'].includes(typeof v) || (Array.isArray(v) && v.every(x => typeof x === 'string')) || (k === 'cl' && v && typeof v === 'object'))));
   const when = typeof d.exported === 'string' || Number.isFinite(d.exported) ? new Date(d.exported) : null;   // H1: a date is shown only if it parses
   // i73-b01: finished-life stubs come along as plain values only
   const endsIn = (Array.isArray(d.ends) ? d.ends : []).filter(e => e && typeof e === 'object' && typeof e.name === 'string' && Number.isFinite(e.score)).slice(0, ENDS_MAX)
     .map(e => Object.fromEntries(Object.entries(e).map(([k, v]) => [k, typeof v === 'string' ? noTags(v).slice(0, 200) : Number.isFinite(v) || v == null ? v ?? null : k === 'parts' && obj(v) ? Object.fromEntries(Object.entries(v).filter(([, x]) => Number.isFinite(x))) : null])));
-  return { lives, ends: endsIn, best: obj(d.best), badges: obj(d.badges), challenges: obj(d.challenges), exported: when && !isNaN(when) ? when.toISOString() : null };
+  return { lives, ends: endsIn, prefs: prefsIn, best: obj(d.best), badges: obj(d.badges), challenges: obj(d.challenges), exported: when && !isNaN(when) ? when.toISOString() : null };
 }
 // i63-b22: lives in a backup that are an earlier week of a life already on this phone (same life id)
 const olderCopies = b => b.lives.filter(Boolean).map(g => [g, slots().find(x => x && x.lid && x.lid === g.lid && (x.turn || 0) > (g.turn || 0))]).filter(([, x]) => x);
@@ -499,25 +598,29 @@ function restoreBackup(b, mode){
   { const have = ends(), seen = new Set(have.map(e => `${e.name}|${e.at}|${e.score}`));
     const add = (b.ends || []).filter(e => !seen.has(`${e.name}|${e.at}|${e.score}`));
     if (add.length) store.set(ENDS_KEY, keepEnds([...have, ...add].sort((x, y) => (y.at || 0) - (x.at || 0)))); }
-  let skipped = 0, want;
+  // i62-a10: seen tips are added together; a setting this phone already has stays as it is
+  if (b.prefs) { const p = prefs();
+    for (const [k, v] of Object.entries(b.prefs)) { if (k === 'tips' && Array.isArray(v)) p.tips = [...new Set([...(Array.isArray(p.tips) ? p.tips : []), ...v])]; else if (p[k] === undefined) p[k] = v; }
+    store.set(PREF_KEY, p); applyPrefs(); }
+  let skipped = 0, dupes = 0, want;
   if (mode === 'replace') want = b.lives.map((g, i) => g ? { ...g, slot: i } : null).concat(Array(SLOT_COUNT).fill(null)).slice(0, SLOT_COUNT);
   else {
     want = cur.slice();
-    for (const g of b.lives.filter(Boolean)) { const i = want.indexOf(null); if (i < 0) { skipped++; continue; } want[i] = { ...g, slot: i }; }
+    for (const x of restorePlan(b).filter(Boolean)) { if (x.dup != null) { dupes++; continue; } if (x.slot == null) { skipped++; continue; } want[x.slot] = { ...x.g, slot: x.slot }; }   // i62-a02: no twin lives
   }
   writeSlots(want);
   // i57-a18: read the slots back: how many of the lives meant to land really did
   const now = slots(), meant = want.filter((g, i) => g && (mode === 'replace' || !cur[i])).length;
   const landed = want.reduce((n, g, i) => n + (g && now[i] && now[i].name === g.name && now[i].savedAt === g.savedAt && (mode === 'replace' || !cur[i]) ? 1 : 0), 0);
-  return { skipped, meant, landed };
+  return { skipped, meant, landed, dupes, slots: want.map((g, i) => g && (mode === 'replace' || !cur[i]) ? i : -1).filter(i => i >= 0) };
 }
 // the backup sheet; onClose (i63-b08's nudge) runs when it's closed, so the week carries on
 function backupSheet(onClose = null){
   if (S && !S.over && !S.practice) save();
-  const n = slots().filter(Boolean).length;
+  const c = localCounts(), n = hasBackupStuff(c);   // i62-a03: records and badges are worth a backup too
   sheet(`<h2>📤 Back up or restore</h2>
-    <p class="muted">Your lives are saved on this device. A backup lets you keep a copy or move them to another phone or computer.</p>
-    <h3>Back up (${n} ${n === 1 ? 'life' : 'lives'})</h3>
+    <p class="muted">Your lives, records and badges are saved on this device. A backup lets you keep a copy or move them to another phone or computer.</p>
+    <h3>Back up (${countWords(c)})</h3>
     <button class="btn primary" id="bkfile" ${n ? '' : 'disabled'}>⬇️ Download a backup file</button>
     <button class="btn ghost" id="bkcode" ${n ? '' : 'disabled'}>📋 Copy a backup code</button>
     <div id="bkout"></div>
@@ -528,7 +631,7 @@ function backupSheet(onClose = null){
   $('#bkfile').onclick = () => {
     const blob = new Blob([JSON.stringify(backupData(), null, 1)], { type: 'application/json' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-    a.download = `the-burg-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = backupFileName();
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
     toast('Backup file downloaded'); announce('Backup file downloaded');
   };
@@ -578,10 +681,11 @@ function restoreSheet(){
 async function backupCheck(text, out){
   try {
     const b = await readBackup(text);
-    const lives = b.lives.filter(Boolean), free = slots().filter(g => !g).length;
-    out.innerHTML = `<p><b>This backup has ${lives.length} ${lives.length === 1 ? 'life' : 'lives'}</b>${b.exported ? ` (saved ${new Date(b.exported).toLocaleDateString()})` : ''}:</p>
-      <div class="slots">${b.lives.map((g, i) => g ? slotCard(g, i, '') : '').join('')}</div>
-      <button class="btn primary" id="rsadd" ${free ? '' : 'disabled'}>Add to my empty slots (${free} free)</button>
+    const lives = b.lives.filter(Boolean), free = slots().filter(g => !g).length, plan = restorePlan(b), fresh = plan.filter(x => x && x.dup == null).length;
+    out.innerHTML = `<p><b>This backup has ${countWords(backupCounts(b))}</b>${b.exported ? ` (saved ${new Date(b.exported).toLocaleDateString()})` : ''}${lives.length ? ':' : '.'}</p>
+      <div class="slots">${plan.map((x, i) => x ? slotCard(x.g, i, `<span class="tag${x.dup != null ? ' cur' : ''}">${x.dup != null ? 'Already on this phone' : x.slot != null ? `Goes to slot ${x.slot + 1}` : 'No free slot'}</span>`) : '').join('')}</div>
+      ${recordsLine(b)}
+      <button class="btn primary" id="rsadd" ${free || !fresh ? '' : 'disabled'}>${lives.length && fresh ? `Add to my empty slots (${free} free)` : 'Add the records and badges'}</button>
       <button class="btn ghost" id="rsrep">Replace all my lives with these</button>`;
     // i63-b22: an earlier week of a life already here asks first
     const rewind = go => {
@@ -610,15 +714,28 @@ async function backupCheck(text, out){
   }
 }
 function finishRestore(b, mode){
-  const { skipped, meant, landed } = restoreBackup(b, mode);
+  const { skipped, meant, landed, dupes, slots: at } = restoreBackup(b, mode);
   closeSheet();
   if (mode === 'replace' || !S) { S = null; renderTitle(); }
   else render();
   const lives = n => `${n} ${n === 1 ? 'life' : 'lives'}`;
   const msg = landed < meant ? `⚠️ Only ${lives(landed)} of ${meant} could be saved: your phone's storage may be full. Keep the backup.`
-    : skipped ? `Restored ${lives(landed)}. ${lives(skipped)} didn't fit: free up a slot and restore again.` : `Backup restored: ${lives(landed)}`;
-  if (landed < meant) sheet(`<h2>Restore didn't finish</h2><p>${msg}</p><button class="btn primary" id="ok">OK</button>`), $('#ok').onclick = closeSheet;
-  toast(msg); announce(msg);
+    : `Backup restored: ${lives(landed)}${skipped ? `. ${lives(skipped)} didn't fit: free up a slot and restore again` : ''}${dupes ? `. ${lives(dupes)} ${dupes === 1 ? 'was' : 'were'} already on this phone` : ''}`;
+  if (landed < meant) { sheet(`<h2>Restore didn't finish</h2><p>${msg}</p><button class="btn primary" id="ok">OK</button>`); $('#ok').onclick = closeSheet; toast(msg); announce(msg); return; }
+  // i62-a08: open the life you brought back
+  const back = (at || []).map(i => [readSlot(i), i]).filter(([g]) => g);
+  sheet(`<h2>📥 ${esc(msg)}</h2>
+    ${back.length ? `<div class="slots">${back.map(([g, i]) => slotCard(g, i, `<div class="slotbtns"><button class="sm" data-rsopen="${i}">Play</button></div>`)).join('')}</div>` : `<p>${countWords(backupCounts(b))} checked and kept.</p>`}
+    <button class="btn ${back.length ? 'ghost' : 'primary'}" id="ok">OK</button>`);
+  document.querySelectorAll('#sheet [data-rsopen]').forEach(x => x.onclick = () => { closeSheet(); loadSlot(+x.dataset.rsopen); });
+  $('#ok').onclick = closeSheet;
+  announce(msg);
+}
+// i62-a07: the best scores and badges in a backup, the best few by name
+function recordsLine(b){
+  const c = backupCounts(b); if (!c.records && !c.badges) return '';
+  const best = Object.entries(b.best || {}).filter(([k, v]) => bestLabel(k) && Number.isFinite(v)).sort((x, y) => y[1] - x[1]).slice(0, 3);
+  return `<p class="muted">${best.length ? `🏆 ${best.map(([k, v]) => `${esc(bestLabel(k))}: ${v}`).join(' · ')}` : ''}${best.length && c.badges ? '<br>' : ''}${c.badges ? `🏅 ${BADGES.filter(x => (b.badges || {})[x.id]).slice(0, 12).map(x => x.ic).join(' ')} (${plural(c.badges, 'badge')})` : ''}</p>`;
 }
 /* ---------- 📱 moving to a new phone (i63-b15): a two-screen guide around the backup code and file ---------- */
 function movePhoneSheet(){
@@ -646,7 +763,7 @@ function movePhoneSheet(){
     $('#mvfile').onclick = () => {
       const blob = new Blob([JSON.stringify(backupData(), null, 1)], { type: 'application/json' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-      a.download = `the-burg-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = backupFileName();
       document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
       toast('Backup file downloaded'); announce('Backup file downloaded');
     };
@@ -695,11 +812,18 @@ function loadSheet(){
   $('#no').onclick = closeSheet;
 }
 // i54-a08: the Journal and job filters belong to one life, so loading or starting another starts them fresh
-function resetFilters(){ logFilter = 'all'; jobCity = 'all'; }
+function resetFilters(){ logFilter = 'all'; jobCity = 'all'; jobNear = false; }
 function newGame(name, len, slot = 0, opts = {}){
   LIFE_UNDO = []; PLAY_AT = -1e9; resetFilters();
+  // to-do 2 D2: what the difficulty doesn't have can't be picked (Easy: no Lifetime, Fresh start only, All-around only)
+  const ds = { diff: opts.classic || SCENARIOS[opts.scenario] ? 'hard' : DIFFS[opts.diff] ? opts.diff : MODE_DIFF[opts.mode] || 'normal' };   // story challenges are Hard
+  if (len === 'life' && !on('lengths.life', ds)) len = 'five';
   S = blankLife(name, len, slot);                 // road and work events (health plan, ski pass, job-hunt help and more) included
-  S.bg = BACKGROUNDS[opts.bg] ? opts.bg : 'fresh'; S.mode = MODES[opts.mode] ? opts.mode : 'normal'; S.aim = AIMS[opts.aim] ? opts.aim : 'all';
+  S.bg = BACKGROUNDS[opts.bg] && on('backgrounds', ds) ? opts.bg : 'fresh'; S.aim = AIMS[opts.aim] && on('score.aims', ds) ? opts.aim : 'all';
+  // to-do 2 D1: the difficulty sets the mode's numbers (Easy plays Relaxed's); an heir of a Classic life stays Classic
+  if (opts.classic) { S.diff = 'hard'; S.classic = true; S.mode = MODES[opts.mode] ? opts.mode : 'normal'; }
+  else { S.diff = ds.diff; S.mode = DIFF_MODE[S.diff]; }
+  if (S.bg === 'parent' && !on('family.kids')) S.bg = 'fresh';   // to-do 2: the Young parent start needs kids (Normal and up)
   S.pron = PRONS[opts.pron] ? opts.pron : 'they'; S.face = okFace(opts.face);   // i7-a20, i6-b01
   if (S.bg === 'access') S.disability = DISABILITIES[opts.dis] ? opts.dis : 'wheel';   // i7-a21
   if (BACKGROUNDS[S.bg].set) BACKGROUNDS[S.bg].set(S);
@@ -712,6 +836,10 @@ function newGame(name, len, slot = 0, opts = {}){
   if (SCENARIOS[opts.scenario]) { S.scenario = opts.scenario; if (SCENARIOS[S.scenario].set) SCENARIOS[S.scenario].set(S); }
   S.yearStart = { nw: netWorth(), happy: S.happy, health: S.health, community: S.community };
   if (opts.practice) { S.practice = true; S.noEvents = true; }      // the tutorial's throwaway life: never saved, no random events
+  // i31-b20: open as you go (the default) or everything open (a start setting, remembered on this device)
+  S.unlockMode = opts.practice ? 'all' : UNLOCK_MODES[opts.unlock] ? opts.unlock : prefs().unlockMode === 'all' ? 'all' : 'go';
+  if (S.unlockMode === 'all') S.opened = Object.fromEntries(UNLOCKS.map(u => [u.id, { w:0, how:'all' }]));
+  else for (const u of UNLOCKS) if (u.when(S)) openSystem(u.id, { quiet:true, how:'start' });   // a start that already has it (a job, a diploma)
   log(S.bg === 'fresh' ? `${name} turns 18 and rents a room above Main Street in Waitsburg. Time to find a job.`
     : `${name} starts a new life in Waitsburg: ${BACKGROUNDS[S.bg].name.toLowerCase()}. ${BACKGROUNDS[S.bg].desc}`);
   // i17-a02: a new life opens on Home, where three doors (a job, a program, a place) replace the old "find a job" toast
@@ -770,26 +898,27 @@ function assistOffSheet(id){
 /* ---------- main render ---------- */
 function render(){
   if (!S) return renderTitle();
+  unlockCheck(false); seenTab();                  // i31: moments that came up since the last draw; New tags you've looked at
   const L = LENGTHS[S.len];
   const pct = L.turns === Infinity ? lifeProgress() * 100 : S.turn / L.turns * 100;   // i22-a19: the same 18-to-65 span the score uses
   const big = L.turns === Infinity || L.turns >= 104;
-  const left = L.turns === Infinity ? `Age ${age()}` : `${L.turns - S.turn} weeks left`;
+  const left = L.turns === Infinity ? `Age ${age()}` : weeksLeftLabel(L.turns - S.turn);
   const nar = S.practice ? '' : ' skipx';          // i2-a23: on narrow phones the ⏩ buttons hide behind a long press on End Week
   seasonAccent(curMonth());                        // i6-b11
   $('#app').innerHTML = `
   <header class="top">
-    <div class="row"><h2>${esc(S.name)}${S.practice ? ' <span class="tag">Practice</span>' : ''}${mode() !== 'normal' && !S.practice ? ` <span class="tag">${MODES[mode()].ic} ${MODES[mode()].name}</span>` : ''}${S.scenario ? ` <span class="tag">🏁</span>` : ''}${S.weekly ? ` <span class="tag">📅</span>` : ''}${S.gen > 1 ? ` <span class="tag">🌳 ${S.gen}</span>` : ''}</h2><div class="hdr-r"><div class="money">${fmt(S.money)}</div><button id="helpbtn" aria-label="Help and tutorial">?</button></div></div>
+    <div class="row"><h2>${esc(S.name)}${S.practice ? ' <span class="tag">Practice</span>' : ''}${(S.classic ? mode() !== 'normal' : diff() !== 'normal') && !S.practice ? ` <span class="tag">${S.classic ? `${MODES[mode()].ic} ${MODES[mode()].name}` : diffTag()}</span>` : ''}${S.scenario ? ` <span class="tag">🏁</span>` : ''}${S.weekly ? ` <span class="tag">📅</span>` : ''}${S.gen > 1 ? ` <span class="tag">🌳 ${S.gen}</span>` : ''}</h2><div class="hdr-r"><button class="money" id="moneybtn" aria-label="Cash ${fmt(S.money)}: this week's money in and out" aria-haspopup="dialog">${fmt(S.money)}</button><button id="helpbtn" aria-label="Help and tutorial">?</button></div></div>
     <div class="meta"><span>${dateLabel()} · age ${age()}</span><span>${left}</span></div>
     <div class="progress"><i style="width:${pct}%"></i></div>
   </header>
   <main id="main"></main>
   ${tab==='home' ? `${S.run ? `<button class="weekstrip" id="strip" aria-label="${esc(runWords())}. Details"><span class="wl">${S.run.weeks > 1 ? `Last ${S.run.weeks} wks` : 'Last week'}</span><span class="wc">${runChips()}</span><span class="more">›</span></button>` : ''}
     <div class="endbar${ROLL ? ' rolling' : ''}">${ROLL ? `<button class="btn primary" id="stoproll">⏹ Stop<small>${S.run.weeks} of up to ${ROLL.n} weeks</small></button>`
-      : `<button class="btn primary" id="end" aria-keyshortcuts="Shift+Enter" aria-description="Press and hold, or Shift+Enter, for more ways to skip ahead">End Week →<small>${FOCUS[S.focus].ic} ${FOCUS_SHORT[S.focus]}</small></button>
-    <button class="btn ghost${nar}" id="ff4" aria-label="Skip 4 weeks">⏩ 4</button>${big ? `<button class="btn ghost${nar}" id="ff13" aria-label="Skip 13 weeks">⏩ 13</button>` : ''}<button class="btn ghost" id="auto" aria-label="Auto: play until ${autoUntil() === 'event' ? 'something needs you' : AUTO_UNTIL[autoUntil()].short + ' or something needs you'}. Press and hold for options">⏭ Auto</button>`}</div>` : ''}
+      : `<button class="btn primary" id="end" aria-keyshortcuts="Shift+Enter" aria-description="Press and hold, or Shift+Enter, for more ways to skip ahead">End Week →<small>${FOCUS[S.focus].ic} ${FOCUS_SHORT[S.focus]}${S.trip && CITIES[S.trip.city] ? ` + 🚗 ${CITIES[S.trip.city].name}` : ''}</small></button>
+    ${on('ui.auto') ? `<button class="btn ghost${nar}" id="ff4" aria-label="Skip 4 weeks">⏩ 4</button>${big ? `<button class="btn ghost${nar}" id="ff13" aria-label="Skip 13 weeks">⏩ 13</button>` : ''}<button class="btn ghost" id="auto" aria-label="Auto: play until ${autoUntil() === 'event' ? 'something needs you' : AUTO_UNTIL[autoUntil()].short + ' or something needs you'}. Press and hold for options">⏭ Auto</button>` : ''}`}</div>` : ''}
   <nav><div class="in">
-    ${[['home','🏠','Home'],['jobs','💼','Jobs'],['life','🌾','Life'],['log','📜','Journal']].map(([k,ic,l]) =>
-      `<button data-tab="${k}" class="${tab===k?'on':''}"${tab===k?' aria-current="page"':''}><span class="ic" aria-hidden="true">${ic}</span>${l}</button>`).join('')}
+    ${[['home','🏠','Home'],['jobs','💼','Jobs'],['life','🌾','Life'],['log','📜','Journal']].map(([k,ic,l]) => { const nw = tab !== k && tabHasNew(k);   // i31-b15: a dot for something new there
+      return `<button data-tab="${k}" class="${tab===k?'on':''}${nw ? ' hasnew' : ''}"${tab===k?' aria-current="page"':''}${nw ? ` aria-label="${l}, new"` : ''}><span class="ic" aria-hidden="true">${ic}</span>${l}${nw ? '<span class="ndot" aria-hidden="true"></span>' : ''}</button>`; }).join('')}
     <button data-tab="menu"><span class="ic">⚙️</span>Menu</button>
   </div></nav>`;
   document.querySelectorAll('#app > nav button').forEach(b => b.onclick = () => {
@@ -797,10 +926,11 @@ function render(){
     tab = b.dataset.tab; MAPSIDE = null; MAPSEL = null; render(); window.scrollTo(0,0);
   });
   $('#helpbtn').onclick = showHelp;
+  $('#moneybtn').onclick = cashSheet;
   if ($('#end')) { $('#end').onclick = e => { if (holdDone(e)) return; tapPlay(1, e); }; holdOpens($('#end'), skipSheet); }
   if ($('#ff4')) $('#ff4').onclick = e => tapPlay(4, e);
-  if ($('#ff13')) $('#ff13').onclick = e => tapPlay(13, e);
-  if ($('#auto')) { $('#auto').onclick = e => { if (holdDone(e)) return; tapPlay('auto', e); }; holdOpens($('#auto'), skipSheet); }
+  if ($('#ff13')) $('#ff13').onclick = e => focusCheck(() => tapPlay(13, e), () => playWeeks(13), e);
+  if ($('#auto')) { $('#auto').onclick = e => { if (holdDone(e)) return; focusCheck(() => tapPlay('auto', e), autoPlay, e); }; holdOpens($('#auto'), skipSheet); }
   if ($('#stoproll')) $('#stoproll').onclick = stopRoll;
   if ($('#strip')) $('#strip').onclick = showRunDetails;
   FIRST_SLOT = 'open';
@@ -809,7 +939,38 @@ function render(){
   if (COUNT_FROM) { const from = COUNT_FROM; COUNT_FROM = null; if (tab === 'home') animateStats(from); }
   document.querySelectorAll('[data-apply]').forEach(b => b.onclick = () => apply(b.dataset.apply));
   document.querySelectorAll('[data-locked]').forEach(b => b.onclick = () => explainLocked(b.dataset.locked));
+  chipFade();
   histSync();
+}
+// i23-a03: the header's countdown; the final week says so plainly
+const weeksLeftLabel = n => n <= 1 ? 'Last week!' : `${n} weeks left`;
+// i20-a01: a chip row that scrolls fades at the right edge while there's more to see
+function chipFade(root = document){
+  root.querySelectorAll('.chips').forEach(c => c.classList.toggle('more', c.scrollWidth > c.clientWidth + 2 && c.scrollLeft + c.clientWidth < c.scrollWidth - 2));
+}
+document.addEventListener('scroll', e => { const c = e.target; if (c && c.classList && c.classList.contains('chips')) chipFade(c.parentNode || document); }, true);
+if (typeof window !== 'undefined') window.addEventListener('resize', () => chipFade());
+/* ---------- i72-b06: tap the cash in the header for last week's money in and out, and next week's ---------- */
+function cashSheet(){
+  if (!S) return;
+  const last = S.last && S.last.lines ? S.last.lines : [], ins = last.filter(([, v]) => v > 0), outs = last.filter(([, v]) => v < 0);
+  const sum = a => a.reduce((t, [, v]) => t + v, 0);
+  const o = typeof moneyOutlook === 'function' ? moneyOutlook(1) : null, nx = o && o.weeks[0];
+  const row = (l, v) => `<div class="kv"><span>${esc(l)}</span><span>${v > 0 ? '+' : ''}${fmt(v)}</span></div>`;
+  sheet(`<h2>💵 Cash: ${fmt(S.money)}</h2>
+    ${last.length ? `<h3>Last week</h3>
+      ${ins.length ? `<p class="muted" style="margin:4px 0 0">Money in</p>${ins.map(([l, v]) => row(l, v)).join('')}` : '<p class="muted">No pay came in.</p>'}
+      ${outs.length ? `<p class="muted" style="margin:8px 0 0">Bills out</p>${outs.map(([l, v]) => row(l, v)).join('')}` : ''}
+      <div class="kv"><span><b>Paychecks and bills</b></span><span><b>${S.last.net >= 0 ? '+' : ''}${fmt(S.last.net)}</b></span></div>
+      <p class="muted" style="font-size:0.8125rem">Events, trips and visits are on top of this: tap the strip above End Week for all of it.</p>`
+      : '<p class="muted">End a week and your pay and bills show up here.</p>'}
+    ${nx ? `<h3 style="margin-top:12px">Next week</h3>
+      <div class="kv"><span>Regular pay and bills${nx.big.length ? `<br><small class="muted">${nx.big.map(([l, v]) => `${esc(l)} ${v > 0 ? '+' : ''}${fmt(v)}`).join(' · ')}</small>` : ''}</span><span><b>${nx.net >= 0 ? '+' : ''}${fmt(nx.net)}</b></span></div>
+      <div class="kv"><span>Cash after</span><span>${fmt(nx.cash)}</span></div>` : ''}
+    ${nx && on('money.outlook') ? '<button class="btn primary" id="cashout">📅 Money outlook: next 13 weeks</button>' : ''}
+    <button class="btn ghost" id="ok">Close</button>`);
+  if ($('#cashout')) $('#cashout').onclick = () => outlookSheet(cashSheet);
+  $('#ok').onclick = closeSheet;
 }
 // i2-a23: press and hold (or right-click, or Shift+Enter) opens the skip options; the release after a hold isn't a tap
 function holdOpens(el, fn){
@@ -821,9 +982,34 @@ function holdOpens(el, fn){
   el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); e.stopPropagation(); fn(); } });
 }
 const holdDone = e => { const el = e.currentTarget; if (el && el._held) { el._held = false; return true; } return false; };
+// i48-b06: before ⏩ 13 or Auto, after 4+ weeks of one focus (it starts to fade), ask once per run of that focus
+let FOCUS_ASKED = null;
+function focusCheck(now, later, e){
+  const f = S && S.focus, key = S && `${S.name}|${S.streakF}|${S.turn - S.streakN}`;
+  if (!S || S.over || ROLL || (e && e.detail > 1) || (typeof TUT !== 'undefined' && TUT) || setting('skipAsk') === 'off' || f === 'study' || S.streakF !== f || S.streakN < 4
+    || (S.plan && S.plan.length) || FOCUS_ASKED === key) return now();
+  FOCUS_ASKED = key;
+  const two = lowFocus(f).slice(0, 2);
+  sheet(`<h2>Keep ${FOCUS_SHORT[f]}, or switch?</h2>
+    <p>${FOCUS[f].ic} ${FOCUS_SHORT[f]} fades after 4 weeks in a row. You've done it ${S.streakN} weeks, so it works at ${Math.round(focusEffect(f, S.streakN + 1) * 100)}% now.</p>
+    <div class="skiprow">${two.map(k => `<button class="btn primary" data-fc="${k}">${FOCUS[k].ic} ${FOCUS_SHORT[k]}</button>`).join('')}</div>
+    <button class="btn ghost" id="ok">Keep ${FOCUS_SHORT[f]}</button>
+    <button class="btn ghost" id="fcoff">Don't ask again</button>
+    <button class="btn ghost" id="no">Cancel</button>`);
+  const go = () => { closeSheet(); later(); };
+  document.querySelectorAll('#sheet [data-fc]').forEach(b => b.onclick = () => { S.focus = b.dataset.fc; save(); go(); });
+  $('#ok').onclick = go;
+  $('#no').onclick = closeSheet;
+  $('#fcoff').onclick = () => { setPref('skipAsk', 'off'); toast('OK. Turn it back on in Settings.'); go(); };
+}
+// the focuses for your lowest stats (classes don't fade, so they aren't suggested), not the one you're on
+function lowFocus(cur = S.focus){
+  const map = { happy:'outdoors', health:'rest', community:'community' };
+  return Object.keys(map).sort((a, b) => S[a] - S[b]).map(k => map[k]).filter(k => k !== cur);
+}
 // the skip options: ⏩ 4 and ⏩ 13, what ⏭ Auto plays until (i2-a11), and whether to watch the weeks go by (i2-a28)
 function skipSheet(){
-  if (!S || S.over || ROLL) return;
+  if (!S || S.over || ROLL || !on('ui.auto')) return;
   const L = LENGTHS[S.len], big = L.turns === Infinity || L.turns >= 104;
   const k = autoUntil(), sp = watchWeeks() ? 'watch' : 'instant', rm = reducedMotion();
   const opt = (grp, val, on, label, dis) => `<button class="btn ghost opt${on ? ' on' : ''}" role="radio" aria-checked="${on}" data-${grp}="${val}"${dis ? ' disabled' : ''}>${on ? '✓ ' : ''}${label}</button>`;
@@ -854,8 +1040,8 @@ const statBar = (label, v) => `<div class="stat"><label><span>${label}</span><sp
   <div class="bar notched"><i style="width:${v}%;background:${statColor(v)}"></i></div></div>`;
 
 const FOCUS_SHORT = { work:'Work extra', rest:'Rest', community:'Town', study:'Classes', outdoors:'Outside', hustle:'Hustle' };
-const statBtn = (k, label, v) => `<button class="stat statbtn" data-stat="${k}" aria-label="${label} ${Math.round(v)}, ${statWord(v)}: what moves it">
-  <label><span>${label} <span class="info">ⓘ</span></span><span>${Math.round(v)} · ${statWord(v)}</span></label>
+const statBtn = (k, label, v, cap = 100) => `<button class="stat statbtn" data-stat="${k}" aria-label="${label} ${Math.round(v)}, ${statWord(v)}${cap < 100 ? `, tops out at ${Math.round(cap)}` : ''}: what moves it">
+  <label><span>${label} <span class="info">ⓘ</span></span><span>${Math.round(v)}${cap < 100 ? `<small class="muted"> / ${Math.round(cap)}</small>` : ''} · ${statWord(v)}</span></label>
   <div class="bar notched"><i style="width:${v}%;background:${statColor(v)}"></i></div></button>`;
 // i2-a16: a first-month checklist for new players; finished steps are remembered on this device (prefs().cl), no rewards
 const CHECKLIST = [
@@ -867,7 +1053,7 @@ const CHECKLIST = [
   { id:'out', ic:'🛍️', t:'Visit a place in town, or plan a trip', done:() => !!S.trip || !!(S.out && S.out.visits) || Object.keys(S.towns || {}).length > 0, go:'out', b:'Go out' }
 ];
 function checklist(){
-  if (S.practice || S.turn >= 26 || prefs().clHide) return null;
+  if (!on('ui.checklist') || S.practice || S.turn >= 26 || prefs().clHide) return null;
   const cl = { ...(prefs().cl || {}) }; let changed = false;
   for (const c of CHECKLIST) if (!cl[c.id] && c.done()) { cl[c.id] = 1; changed = true; }
   if (changed) setPref('cl', cl);
@@ -898,9 +1084,26 @@ function overtimeTip(){
 }
 // what the selected focus does this week (Take classes names the certificate or diploma it works toward)
 function focusDesc(f){
-  if (f.study && S.certStudy) { const c = CERTS[S.certStudy.id]; return `work toward your ${c.name} certificate (${Math.floor(S.certStudy.prog)}/${c.weeks} weeks, already paid for).`; }
+  if (f.study && S.certStudy) { const c = CERTS[S.certStudy.id]; return `work toward your ${c.name} certificate (${Math.floor(S.certStudy.prog)}/${c.weeks} weeks, ${certOwed() ? `paid as you go, ${fmt(certOwed())} left` : 'already paid for'}).`; }
   if (f.study && S.edu < 3) return `work toward a ${EDU[S.edu+1].toLowerCase()}${S.program ? ` in ${PROGRAMS[S.program].name.toLowerCase()}` : ''} (${studyDone()}/${STUDY_NEED[S.edu]} weeks). ${tuitionWords()}.`;
   return f.desc + (f.cost ? ` ${wk(cost(f.cost))}.` : '');
+}
+// i72-b02/b03: no job yet: how long your cash lasts at your bills, and a Side hustle to bridge the gap
+function noPayCard(){
+  const wkB = weekBills(), n = cashWeeks(), low = S.money < wkB * 2, g = currentGig(), pay = Math.round(hustlePay(g, 0.5));
+  const debt = fmt(1000 * (mode() === 'relaxed' ? 0.01 : 0.015) * W);
+  const line = S.money <= 0 ? `<p class="cashline low">💸 You're out of cash: bills of about ${fmt(wkB)} a week go on debt, at about ${debt} interest a week for each ${fmt(1000)}.</p>`
+    : `<p class="cashline${low ? ' low' : ''}">💵 Your cash lasts about <b>${n} week${n === 1 ? '' : 's'}</b> at your bills (${fmt(wkB)} a week: rent, food, insurance, gas).${low ? ` After that it's debt, at about ${debt} interest a week for each ${fmt(1000)}.` : ''}</p>`;
+  const hustle = S.focus === 'hustle' ? `<p class="muted" style="margin:4px 0 0">🔧 Your focus is already Side hustle: ${g.name}, about ${fmt(pay)} a week.</p>`
+    : `<button class="sm alt" data-sugg="hustle">🔧 Side hustle meanwhile (about ${fmt(pay)} a week)</button>`;
+  // i72-b01: the first Home tip, before there's a job (the "pick a focus" tip assumes one)
+  const tip = `<p class="cashline">👉 One job application a week${S.applied ? ', and this week\'s is sent' : ''}. While you wait, pick a focus below and tap End Week.</p>`;
+  return `<div class="card warn nopay">💼 No paycheck coming in. ${line}${tip}<div class="slotbtns"><button class="sm" data-go="jobs">Find a job</button>${hustle}</div></div>`;
+}
+// i52-a03: the first time Work extra is picked, say it's overtime on top of a job (shown until that week is played)
+function otNote(){
+  if (S.seenOT || S.focus !== 'work' || S.practice || !job() || S.retired) return '';
+  return `<p class="otnote" role="note">⏱️ <b>Work extra is overtime</b>, on top of your regular job: your job already pays every week without it. Overtime adds ${Math.round((FOCUS.work.payMult - 1) * 100)}% pay but wears down happiness and health, so use it now and then.</p>`;
 }
 function renderHome(){
   const j = job(), f = FOCUS[S.focus];
@@ -912,28 +1115,30 @@ function renderHome(){
   ${S.practice ? '' : `<div class="homeart" id="homeart">${myFace(60)}${houseArt()}</div>`}
   ${gradCard()}${doorsCard()}
   <div class="card"><div class="stats">
-    ${statBtn('happy','Happiness', S.happy)}${statBtn('health','Health', S.health)}
+    ${statBtn('happy','Happiness', S.happy)}${statBtn('health','Health', S.health, maxHealth())}
     ${statBtn('community','Community', S.community)}
     <button class="stat statbtn" data-stat="net" aria-label="Net worth ${fmt(netWorth())}: what counts"><label><span>Net worth <span class="info">ⓘ</span></span></label><div style="font-weight:800;font-size:1.125rem;margin-top:2px">${fmt(netWorth())}</div></button>
   </div>${scoreButton()}</div>
-  ${cl}${hint ? `<div class="card next"><div>👉 <b>Next step:</b> ${hint.t}</div><button class="sm" data-next="${hint.go}">${hint.b}</button></div>` : ''}
+  ${unlockCard()}${cl}${hint ? `<div class="card next"><div>👉 <b>Next step:</b> ${hint.t}</div><button class="sm" data-next="${hint.go}">${hint.b}</button></div>` : ''}
   ${installReady() ? `<div class="card tip installcard"><div>📲 <b>Enjoying the Burg?</b> Install it: it opens from your home screen like an app and plays offline.</div><div class="slotbtns"><button class="sm" id="install">Install</button><button class="sm alt" id="installno">Not now</button></div></div>` : ''}
   ${privateCard()}
-  ${!j && !S.retired ? `<div class="card warn">💼 No paycheck coming in. <button class="sm" data-go="jobs">Find a job</button></div>` : ''}
+  ${!j && !S.retired ? noPayCard() : ''}
   ${S.happy < 30 ? sugg('happy', 'outdoors', `😟 Happiness is low (${Math.round(S.happy)}).`) : ''}
   ${S.health < 30 ? sugg('health', 'rest', `🤒 Health is low (${Math.round(S.health)}).`) : ''}
   ${overtimeTip() ? `<div class="card warn">${overtimeTip()}</div>` : ''}
+  ${S.money < 0 && !inCollections() && on('money.collections') ? firstTime('collect') : ''}
   ${S.money < debtWarnAt() ? `<div class="card warn" id="debtwarn">⚠️ Your debt is getting dangerous.${debtLimit() == null ? ` In Relaxed it never ends your life (a debt counselor stops it at ${fmt(RELAXED_FLOOR)}), but the interest keeps eating your cash.` : ` Below ${fmt(debtLimit())} you'll have to leave town${canBankrupt() ? ' or file for bankruptcy' : ''}.`} <button class="sm alt" data-go="life">🤝 Help you can get</button></div>` : onPlan() ? `<div class="card">📞 <b>On a payment plan.</b> Your debt is still in collections (worse odds on job applications and loans until you're back above $0), but the calls stop while your cash keeps going up.</div>` : inCollections() ? `<div class="card warn">📞 Your debt is in collections: daily calls (−happiness) and worse odds on job applications and loans until you're back above $0. Raise your cash ${PLAN_WEEKS} weeks in a row to get on a payment plan.</div>` : ''}
-  <div class="card"><div class="focushead"><h3>This week's focus</h3><button class="sm alt" id="planbtn" aria-pressed="${!!(S.plan && S.plan.length)}" aria-label="Focus plan: ${S.plan && S.plan.length ? 'on' : 'off'}">🗓 Plan${S.plan && S.plan.length ? ' ✓' : ''}</button></div>${scenarioLine()}${seasonLine()}${mapToggle()}
-    ${prefs().mapView ? mapBlock('T') : `<div class="fgrid">${Object.entries(FOCUS).map(([k,x]) => {
+  <div class="card"><div class="focushead"><h3>This week's focus</h3>${isOpen('plan') && on('ui.plan') ? `<button class="sm alt" id="planbtn" aria-pressed="${!!(S.plan && S.plan.length)}" aria-label="Focus plan: ${S.plan && S.plan.length ? 'on' : 'off'}${newTag('plan') ? ', new' : ''}">🗓 Plan${S.plan && S.plan.length ? ' ✓' : ''}${newTag('plan')}</button>` : ''}</div>${scenarioLine() || seasonLine()}${mapToggle()}
+    ${mapView() ? mapBlock('T') : `<div class="fgrid">${Object.entries(FOCUS).map(([k,x]) => {
+      if (!focusOpen(k)) return soonSlot(UNLOCK_FOCUS[k]);   // i31-b02: a focus not open yet keeps its spot, so the grid doesn't jump
       const dis = (x.needsJob && (!j || S.retired)) || (x.study && !canStudy());
       const eff = dis ? 1 : focusEffect(k, S.streakF === k ? S.streakN + 1 : 1);   // i2-a02: a fading focus says how strong it still is
-      return `<button class="fbtn ${S.focus===k?'on':''}" data-f="${k}" ${dis?'disabled':''} aria-pressed="${S.focus===k}"${eff < 1 ? ` aria-label="${FOCUS_SHORT[k]}, works at ${Math.round(eff * 100)}%"` : ''}><span class="ic">${x.ic}</span><b>${FOCUS_SHORT[k]}</b>${eff < 1 ? `<small class="fade">${Math.round(eff * 100)}%</small>` : ''}</button>`;
+      return `<button class="fbtn ${S.focus===k?'on':''}" data-f="${k}" ${dis?'disabled':''} aria-pressed="${S.focus===k}"${eff < 1 ? ` aria-label="${FOCUS_SHORT[k]}, works at ${Math.round(eff * 100)}%"` : ''}><span class="ic">${x.ic}</span><b>${FOCUS_SHORT[k]}</b>${eff < 1 ? `<small class="fade">${Math.round(eff * 100)}%</small>` : ''}${newTag(UNLOCK_FOCUS[k])}</button>`;
     }).join('')}</div>
-    <div class="fdesc"><b>${f.ic} ${f.name}:</b> ${focusDesc(f)}${previewLine(S.focus)}</div>`}
-    ${prefs().mapView ? previewLine(S.focus) : ''}
+    <div class="fdesc"><b>${f.ic} ${f.name}:</b> ${focusDesc(f)}${previewLine(S.focus)}</div>${otNote()}`}
+    ${mapView() ? previewLine(S.focus) : ''}
     ${planLine()}
-    ${outButton()}
+    ${isOpen('out') ? outButton() : ''}
   </div>${walkCard()}</div>
   <aside class="hside" aria-label="At a glance">
   <div class="card sumrow">
@@ -941,19 +1146,22 @@ function renderHome(){
     <button class="sumchip" data-go="life">🏠 ${HOMES[S.home].name.replace(/^Rented /,'')}</button>
     <button class="sumchip" data-go="life">🛻 ${CARS[S.car].name}</button>
     <button class="sumchip" data-go="life">🎓 ${EDU[S.edu].replace(' diploma','')}</button>
-    <button class="sumchip${S.trip ? ' on' : ''}" id="tripchip">${tripChip()}</button>
+    ${on('trips') && isOpen('trip') ? `<button class="sumchip${S.trip ? ' on' : ''}" id="tripchip">${tripChip()}${newTag('trip')}</button>` : ''}
+    ${perkChips().map((c, i) => `<button class="sumchip on perk" data-perk="${i}" aria-label="${c.say}">${c.t}</button>`).join('')}
   </div>
   ${S.log.length ? `<div class="card wideonly"><h3>📜 Lately</h3>${S.log.slice(0, 6).map(e => `<div class="logitem"><em>${esc(e.d)}</em>${esc(e.m)}</div>`).join('')}<button class="sm alt" data-go="log" style="margin-top:8px">Open the Journal</button></div>` : ''}
   </aside></div>`;
-  $('#tripchip').onclick = () => S.trip ? tripSheet(S.trip.city) : tripPicker();
+  if ($('#tripchip')) $('#tripchip').onclick = () => S.trip ? tripSheet(S.trip.city) : tripPicker();
+  if ($('#outbtn')) $('#outbtn').onclick = outSheet;
   doorsWire();                                     // i17-a01/a02
-  $('#outbtn').onclick = outSheet;
+  unlockWire();
   document.querySelectorAll('#main .fbtn[data-f]').forEach(b => b.onclick = () => { handFocus(b.dataset.f); const n = document.querySelector(`.fbtn[data-f="${S.focus}"]`); if (n) n.focus({ preventScroll: true }); const p = $('#fprev'); if (p) announce(p.textContent.replace(/\s+/g, ' ').trim()); });
-  $('#planbtn').onclick = planSheet;
+  if ($('#planbtn')) $('#planbtn').onclick = planSheet;
   walkWire();
   document.querySelectorAll('[data-stat]').forEach(b => b.onclick = () => showStatInfo(b.dataset.stat));
   if ($('#scorenow')) $('#scorenow').onclick = showScoreNow;
   document.querySelectorAll('[data-sugg]').forEach(b => b.onclick = () => handFocus(b.dataset.sugg, true));
+  { const pc = perkChips(); document.querySelectorAll('[data-perk]').forEach(b => b.onclick = () => { const c = pc[+b.dataset.perk]; if (c) c.go(); }); }
   document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { tab = b.dataset.go; render(); window.scrollTo(0,0); });
   document.querySelectorAll('[data-cl], [data-next]').forEach(b => b.onclick = () => goTo(b.dataset.cl || b.dataset.next));
   if ($('#clhide')) $('#clhide').onclick = () => { setPref('clHide', true); renderHome(); announce('Checklist hidden. It\'s in the Help guide under Finding your way.'); };
@@ -961,13 +1169,93 @@ function renderHome(){
   if ($('#privok')) { $('#privok').onclick = () => { PRIVATE_HOME_SEEN = true; renderHome(); }; $('#privbk').onclick = () => { PRIVATE_HOME_SEEN = true; backupSheet(); }; }
   if ($('#installno')) $('#installno').onclick = () => { setPref('installNo', Date.now()); renderHome(); announce('OK. Help has the install steps any time.'); };
 }
+/* ---------- 🔓 open as you go (i31): New tags, the unlock card and the 'coming soon' teaser ---------- */
+// i31-b15: a New tag on something that just opened at its moment, until you've looked at its tab (or 4 weeks pass)
+const isNew = id => { const o = S && S.unlockMode !== 'all' && S.opened && S.opened[id];
+  return !!o && (o.how === 'moment' || o.how === 'deadline') && S.turn - o.w < 4 && !(prefs().seenNew || {})[id]; };
+const newTag = id => id && isNew(id) ? ' <span class="newtag">New</span>' : '';
+const tabHasNew = k => !!S && UNLOCKS.some(u => u.tab === k && isNew(u.id));
+const markSeen = ids => { if (ids.length) setPref('seenNew', { ...(prefs().seenNew || {}), ...Object.fromEntries(ids.map(id => [id, 1])) }); };
+let NEW_TAB = null;              // the tab drawn last: leaving it means you've seen what was new there
+function seenTab(){
+  if (NEW_TAB && NEW_TAB !== tab) markSeen(UNLOCKS.filter(u => u.tab === NEW_TAB && isNew(u.id)).map(u => u.id));
+  NEW_TAB = tab;
+}
+// i31-b02: a focus that isn't open yet keeps its spot in the grid; tapping it shows what's coming (i31-b19)
+const soonSlot = id => `<button class="fbtn fsoon" data-soon="${id}" aria-label="Coming soon: ${UNLOCK[id].label}. Tap to see it or open it now"><span class="ic" aria-hidden="true">✨</span><b>Soon</b></button>`;
+// i31-b22: when a system opens at the latest, as a week number the player sees (week 1 is the first week)
+const unlockWhen = u => { const by = unlockBy(u); return by != null ? `by week ${by + 1} at the latest` : 'when it comes up in your life'; };
+function teaserSheet(id){
+  const u = UNLOCK[id]; if (!u) return;
+  sheet(`<h2>${u.ic} ${u.label}: coming soon</h2><p>${u.moment}</p>
+    <p class="muted">It opens on its own ${unlockWhen(u)}. Already know how it works?</p>
+    <button class="btn primary" id="early">I know this one: open it now</button>
+    <button class="btn ghost" id="no">Not yet</button>`);
+  $('#early').onclick = () => openEarly(id);
+  $('#no').onclick = closeSheet;
+}
+// i31-b19: 'I know this one' opens a system quietly; it works exactly as if its moment had come
+function openEarly(id){
+  openSystem(id, { quiet:true, how:'early' }); save(); closeSheet(); render();
+  const f = UNLOCK[id].focus && document.querySelector(`.fbtn[data-f="${UNLOCK[id].focus}"]`); if (f) f.focus({ preventScroll: true });
+  announce(`${UNLOCK[id].label} is open.`);
+}
+// i31-b16: one unlock card at a time on Home: two lines and Show me; the next one waits in S.unlockQ
+let UNLOCK_SAID = null;
+function unlockCard(){
+  if (!S || S.practice) return '';
+  const id = (S.unlockQ || []).find(x => UNLOCK[x] && S.opened && S.opened[x]); if (!id) return '';
+  const u = UNLOCK[id];
+  if (UNLOCK_SAID !== id) { UNLOCK_SAID = id;   // said after anything else just announced (like the week's summary), not over it
+    setTimeout(() => { const r = $('#sr'), cur = r ? r.textContent.trim() : ''; announce(`${cur ? cur + ' ' : ''}New: ${u.label}. ${u.moment}`); }, 400); }
+  return `<div class="card tip unlockcard" id="unlockcard" data-unlock="${id}"><div><b>✨ New: ${u.ic} ${u.label}</b><div class="s">${u.moment}</div></div>
+    <div class="slotbtns"><button class="sm" id="unshow" aria-label="Show me: ${u.label}">Show me</button><button class="sm alt" id="unok" aria-label="Got it: ${u.label}">Got it</button></div></div>`;
+}
+function unlockWire(){
+  const done = () => { const id = S.unlockQ.shift(); save(); return id; };
+  if ($('#unok')) $('#unok').onclick = () => { done(); renderHome(); const n = $('#unshow') || $('#end'); if (n) n.focus({ preventScroll: true }); };
+  if ($('#unshow')) $('#unshow').onclick = () => { const id = done(); markSeen([id]); renderHome(); miniTour(id); };
+  document.querySelectorAll('#main [data-soon]').forEach(b => b.onclick = () => teaserSheet(b.dataset.soon));
+}
+// i5-a05: perks you've picked up that run out, with the weeks left; a tap opens where you use them
+function perkChips(){
+  const out = [], wks = n => n <= 1 ? 'this week' : `${n} wks`, tabTo = t => () => { tab = t; render(); window.scrollTo(0, 0); };
+  const add = (ic, name, left, go, why) => out.push({ t: `${ic} ${name}: ${wks(left)}`, say: `${name}, ${left <= 1 ? 'this week only' : left + ' weeks left'}. ${why}`, go });
+  if ((S.hireBy ?? -1) >= S.turn && !S.retired) add('🤝', 'Sure-thing interview', S.hireBy - S.turn + 1, tabTo('jobs'), 'Your next application is a sure thing. Opens the Jobs tab.');
+  if (tradeBonus()) add('🛻', 'Trade-in bonus', 1, tabTo('life'), 'Opens your vehicles on the Life tab.');
+  if (S.out && outLookBonus()) add('💇', 'Looking sharp', LOOK_WEEKS - (S.turn - S.out.look), tabTo('jobs'), 'Better odds on job applications. Opens the Jobs tab.');
+  if (S.out && outAdBoost() > 1) add('📣', 'Hustle ad', AD_WEEKS - (S.turn - S.out.ad), () => goTo('focus'), 'Side-hustle pay is up. Opens your focus.');
+  if (S.turn < (S.stockUntil ?? -1)) add('🛒', 'Stocked up', S.stockUntil - S.turn, () => { toast(`🛒 Groceries cost ${STOCK_OFF * 100}% less for ${wks(S.stockUntil - S.turn)}.`); }, 'Groceries cost less.');
+  return out;
+}
+// i63-a13: the first time cash drops below -$1,000, three things you can do this week with no loan
+const MONEY_TALK_AT = 1000;
+const moneyTalkDue = () => !!S && !S.over && !S.practice && !S.moneyTalk && S.money < -cost(MONEY_TALK_AT);
+const tradeDownOK = () => S.car === 'truck' && !(S.loanLeft > 0);
+function moneyTalk(){
+  S.moneyTalk = true; save();
+  const near = nearJobs(), hustle = S.focus === 'hustle';
+  sheet(`<h2>💬 Let's talk money</h2>
+    <p>You're ${fmt(-S.money)} below zero. That happens. Interest adds up, so here are three things you can do this week, no loan needed.</p>
+    ${S.retired ? '' : `<button class="btn primary" id="mtjobs">💼 See jobs that start this week${near.length ? ` (${near.length})` : ''}</button>`}
+    <button class="btn ${S.retired ? 'primary' : 'ghost'}" id="mthustle"${hustle ? ' disabled' : ''}>🔧 ${hustle ? 'Side hustles are already your focus' : 'Pick up side hustles this week'}</button>
+    ${tradeDownOK() ? '<button class="btn ghost" id="mtcar">🛻 Trade the truck down</button>' : ''}
+    <button class="btn ghost" id="ok">Not now</button>`);
+  if ($('#mtjobs')) $('#mtjobs').onclick = () => { closeSheet(); jobNear = true; tab = 'jobs'; render(); window.scrollTo(0, 0); announce(`Jobs tab: ${near.length} jobs you can start near home`); };
+  $('#mthustle').onclick = () => { closeSheet(); handFocus('hustle', true); };
+  if ($('#mtcar')) $('#mtcar').onclick = () => { closeSheet(); tab = 'life'; render(); const c = document.querySelector('[data-car]'); if (c) { c.scrollIntoView({ block: 'center' }); c.focus({ preventScroll: true }); } };
+  $('#ok').onclick = closeSheet;
+}
+// jobs your schooling allows, open this season, within 15 miles of home
+const NEAR_MILES = 15;
+const nearJobs = () => JOBS.filter(x => x.edu <= S.edu && jobOn(x) && !extraLock(x) && jobInSeason(x) && CITIES[x.city].miles <= NEAR_MILES && x.id !== S.jobId);
 // i2-a30: offer to install at a good moment: after a couple of months of play, when no other tip is showing,
 // and never when it's already installed (home-screen app or the Android app) or the browser can't install it
 const INSTALL_AFTER = 8, INSTALL_SNOOZE = 14 * 864e5;
 const isInstalled = () => (typeof matchMedia === 'function' && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true || String(document.referrer || '').startsWith('android-app://');
 function installReady(){
   const p = prefs();
-  return !!(typeof INSTALL_EVT !== 'undefined' && INSTALL_EVT) && !S.practice && !isInstalled() && !p.installed
+  return on('ui.nudges') && !!(typeof INSTALL_EVT !== 'undefined' && INSTALL_EVT) && !S.practice && !isInstalled() && !p.installed
     && !(p.installNo && Date.now() - p.installNo < INSTALL_SNOOZE) && S.turn >= INSTALL_AFTER && !checklist();
 }
 function installNow(){
@@ -981,18 +1269,20 @@ function installNow(){
 }
 // i2-a12: picking a focus by hand; with a plan on, it pauses the plan for this week only
 function handFocus(k, say){
+  if (UNLOCK_FOCUS[k]) openSystem(UNLOCK_FOCUS[k], { quiet:true, how:'used' });
   S.focus = k; save(); render();
   const p = planFocus();
   if (p && p !== k) toast(`Plan paused this week: ${FOCUS[k].name}. Back to the plan next week.`);
   else if (say) toast(`This week: ${FOCUS[k].name}`);
 }
 function planLine(){
-  if (!S.plan || !S.plan.length) return '';
+  if (!on('ui.plan') || !S.plan || !S.plan.length) return '';
   const i = (S.planI || 0) % S.plan.length, p = planFocus();
   const list = S.plan.map((k, j) => j === i ? `<b>${FOCUS[k].ic} ${FOCUS_SHORT[k]}</b>` : `${FOCUS[k].ic} ${FOCUS_SHORT[k]}`).join(' → ');
   return `<div class="planline">🗓 Plan: ${list}${p !== S.focus ? ` <span class="muted">(paused this week)</span>` : ''}</div>`;
 }
 function planSheet(){
+  openSystem('plan', { quiet:true, how:'used' });
   let cur = S.plan && S.plan.length ? [...S.plan] : [S.focus];
   const draw = () => {
     sheet(`<h2>🗓 Focus plan</h2>
@@ -1027,7 +1317,7 @@ function showStatInfo(k){
       <div class="kv"><span>Cash</span><span>${fmt(S.money)}</span></div>
       <div class="kv"><span>${term('equity')}</span><span>${fmt(S.equity)}</span></div>
       <div class="kv"><span>${CARS[S.car].name}</span><span>${fmt(S.carValue)}</span></div>
-      <div class="kv"><span>401(k), after tax (${Math.round(K401_AFTER_TAX * 100)}% of ${fmt(S.k401 || 0)})</span><span>${fmt((S.k401 || 0) * K401_AFTER_TAX)}</span></div>
+      ${on('money.k401') || S.k401 ? `<div class="kv"><span>401(k), after tax (${Math.round(K401_AFTER_TAX * 100)}% of ${fmt(S.k401 || 0)})</span><span>${fmt((S.k401 || 0) * K401_AFTER_TAX)}</span></div>` : ''}
       ${S.biz ? `<div class="kv"><span>${BIZ[S.biz.type].name}</span><span>${fmt(bizValue())}</span></div>` : ''}
       ${S.stocks > 0 ? `<div class="kv"><span>Index funds</span><span>${fmt(S.stocks)}</span></div>` : ''}
       ${wineAtCost() ? `<div class="kv"><span>Wine futures (at cost)</span><span>${fmt(wineAtCost())}</span></div>` : ''}
@@ -1042,6 +1332,7 @@ function showStatInfo(k){
     sheet(`<h2>${x.t}: ${Math.round(S[k])}</h2>
       <h3>Goes up with</h3>${x.up.map(u => `<div class="logitem">▲ ${u}</div>`).join('')}
       <h3 style="margin-top:10px">Goes down with</h3>${x.down.map(u => `<div class="logitem">▼ ${u}</div>`).join('')}
+      ${k === 'health' ? `<p><b>${maxHealth() < 100 ? `At ${age()}, health tops out at ${Math.round(maxHealth())}.` : 'Health can reach 100 until 55; after that it tops out a little lower each year.'}</b></p>` : ''}
       <p class="muted">${x.note}</p><button class="btn primary" id="ok">Got it</button>`);
   }
   $('#ok').onclick = closeSheet;
@@ -1050,6 +1341,13 @@ function showStatInfo(k){
 // weekly take-home: pay after ~15% taxes, minus commuting gas in your current vehicle
 const takeHome = x => payNow(x, S.jobId === x.id) * W * (1 - taxRate(payNow(x, S.jobId === x.id))) -   // i75-b03: taxed by bracket
   commuteCost(CITIES[x.city].miles, CARS[S.car], x) * W;
+// i52-a01: in a first life, before the first hire, tag the two best jobs within 25 miles (take-home less a happiness cost for the drive)
+let GOOD_JOBS = [];
+function goodFirstJobs(){
+  if (!S || S.practice || S.jobId || S.retired || prefs().hired || hasRecords()) return [];
+  return JOBS.filter(x => CITIES[x.city].miles <= 25 && x.edu <= S.edu && jobOn(x) && !extraLock(x) && jobInSeason(x))
+    .map(x => [x.id, takeHome(x) - CITIES[x.city].miles * 10 - (x.stress + x.wear) * 40]).sort((a, b) => b[1] - a[1]).slice(0, 2).map(a => a[0]);
+}
 function jobRow(x){
   const c = CITIES[x.city], cur = S.jobId === x.id && !S.retired, th = takeHome(x);
   const base = job() && !S.retired ? takeHome(job()) : 0, diff = th - base;
@@ -1059,14 +1357,14 @@ function jobRow(x){
     : back ? `<button class="sm" data-recall="${x.id}">Go back</button>`
     : !jobInSeason(x) ? `<button class="sm" disabled aria-label="Hires again in ${MONTHS[x.season[0]]}">Hires ${MONTHS[x.season[0]].slice(0,3)}</button>`
     : `<button class="sm" data-apply="${x.id}" ${S.applied?'disabled':''}>Apply</button>`;
-  const tags = [x.remote === 5 ? '🏠 fully remote' : x.remote ? `🏠 ${x.remote} remote days` : '', x.season ? `🗓️ ${seasonWords(x)}` : '', x.union ? '🪪 union' : '',
-    x.apprentice && !cur ? `🧰 apprentice, ${x.apprentice.weeks / 52} yrs to full pay` : '', CLEARANCE.includes(x.id) && !cur ? '🔐 clearance' : '', majorFits(x) ? '🎓 your major' : '', accTag(x)].filter(Boolean);
+  const tags = [GOOD_JOBS.includes(x.id) ? '<b class="goodjob">⭐ Good first job</b>' : '', remoteDays(x) === 5 ? '🏠 fully remote' : remoteDays(x) ? `🏠 ${x.remote} remote days` : '', seasonal(x) ? `🗓️ ${seasonWords(x)}` : '', unionJob(x) ? '🪪 union' : '',
+    x.apprentice && !cur ? `🧰 apprentice, ${x.apprentice.weeks / 52} yrs to full pay` : '', CLEARANCE.includes(x.id) && !cur && on('jobs.perks') ? '🔐 clearance' : '', majorFits(x) ? '🎓 your major' : '', accTag(x)].filter(Boolean);
   return `<div class="kv job${lock ? ' lockedrow' : ''}" data-job="${x.id}"><div><div class="t">${cur ? esc(jobTitle(x)) : x.title}</div>
     <div class="s">${x.where ? esc(x.where) + ', ' : ''}${c.name}${c.miles ? ` · ${c.miles} mi` : ' · no commute'} · pay ${wk(payNow(x, cur))}${c.miles ? `, gas ${wk(commuteCost(c.miles, CARS[S.car], x))}` : ''}${tags.length ? ` · ${tags.join(' · ')}` : ''}</div></div>
     <div style="text-align:right"><div class="pay">${fmt(th)}/wk</div>
     <div class="s">${cur ? 'take-home' : base && Math.abs(diff) >= 1 ? `<span class="${diff>0?'upt':'downt'}">${diff>0?'▲':'▼'} ${fmt(Math.abs(diff))}</span>` : 'take-home'}</div>${btn}</div></div>`;
 }
-let jobOK = false;
+let jobOK = false, jobNear = false;
 function explainLocked(id){
   const x = jobById(id); if (!x) return;
   if (S.edu >= x.edu && extraLock(x)) {         // i3-a02/a03: a certificate or a program
@@ -1089,7 +1387,7 @@ function explainLocked(id){
     ${steps.join('')}
     ${S.focus === 'study' ? '<p><b>📚 Take classes is already your focus.</b></p>' : `<button class="btn primary" id="yes">📚 Make Take classes my focus</button>`}
     <button class="btn ghost" id="no">${S.focus === 'study' ? 'OK' : 'Not now'}</button>`);
-  if ($('#yes')) $('#yes').onclick = () => { S.focus = 'study'; save(); closeSheet(); tab = 'home'; render(); toast('This week: Take classes'); };
+  if ($('#yes')) $('#yes').onclick = () => { openSystem('study', { quiet:true, how:'used' }); S.focus = 'study'; save(); closeSheet(); tab = 'home'; render(); toast('This week: Take classes'); };
   $('#no').onclick = closeSheet;
 }
 // i3: your job at the top of the Jobs tab: its ladder, apprenticeship, clearance, union, season, notice and the bus
@@ -1104,45 +1402,61 @@ function myJobCard(){
   const a = j.apprentice, app = apprenticing(j) ? `<div class="kv"><span>🧰 Apprenticeship: year ${Math.floor((S.appWeeks || 0) / 52) + 1} of ${a.weeks / 52}</span><span>${Math.round(appMult(j, true) * 100)}% pay</span></div>
     <div class="bar" role="progressbar" aria-label="Apprenticeship progress" aria-valuenow="${S.appWeeks || 0}" aria-valuemin="0" aria-valuemax="${a.weeks}"><i style="width:${(S.appWeeks || 0) / a.weeks * 100}%;background:var(--bar-sky)"></i></div>` : '';
   const facts = [clearing() ? `🔐 Clearance pending: ${S.clearAt - S.turn} more weeks at ${Math.round(CLEAR_PAY * 100)}% pay. Heavy debt (below ${fmtc(-5000)}) can sink the check.` : '',
-    j.union ? `🪪 Union job: dues ${wk(payNow(j) * UNION_DUES)}, a 1.5% step raise each January, half the layoff risk.${S.strike ? ` On strike for ${S.strike.until - S.turn} more weeks (40% strike pay).` : ''}` : '',
+    unionJob(j) ? `🪪 Union job: dues ${wk(payNow(j) * UNION_DUES)}, a 1.5% step raise each January, half the layoff risk.${S.strike ? ` On strike for ${S.strike.until - S.turn} more weeks (40% strike pay).` : ''}` : '',
     S.furlough && S.turn < S.furlough.until ? `🏛️ Furloughed for ${S.furlough.until - S.turn} more weeks. Back pay so far: ${fmt(S.furlough.owed)}.` : '',
-    j.season ? `🗓️ Seasonal: ${seasonWords(j)}. You're laid off when it ends and called back next season.` : '',
-    j.remote === 5 ? '🏠 Fully remote: no commute, but no coworkers, so your community fades faster.' : '',
+    seasonal(j) ? `🗓️ Seasonal: ${seasonWords(j)}. You're laid off when it ends and called back next season.` : '',
+    remoteDays(j) === 5 ? '🏠 Fully remote: no commute, but no coworkers, so your community fades faster.' : '',
     S.bonus && S.bonus.job === j.id && S.turn < S.bonus.until ? `💵 Sign-on bonus: leave in the next ${S.bonus.until - S.turn} weeks and you pay back ${fmt(S.bonus.amt)}.` : '',
     S.notice != null ? `👋 You gave notice: your last day is in ${Math.max(0, S.notice - S.turn)} week${S.notice - S.turn === 1 ? '' : 's'}.` : ''].filter(Boolean);
   const bus = busOK(j) ? `<p class="muted" style="margin:6px 0">🚌 ${S.bus ? 'You ride the county bus' : 'County bus'} to ${CITIES[j.city].name}: ${wk(cost(BUS_PASS))} pass, 90% less commute gas and half the truck wear, but longer days (▼ a little happiness).</p>
     <button class="sm${S.bus ? ' alt' : ''}" id="bus" aria-pressed="${!!S.bus}">${S.bus ? '🚙 Drive instead' : '🚌 Ride the bus'}</button>` : '';
-  return `<div class="card"><h3>💼 ${esc(jobTitle(j))}</h3>${wait}
+  const lad = on('jobs.ladder');                   // difficulty: no ladder in Easy, just the job
+  return `${unionJob(j) ? firstTime('union') : ''}${lad ? firstTime('ladder') : ''}<div class="card"><h3>💼 ${esc(jobTitle(j))}</h3>${wait}
     <p class="muted" style="margin:0 0 4px">${esc(j.where ? j.where + ', ' : '')}${CITIES[j.city].name} · ${wk(payNow(j))} · ${Math.floor(S.tenure || 0)} months on the job</p>
-    <ol class="ladder" aria-label="Job ladder">${steps}</ol>
-    ${next ? `<p class="muted" style="margin:4px 0">Next step up: ${esc(next.title)}. ${rungNeeds(next) ? `Needs ${rungNeeds(next)}.` : 'You qualify: watch for a promotion offer.'}</p>` : '<p class="muted" style="margin:4px 0">You\'re at the top of this ladder.</p>'}
+    ${lad ? `<ol class="ladder" aria-label="Job ladder">${steps}</ol>` : ''}
+    ${!lad ? '' : next ? `<p class="muted" style="margin:4px 0">Next step up: ${esc(next.title)}. ${rungNeeds(next) ? `Needs ${rungNeeds(next)}.` : 'You qualify: watch for a promotion offer.'}</p>` : '<p class="muted" style="margin:4px 0">You\'re at the top of this ladder.</p>'}
     ${app}${facts.map(t => `<p class="muted" style="margin:4px 0">${t}</p>`).join('')}${bus}${rec}${refLine}</div>`;
 }
+// i20-a09: the board in three parts, so the jobs you can take now aren't mixed in with the locked ones
+const jobGroup = x => {
+  if (S.edu < x.edu) return x.edu === 1 ? 'cert' : 'degree';
+  if (x.needCert && extraLock(x)) return 'cert';
+  if (extraLock(x)) return 'degree';
+  return 'ok';
+};
+const BOARD_GROUPS = [['ok', '✅ Can apply'], ['cert', '📜 Needs a certificate'], ['degree', '🎓 Needs a degree']];
+function boardHTML(list){
+  if (!list.length) return '<p class="muted">No jobs match.</p>';
+  return BOARD_GROUPS.map(([k, label]) => { const g = list.filter(x => jobGroup(x) === k); if (!g.length) return '';
+    return `<h4 class="boardh">${label} <span class="tag">${g.length}</span></h4>${g.map(jobRow).join('')}`; }).join('');
+}
 function renderJobs(){
-  syncCarpool();
+  syncCarpool(); GOOD_JOBS = goodFirstJobs();
   const j = job();
   const cur = S.jobId && !S.retired ? S.jobId : null;
-  const list = JOBS.filter(x => (jobCity === 'all' || x.city === jobCity) && (!jobOK || (x.edu <= S.edu && !extraLock(x))))
+  const near = jobNear ? new Set(nearJobs().map(x => x.id)) : null;
+  const list = JOBS.filter(x => jobOn(x) && (jobCity === 'all' || x.city === jobCity) && (!jobOK || (x.edu <= S.edu && !extraLock(x))) && (!near || near.has(x.id) || x.id === cur))
     .sort((a, b) => (b.id === cur) - (a.id === cur) || (a.edu > S.edu || !!extraLock(a)) - (b.edu > S.edu || !!extraLock(b)) || (a.edu > S.edu ? a.edu - b.edu : 0) || takeHome(b) - takeHome(a));
-  const mapOn = !!prefs().mapView;
+  const mapOn = mapView();
   $('#main').innerHTML = `${myJobCard()}${mapToggle()}
   ${mapOn ? `<div class="card"><h3>Job board <span class="tag">${S.applied ? 'Applied this week' : '1 application per week'}</span></h3>${mapBlock('R')}</div>` : `
-  <div class="chips"><button class="chip ok ${jobOK?'on':''}" id="jobok" aria-pressed="${jobOK}">✅ Can apply</button>${[['all','All towns'], ...Object.entries(CITIES).map(([k,c]) => [k,c.name])].map(([k,l]) =>
+  <div class="chips">${jobNear ? `<button class="chip ok on" id="jobnear" aria-pressed="true">📍 Start now, ${NEAR_MILES} mi ✕</button>` : ''}<button class="chip ok ${jobOK?'on':''}" id="jobok" aria-pressed="${jobOK}">✅ Can apply</button>${[['all','All towns'], ...Object.entries(CITIES).map(([k,c]) => [k,c.name])].map(([k,l]) =>
     `<button class="chip ${jobCity===k?'on':''}" data-c="${k}">${l}</button>`).join('')}</div>
   ${jobCity!=='all' ? `<div class="card muted">${CITIES[jobCity].blurb}</div>` : ''}
   <div class="card">
     <h3>Job board <span class="tag">${S.applied ? 'Applied this week' : '1 application per week'}</span></h3>
-    <p class="muted" style="margin:0 0 4px;font-size:0.8125rem">${term('takehome')} is pay after taxes and gas${job() && !S.retired ? ', with ▲▼ against your current job' : ''}.</p>
-    ${list.map(jobRow).join('') || '<p class="muted">No jobs match.</p>'}
+    <p class="muted" style="margin:0 0 4px;font-size:0.8125rem">${term('takehome')} is pay after taxes and gas${job() && !S.retired ? ', with ▲▼ against your current job' : ''}.${GOOD_JOBS.length ? ' ⭐ Good first jobs are close to home: the top of the list can mean an hour on the road each way, and long drives wear down happiness.' : ''}</p>
+    ${boardHTML(list)}
   </div>`}
-  ${j && !S.retired && commuteOneWay() >= 20 && !onBus() ? `${firstTime('carpool')}<div class="card"><h3>🚙 Carpool</h3>
+  ${j && !S.retired && commuteOneWay() >= 20 && !onBus() && on('jobs.commute') ? `${firstTime('carpool')}<div class="card"><h3>🚙 Carpool</h3>
     ${S.carpool ? `<p class="muted" style="margin:0 0 6px">You ride with neighbors to ${CITIES[j.city].name}: half the gas, the drive wears on you less, and you stay in the loop (▲ community).</p><button class="sm alt" id="carpool">Drive alone</button>`
       : canCarpool() ? `<p class="muted" style="margin:0 0 6px">Split the drive to ${CITIES[j.city].name} with neighbors: half the gas, less wear from the commute, and a little community.</p><button class="sm" id="carpool">Join a carpool</button>`
       : `<p class="muted" style="margin:0">Know more people in town (community 30+) and you can join a carpool: half the gas and an easier commute.</p>`}</div>` : ''}
   ${j && !S.retired && S.notice == null ? `<button class="btn ghost" id="quit">Quit my job</button>` : ''}
-  ${LENGTHS[S.len].turns===Infinity && age()>=62 && !S.retired ? `<button class="btn primary" id="retire">Retire (Social Security ${wk(ssPay())}${pensionVested()?` + pension ${wk(pensionPay())}`:''}${S.k401>0?` + 401(k) ${wk(S.k401*drawRate()/12)}`:''})</button>` : ''}`;
+  ${LENGTHS[S.len].turns===Infinity && age()>=62 && !S.retired && on('retire.income') ? `<button class="btn primary" id="retire">Retire (Social Security ${wk(ssPay())}${pensionVested()?` + pension ${wk(pensionPay())}`:''}${S.k401>0?` + 401(k) ${wk(S.k401*drawRate()/12)}`:''})</button>` : ''}`;
   document.querySelectorAll('.chip[data-c]').forEach(b => b.onclick = () => { jobCity = b.dataset.c; render(); });
   if ($('#jobok')) $('#jobok').onclick = () => { jobOK = !jobOK; render(); };
+  if ($('#jobnear')) $('#jobnear').onclick = () => { jobNear = false; render(); announce('Showing all jobs'); };
   if ($('#carpool')) $('#carpool').onclick = () => { S.carpool = !S.carpool; S.carpoolJob = S.carpool ? S.jobId : null; save(); render(); toast(S.carpool ? '🚙 You joined a carpool' : 'Driving alone again'); };
   document.querySelectorAll('[data-apply]').forEach(b => b.onclick = () => apply(b.dataset.apply));
   // i3-a09: how you leave decides your reference
@@ -1174,11 +1488,12 @@ function commuteCost(miles, car = CARS[S.car], j = null){ return miles * 2 * WOR
 
 // i3-a07: an application leads to an interview (features.js); a recruiter's sure thing or a practice life skips it
 function apply(id){
-  const x = jobById(id); if (!x || S.applied || extraLock(x) || !jobInSeason(x)) return;
+  const x = jobById(id); if (!x || !jobOn(x) || S.applied || extraLock(x) || !jobInSeason(x)) return;
   S.applied = true;
   const p = hireOdds(x), sure = (S.hireBy ?? -1) >= S.turn;   // a recruiter set up the interview (event)
   S.applyBoost = 0; S.hireBy = -1;                 // both count for the next application only
   if (S.practice || sure) return hired(x);
+  if (!on('jobs.interview')) { const ok = chance(Math.min(0.92, p)); save(); return hireResult(x, ok); }   // difficulty: Easy hires on the odds alone
   S.interview = { id, p };
   interviewSheet(x);
   save();
@@ -1187,7 +1502,7 @@ function apply(id){
 // i3-a02 programs and i3-a03 certificates on the Life tab
 function eduCard(){
   const pr = PROGRAMS[S.program], cs = S.certStudy && CERTS[S.certStudy.id];
-  return `<div class="card"><h3>📚 Education</h3>
+  return `<div class="card" id="educard"><h3>📚 Education</h3>
     <div class="kv"><span>Highest</span><span><b>${EDU[S.edu]}</b>${S.major ? ` <small>(${PROGRAMS[S.major].ic} ${PROGRAMS[S.major].name})</small>` : ''}</span></div>
     ${S.edu < 3 ? `<div class="kv"><span>Next: ${EDU[S.edu+1]}${pr ? ` in ${pr.name.toLowerCase()}` : ''}</span><span>${studyDone()}/${STUDY_NEED[S.edu]} weeks</span></div>
     <div class="bar"><i style="width:${S.studyProg/STUDY_NEED[S.edu]*100}%;background:var(--bar-sky)"></i></div>
@@ -1196,64 +1511,63 @@ function eduCard(){
     <p style="margin:6px 0 2px"><b>Program</b> <small class="muted">Same weeks and tuition. Your diploma counts as a major in it: +${Math.round(MAJOR_PAY * 100)}% pay and better odds at matching jobs.</small></p>
     <div class="chips" role="group" aria-label="Program">${[['', '📘 General studies'], ...Object.entries(PROGRAMS).map(([k, x]) => [k, `${x.ic} ${x.name}`])].map(([k, l]) =>
       `<button class="chip ${(S.program || '') === k ? 'on' : ''}" data-prog="${k}" aria-pressed="${(S.program || '') === k}">${l}</button>`).join('')}</div>
-    ${pr ? `<p class="muted" style="margin:2px 0 0">${pr.ic} Matching jobs: ${pr.jobs.map(id => jobById(id)).filter(Boolean).map(x => x.title.toLowerCase()).join(', ')}.</p>` : ''}`
+    ${pr ? `<p class="muted" style="margin:2px 0 0">${pr.ic} Matching jobs: ${pr.jobs.map(id => jobById(id)).filter(jobOn).map(x => x.title.toLowerCase()).join(', ')}.</p>` : ''}`
     : '<p class="muted">You\'ve finished all the schooling the game offers.</p>'}
-    <h3 style="margin-top:12px">📜 Short certificates</h3>
+    ${on('school.certs') ? `<h3 style="margin-top:12px">📜 Short certificates</h3>
     <p class="muted" style="margin:0 0 4px">A few weeks of Take classes and a one-time fee open one door, without the whole school ladder.</p>
     ${cs ? `<div class="kv"><span>${cs.ic} ${cs.name}</span><span>${Math.floor(S.certStudy.prog)}/${cs.weeks} weeks</span></div>
       <div class="bar"><i style="width:${S.certStudy.prog / cs.weeks * 100}%;background:var(--bar-sky)"></i></div>` : ''}
     ${Object.entries(CERTS).map(([k, c]) => `<div class="kv job"><div><div class="t">${c.ic} ${c.name}</div><div class="s">${c.weeks} weeks · ${fmtc(c.fee)} · ${c.what}</div></div>
       ${(S.certs || {})[k] ? '<span class="tag cur">Earned</span>' : S.certStudy && S.certStudy.id === k ? '<span class="tag">In progress</span>'
-        : `<button class="sm" data-cert="${k}" ${S.certStudy ? 'disabled' : ''}>Sign up</button>`}</div>`).join('')}
+        : `<button class="sm" data-cert="${k}" ${S.certStudy ? 'disabled' : ''}>Sign up</button>`}</div>`).join('')}` : ''}
   </div>`;
 }
 function renderLife(){
   const h = HOMES[S.home], u = undoTop();
-  $('#main').innerHTML = `${aidCard()}${u ? `<div class="card undo" role="status"><span>↩ ${esc(u.label)}</span><button class="sm" id="undo" aria-label="Undo: ${esc(u.label)}">Undo</button></div>` : ''}${S.practice ? '' : goalsCard()}${S.practice ? '' : aimCard()}${S.practice ? '' : skillsCard()}${S.practice ? '' : bizCard()}${S.practice ? '' : townLifeCard()}${healthCard()}
-${S.edu < 3 ? firstTime('school') : ''}${eduCard()}
-  <div class="card"><h3>🏡 Home in Waitsburg</h3>
+  const homeCard = `${h.own && on('home.propertyTax') ? firstTime('ptax') : ''}<div class="card"><h3>🏡 Home in Waitsburg</h3>
     ${Object.entries(HOMES).filter(([k, x]) => !x.family || S.home === k).map(([k,x]) => {   // i17-a04: once you move out of the family home, it's gone
       const cur = S.home === k;
-      let btn = cur ? '<span class="tag cur">Home</span>' : `<button class="sm ${x.own?'':'alt'}" data-home="${k}">${x.own ? `Buy (${fmt(homeDown(k))} down)` : 'Move'}</button>`;
+      let btn = cur ? '<span class="tag cur">Home</span>' : x.own ? `<button class="sm buy2" data-home="${k}" aria-label="Buy the ${esc(x.name.toLowerCase())}: ${fmt(homeDown(k))} down">Buy<small>${fmt(homeDown(k))} down</small></button>` : `<button class="sm alt buy2" data-home="${k}">Move</button>`;   // i20-a14
       return `<div class="kv job"><div><div class="t">${x.name}</div><div class="s">${x.own?'Mortgage':'Rent'} ${wk(cur && x.own && S.mortgage ? S.mortgage : x.own ? newMortgage(k) : cost(x.cost))}${x.own?` · builds equity · worth ${fmt(homeValue(k))}`:''}</div></div>${btn}</div>`;
     }).join('')}
     ${h.own ? `<p class="muted">${term('equity')}: <b>${fmt(S.equity)}</b>. Moving sells your house (6% agent fees).</p>` : ''}
     ${homeMoneyHTML()}
-  </div>
-  <div class="card"><h3>🛡️ Insurance & phone</h3>
+  </div>`;
+  const insCard = `<div class="card"><h3>🛡️ Insurance & phone</h3>
     ${insParts().map(([l, v]) => `<div class="kv"><span>${l}</span><span>${fmtc(v)}/mo</span></div>`).join('')}
     <div class="kv"><span><b>Total</b></span><span><b>${wk(cost(insMonthly()))}</b></span></div>
-    <button class="sm alt" id="inssheet">Change coverage</button>
-  </div>
-  ${S.practice ? '' : weatherCard()}
-  ${S.practice ? '' : investCard()}
-  <div class="card"><h3>🛻 Ride</h3>
+    ${on('money.insuranceChoices') ? '<button class="sm alt" id="inssheet">Change coverage</button>' : '<p class="muted" style="margin:4px 0 0">The standard plan through Wheatland Mutual.</p>'}
+  </div>`;
+  const rideCard = `<div class="card"><h3>🛻 Ride</h3>
     ${Object.entries(CARS).map(([k,c]) => {
       const cur = S.car === k;
-      const label = k==='beater' ? 'Starter' : k==='sedan' ? `Buy ${fmt(cost(c.price))}` : `${fmt(cost(c.down))} down`;
-      const btn = cur ? '<span class="tag cur">Yours</span>' : k==='beater' ? '' : `<button class="sm" data-car="${k}" ${S.loanLeft>0?'disabled':''}>${label}</button>`;
+      const label = k==='sedan' ? `${fmt(cost(c.price))}` : `${fmt(cost(c.down))} down`;
+      const btn = cur ? '<span class="tag cur">Yours</span>' : k==='beater' ? '' : `<button class="sm buy2" data-car="${k}" ${S.loanLeft>0?'disabled':''} aria-label="Buy the ${esc(c.name.toLowerCase())}: ${label}">Buy<small>${label}</small></button>`;
       return `<div class="kv job"><div><div class="t">${c.name}</div><div class="s">${c.mpg} mpg${c.pay?` · ${wk(cur && S.loanPay ? S.loanPay : cost(c.pay))} for 5 years`:''}</div></div>${btn}</div>`;
     }).join('')}
     <p class="muted">Trade-in value of your ride: ${fmt(S.carValue)}${tradeBonus() ? ` (+${fmt(tradeBonus())} dealer bonus this week)` : ''}${S.loanLeft>0?` · ${Math.ceil(S.loanLeft/W)} weekly payments left`:''}</p>
-    <p class="muted">🔧 ${S.turn - (S.svc ?? 0) <= 26 ? 'Oil changed recently: fewer breakdowns.' : S.turn - (S.svc ?? 0) <= 52 ? `Last oil change ${S.turn - (S.svc ?? 0)} weeks ago.` : 'Overdue for an oil change: breakdowns are more likely.'} ${S.tires === S.car ? '❄️ Winter tires on.' : ''} Get car care on a trip to Dayton, Walla Walla or the Tri-Cities.</p>
-  </div>
-  ${S.retired ? '' : firstTime('k401')}<div class="card"><h3>🏦 Retirement savings (${term('k401')})</h3>
+    ${on('car.upkeep') ? `<p class="muted">🔧 ${S.turn - (S.svc ?? 0) <= 26 ? 'Oil changed recently: fewer breakdowns.' : S.turn - (S.svc ?? 0) <= 52 ? `Last oil change ${S.turn - (S.svc ?? 0)} weeks ago.` : 'Overdue for an oil change: breakdowns are more likely.'} ${S.tires === S.car ? '❄️ Winter tires on.' : ''} Get car care on a trip to Dayton, Walla Walla or the Tri-Cities.</p>` : ''}
+  </div>`;
+  const k401Card = !on('money.k401') || (!isOpen('k401') && !S.k401) ? '' : `${S.retired ? '' : firstTime('k401')}<div class="card" id="k401card"><h3>🏦 Retirement savings (${term('k401')})${newTag('k401')}</h3>
     <div class="kv"><span>Balance</span><span><b>${fmt(S.k401)}</b></span></div>
     <div class="kv"><span>After tax (counts in net worth)</span><span>${fmt(S.k401 * K401_AFTER_TAX)}</span></div>
     ${(S.k401match || 0) >= 1 && !S.retired ? `<div class="kv"><span>Employer match not yours yet<br><small class="muted">Vests after ${K401_VEST_MONTHS / 12} years at this job (${Math.max(0, Math.ceil((K401_VEST_MONTHS - (S.tenure || 0)) / 12 * 10) / 10)} years to go). Leave sooner and it goes back.</small></span><span>${fmt(S.k401match)}</span></div>` : ''}
     ${S.retired ? `<p class="muted">You're retired: about ${wk(S.k401*drawRate()/12)} comes out each week (${(drawRate() * 100).toFixed(1)}% this year, rising after 73 like the IRS table), taxed about ${RETIRE_TAX * 100}%.</p>` : `
     <p class="muted" style="margin:6px 0">Put part of each paycheck away before taxes. At 5% or more your employer adds 3%, yours after ${K401_VEST_MONTHS / 12} years at the job. It grows about 6% a year and pays out when you retire, taxed then, so net worth counts it at ${Math.round(K401_AFTER_TAX * 100)}%.</p>
     <div class="maptog">${K401.map((r,i) => `<button class="${S.k401rate===i?'on':''}" data-k401="${i}">${r*100}%</button>`).join('')}</div>`}
-  </div>
-  ${planningCard()}
+  </div>`;
+  const pr = S.practice;
+  $('#main').innerHTML = `${aidCard()}${u ? `<div class="card undo" role="status"><span>↩ ${esc(u.label)}</span><button class="sm" id="undo" aria-label="Undo: ${esc(u.label)}">Undo</button></div>` : ''}
+  ${homeCard}${rideCard}${k401Card}${planningCard()}${pr ? '' : investCard()}${insCard}
+  ${pr || !isOpen('goals') ? '' : goalsCard()}${pr ? '' : aimCard()}${S.edu < 3 ? firstTime('school') : ''}${S.edu < 3 ? firstTime('program') : ''}${eduCard()}${healthCard()}${pr || !isOpen('skills') ? '' : skillsCard()}${pr || !(isOpen('biz') || S.biz) ? '' : bizCard()}${pr ? '' : weatherCard()}
   <div class="card"><h3>❤️ Household</h3>
     <div class="kv"><span>Partner</span><span>${S.partner ? `${S.partnerName ? `${esc(S.partnerName)} (${partnerP().label}), together` : 'Together'} 💕` : 'Single'}</span></div>
     <div class="kv"><span>You</span><span>${pron().label}${dis() ? ` · ${dis().ic} ${dis().name}` : ''}</span></div>
     <div class="kv"><span>Dog</span><span>${S.dog ? 'One good dog 🐕' : 'None'}</span></div>
     ${S.cat ? '<div class="kv"><span>Cat</span><span>A barn cat 🐈</span></div>' : ''}${S.generator ? '<div class="kv"><span>Generator</span><span>Ready for outages ⚡</span></div>' : ''}
-    <div class="kv"><span>Kids</span><span>${S.kids.length ? S.kids.map(kidAge).map(a => a < 18 ? `age ${a}` : 'grown').join(', ') : 'None'}</span></div>
-    <div class="kv"><span>Prices since 2027</span><span>${S.col > 1.005 ? `+${Math.round((S.col-1)*100)}%` : 'Same'}</span></div>
-    <div class="kv"><span>Town council</span><span>${S.council ? 'Council member' : '—'}</span></div>
+    ${on('family.kids') ? `<div class="kv"><span>Kids</span><span>${S.kids.length ? S.kids.map(kidAge).map(a => a < 18 ? `age ${a}` : 'grown').join(', ') : 'None'}</span></div>` : ''}
+    ${on('money.inflation') ? `<div class="kv"><span>Prices since 2027</span><span>${S.col > 1.005 ? `+${Math.round((S.col-1)*100)}%` : 'Same'}</span></div>` : ''}
+    ${on('family.council') ? `<div class="kv"><span>Town council</span><span>${S.council ? 'Council member' : '—'}</span></div>` : ''}
   </div>`;
   if (!S.practice) { $('#main').insertAdjacentHTML('beforeend', rulesCard()); document.querySelectorAll('[data-assistoff]').forEach(b => b.onclick = () => assistOffSheet(b.dataset.assistoff)); }   // i19-b19
   if ($('#goals')) $('#goals').onclick = goalsSheet;
@@ -1263,10 +1577,15 @@ ${S.edu < 3 ? firstTime('school') : ''}${eduCard()}
   if ($('#renew')) $('#renew').onclick = () => { const err = renewLease(); if (err) return toast(err); save(); render(); toast('🌾 Lease renewed for 5 years'); };
   if ($('#bizsell')) $('#bizsell').onclick = () => { sheet(`<h2>Sell your business?</h2><p>You'd get about ${fmt(bizValue())}.</p><button class="btn primary" id="y">Sell</button><button class="btn ghost" id="n" data-safe>Keep it</button>`); $('#y').onclick = () => { closeSheet(); sellBiz(); }; $('#n').onclick = closeSheet; };
   document.querySelectorAll('[data-prog]').forEach(b => b.onclick = () => { S.program = b.dataset.prog || null; save(); render(); toast(S.program ? `${PROGRAMS[S.program].ic} Studying ${PROGRAMS[S.program].name.toLowerCase()}` : 'General studies'); });
-  document.querySelectorAll('[data-cert]').forEach(b => b.onclick = () => { const c = CERTS[b.dataset.cert];
-    sheet(`<h2>${c.ic} ${c.name}</h2><p>${c.what}</p><p>${c.weeks} weeks of 📚 Take classes, and ${fmtc(c.fee)} up front. Your diploma classes wait until it's done.</p>
-      <button class="btn primary" id="yes">Sign up (${fmtc(c.fee)})</button><button class="btn ghost" id="no">Not now</button>`);
-    $('#yes').onclick = () => { startCert(b.dataset.cert); closeSheet(); save(); render(); toast(`📜 Signed up: ${c.name}. Pick Take classes to study.`); };
+  // i72-b04: pay as you go comes first, so one tap doesn't put a new player in debt
+  document.querySelectorAll('[data-cert]').forEach(b => b.onclick = () => { const c = CERTS[b.dataset.cert], fee = Math.round(cost(c.fee)), per = fee / c.weeks;
+    const bills = -billLines().reduce((a, l) => a + l[1], 0), low = S.money - per - bills < 0, lowAll = S.money - fee < 0;
+    sheet(`<h2>${c.ic} ${c.name}</h2>${firstTime('cert')}<p>${c.what}</p><p>${c.weeks} weeks of 📚 Take classes for ${fmt(fee)} in all. Your diploma classes wait until it's done.</p>
+      ${low ? `<div class="card warn">⚠️ Even ${fmt(per)} a week would take you below $0 with this week's bills (about ${fmt(bills)}). Debt costs 1.5% a month.</div>` : ''}
+      <button class="btn primary" id="yes">Pay as you go: ${fmt(per)} a week for ${c.weeks} weeks</button>
+      <button class="btn ghost" id="all">Pay it all now (${fmt(fee)})${lowAll && !low ? ': that leaves you below $0' : ''}</button><button class="btn ghost" id="no">Not now</button>`);
+    const go = payGo => { startCert(b.dataset.cert, payGo); closeSheet(); save(); render(); toast(`📜 Signed up: ${c.name}. Pick Take classes to study.`); };
+    $('#yes').onclick = () => go(true); $('#all').onclick = () => go(false);
     $('#no').onclick = closeSheet; });
   document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => moveHome(b.dataset.home));
   document.querySelectorAll('[data-car]').forEach(b => b.onclick = () => buyCar(b.dataset.car));
@@ -1283,7 +1602,10 @@ ${S.edu < 3 ? firstTime('school') : ''}${eduCard()}
   if ($('#cropins')) $('#cropins').onclick = () => { S.biz.ins = !S.biz.ins; save(); render(); const b = $('#cropins'); if (b) b.focus({ preventScroll: true }); announce(S.biz.ins ? `Crop insurance on: ${fmt(cost(CROP_INS))} each April.` : 'Crop insurance off.'); };
   document.querySelectorAll('[data-inv]').forEach(b => b.onclick = () => {
     const v = b.dataset.inv === 'all' ? -(S.stocks || 0) : +b.dataset.inv;
-    if (invest(v)) { save(); render(); toast(v > 0 ? `📈 Put ${fmt(v)} in index funds` : `📈 Took ${fmt(-v)} out`); announce(`Index funds now ${fmt(S.stocks)}. Cash ${fmt(S.money)}.`); }
+    const go = () => { if (invest(v)) { save(); render(); toast(v > 0 ? `📈 Put ${fmt(v)} in index funds` : `📈 Took ${fmt(-v)} out`); announce(`Index funds now ${fmt(S.stocks)}. Cash ${fmt(S.money)}.`); } };
+    const worry = investWorry(v);                  // i72-b05: a month of bills stays in cash unless you say so
+    if (!worry) return go();
+    confirmSheet({ title: '📈 Invest that much?', intro: worry, yes: 'Invest anyway', no: 'Keep the cash', onYes: go });
   });
   if ($('#wine')) $('#wine').onclick = () => { if (buyWine()) { save(); render(); toast(`🍷 You're in on the ${wineYear()} vintage`); } };
   aidWire(); fafsaWire();                          // i7-a27, i17-a20
@@ -1296,6 +1618,7 @@ let LIFE_UNDO = [], undoPre = null;
 const UNDO_MAX = 5;
 const undoKey = () => JSON.stringify({ ...S, savedAt: 0, saveN: 0, focus: 0, plan: 0, planI: 0 });
 function undoTop(){
+  if (!on('ui.undo')) return null;
   const u = LIFE_UNDO[LIFE_UNDO.length - 1];
   return u && S && u.life === S.slot && u.after === undoKey() ? u : null;   // stale once anything else changed the life
 }
@@ -1370,7 +1693,7 @@ function buyCar(k){
     lines: [`💵 Cash: ${fmt(S.money)} → ${fmt(S.money - price)}`,
       ...(c.pay ? [`🧾 A payment of ${wk(cost(c.pay))} every week for 5 years`] : []),
       `⛽ Gas: about ${fmt(g0)}/wk → ${fmt(g1)}/wk (${c.mpg} mpg instead of ${CARS[S.car].mpg})`,
-      `🔧 Breakdowns get ${c.breakdown < CARS[S.car].breakdown ? 'less' : 'more'} likely`,
+      ...(on('car.upkeep') ? [`🔧 Breakdowns get ${c.breakdown < CARS[S.car].breakdown ? 'less' : 'more'} likely`] : []),
       '😊 Happiness +5',
       `💰 ${term('networth', 'Net worth')}: ${dNw >= 0 ? '+' : '−'}${fmt(Math.abs(dNw))}${dNw < 0 ? ' (a vehicle loses value once you drive it home' + (loan ? ', and the loan counts against you' : '') + ')' : ''}`],
     onYes: () => {
@@ -1386,8 +1709,9 @@ function renderLog(){
   const inFilter = e => logFilter === 'all' || (logFilter === 'mile' ? isMile(e) : (e.k || logKind(e.m)) === logFilter);   // i5-a03: big moments show under Milestones too
   const list = S.log.filter(inFilter);
   const label = LOG_FILTERS.find(f => f[0] === logFilter)[1].replace(/^\S+ /, '');
-  $('#main').innerHTML = `<div class="chips" role="group" aria-label="Show in the Journal">${LOG_FILTERS.map(([k, l]) =>
-      `<button class="chip ${logFilter === k ? 'on' : ''}" data-lf="${k}" aria-pressed="${logFilter === k}">${l}</button>`).join('')}</div>
+  const count = k => k === 'all' ? S.log.length : S.log.filter(e => (e.k || logKind(e.m)) === k).length;   // i20-a02
+  $('#main').innerHTML = `<div class="chips" role="group" aria-label="Show in the Journal">${LOG_FILTERS.map(([k, l]) => { const n = count(k);
+      return `<button class="chip ${logFilter === k ? 'on' : ''}" data-lf="${k}" aria-pressed="${logFilter === k}" aria-label="${l.replace(/^\S+ /, '')}, ${n} ${n === 1 ? 'entry' : 'entries'}">${l}<span class="n" aria-hidden="true">${n}</span></button>`; }).join('')}</div>
     <div class="card"><h3>📜 ${esc(S.name)}'s journal</h3>
     ${list.map(e => `<div class="logitem"><em>${esc(e.d)}</em>${esc(e.m)}</div>`).join('') || `<p class="muted">Nothing under ${label.toLowerCase()} yet.</p>`}</div>`;
   document.querySelectorAll('[data-lf]').forEach(b => b.onclick = () => {
@@ -1396,6 +1720,7 @@ function renderLog(){
     announce(`${LOG_FILTERS.find(f => f[0] === logFilter)[1].replace(/^\S+ /, '')}: ${n} ${n === 1 ? 'entry' : 'entries'}`);
     const f = document.querySelector(`[data-lf="${logFilter}"]`); if (f) f.focus({ preventScroll: true });
   });
+  chipFade();
 }
 
 function showMenu(){
@@ -1430,6 +1755,7 @@ const SETTING_ROWS = [
   ['sound', '🎵 Sounds', 'Small sounds for a new week, events and badges. Quiet while ⏩ and Auto play.'],
   ['vibrate', '📳 Vibration', 'A short buzz for events and badges, on phones that can (not iPhones).'],
   ['swipe', '👆 Swipes', 'Swipe left or right to change tabs, and swipe a pop-up\'s handle down to close it.'],
+  ['skipAsk', '⏩ Focus check', 'Before ⏩ 13 or Auto, ask about a focus you\'ve kept 4 weeks or more.'],
   ['srWeek', '🗣️ Week summary (screen readers)', 'What a screen reader says after End Week: one short sentence, or every number.'],
   ['motion', '✨ Animations', 'Stat bars that slide, cash that counts up after a week, and confetti for badges. Always off when your device asks for reduced motion.']
 ];

@@ -24,7 +24,7 @@ const GLOSSARY = {
 let TERM_N = 0;
 // a word you can tap (or focus and press Enter) to see what it means; screen readers hear the meaning on focus
 function term(key, label){
-  const g = GLOSSARY[key]; if (!g) return label || key;
+  const g = GLOSSARY[key]; if (!g || !on('help.inline')) return label || (g ? g.w : key);
   const id = `gl${++TERM_N}`;
   return `<button type="button" class="term" data-term="${key}" aria-expanded="false" aria-describedby="${id}">${label || g.w}</button><span class="sr-only" id="${id}">${g.d()}</span>`;
 }
@@ -44,12 +44,27 @@ const FIRST = {
   biz: { ic:'🏪', t:'Your own business', d:() => `One at a time: ${Object.values(BIZ).map(b => `${b.ic} ${b.name.toLowerCase()} (${fmtc(b.cost)})`).join(', ')}. Selling gets back 60% of the price, less about ${BIZ_DEP * 100}% a year as it ages.` },
   k401: { ic:'🏦', t:'The 401(k)', d:() => `Save ${K401.slice(1).map(r => r * 100 + '%').join(' or ')} of each paycheck before taxes. At 5% or more your employer adds 3%: free money that grows about 6% a year.` },
   school: { ic:'📚', t:'School', d:() => `Pick Take classes as your focus. ${EDU.slice(1).map((e, i) => `${e}: ${STUDY_NEED[i]} weeks`).join(', ')}. Classes never put you in a rut.` },
-  carpool: { ic:'🚙', t:'Carpools', d:() => 'With community 30 or more you can ride with neighbors on a 20+ mile commute: half the gas, an easier drive, and a little community. The carpool goes with the job.' }
+  carpool: { ic:'🚙', t:'Carpools', d:() => 'With community 30 or more you can ride with neighbors on a 20+ mile commute: half the gas, an easier drive, and a little community. The carpool goes with the job.' },
+  // i68-b10: the jobs and school systems
+  interview: { ic:'🗣️', t:'Interviews', d:() => 'Pick how to answer. Being straight helps a little, selling hard needs People skill, and asking about pay suits hard-to-fill jobs. Decide later keeps today\'s odds.' },
+  offer: { ic:'🤝', t:'Asking for more', d:() => `Hard-to-fill jobs let you ask for 5% more pay or a ${fmtc(SIGN_ON)} sign-on bonus. Asking risks the offer: about 1 time in ${Math.round(1 / ASK_LOSE)} they pull it.` },
+  union: { ic:'🪪', t:'Union jobs', d:() => `Dues are ${UNION_DUES * 100}% of your pay. In return: a 1.5% step raise each January, half the layoff risk, and a contract vote now and then.` },
+  ladder: { ic:'🪜', t:'The job ladder', d:() => 'Every job has three steps. The second (+12% pay) comes after a year on the job; the top (+25%) needs 3 years plus more school or People skill 2. A promotion offer shows up when you qualify.' },
+  program: { ic:'🎓', t:'Programs', d:() => `Pick a program before you study. Same weeks and tuition, but your diploma counts as a major: +${Math.round(MAJOR_PAY * 100)}% pay and better odds at matching jobs.` },
+  cert: { ic:'📜', t:'Certificates', d:() => `A short course of Take classes weeks that opens one kind of job: ${Object.values(CERTS).map(c => `${c.name.replace(/ \(.*/, '')} ${c.weeks} weeks, ${fmtc(c.fee)}`).join('; ')}. Pay as you go or all at once.` },
+  // i68-b11: the money systems
+  invest: { ic:'📈', t:'Index funds', d:() => `About 6% a year on average, but about 1 year in ${Math.round(1 / MKT.badOdds)} the market drops about ${MKT.drop * 100}%. Keep a month of bills in cash first: debt costs 1.5% a month.` },
+  ins: { ic:'🛡️', t:'Insurance', d:() => `Cheaper coverage saves a little each month. When something breaks, you pay the first part: ${fmtc(AUTO_DED)} for your car or truck on full coverage, ${fmtc(RENTERS_DED)} with renters insurance.` },
+  will: { ic:'📜', t:'A will', d:() => `${fmtc(WILL_FEE)} from age ${WILL_MIN_AGE}. With one, your grandkid gets their share and the family home right away. Without one, the house is sold and probate takes ${PROBATE_CUT * 100}% and 6 months.` },
+  ltc: { ic:'📋', t:'Long-term care', d:() => `From ${LTC_AGE}, you can buy care insurance for ${fmtc(LTC_PREMIUM)} a month. If you need help at home or a care home after ${CARE_AGE}, it pays ${LTC_COVER * 100}% of the bill. Care costs ${fmtc(CARE.aide.cost)} to ${fmtc(CARE.living.cost)} a month without it.` },
+  ptax: { ic:'🏛️', t:'Property tax', d:() => `Owners pay the county ${PROP_TAX * 100}% of the home's value a year, half in April and half in October: about ${fmt(propTax())} each time right now.` },
+  collect: { ic:'📞', t:'Debt and collections', d:() => `Below $0, debt costs 1.5% a month. After ${COLLECT_WEEKS} weeks in a row it goes to collections: a ${fmtc(COLLECT_FEE)} fee, daily calls (▼ happiness) and worse odds on jobs and loans.` },
+  wheat: { ic:'🌾', t:'Stored wheat', d:() => `The elevator keeps your grain while you wait for a better price, for ${fmtc(WHEAT_STORE_FEE * 1000)} a month per 1,000 bushels. It has to be sold by July, when the new crop comes in.` }
 };
 let FIRST_SLOT = null;          // one explainer per screen: render() opens the slot, the first unseen explainer takes it
 function firstTime(key){
   const x = FIRST[key];
-  if (!x || !S || S.practice || TUT || (prefs().first || {})[key] || FIRST_SLOT === 'used') return '';
+  if (!x || !S || S.practice || TUT || !on('help.inline') || (prefs().first || {})[key] || FIRST_SLOT === 'used') return '';
   if (FIRST_SLOT === 'open') FIRST_SLOT = 'used';
   return `<div class="card tip first" data-firstcard="${key}"><div><b>${x.ic} New: ${x.t}.</b> ${x.d()}</div><button class="sm alt" data-first="${key}" aria-label="Got it: ${x.t}">Got it</button></div>`;
 }
@@ -85,22 +100,24 @@ function guideHTML(){
       <p><b>Staying with family:</b> rent is ${pw(HOMES.family.cost)} and chores give a little community each week, but happiness tops out at ${FAM_CAP}. After a year the room feels small, and happiness slips each week, unless you're taking classes or have ${fmt(FAM_SAVE)} saved to move. Once you move out, you can't move back.</p>
       <p><b>Living with a disability:</b> ${Object.values(DISABILITIES).map(d => `${d.ic} <b>${d.name}</b>: ${d.desc}`).join(' ')} Every job stays open. Job rows say ✓ fits or 🛠️ needs an accommodation, and your employer sets that up at no cost to you. DVR, the state's job-training office, pays half your tuition. The score and goals are the same as any life.</p>
       <p><b>Week one:</b> an 18-year-old start begins with graduation night: a river party (+community, ${fmt(40)}), family dinner (+happiness) or a night shift (+${fmt(120)}, −happiness). Home also shows three ways to start: a starter job, a program and a place. The first ${START_WEEKS} weeks have their own few small events. If you start under 20, friends leave for college in August and come home at Thanksgiving.</p>
+      <p><b>Systems:</b> ${Object.values(UNLOCK_MODES).map(m => `${m.ic} <b>${m.name}</b>: ${m.desc}`).join(' ')} In <b>Open as I go</b>, these open during your life, each at its moment or by a set week at the latest: ${UNLOCKS.map(u => `${u.ic} ${u.label}`).join(', ')}. A <b>New</b> tag and a dot on the tab point to what just opened. Tap a ✨ <b>Soon</b> spot, or <b>I know this one</b> at the top of Help, to open one early: it works exactly the same either way. Opening early or late never changes your score. Everything in this guide is there for you to read, open or not.</p>
       <p><b>First moves:</b> find a job on the <b>Jobs</b> tab, pick a weekly focus on <b>Home</b>, and tap <b>End Week</b>. Want to see it done? Play the <b>gameplay tutorial</b> at the top of this page.</p>`],
     ['week', '📅 Your week', `
       <p>Each turn is <b>one week</b>. On <b>Home</b>, pick one <b>focus</b> for the week, then tap <b>End Week</b>. The button shows your focus, and it repeats every week until you change it.</p>
       <table><tr><th>Focus</th><th>What it does</th><th>Cost</th></tr>${focusRows}</table>
-      <p><b>Town goals:</b> each season the town has a goal you work toward with your focus: ${SEASON_GOALS.map(g => `${g.ic} <b>${g.name}</b> (${g.need} weeks of ${g.what})`).join(', ')}. Finish it before the season ends for a boost in community and happiness. Your progress shows above the focus buttons.</p>
-      <p><b>Mix it up.</b> A focus works at full strength for 4 weeks in a row, then fades (down to 30%). After 8 weeks of the same thing you're <b>in a rut</b>, and happiness drops every week until you switch. Classes are the exception: study as long as you like.</p>
-      <p><b>Skipping ahead:</b> <b>⏩ 4</b> and <b>⏩ 13</b> play several weeks with the same focus (or your focus plan). <b>⏭ Auto</b> plays until something needs you (up to 26 weeks). Skips stop when an event needs a choice, at a milestone, or at New Year. An event with only one way to go plays out on its own and shows in the week strip. On small phones, press and hold <b>End Week</b> (or press Shift+Enter) for the ⏩ skips and the options; they're also in the Menu.</p>
+      <p><b>Town goals:</b> each season the town has a goal. Your focus works toward it: ${SEASON_GOALS.map(g => `${g.ic} <b>${g.name}</b> (${g.need} weeks of ${g.what})`).join(', ')}. Finish it before the season ends to gain community and happiness. Your progress shows above the focus buttons.</p>
+      <p><b>Mix it up.</b> A focus works at full strength for 4 weeks in a row, then fades (down to 30%). After 8 weeks of the same thing you're <b>in a rut</b>, and happiness drops every week until you switch. The rut note comes back every 13 weeks, with buttons to switch. Classes are the exception: study as long as you like. A rut costs a little less happiness in Relaxed.</p>
+      <p><b>Tops out:</b> Rest and Get outside do less as a stat nears the low 80s (the high 70s on Hard), so the top of each stat takes a mix of things.</p>
+      <p><b>Skipping ahead:</b> <b>⏩ 4</b> and <b>⏩ 13</b> play several weeks with the same focus (or your focus plan). <b>⏭ Auto</b> plays until something needs you (up to 26 weeks). Skips stop when an event needs a choice, at a milestone, at New Year, when happiness, health or community drops below 25 (it warns again once the stat is back above 35), and the first time your cash goes below ${fmt(-cost(MONEY_TALK_AT))}, with a few ways out. After 4 weeks of one focus, <b>⏩ 13</b> and <b>⏭ Auto</b> ask first if you'd like to switch (turn this off in Settings → Focus check). An event with only one way to go plays out on its own and shows in the week strip. On small phones, press and hold <b>End Week</b> (or press Shift+Enter) for the ⏩ skips and the options; they're also in the Menu.</p>
       <p><b>Auto until…</b> In the skip options, pick what else stops ⏭ Auto: a stat dropping below 35, cash dropping below $0, or the season changing. Skipping never changes what happens, only how many taps it takes. Pick <b>Watch the weeks go by</b> to see each week roll past (tap <b>Stop</b> any time); if your device asks for less motion (or Animations is off in Settings), skips always jump straight there.</p>
       <p><b>Focus plan:</b> tap <b>🗓 Plan</b> to set up to 4 focuses that take turns, one a week. Picking a focus by hand pauses the plan for that week only. Plans follow the same rules as picking by hand: a focus that comes up week after week still fades.</p>
       <p><b>What the week did:</b> the strip above End Week shows your money (events included) and ▲▼ for each stat. Tap it to see every paycheck, bill and event. Tap a line there to see <b>why</b> it cost what it did, and read why your stats moved.</p>
       <p><b>Before you pick:</b> under the focus buttons, <b>Next week</b> estimates what the focus will add (stats and cash, before events). A button shows a percentage when that focus is fading from repeating it.</p>`],
     ['stats', '📊 Stats', `
       <p>Tap any stat on Home to see what moves it. Each stat also shows a word: <b>Low</b> (under 35), <b>OK</b>, <b>Good</b> (60 and up) or <b>Great</b> (80 and up). The small notches on its bar mark where the word changes.</p>
-      <ul><li><b>😊 Happiness (0–100).</b> Up: Rest, Get outside, Show up for town, a partner, a dog, kids, a nicer home, retirement. Down: stressful jobs, long commutes, overtime, classes, side hustles, debt, no job, ruts.</li>
-      <li><b>❤️ Health (0–100).</b> Up: Rest, Get outside, a doctor visit. Down: physical jobs, overtime, side hustles, and age. At 0 you land in the hospital (a big bill), or in Lifetime after 50 it can end your life.</li>
-      <li><b>🤝 Community (0–100).</b> Up: Show up for town, working in Waitsburg (a little in Dayton), kids, a council seat, helping in events. It fades slowly if you don't show up. Higher standing helps you get hired.</li>
+      <ul><li><b>😊 Happiness (0–100).</b> Up: Rest, Get outside, Show up for town, a partner, a dog, kids, a nicer home, a new job (once every ${HIRE_JOY_WEEKS} weeks), retirement (a partner, pets, kids and your home lift you toward the high 80s, not past them). Down: stressful jobs, long commutes, overtime, classes, side hustles, debt, no job, ruts.</li>
+      <li><b>❤️ Health (0–100).</b> Up: Rest, Get outside, a doctor visit. Down: physical jobs, overtime, side hustles, and age. From 55 your health tops out lower each year (about ${Math.round(maxHealth(70))} at 70 and ${Math.round(maxHealth(85))} at 85); the Health card shows your cap. At 0 you land in the hospital (a big bill), or in Lifetime after 50 it can end your life.</li>
+      <li><b>🤝 Community (0–100).</b> Up: Show up for town, working in Waitsburg (a little in Dayton), kids, a council seat, helping in events. It fades slowly if you don't show up, and faster above 60. A Seattle transplant's community slips back toward 10 in the first year, until people know you. Higher standing helps you get hired.</li>
       <li><b>💰 Net worth.</b> Cash + home equity + your vehicle + 401(k) + a business + index funds (at today's value) + wine futures (at what you paid), minus what's left on truck, student and home equity loans. Tap it on Home for the breakdown.</li></ul>
       <p>A red banner appears when happiness or health drops below 30, with a suggested focus to fix it.</p>`],
     ['money', '💵 Money', `
@@ -206,11 +223,12 @@ function guideHTML(){
       <p class="muted">Prices are in 2027 dollars and rise over the years. Places are described, not named.</p>`],
     ['out', '🛍️ Out and about in Waitsburg', `
       <p>Waitsburg's own businesses are in the game, under friendly stand-in names, at their real street addresses. Tap <b>🛍️ Out and about</b> under your weekly focus on Home for the list, or switch Home to <b>🗺️ Map</b> and tap <b>Main Street</b> for a close-up of the downtown blocks. The Preston Avenue places (the ale house, the sports bar and the smokehouse) have their own pins on the town map. Every pin opens a card: what the place is, when it's open, and what you can do there.</p>
-      <ul><li><b>Quick visits:</b> up to ${OUT_MAX} a week, on top of your focus (they don't use up your week). One visit per place a week, and going back within ${OUT_REPEAT} weeks is half as special. Visits can add at most ${OUT_WEEK_CAP} points to any one stat in a week.</li>
+      <ul><li><b>Quick visits:</b> up to ${OUT_MAX} a week, on top of your focus (they don't use up your week). One visit per place a week, and going back within ${OUT_REPEAT} weeks is half as special. Visits can add at most ${OUT_WEEK_CAP} points to any one stat in a week, and do less as a stat climbs past 80. With health at ${OUT_HEALTH_MAX} or more, only a checkup at the clinic adds health. The farm counter at McGrub & Grain helps farm folks every time and everyone else once a season; the grocery's chats count for community once every ${BASKET_WEEKS} weeks.</li>
       <li><b>Open days and seasons:</b> places keep their real rhythms. Simply Shavings and The Junque Sisters take a winter break in January and February. Dreamy Garden Center is open in the spring. Laughing Lad's outdoor grill runs from May to October. Tonnage Coffee & Strings is a private space: it opens to the public only on community event days like Celebration Days, and for a bluegrass jam every other week.</li>
       <li><b>21 and over:</b> you can't buy drinks until you're 21. That goes for The Little Kiss Pasta Bar, Grenache & Gather, The Royal Brick and Laughing Lad's taproom. Under 21 you can still get a cheese board at Grenache & Gather. You can catch the all-ages open mic and early shows at The Royal Brick too. A place with nothing for you yet says 21+.</li>
+      <li><b>Perks on Home:</b> a sure-thing interview, a trade-in bonus, a fresh haircut, a hustle ad or a stock-up run shows as a chip on Home with the weeks left. Tap it to go where you use it.</li>
       <li><b>Little extras:</b> a haircut or spa day at Rouge helps your job applications for ${LOOK_WEEKS} weeks, an ad in The Touchet Tattler raises side-hustle pay ${AD_BOOST * 100}% for ${AD_WEEKS} weeks, and a woodworking class eases a rut.</li>
-      <li><b>Around town (Life tab):</b> Standard Bearer Bank holds your savings and loans, The Burg Clinic is where you see a doctor, Burg Basket Grocery is where your weekly food money goes, and the local trades fix your roof and porch. Just moved? The Junque Sisters and Dreamy Garden Center help make it home.</li>
+      <li><b>Around town:</b> Standard Bearer Bank holds your savings and loans, The Burg Clinic is where you see a doctor, Burg Basket Grocery is where your weekly food money goes, and the local trades fix your roof and porch. Just moved? The Junque Sisters and Dreamy Garden Center help make it home.</li>
       <li><b>Events and jobs:</b> the bluegrass jam, Grenache Fest, music nights, the grill opening, the spring garden rush, a summer cookout and more. Local jobs include line cook, barista, grocery clerk, bank teller, reporter, trades apprentice, medical assistant and ag technician.</li></ul>
       <table><tr><th>Place</th><th>Where and when</th></tr>${PLACES.map(p => `<tr><td>${p.ic} <b>${esc(p.name)}</b><br><small>${esc(p.kind)}</small></td><td>${esc(p.addr)}<br><small>${esc(p.hours)}</small></td></tr>`).join('')}</table>
       <p class="muted">Names are stand-ins; addresses are real. Days and seasons match reality loosely and were last checked ${PLACES_CHECKED}: call ahead in real life.</p>`],
@@ -244,8 +262,10 @@ function guideHTML(){
       <li><b>Menu → 💾 Save game:</b> Save writes your current life right now. Save here or Replace on another slot makes a copy as a checkpoint you can go back to.</li>
       <li><b>Menu → 📂 Load game:</b> switches to any saved life. The one you're playing is saved first.</li></ul>
       <p>Finishing a life frees its slot. Saves live on this device and in this browser.</p>
-      <p><b>Menu → 📤 Back up or restore:</b> download a backup file or copy a backup code, then on another device use <b>📥 Restore from a backup</b> (on the title screen or in the same menu). You can add the backup's lives to empty slots or replace all your lives.</p>
-      <ul><li><b>Codes check themselves.</b> If a backup code gets cut off or a letter changes on the way, restoring it says which: the last part is missing, a piece in the middle is missing, or one piece was changed. Copy it again from the original.</li>
+      <p><b>Menu → 📤 Back up or restore:</b> download a backup file or copy a backup code, then on another device use <b>📥 Restore from a backup</b> (on the title screen or in the same menu). You can add the backup's lives to empty slots or replace all your lives. </p>
+      <p>A backup also keeps your best scores, badges and settings. You can make one from the title screen or the end screen, even with no life going.</p>
+      <ul><li><b>Codes check themselves.</b> If a backup code gets cut off or a letter changes on the way, restoring it says which: the last part is missing, a piece in the middle is missing, or one piece was changed. Copy it again from the original. A code pasted with other words around it still works.</li>
+      <li><b>No twins.</b> A life that's already on this phone isn't added twice.</li>
       <li><b>A backup from a newer game</b> asks you to update first. Tap <b>Check for an update</b>.</li>
       <li><b>📱 Moving to a new phone</b> (in the Menu and under Back up or restore): a two-step guide. On the old phone, copy the backup code into a text or email to yourself (or download a backup file). On the new phone, tap <b>📱 I'm the new phone</b> on the title screen and paste the code or choose the file.</li>
       <li><b>Older copies are "rewound".</b> Restoring an earlier week of a life that's already on this phone asks first. A rewound life still plays, but its ending doesn't set best scores or badges.</li>
@@ -357,14 +377,16 @@ function showHelp(){
   const v = $('#helpview');
   v.innerHTML = `<div class="helphead"><h1>❓ Help</h1><button class="sm alt" id="helpclose" aria-label="Close help">✕ Close</button></div>
     <div class="helpbody">
-      <div class="card tutcard"><h3>🎮 Gameplay tutorial</h3>
-        <p>Play a short <b>practice life</b>, about 4 minutes: jobs, your weekly focus, skips and plans, Out and about, trips, insurance, the money outlook, the maps and Settings. A pulsing ring shows exactly what to tap, and each step waits for your tap. ${HELP_FROM === 'game' ? 'Your current life is saved first and comes right back afterward.' : 'Nothing is saved.'}</p>
-        <button class="btn primary" id="tutstart">Start the tutorial</button></div>
+      ${on('help.tutorial') ? `<div class="card tutcard"><h3>🎮 Gameplay tutorial</h3>
+        <p>Play a short <b>practice life</b>, about 4 minutes: jobs, your weekly focus, skips and plans, how the Life Score adds up, Out and about, trips, insurance, the money outlook, the maps and Settings. A pulsing ring shows exactly what to tap, and each step waits for your tap. ${HELP_FROM === 'game' ? 'Your current life is saved first and comes right back afterward.' : 'Nothing is saved.'}</p>
+        <button class="btn primary" id="tutstart">Start the tutorial</button></div>` : ''}
+      ${comingUpCard()}
       ${guideHTML()}
     </div>`;
   v.classList.remove('hidden'); v.scrollTop = 0; setTimeout(() => $('#helpclose').focus({ preventScroll: true }), 30);
   $('#helpclose').onclick = closeHelp;
-  $('#tutstart').onclick = startTutorial;
+  if ($('#tutstart')) $('#tutstart').onclick = startTutorial;
+  comingUpWire();
   if ($('#eraseall')) $('#eraseall').onclick = eraseSheet;
   histSync();
 }
@@ -391,7 +413,9 @@ const TSTEPS = [
   { before:() => showEvent(EVENTS.find(e => e.title === 'Celebration Days')), sel:'#modal:not(.hidden) [data-i="0"]', tap:1, text:'<b>Events</b> pop up as life happens. Tap the first choice.' },
   { sel:'#modal:not(.hidden) #ok', tap:1, text:'Every choice shows what it did. Tap <b>Continue</b>.' },
   { sel:'#ff4', tap:1, text:'<b>⏩</b> plays several weeks with the same focus and stops if something needs you. On small phones it hides behind a long press on End Week. Tap <b>⏩ 4</b>.' },
-  { sel:'#auto', text:'<b>⏭ Auto</b> plays until something needs you. Press and hold it (or Menu → Skip and Auto options) to pick <b>Auto until</b>: a stat getting low, cash below $0, or a new season.' },
+  { sel:'#app:has(#auto) #scorenow', tap:1, text:'This is how you win. Your <b>🏆 Life Score</b> is made of four parts. Tap <b>Life Score so far</b>.' },
+  { sel:'#modal:not(.hidden) .card.tip', text:'Happiness counts 30%, net worth 30%, health 20% and community 20%. Your <b>weakest part</b> counts extra. This tip names it and what helps it, so balance beats grinding one thing.' },
+  { before:() => closeSheet(), sel:'#auto', text:'<b>⏭ Auto</b> plays until something needs you. Press and hold it (or Menu → Skip and Auto options) to pick <b>Auto until</b>: a stat getting low, cash below $0, or a new season.' },
   { sel:'#planbtn', text:'<b>🗓 Plan</b> sets up to 4 focuses that take turns, one a week. Picking a focus by hand pauses the plan for that week.' },
   { sel:'#outbtn', tap:1, text:'Quick visits to Waitsburg\'s shops, on top of your focus. Tap <b>🛍️ Out and about</b>.' },
   { sel:'#modal:not(.hidden) #no', tap:1, text:'Every place has a card: when it\'s open and what you can do there. Up to 3 visits a week. Tap <b>Close</b>.' },
@@ -421,20 +445,23 @@ const TSTEPS = [
   { sel:'#modal:not(.hidden) #close', tap:1, text:'Tap <b>Close</b>.' },
   { sel:'#helpbtn', text:'🎉 That\'s the basics! Balance <b>happiness, health, community and money</b>, and mix up your focus. When a life ends, your <b>life story</b> plays before the score. Tap <b>?</b> any time for the game guide or this tutorial.', done:1 }
 ];
-function startTutorial(){
+// after: what to do when the practice life ends from the title screen (i23-a01: start the real life the player picked)
+function startTutorial(after){
+  if (!on('help.tutorial')) { if (typeof after === 'function') after(); return; }   // to-do 2 D3: no tutorial: go straight on
   closeHelp(); closeSheet();
   if (S && !S.over && !S.practice) save();
-  TUT = { i: -1, skipped: [], prev: { S: S && !S.over ? clone(S) : null, tab, prefs: clone(prefs()), jobCity, jobOK, undo: LIFE_UNDO } };
+  TUT = { i: -1, skipped: [], prev: { S: S && !S.over ? clone(S) : null, tab, prefs: clone(prefs()), jobCity, jobOK, undo: LIFE_UNDO, after: typeof after === 'function' ? after : null } };
   LIFE_UNDO = [];
   setPref('mapView', false); jobCity = 'all'; jobOK = false;
   newGame('Practice', 'half', 0, { practice: true });
+  S.diff = 'hard';                                 // difficulty: the tour shows every feature (on Normal's numbers) until each step gets its own tier
   if (!$('#coach')) document.body.insertAdjacentHTML('beforeend', '<div id="coach" class="hidden"></div>');
   tutNext();
 }
 function tutNext(){
   if (!TUT) return;
   TUT.i++;
-  const st = TSTEPS[TUT.i];
+  const st = tsteps()[TUT.i];
   if (!st) return endTutorial(true);
   if (st.before) st.before();
   TUT.tries = 0;
@@ -442,7 +469,7 @@ function tutNext(){
 }
 function drawCoach(){
   if (!TUT) return;
-  const st = TSTEPS[TUT.i], c = $('#coach');
+  const st = tsteps()[TUT.i], c = $('#coach'), N = tsteps().length;
   $('#toast').classList.add('hidden');
   const el = st.sel ? document.querySelector(st.sel) : null;
   if (st.sel && !el) { if (++TUT.tries < 12) return setTimeout(drawCoach, 150); TUT.skipped.push(TUT.i); return tutNext(); }   // skip a step whose target never appeared
@@ -458,13 +485,13 @@ function drawCoach(){
   c.innerHTML = dim.map(([x,y,w,h]) => `<div class="cdim" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px"></div>`).join('') +
     (box ? `<div class="cring${st.tap ? ' tap' : ''}" style="left:${box.x}px;top:${box.y}px;width:${box.w}px;height:${box.h}px"></div>${st.tap ? `<div class="cfinger" style="left:${box.x + box.w/2}px;top:${box.y + box.h/2}px">👆</div>` : ''}` : '') +
     `<div class="cbubble" role="dialog" aria-live="polite" style="${box ? 'visibility:hidden' : 'top:50%;transform:translate(-50%,-50%)'}">
-      <div class="cstep">Step ${TUT.i + 1} of ${TSTEPS.length}</div>
+      <div class="cstep">${TUT.mini ? '👀 Show me how · ' : ''}Step ${TUT.i + 1} of ${N}</div>
       <div class="ctext">${st.text}</div>
       <div class="cbtns">${st.tap ? '<span class="chint">👆 Tap the highlighted spot</span>' : `<button class="sm" id="cnext">${st.done ? 'Finish' : 'Next'}</button>`}
-        ${st.done ? '' : '<button class="sm alt" id="cskip">Skip tutorial</button>'}</div></div>`;
+        ${st.done ? '' : `<button class="sm alt" id="cskip">${TUT.mini ? 'Close' : 'Skip tutorial'}</button>`}</div></div>`;
   c.classList.remove('hidden');
   if (box) placeBubble(c.querySelector('.cbubble'), box, vw, vh, !!st.tap);
-  announce(`Tutorial step ${TUT.i + 1} of ${TSTEPS.length}. ${c.querySelector('.ctext').textContent}`);
+  announce(`${TUT.mini ? 'Show me how' : 'Tutorial'} step ${TUT.i + 1} of ${N}. ${c.querySelector('.ctext').textContent}`);
   { const f = st.tap && el && el.focus ? el : $('#cnext'); if (f) f.focus({ preventScroll: true }); }   // keyboard users can press Enter
   if ($('#cnext')) $('#cnext').onclick = e => { e.stopPropagation(); hideCoach(); tutNext(); };
   if ($('#cskip')) $('#cskip').onclick = e => { e.stopPropagation(); endTutorial(false); };
@@ -505,15 +532,72 @@ function hideCoach(){ const c = $('#coach'); if (c) { c.classList.add('hidden');
 // a tap on the highlighted spot moves the tutorial on (the app handles the tap as usual)
 document.addEventListener('click', e => {
   if (!TUT) return;
-  const st = TSTEPS[TUT.i];
+  const st = tsteps()[TUT.i];
   if (st && st.tap && st.sel && e.target.closest && e.target.closest(st.sel)) { hideCoach(); setTimeout(tutNext, 60); }
 }, true);
 addEventListener('resize', () => { if (TUT && !$('#coach').classList.contains('hidden')) drawCoach(); });
 function endTutorial(done){
-  const prev = TUT && TUT.prev; if (TUT) LAST_TUT_SKIPPED = TUT.skipped; TUT = null; hideCoach(); closeSheet();
+  const prev = TUT && TUT.prev; if (TUT && !TUT.mini) LAST_TUT_SKIPPED = TUT.skipped; TUT = null; hideCoach(); closeSheet();
   if (!prev) return;
+  if (prev.mini) { tab = prev.tab || 'home'; render(); window.scrollTo(0,0); return; }   // i31-b17: a Show me tour changed nothing but the tab
   store.set(PREF_KEY, prev.prefs); applyPrefs(); jobCity = prev.jobCity; jobOK = prev.jobOK; LIFE_UNDO = prev.undo || [];
   S = prev.S; tab = prev.tab || 'home'; MAPSIDE = null; MAPSEL = null;
-  if (S) { render(); window.scrollTo(0,0); } else renderTitle();
+  if (S) { render(); window.scrollTo(0,0); } else { renderTitle(); if (prev.after) { prev.after(); return; } }
   toast(done ? '🎉 Tutorial finished' : 'Tutorial closed');
+}
+
+/* ---------- 👀 'Show me how' (i31-b16/b17): short tours of one system, run on your real life ---------- */
+// A few rings with Next, no taps needed: nothing is bought, saved or played, and you come back to the tab you were on.
+const tsteps = () => (TUT && TUT.steps) || TSTEPS;
+const MINI_TOURS = {
+  study: [
+    { tab:'home', sel:'.fbtn[data-f="study"]', text:'📚 <b>Take classes</b> is a weekly focus. Each week of classes counts toward a certificate or a diploma. Tuition is less with the Washington College Grant when your pay is low.' },
+    { tab:'jobs', sel:'[data-locked]', text:'🔒 jobs need more schooling, a certificate or a program. Tap a locked job any time to see what it takes.' },
+    { tab:'life', sel:'#educard', text:'On the <b>Life</b> tab, pick a program for more pay at jobs that match. Or sign up for a short certificate.' }],
+  out: [
+    { tab:'home', sel:'#outbtn', text:() => `🛍️ <b>Out and about:</b> up to ${OUT_MAX} quick visits a week to places in town, on top of your focus. One per place a week; going back within ${OUT_REPEAT} weeks is half as special.` }],
+  goals: [
+    { tab:'life', sel:'#goalscard', text:() => `🎯 <b>Life goals:</b> pin up to ${GOAL_MAX} badges. Each one you reach after pinning it adds ${GOAL_POINTS} points to your Life Score.` }],
+  k401: [
+    { tab:'life', sel:'#k401card', text:'🏦 Your <b>401(k)</b> saves part of each paycheck before taxes. It grows about 6% a year.' },
+    { tab:'life', sel:'[data-k401="1"]', text:'At <b>5%</b> or more your employer adds 3% on top: free money. You can change it any time.' }],
+  hustle: [
+    { tab:'home', sel:'.fbtn[data-f="hustle"]', text:'🔧 <b>Side hustle</b> is a weekly focus: weekend gigs that change with the seasons, and pay more as you get good at them.' },
+    { tab:'home', sel:'.fdesc', text:'Gigs cost a little happiness and health, so mix them with Rest or Get outside. Three weeks in four wears you down.' }],
+  plan: [
+    { tab:'home', sel:'#planbtn', text:() => `🗓 <b>Plan</b> sets up to ${PLAN_MAX} focuses that take turns, one a week. Picking a focus by hand pauses the plan for that week only.` }],
+  score: [
+    { tab:'home', sel:'#scorenow', text:'🏆 Your <b>Life Score so far</b>: what you\'d get if the game ended today. Tap it to see the parts and your weakest one.' }],
+  trip: [
+    { tab:'home', sel:'#tripchip', text:() => `🚗 <b>Trips:</b> pick a town and up to ${TRIP_MAX} stops. The trip happens when you end the week. A stock-up run makes groceries cheaper for a while.` }],
+  skills: [
+    { tab:'life', sel:'#skillscard', text:'🧰 <b>Skills</b> grow as you practice: cooking on Rest weeks, people skills in town, handy work on side hustles. Each level saves money or opens a choice.' }],
+  biz: [
+    { tab:'life', sel:'#bizcard', text:'🏪 <b>Your own business:</b> one at a time. It earns (or loses) a little every week, and you can sell it later for part of what you paid.' }]
+};
+function miniTour(id){
+  const steps = MINI_TOURS[id]; if (!steps || !S || S.over || TUT) return;
+  closeHelp(); closeSheet();
+  if (!$('#coach')) document.body.insertAdjacentHTML('beforeend', '<div id="coach" class="hidden"></div>');
+  TUT = { i: -1, skipped: [], mini: id, prev: { mini: true, tab },
+    steps: steps.map((st, i) => ({ sel: st.sel, text: typeof st.text === 'function' ? st.text() : st.text, done: i === steps.length - 1 ? 1 : 0,
+      before: () => { if (st.tab && tab !== st.tab) { tab = st.tab; render(); window.scrollTo(0,0); } } })) };
+  tutNext();
+}
+// i31-b18/b19/b22: in Help, the next two systems coming up (and by when at the latest), 'I know this one', and the tours
+function comingUpCard(){
+  if (!S || S.over || S.practice) return '';
+  const soon = UNLOCKS.filter(u => !isOpen(u.id)), by = u => unlockBy(u) ?? 1e9;
+  const next = soon.slice().sort((a, b) => by(a) - by(b)).slice(0, 2), tours = UNLOCKS.filter(u => isOpen(u.id) && MINI_TOURS[u.id]);
+  if (!next.length && !tours.length) return '';
+  return `<div class="card" id="comingup"><h3>🔓 Your life so far</h3>
+    ${next.length ? `<p class="muted" style="margin:4px 0">Coming up in your life:</p>${next.map(u => `<div class="kv"><span>${u.ic} ${u.label}<br><small class="muted">Opens ${unlockWhen(u)}</small></span><button class="sm alt" data-early="${u.id}" aria-label="I know this one: open ${u.label} now">I know this one</button></div>`).join('')}
+      <button class="sm alt" id="openall">Open everything now</button>` : ''}
+    ${tours.length ? `<p class="muted" style="margin:8px 0 4px">👀 Show me how:</p><div class="chips">${tours.map(u => `<button class="chip" data-tour="${u.id}">${u.ic} ${u.label}</button>`).join('')}</div>` : ''}</div>`;
+}
+function comingUpWire(){
+  const redo = msg => { save(); render(); const c = $('#comingup'); if (c) { c.outerHTML = comingUpCard(); comingUpWire(); } announce(msg); const f = $('#comingup button'); if (f) f.focus({ preventScroll: true }); };
+  document.querySelectorAll('#comingup [data-early]').forEach(b => b.onclick = () => { const u = UNLOCK[b.dataset.early]; openSystem(u.id, { quiet:true, how:'early' }); redo(`${u.label} is open.`); });
+  if ($('#openall')) $('#openall').onclick = () => { UNLOCKS.forEach(u => openSystem(u.id, { quiet:true, how:'early' })); redo('Everything is open.'); };
+  document.querySelectorAll('#comingup [data-tour]').forEach(b => b.onclick = () => miniTour(b.dataset.tour));
 }

@@ -4,7 +4,7 @@
 const CACHE_PREFIX = 'theburg-';          // the release kit makes this 'theburgbeta-' in the beta
 const VERSION = CACHE_PREFIX + '0.1.0';
 const CACHE = VERSION;
-const ASSETS = ['./', './index.html', './js/state.js', './js/ui.js', './js/turn.js', './js/events.js', './js/features.js', './js/outabout.js', './js/townpack1.js', './js/health.js', './js/weather.js', './js/starts.js', './js/maps.js', './js/help.js', './js/boot.js', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
+const ASSETS = ['./', './index.html', './js/state.js', './js/difficulty.js', './js/ui.js', './js/turn.js', './js/events.js', './js/features.js', './js/outabout.js', './js/townpack1.js', './js/health.js', './js/weather.js', './js/starts.js', './js/maps.js', './js/help.js', './js/boot.js', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
 
 // i57-a13: only keep a response that really is the file asked for, so a hotel or airport Wi-Fi login page
 // (a redirect, or a 200 page of HTML in place of a script) can never become the offline game.

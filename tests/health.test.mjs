@@ -10,7 +10,8 @@ const errors = [];
 page.on('pageerror', e => errors.push(String(e)));
 await page.goto(srv.url, { waitUntil: 'load' });
 await page.evaluate(() => {
-  window.fresh = (len = 'two', extra = {}) => { newGame('Body', len, 0); S.noEvents = true; Object.assign(S, extra); return S; };
+  // to-do 2: health, body and aging are mostly Hard-tier features, so these lives play Hard (the full game)
+  window.fresh = (len = 'two', extra = {}) => { newGame('Body', len, 0, { diff: 'hard' }); S.noEvents = true; Object.assign(S, extra); return S; };
   window.week = () => { const r = weekTick(false); return { ...r, lines: Object.fromEntries(S.last.lines) }; };
   window.weeks = n => { let r; for (let i = 0; i < n; i++) r = weekTick(false); return r; };
   window.E = t => EVENTS.find(e => e.title === t) || PLAN_DUE.find(e => e.title === t);
@@ -96,7 +97,7 @@ await t.check('i74-a04 + a08: dental and the ambulance district are on the insur
 });
 
 await t.check('i74-a04/a08 screen: the insurance sheet toggles dental and the ambulance membership', async () => {
-  await ev(() => { fresh('two'); S.noEvents = true; tab = 'life'; render(); document.querySelector('#inssheet').click(); });
+  await ev(() => { fresh('two', { diff: 'hard' }); S.noEvents = true; tab = 'life'; render(); document.querySelector('#inssheet').click(); });
   await page.click('[data-ins="dental"][data-v="true"]');
   await page.click('[data-ins="amb"][data-v="true"]');
   const r = await ev(() => ({ ins: S.ins, txt: document.querySelector('#sheet').textContent, pressed: document.querySelector('[data-ins="amb"][data-v="true"]').getAttribute('aria-pressed') }));
@@ -145,8 +146,8 @@ await t.check('i74-a09: Get outside reads by age; skiing Bluewood wants a fair h
 });
 
 await t.check('i74-a10: the senior center shows from 65 with a capped chair class', async () => {
-  const r = await ev(() => {
-    fresh('life', { money: 500, ageMonths: 40 * 12 }); render(); outSheet(); const before = !!document.querySelector('[data-place="senior"]'); closeSheet();
+  const r = await ev(() => {   // i38-a11: visits add health only under 70
+    fresh('life', { money: 500, ageMonths: 40 * 12, health: 60 }); render(); outSheet(); const before = !!document.querySelector('[data-place="senior"]'); closeSheet();
     S.ageMonths = 66 * 12; outSheet(); const after = !!document.querySelector('[data-place="senior"]'); closeSheet();
     const h = S.health, c = S.community; const res = visit('senior', 'chair');
     return { before, after, res: res.msg, dh: S.health - h, dc: S.community - c };

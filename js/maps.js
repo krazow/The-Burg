@@ -113,11 +113,11 @@ function regionSVG(){
 function regionDetail(k){
   const lm = LANDMARKS.find(l => l.k === k);
   if (lm) return `<div class="card mapdet"><h3>${lm.ic} ${lm.name}</h3><p class="muted" style="margin:0">${lm.desc}</p>${recentList('R', k)}</div>`;
-  const c = CITIES[k], jobs = JOBS.filter(x => x.city === k);
+  const c = CITIES[k], jobs = JOBS.filter(x => x.city === k && jobOn(x));
   const drive = c.miles ? `${c.miles} mi each way · about ${Math.round(c.miles*1.1+3)} min · ~${wk(commuteCost(c.miles))} gas in your ${CARS[S.car].name.toLowerCase()}` : 'Home. No commute: you can walk to work.';
   return `<div class="card mapdet"><h3>${TOWNIC[k]} ${c.name}</h3>
     <p class="muted" style="margin:0 0 4px">${drive}</p><p style="margin:0 0 6px;font-size:0.875rem">${c.blurb}</p>
-    ${k !== 'waitsburg' ? `<button class="sm" data-call="TRIPTO" data-arg="${k}">🚗 ${S.trip && S.trip.city === k ? 'Change my trip' : 'Plan a trip'} here (${townStops(k).filter(s => !stopBlocked(s)).length} places to go)</button>` : ''}
+    ${k !== 'waitsburg' && on('trips') ? `<button class="sm" data-call="TRIPTO" data-arg="${k}">🚗 ${S.trip && S.trip.city === k ? 'Change my trip' : 'Plan a trip'} here (${townStops(k).filter(s => !stopBlocked(s)).length} places to go)</button>` : ''}
     ${recentList('R', k)}${jobs.map(jobRow).join('')}</div>`;
 }
 
@@ -180,7 +180,8 @@ function townDetail(k){
   if (p.biz) return outTownDetail(p);
   const f = p.focus && FOCUS[p.focus];
   let btn = '';
-  if (f) {
+  if (f && !focusOpen(p.focus)) btn = `<button class="sm alt" data-call="teaserSheet" data-arg="${UNLOCK_FOCUS[p.focus]}">✨ Coming soon</button>`;   // i31: not open yet
+  else if (f) {
     const dis = (f.needsJob && (!job() || S.retired)) || (f.study && !canStudy());
     const extra = f.study && S.edu < 3 && !S.certStudy ? ` · ${wk(tuitionNow())}` : f.cost ? ` · ${wk(cost(f.cost))}` : '';
     btn = S.focus === p.focus ? `<span class="tag cur">This week's focus: ${f.name}</span>`
@@ -190,9 +191,12 @@ function townDetail(k){
 }
 
 /* ---- the map block, the toggle, and taps ---- */
+// to-do 2: the maps can be switched off; then the list view is all there is
+const mapView = () => !!prefs().mapView && on('maps');
 function mapToggle(){
-  const on = !!prefs().mapView;
-  return `<div class="maptog" role="group" aria-label="Show as"><button class="${on?'':'on'}" data-call="MAPPREF" data-arg="0">📋 List</button><button class="${on?'on':''}" data-call="MAPPREF" data-arg="1">🗺️ Map</button></div>`;
+  if (!on('maps')) return '';
+  const mv = !!prefs().mapView;
+  return `<div class="maptog" role="group" aria-label="Show as"><button class="${mv?'':'on'}" data-call="MAPPREF" data-arg="0">📋 List</button><button class="${mv?'on':''}" data-call="MAPPREF" data-arg="1">🗺️ Map</button></div>`;
 }
 function mapBlock(defSide){
   const side = MAPSIDE || defSide;
