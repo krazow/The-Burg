@@ -453,7 +453,7 @@ const MINI_TOURS = {
   study: [
     { tab:'home', sel:'.fbtn[data-f="study"]', text:'📚 <b>Take classes</b> is a weekly focus. Each week of classes counts toward a certificate or a diploma. Tuition is less with the Washington College Grant when your pay is low.' },
     { tab:'jobs', sel:'[data-locked]', text:'🔒 jobs need more schooling, a certificate or a program. Tap a locked job any time to see what it takes.' },
-    { tab:'life', sel:'#educard', text:'On the <b>Life</b> tab you can pick a program (more pay at matching jobs) or sign up for a short certificate.' }],
+    { tab:'life', sel:'#educard', text:'On the <b>Life</b> tab, pick a program for more pay at jobs that match. Or sign up for a short certificate.' }],
   out: [
     { tab:'home', sel:'#outbtn', text:() => `🛍️ <b>Out and about:</b> up to ${OUT_MAX} quick visits a week to places in town, on top of your focus. One per place a week; going back within ${OUT_REPEAT} weeks is half as special.` }],
   goals: [
