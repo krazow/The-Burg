@@ -19,12 +19,16 @@ function good(req, res){
 }
 
 self.addEventListener('install', e => {
-  // cache: 'reload' skips the browser's own HTTP cache, so a new version never keeps an old file
+  // cache: 'reload' skips the browser's own HTTP cache, so a new version never keeps an old file.
+  // i3-b08: the first install takes over at once; a new version waits until the player taps "Update ready"
+  // (the page posts 'skip'), so new files never mix with old ones in the middle of a week
   e.waitUntil(caches.open(CACHE).then(c => Promise.all(ASSETS.map(u => {
     const req = new Request(u, { cache: 'reload' });
     return fetch(req).then(res => { if (!good(req, res)) throw new Error('bad ' + u); return c.put(u, res); });
-  }))).then(() => self.skipWaiting()));
+  }))).then(() => self.registration.active ? undefined : self.skipWaiting()));
 });
+
+self.addEventListener('message', e => { if (e.data && e.data.type === 'skip') self.skipWaiting(); });
 
 self.addEventListener('activate', e => {
   e.waitUntil(

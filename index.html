@@ -117,7 +117,7 @@ body[data-season=Winter]{--wheat:#b9d4ea;--season:#9cc3e0;--season-d:#2f4a63}
 .swatch{display:inline-block;width:16px;height:16px;border-radius:50%;border:1px solid rgba(61,43,31,.4);vertical-align:middle}
 .pronline{font-size:0.9375rem}
 .gradcard{border-left:4px solid var(--season,var(--wheat))}.gradbtns{display:grid;gap:8px;margin-bottom:8px}.gradbtns .btn{margin:0}
-main{flex:1;padding:14px 14px calc(var(--safe-b) + 32px + 10.5rem)}
+main{flex:1;padding:14px 14px calc(var(--safe-b) + 32px + 12rem)}   /* i43-a04: room for the last button to scroll above the strip, End Week and the tabs */
 .card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
 .card.wxcard{padding:8px 10px;margin:6px 0;border-left:4px solid #4f7da8}
 .card h3{font-size:1.0625rem;margin-bottom:8px}
@@ -259,7 +259,7 @@ main{flex:1;padding:14px 14px calc(var(--safe-b) + 32px + 10.5rem)}
 @media (prefers-reduced-motion: reduce){.cring.tap,.cfinger{animation:none}}
 .sm,.chip,.maptog button,.maptabs button,.sumchip,.totop,.weekstrip,.statbtn,.toc button{min-height:44px}
 /* i2-a23: narrow phones keep End Week and Auto; the ⏩ skips live behind a long press */
-@media (max-width: 400px){.endbar .skipx{display:none}}
+@media (max-width: 440px){.endbar .skipx{display:none}}
 .endbar #end,.endbar #auto{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
 .endbar.rolling #stoproll{flex:1;line-height:1.15}.endbar #stoproll small{display:block;font-size:0.78125rem;font-weight:600;opacity:.9;margin-top:2px}
 .skiprow{display:flex;gap:8px}.skiprow .btn{flex:1}
@@ -383,6 +383,35 @@ ul.changes{padding-left:20px;margin:6px 0 12px}ul.changes li{margin:5px 0;font-s
 .storyhead{display:flex;justify-content:space-between;align-items:center;gap:8px}
 ol.storyl{list-style:none;padding:0;margin:6px 0}ol.storyl li{padding:6px 0;border-bottom:1px dashed var(--line);font-size:0.875rem}
 @media (prefers-reduced-motion: reduce){.celebrate i{animation:none;display:none}.bar i{transition:none}}
+/* wave 1, phone feel and app safety */
+html,body,.helpview{overscroll-behavior-y:contain}
+.toast{padding:7px 14px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;transition:opacity .3s}
+.toast.out{opacity:0}
+@keyframes shake{0%,100%{transform:none}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+.shake{animation:shake .4s}
+.endwrap{flex:2.2;position:relative;display:flex;min-width:0}
+.endbar .endwrap #end{flex:1;padding-left:54px;min-width:0}
+.endf{position:absolute;left:6px;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.2);color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;gap:1px;z-index:1}
+.endf .caret{font-size:12px}
+.focusrow{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--safe-b) + 130px);width:min(492px,calc(100% - 28px));z-index:8;display:grid;grid-template-columns:repeat(6,1fr);gap:4px;background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:5px;box-shadow:0 4px 16px rgba(61,43,31,.2)}
+.focusrow .qf{min-height:52px;border-radius:10px;font-size:11.5px;font-weight:700;padding:2px 0;line-height:1.1}.focusrow .qf .ic{display:block;font-size:20px}
+.focusrow .qf.on{background:var(--barn);color:#fff}.focusrow .qf[disabled]{opacity:.4}
+.updpill{min-height:44px;padding:0 10px;border-radius:999px;background:var(--pale);border:1.5px solid var(--line);font-size:0.8125rem;font-weight:700;margin-right:6px}
+.card.first.gone{display:flex;align-items:center;justify-content:center;font-size:0.875rem}
+.saveline{font-size:0.875rem;padding:6px 10px;border-radius:10px;background:var(--pale);color:var(--soil)}
+@media (max-height:700px) and (max-width:600px) and (orientation:portrait){
+  #app > nav button{padding:4px 0 6px}
+  .endbar{bottom:calc(var(--safe-b) + 38px + 1.25rem)}   /* clears the tab bar, which grows with the text size */
+  .endbar .btn{min-height:50px;padding-top:6px;padding-bottom:6px}
+  .weekstrip{left:14px;transform:none;width:66px;bottom:calc(var(--safe-b) + 38px + 1.25rem);min-height:50px;padding:4px 6px;gap:2px;justify-content:center}
+  .weekstrip .wl{display:none}.weekstrip .wc{flex:0 1 auto;justify-content:center}.weekstrip .wc .delta:not(:first-child){display:none}
+  .weekstrip .delta{font-size:12px;padding:2px 3px}.weekstrip .more{display:none}
+  .weekstrip ~ .endbar{left:86px;transform:none;width:calc(100% - 100px)}
+  .endbar .endwrap #end{font-size:15px}
+  .focusrow{bottom:calc(var(--safe-b) + 92px + 1.25rem)}
+  main{padding-bottom:calc(var(--safe-b) + 120px + 1.25rem)}
+}
+@media (prefers-reduced-motion: reduce){.shake{animation:none}.toast{transition:none}}
 </style>
 </head>
 <body>

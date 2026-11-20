@@ -515,10 +515,10 @@ await t.check('Relaxed softens drains and never ends in debt; Hard costs more an
   assert(/debt/.test(r.hEnd || '') && near(r.hCost, -(650 + 700 + 220) * 0.1 * W) && near(r.lay, r.layN * 1.6), JSON.stringify(r));
 });
 
-await t.check('best scores are kept per mode', async () => {
+await t.check('best scores are kept per difficulty (to-do 2 D7; an old mode key reads as Classic)', async () => {
   const r = await ev(() => { localStorage.clear(); newGame('A', 'half', 0, { mode: 'hard' }); S.noEvents = true; weeks(26); finish('done'); closeSheet();
-    const b = store.get(BEST_KEY); return { keys: Object.keys(b), label: bestLabel('half-hard') }; });
-  assert(r.keys.includes('half-hard') && !r.keys.includes('half') && r.label === '6 Months (Hard)', JSON.stringify(r));
+    const b = store.get(BEST_KEY); return { keys: Object.keys(b), label: bestLabel('hard.half'), old: bestLabel('half-hard') }; });
+  assert(r.keys.includes('hard.half') && !r.keys.includes('half') && r.label === '🔥 Hard · 6 Months' && r.old === '🏛️ Classic · 6 Months (Hard)', JSON.stringify(r));
 });
 
 await t.check('a season goal counts weeks of the right focus and pays out once', async () => {
@@ -815,12 +815,12 @@ await t.check('R13: businesses lose 5% of their value a year; the wheat lease mu
   assert(r.gone, 'an unrenewed lease should end after the grace weeks');
 });
 
-await t.check('R16: the end screen and score sheet label Relaxed and Hard scores', async () => {
+await t.check('R16, to-do 2 D7: the end screen and score sheet name the difficulty (Relaxed is now Easy)', async () => {
   const r = await ev(() => { localStorage.clear(); newGame('R', 'half', 0, { mode: 'relaxed' }); S.noEvents = true; weeks(3); showScoreNow(); const now = document.querySelector('#sheet').textContent; closeSheet();
     finish('done'); const end = document.querySelector('#sheet').textContent; closeSheet();
     newGame('N', 'half', 0); finish('done'); const normal = document.querySelector('#sheet').textContent; closeSheet(); return { now, end, normal }; });
-  assert(/Relaxed mode score/.test(r.end) && /Relaxed mode score/.test(r.now) && /New best \(Relaxed\)/.test(r.end), r.end.slice(0, 300));
-  assert(!/mode score/.test(r.normal), 'Normal games need no label');
+  assert(/Easy score/.test(r.end) && /Easy score/.test(r.now) && /New best \(Easy\)/.test(r.end), r.end.slice(0, 300));
+  assert(/Normal score/.test(r.normal) && !/Easy/.test(r.normal.replace(/Easy, Normal and Hard/g, '')), 'a Normal life is labeled Normal');
 });
 
 await t.check('B2: a 6-month life starts with a little less happiness and health', async () => {
@@ -2237,9 +2237,9 @@ await t.check('i63-b08: 4 weeks before a 2-year or 5-year life ends, the week of
 
 await t.check('i73-b18: the shared score card comes with a short text (and the week for a weekly challenge)', async () => {
   const r = await ev(() => { fresh('two'); const a = shareText(); S.len = 'half'; S.weekly = '2026-W47'; const b = shareText(); S.weekly = null; S.len = 'life'; const c = shareText(); return { a, b, c }; });
-  assert(/^Rules scored \d+, [A-Z][\w ]+, in a 2-year life in The Burg\. krazow\.github\.io\/The-Burg$/.test(r.a), r.a);
-  assert(r.b.includes('in a 6-month life in The Burg (Weekly challenge, week of Nov 16).'), r.b);
-  assert(r.c.includes('in a lifetime in The Burg'), r.c);
+  assert(/^Rules scored \d+, [A-Z][\w ]+, in a 2-year life on (Normal|Hard) in The Burg\. krazow\.github\.io\/The-Burg$/.test(r.a), r.a);
+  assert(/in a 6-month life on (Normal|Hard) in The Burg \(Weekly challenge, week of Nov 16\)\./.test(r.b), r.b);
+  assert(/in a lifetime on (Normal|Hard) in The Burg/.test(r.c), r.c);
 });
 
 // i56-b16: every event has a way to happen. Each event needs a row: a setup (job, month, health, home, chain step…)
@@ -2564,9 +2564,9 @@ await t.check('i19-b03: the end screen puts Custom lives on their own shelf and 
     const std = end({}), cu = end({ start: 'comfy' });
     const cuNote = (() => { localStorage.clear(); newGame('R', 'half', 0, { rules: { start: 'comfy' } }); S.noEvents = true; finish('Done.'); const n = document.querySelector('#tiernote'); const t = n ? n.textContent : ''; closeSheet(); return t; })();
     const sb = end({ events: 'none' });
-    return { std: Object.keys(std.best), cu: Object.keys(cu.best), sb: Object.keys(sb.best), cuNote, label: bestLabel('cu-half') };
+    return { std: Object.keys(std.best), cu: Object.keys(cu.best), sb: Object.keys(sb.best), cuNote, label: bestLabel('cu-normal.half') };
   });
-  assert(JSON.stringify(r.std) === '["half"]' && JSON.stringify(r.cu) === '["cu-half"]' && r.sb.length === 0, JSON.stringify(r));
+  assert(JSON.stringify(r.std) === '["normal.half"]' && JSON.stringify(r.cu) === '["cu-normal.half"]' && r.sb.length === 0, JSON.stringify(r));
   assert(/Custom shelf/.test(r.cuNote) && /Starting money: Comfortable/.test(r.cuNote), r.cuNote);
   assert(/6 Months/.test(r.label) && /Custom rules/.test(r.label), r.label);
 });
