@@ -870,9 +870,9 @@ await t.check('events are paced by category: town 14%, road 8% (long commute or 
       hard: odds({ jobId: 'rn', mode: 'hard' })
     };
     // over many weeks, each category comes at its own rate, and never more than one event a week
-    fresh('two', { jobId: 'rn' }); const n = 6000, seen = { town: 0, road: 0, work: 0 };
+    fresh('two', { jobId: 'rn' }); S.turn = START_WEEKS; const n = 6000, seen = { town: 0, road: 0, work: 0 };   // after the opening weeks' own pool (i17-a03)
     for (let i = 0; i < n; i++) { const e = rollEvent(3, null); if (e) seen[evCat(e)]++; }   // April: no every-year (fixed) event
-    fresh('two', {}); let noJobRoadWork = 0;
+    fresh('two', {}); S.turn = START_WEEKS; let noJobRoadWork = 0;
     for (let i = 0; i < 2000; i++) { const e = rollEvent(3, null); if (e && evCat(e) !== 'town') noJobRoadWork++; }
     const groups = JOBS.filter(j => !JOB_GROUP[j.id]).map(j => j.id);
     return { o, rate: Object.fromEntries(Object.entries(seen).map(([k, v]) => [k, v / n])), noJobRoadWork, groups };
@@ -1898,7 +1898,7 @@ await t.check('i5-a04: Celebration Days comes every year in May', async () => {
     for (let i = 0; i < 104; i++) { const res = weekTick(false); if (res.ev) { if (res.ev.title === 'Celebration Days') celeb++; resolveChoice(res.ev, res.ev.choices().find(c => !c.if || c.if())); } }   // i22-a01: the cooldown starts when you pick
     return { early, last, done, april, celeb, fixed: EVENTS.filter(e => e.fixed).map(e => e.title) }; });
   assert(r.early > 120 && r.early < 280 && r.last === 'Celebration Days' && r.done === null, JSON.stringify(r));
-  assert(r.fixed.join() === 'Celebration Days' && r.april === null && r.celeb === 2, JSON.stringify(r));
+  assert(r.fixed.join() === 'Celebration Days,Friends head off,Friends home for Thanksgiving' && r.april === null && r.celeb === 2, JSON.stringify(r));   // i17-a14: two year-one story events are fixed too
 });
 
 await t.check('i15-a03: windstorms come October to March, once a year, and getting ready halves the damage', async () => {
@@ -2352,7 +2352,13 @@ await t.check('i56-b16: reach table: every event can happen under some setup, an
       'Long-term care insurance': [3, () => { S.ageMonths = 56 * 12; S.ltc = null; }],
       'Who will care for you?': [3, () => { S.ageMonths = 77 * 12; S.health = 40; S.care = null; }],
       'Winter in Arizona?': [11, () => { S.ageMonths = 70 * 12; S.retired = true; S.jobId = null; S.money = 100000; }],
-      'Scholarship night at Waitsburg High': [5, () => { S.scholar = { y: 0, n: 0 }; }]
+      'Scholarship night at Waitsburg High': [5, () => { S.scholar = { y: 0, n: 0 }; }],
+      // wave 1 new starts (js/starts.js): the first 8 weeks, a start under 20 in year one, and each disability
+      ...Object.fromEntries(['A welcome casserole', 'A library card', 'A couch on the stairs', 'Your first grocery run'].map(t => [t, [0, () => { S.turn = 0; }]])),
+      'Friends head off': [7, () => { S.turn = 30; S.startAge = 18; }],
+      'Friends home for Thanksgiving': [10, () => { S.turn = 46; S.startAge = 18; S.evDone['Friends head off'] = 1; S.date = new Date(2027, 10, 22).getTime(); }],
+      ...Object.fromEntries([['A flare-up week', 'chronic'], ['A good stretch', 'chronic'], ['No interpreter at the meeting', 'deaf'], ['Deaf coffee night', 'deaf'],
+        ['The ramp is blocked', 'wheel'], ['Wheelchair basketball', 'wheel'], ['A form in tiny print', 'low'], ['Audio description night', 'low']].map(([t, d]) => [t, [4, () => { S.disability = d; S.jobId = 'farmhand'; }]]))
     };
     // the broad setups: every job (with school and certificates), every home, car and business, and a few lives
     const BROAD = [['fresh', () => {}]];
@@ -2916,6 +2922,122 @@ await t.check('i30-b06: selling a home that covers the smaller one buys it outri
 
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });
 
+
+// ---- wave 1: new starts, inclusion and look (js/starts.js) ----
+await t.check('i7-a20: pronouns for you and your partner; all three sets render in the ending text; old saves get they', async () => {
+  const r = await ev(() => {
+    const out = {};
+    for (const k of ['she', 'he', 'they']) { newGame('Pat', 'two', 0, { pron: k }); S.noEvents = true; S.partner = true; S.turn = 104; meetPartner(); out[k] = pronLine(); }
+    const old = migrate({ name: 'Old', len: 'two', turn: 10 });
+    newGame('Pat', 'two', 0, { pron: 'he' }); S.partner = true; meetPartner(); const n1 = S.partnerName, p1 = S.partnerPron; S.partner = false; meetPartner();
+    return { out, old: old.pron, oldP: old.partnerPron, n1, p1, cleared: S.partnerName, bad: (() => { newGame('X', 'two', 0, { pron: 'xyz' }); return S.pron; })() };
+  });
+  assert(/talk about her and the life she built/.test(r.out.she) && /talk about him and the life he built/.test(r.out.he) && /talk about them and the life they built/.test(r.out.they), JSON.stringify(r.out));
+  assert(/was by (her|his|their) side/.test(r.out.she), 'the partner line is missing');
+  assert(r.old === 'they' && r.oldP === 'they' && r.bad === 'they', JSON.stringify(r));
+  assert(r.n1 && ['she', 'he', 'they'].includes(r.p1) && r.cleared === null, JSON.stringify(r));
+});
+await t.check('i7-a21: a disability start: job tags, an accommodation on hire, monthly costs, DVR pays half of tuition, same score rules', async () => {
+  const r = await ev(() => {
+    newGame('D', 'two', 0, { bg: 'access', dis: 'wheel' }); S.noEvents = true;
+    const farm = accTag(jobById('farmhand')), teller = accTag(jobById('teller'));
+    const t0 = tuitionNow(); startJob('farmhand'); const logged = S.log[0].m;
+    const wk = weekTick(false); const upkeep = S.last.lines.find(l => /Wheelchair/.test(l[0]));
+    const t1 = (() => { S.jobId = 'insure'; return tuitionNow(); })(); S.disability = null; const t2 = tuitionNow();
+    newGame('E', 'two', 0, {}); const none = accTag(jobById('farmhand'));
+    newGame('F', 'two', 0, { bg: 'access', dis: 'nope' });
+    const ramp = (() => { newGame('G', 'two', 0, { bg: 'access', dis: 'wheel' }); return moveExtra('house'); })();
+    return { farm, teller, logged, upkeep: upkeep && upkeep[1], t1, t2, none, def: S.disability, ramp, kinds: Object.keys(DISABILITIES) };
+  });
+  assert(r.farm === '🛠️ needs an accommodation' && r.teller === '✓ fits' && r.none === '', JSON.stringify(r));
+  assert(/set up a ramp/.test(r.logged), r.logged);
+  assert(r.upkeep < 0 && Math.abs(r.t1 * 2 - r.t2) < 0.01, JSON.stringify(r));
+  assert(r.def === 'wheel' && r.ramp > 0 && r.kinds.join() === 'wheel,deaf,low,chronic', JSON.stringify(r));
+});
+await t.check('i17-a04: staying with family: $200 rent, chores, a happiness cap, a sag after a year unless in school or saving', async () => {
+  const r = await ev(() => {
+    newGame('H', 'two', 0, { bg: 'home' }); S.noEvents = true;
+    const rent = -S.last; const bill = billLines().find(l => l[0] === 'Rent')[1];
+    const c0 = S.community; S.happy = 99; S.health = 99; weekTick(false); const cap = S.happy, chore = S.community - c0;
+    const sag = setup => { newGame('H', 'two', 0, { bg: 'home' }); S.noEvents = true; S.happy = 60; Object.assign(S, setup); const why = []; startsStats(why); return why.join(' '); };
+    const yr = sag({ turn: 60, money: 100, recentF: ['rest'] }), saving = sag({ turn: 60, money: 9000 }), school = sag({ turn: 60, money: 100, recentF: ['study'] }), early = sag({ turn: 10, money: 100 });
+    newGame('H', 'two', 0, { bg: 'home' }); tab = 'life'; render(); const listed = !!document.querySelector('[data-home="family"]') || /family's house/.test(document.querySelector('#main').textContent);
+    newGame('R', 'two', 0, {}); tab = 'life'; render(); const hidden = !document.querySelector('[data-home="family"]');
+    return { home: (() => { newGame('H', 'two', 0, { bg: 'home' }); return S.home; })(), bill, cap, chore, yr, saving, school, early, listed, hidden };
+  });
+  assert(r.home === 'family' && Math.abs(r.bill + 200 * 12 / 52) < 0.5, JSON.stringify(r));
+  assert(r.cap <= 85 && r.chore > 0, JSON.stringify(r));
+  assert(/feels small/.test(r.yr) && !/feels small/.test(r.saving) && !/feels small/.test(r.school) && !/feels small/.test(r.early), JSON.stringify(r));
+  assert(r.listed && r.hidden, 'the family home should only be listed while you live there');
+});
+await t.check('i17-a20: the FAFSA files January to March, halves tuition under the pay line, and reminds you in January', async () => {
+  const r = await ev(() => {
+    newGame('F', 'two', 0, {}); S.noEvents = true; S.jobId = 'insure';   // pay over the full-grant line, under the Pell line
+    const before = tuitionNow(), open = fafsaOpen(), ok = fileFafsa(), again = fileFafsa(), after = tuitionNow();
+    S.jobId = 'rn'; const high = pellShare();
+    S.jobId = 'insure'; S.date = new Date(2028, 3, 3).getTime(); const nextApril = fafsaOn(), late = fileFafsa();
+    newGame('G', 'two', 0, {}); S.noEvents = true; weekTick(false); const note = S.log.some(e => /FAFSA is open/.test(e.m));
+    return { before, after, open, ok, again, high, nextApril, late, note };
+  });
+  assert(r.open && r.ok && !r.again && !r.late, JSON.stringify(r));
+  assert(r.before > 0 && Math.abs(r.after * 2 - r.before) < 0.01 && r.high === 0 && !r.nextApril, JSON.stringify(r));
+  assert(r.note, 'no January reminder in the Journal');
+});
+await t.check('i7-a27: help you can get: shows when money is tight, checks pay and cash, and stops as you recover', async () => {
+  const r = await ev(() => {
+    newGame('A', 'two', 0, {}); S.noEvents = true; S.money = 200; tab = 'life'; render();
+    const shown = !!document.querySelector('#aidcard');
+    const food = applyAid('food'); weekTick(false); const paid = S.last.lines.find(l => /Basic Food/.test(l[0]));
+    const m0 = S.money; const bank = applyAid('bank'), bank2 = applyAid('bank'), got = S.money - m0;
+    S.date = new Date(2027, 0, 20).getTime(); const heat = applyAid('heat'), heat2 = applyAid('heat');
+    S.jobId = 'rn'; weekTick(false); const ended = S.aid.food;
+    newGame('B', 'two', 0, {}); S.money = 20000; tab = 'life'; render(); const hidden = !document.querySelector('#aidcard'); S.money = 200; const rich = (S.jobId = 'rn', applyAid('food'));
+    return { shown, food, paid: paid && paid[1], bank, bank2, got, heat, heat2, ended, hidden, rich };
+  });
+  assert(r.shown && r.hidden && r.food && r.paid > 0 && r.bank && !r.bank2 && r.got > 40 && r.heat && !r.heat2, JSON.stringify(r));
+  assert(r.ended === false && r.rich === false, JSON.stringify(r));
+});
+await t.check('i17-a03 / i17-a14: the opening weeks have their own pool (once each); friends leave in August and come home at Thanksgiving', async () => {
+  const r = await ev(() => {
+    newGame('S', 'two', 0, {}); S.noEvents = false; let start = 0, titles = {};
+    for (let i = 0; i < 400; i++) { S.turn = 2; const e = startEvent(0); if (e) { start++; titles[e.title] = (titles[e.title] || 0) + 1; resolveChoice(e, e.choices()[0]); } }
+    S.turn = 8; const after = startEvent(0);
+    newGame('Y', 'two', 0, {}); S.noEvents = true; S.turn = 30; S.date = new Date(2027, 7, 28).getTime();
+    const go = fixedEvent(7); resolveChoice(go, go.choices()[0]); S.turn = 46; S.date = new Date(2027, 10, 26).getTime(); const tg = fixedEvent(10); const h0 = S.happy; resolveChoice(tg, tg.choices()[0]);   // Nov 26 is the month's last week: it comes for sure
+    newGame('P', 'two', 0, { bg: 'parent' }); S.turn = 30; S.date = new Date(2027, 7, 28).getTime(); const parent = fixedEvent(7);
+    return { start, titles, after, go: go && go.title, tg: tg && tg.title, up: S.happy, h0, sent: true, parent: parent && parent.title };
+  });
+  assert(Object.values(r.titles).every(n => n === 1) && Object.keys(r.titles).length === 4 && r.after === null, JSON.stringify(r));
+  assert(r.go === 'Friends head off' && r.tg === 'Friends home for Thanksgiving' && !r.parent, JSON.stringify(r));
+});
+await t.check('i17-a01 / i17-a02: graduation night and three doors show in week one only', async () => {
+  const r = await ev(() => {
+    newGame('G', 'two', 0, {}); tab = 'home'; render();
+    const both = !!document.querySelector('#gradcard') && !!document.querySelector('#doors') && !!document.querySelector('#doors [data-apply]');
+    const c0 = S.community, m0 = S.money; document.querySelector('[data-grad="river"]').click(); const river = S.community > c0 && S.money < m0 && !document.querySelector('#gradcard');
+    document.querySelector('[data-door="skip"]').click(); const gone = !document.querySelector('#doors');
+    newGame('P', 'two', 0, { bg: 'parent' }); tab = 'home'; render(); const parent = !document.querySelector('#gradcard');
+    newGame('L', 'two', 0, {}); S.noEvents = true; weekTick(false); tab = 'home'; render(); const later = !document.querySelector('#gradcard') && !document.querySelector('#doors');
+    return { both, river, gone, parent, later };
+  });
+  assert(r.both && r.river && r.gone && r.parent && r.later, JSON.stringify(r));
+});
+await t.check('i6-b01/b02/b03/b05/b11: the portrait ages, the house follows what you own, the title scene has a time of day, Main Street changes, the season colors the header', async () => {
+  const r = await ev(() => {
+    newGame('A', 'life', 0, { face: { skin: 1, hair: 'long', hc: 3, glasses: true } });
+    const young = faceSVG(S.face, 18, 60), old = faceSVG(S.face, 75, 60);
+    const plain = houseArt(); S.dog = true; S.kids = [S.ageMonths - 80]; S.home = 'farm'; const full = houseArt();
+    const night = scene(6, 23), day = scene(6, 12), dusk = scene(6, 18);
+    tab = 'home'; render(); const season = document.body.dataset.season;
+    S.biz = { type: 'shop', weeks: 5, value: 5000 }; S.seasonWins = 1; const decos = decosOn().map(d => d.k);
+    return { young, old, plain, full, night: night.includes('data-tod="night"'), day: day.includes('data-tod="day"'), dusk: dusk.includes('data-tod="dusk"'), season, decos };
+  });
+  assert(r.young !== r.old && /#d6b26a/.test(r.young) && !/#d6b26a/.test(r.old), 'the portrait should gray with age');
+  assert(r.old.split('<path').length > r.young.split('<path').length, 'the portrait should wrinkle with age');
+  assert(/role="img"/.test(r.plain) && /dog house/.test(r.full) && /kid's bike/.test(r.full) && !/dog house/.test(r.plain), 'the house should show what you own');
+  assert(r.night && r.day && r.dusk && r.season === 'Winter', JSON.stringify(r));
+  assert(r.decos.includes('shop') && r.decos.includes('sold') && r.decos.includes('mural'), JSON.stringify(r.decos));
+});
 await browser.close();
 srv.close();
 if (t.failed) { console.log(`${t.failed} rules check(s) failed`); process.exit(1); }

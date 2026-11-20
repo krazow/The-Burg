@@ -14,6 +14,7 @@ function rollEvent(month, trip){
   const due = planDue(month); if (due) return due;   // i3-a30/a31/a32: life decisions that come when they're due
   { const k = kidSendOff(); if (k) return k; }       // i46-a02: a kid turning 18 always gets a send-off
   { const f = fixedEvent(month); if (f) return f; }  // i5-a04: the town's signature yearly events always come
+  { const s = startEvent(month); if (s) return s; }  // i17-a03: the first 8 weeks have their own small pool (js/starts.js)
   const odds = eventOdds(trip);
   let r = Math.random();
   for (const cat of ['town', 'road', 'work']) { if (r < odds[cat]) return pickEvent(month, cat); r -= odds[cat]; }
@@ -24,7 +25,7 @@ function rollEvent(month, trip){
 // and for sure in the month's last week if they haven't come yet (an event's yearly cooldown says it already came)
 function fixedEvent(month){
   const last = new Date(S.date + 7 * 864e5).getMonth() !== month;
-  const e = EVENTS.find(x => x.fixed && evOn(x) && !(S.evCd[x.title] > S.turn) && (!x.when || x.when(month)));
+  const e = EVENTS.find(x => x.fixed && evOn(x) && !(S.evCd[x.title] > S.turn) && !(x.once && S.evDone[x.title]) && (!x.when || x.when(month)));
   return e && (last || chance(0.5)) ? e : null;
 }
 // i46-a02/a03: kids by birth order, and the one (if any) who turns 18 this week without a send-off yet
@@ -39,7 +40,7 @@ function kidBirthdays(m){
 function pickEvent(month, cat = 'town'){
   const wt = e => typeof e.w === 'function' ? e.w() : (e.w || 1);
   // to-do 2 D4: only events at or below this life's difficulty can come up
-  let ok = EVENTS.filter(e => evCat(e) === cat && evOn(e) && !(S.evCd[e.title] > S.turn) && !(e.once && S.evDone[e.title]) && (!e.when || e.when(month)) && !(e.big && wxCapped()) && wt(e) > 0);   // i75-a23: at most 2 big weather hits a year
+  let ok = EVENTS.filter(e => evCat(e) === cat && evOn(e) && !(e.start && S.turn >= START_WEEKS) && !(S.evCd[e.title] > S.turn) && !(e.once && S.evDone[e.title]) && (!e.when || e.when(month)) && !(e.big && wxCapped()) && wt(e) > 0);   // i75-a23: at most 2 big weather hits a year
   // i52-a10: no repeats in the first year: events already seen this life sit out until week 52 (unless nothing else is left)
   if (S.turn < 52 && S.evSeen) { const fresh = ok.filter(e => !S.evSeen[e.title]); if (fresh.length) ok = fresh; }
   // to-do 2 D4: on Easy, events that cost money or stats keep only part of their weight; the rest is a quiet week
@@ -321,13 +322,13 @@ const EVENTS = [
   { ic:'☕', title:'Someone catches your eye', w:2, when:() => !S.partner && age() >= 19 && age() < 75,
     text:'You keep running into the same person at Howlin\' Bean on Main Street.',
     choices:() => [
-      {label:'Ask them out', go:() => { const boost = S.danceBoost; S.danceBoost = false; if (chance(boost ? .72 : .6)) /* W27: a barn dance makes it 20% likelier */ { S.partner = true; adj({happy:10}); log('Started dating someone special.', undefined, 1); return 'They said yes! You\'re seeing each other now.'; } adj({happy:-3}); return 'They\'re flattered but not interested. Ouch.'; }},
+      {label:'Ask them out', go:() => { const boost = S.danceBoost; S.danceBoost = false; if (chance(boost ? .72 : .6)) /* W27: a barn dance makes it 20% likelier */ { S.partner = true; adj({happy:10}); meetPartner(); log(`Started dating ${S.partnerName}.`, undefined, 1); return `${S.partnerName} said yes! You're seeing each other now.`; } adj({happy:-3}); return 'They\'re flattered but not interested. Ouch.'; }},
       {label:'Just smile', go:() => 'Maybe next time.'}
     ]},
   { ic:'💔', title:'A rough patch', w:1, when:() => S.partner,
-    text:'You and your partner have been arguing a lot lately.',
+    text:() => `You and ${partnerWord()} have been arguing a lot lately.`,
     choices:() => [
-      {label:`Plan a getaway to the coast (-${fmtc(400)})`, go:() => { adj({money:-cost(400)}); if (chance(.8)) { adj({happy:4}); return 'A weekend away fixed a lot.'; } S.partner = false; adj({happy:-10}); return 'It didn\'t help. You split up.'; }},
+      {label:`Plan a getaway to the coast (-${fmtc(400)})`, go:() => { adj({money:-cost(400)}); if (chance(.8)) { adj({happy:4}); return 'A weekend away fixed a lot.'; } S.partner = false; adj({happy:-10}); return `It didn't help. You and ${partnerWord()} split up.`; }},
       {label:'Let it run its course', go:() => { if (chance(.5)) { adj({happy:1}); return 'Things settled down on their own.'; } S.partner = false; adj({happy:-10}); return 'You went your separate ways.'; }}
     ]},
   { ic:'🏛️', title:'Run for town council?', yr:1, w:5, when:() => S.community >= 60 && !S.council && age() >= 21,
@@ -409,7 +410,7 @@ const EVENTS = [
     text:'A letter from Mother Hubbard\'s Legal Cupboard on Main Street: a great-aunt in Spokane left you something in her will.',
     choices:() => [{label:'Read the letter', go:() => { const v = Math.round(cost(ri(5,30)*1000)); adj({money:v, happy:3}); return `She left you ${fmt(v)} and a note telling you to stay out of trouble.`; }}]},
   { ic:'👶', title:'Starting a family?', yr:1, w:3, when:() => S.partner && age() >= 23 && age() <= 42 && S.kids.length < 3,
-    text:() => S.kids.length ? 'You and your partner are talking about another one.' : 'You and your partner have been talking about kids.',
+    text:() => S.kids.length ? `You and ${partnerWord()} are talking about another one.` : `You and ${partnerWord()} have been talking about kids.`,
     choices:() => [
       {label:`Have a baby (about ${fmtc(kidMonthly())}/mo until they're 18${childcareHelp() ? ', with state childcare help' : ''})`, go:() => { S.kids.push(S.ageMonths); adj({happy:12, community:3, health:-2}); log(S.kids.length > 1 ? `Baby number ${S.kids.length} arrived!` : 'Became a parent!', undefined, 1); return S.kids.length > 1 ? 'Another little Waitsburger! The house is louder and happier.' : 'A baby! Sleepless, broke and over the moon.'; }},
       {label:'Not now', go:() => 'You decided to wait.'}
@@ -838,7 +839,7 @@ const WORK_EVENTS = [
   { ic:'🧳', title:'Conference trip', cat:'work', yr:1, w:2, when:() => jobIn('office','care'),
     text:'Work will send you to a conference in Spokane, paid.',
     choices:() => [
-      {label:'Go, paid', go:() => { const cls = classWeeks(2); adj({happy:S.partner ? 2 : 3}); return `Three days of talks and hotel breakfasts${cls ? ', and two weeks of class work' : ''}.${S.partner ? ' Your partner missed you.' : ''}`; }},
+      {label:'Go, paid', go:() => { const cls = classWeeks(2); adj({happy:S.partner ? 2 : 3}); return `Three days of talks and hotel breakfasts${cls ? ', and two weeks of class work' : ''}.${S.partner ? ` ${partnerWord(true)} missed you.` : ''}`; }},
       {label:'Skip', go:() => 'Someone else went.'}
     ]},
   { ic:'🎂', title:'A coworker retires', cat:'work', yr:1, w:2, when:() => working(),
@@ -926,7 +927,7 @@ const TODDLER_EVENTS = [
     choices:() => [
       {label:`Leave work and stay home tomorrow too (-${fmt(dayPay() * 1.5)})`, go:() => { adj({money:-Math.round(dayPay() * 1.5), happy:2}); return 'Popsicles, cartoons and a nap on your chest. The fever broke by Thursday.'; }},
       {label:`Ask the neighbor who watches kids (-${fmtc(40)})`, if:() => S.community >= 30, go:() => { adj({money:-cr(40), community:1}); return 'She had soup on the stove before you could say thanks. You owe her one.'; }},
-      {label:'Your partner takes the afternoon', if:() => !!S.partner, go:() => { adj({happy:-1}); return 'Your partner went. You called at lunch, at two and at four.'; }}
+      {label:`${partnerWord(true)} takes the afternoon`, if:() => !!S.partner, go:() => { adj({happy:-1}); return `${partnerWord(true)} went. You called at lunch, at two and at four.`; }}
     ]},
   { ic:'🖍️', title:'A daycare spot opens up', yr:1, w:3, when:() => toddlerHome(),
     text:'The waiting list at the little daycare on Main Street finally came through: a spot for your toddler, three mornings a week.',
@@ -1095,7 +1096,7 @@ const TOWN_EVENTS_W2 = [
   { ic:'🤠', title:'Barn dance at the fairgrounds', yr:1, w:3, when:m => inM(m,9),
     text:'A fiddle band, hay bales and a dance floor at the fairgrounds barn.',
     choices:() => [
-      {label:`Go (-${fmtc(15)})`, go:() => { adj({money:-cr(15), happy:4, community:2}); if (!S.partner) { S.danceBoost = true; return 'You danced every dance. Somebody asked your name twice.'; } return 'You and your partner danced until the band packed up.'; }},
+      {label:`Go (-${fmtc(15)})`, go:() => { adj({money:-cr(15), happy:4, community:2}); if (!S.partner) { S.danceBoost = true; return 'You danced every dance. Somebody asked your name twice.'; } return `You and ${partnerWord()} danced until the band packed up.`; }},
       {label:'Skip it', go:() => 'You heard the fiddles from your porch.'}
     ]},
   { ic:'🦃', title:'Wild turkeys strut down Main Street', w:0.5, when:m => inM(m,2,3,4),
