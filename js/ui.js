@@ -44,6 +44,7 @@ function renderTitle(){
     ${scene(titleMonth())}
     <h1>The Burg</h1>
     <div class="sub">Make a life in Waitsburg, Washington.</div>
+    <div id="tnotes"></div>
     ${used ? `<label class="field">Your lives (${used}/${SLOT_COUNT})</label>
       <div class="slots">${all.map((g,i) => g ? slotCard(g, i, `<div class="slotbtns"><button class="sm" data-cont="${i}">Continue</button><button class="sm alt" data-del="${i}" aria-label="Delete ${esc(g.name)}'s life">🗑</button></div>`) : '').join('')}</div>
       <div class="muted" style="margin:18px 0 0">— or start a new life —</div>` : ''}
@@ -52,8 +53,9 @@ function renderTitle(){
     <input type="text" id="nm" maxlength="20" placeholder="e.g. Dusty" autocomplete="off">
     <label class="field">Game length</label>
     <div class="lengths">${Object.entries(LENGTHS).map(([k,L]) =>
-      `<button class="len ${k===len?'on':''}" data-len="${k}" aria-pressed="${k===len}"><b>${L.label}</b><span>${L.sub}</span></button>`).join('')}</div>
+      `<button class="len ${k===len?'on':''}" data-len="${k}" aria-pressed="${k===len}"><b>${L.label}</b><span>${L.sub}</span><small>⏱ ${L.mins}</small></button>`).join('')}</div>
     <button class="btn primary bigstart" id="start">Start a new life</button>
+    ${used ? '' : '<button class="btn ghost" id="newbie">🌱 Never played one of these?</button>'}
     <button class="moreopts" id="moreopts" aria-expanded="${more}" aria-controls="morepanel"><span><b>More options</b><span class="s" id="moresum"></span></span><span class="caret" aria-hidden="true">${more ? '▴' : '▾'}</span></button>
     <div id="morepanel" class="morepanel${more ? '' : ' hidden'}">
       <label class="field">How your life begins</label>
@@ -72,18 +74,23 @@ function renderTitle(){
       <div class="maptog" role="group" aria-label="Systems">${Object.entries(UNLOCK_MODES).map(([k,m]) =>
         `<button class="${k===um?'on':''}" data-um="${k}" aria-pressed="${k===um}">${m.ic} ${m.name}</button>`).join('')}</div>
       <div class="muted bgdesc" id="umdesc">${UNLOCK_MODES[um].desc}</div>
+      <label class="field">Rules</label>
+      <button class="moreopts" id="rulesbtn" aria-haspopup="dialog"><span><b>🎛️ Change the rules</b><span class="s" id="rulesum">Normal rules · 🏆 counts toward the normal records</span></span><span class="caret" aria-hidden="true">›</span></button>
     </div>
     <button class="btn ghost" id="chal">🏁 Challenges</button>
     <button class="btn ghost" id="weekly">📅 Weekly challenge (${isoWeek()})</button>
     ${hasRecords() ? '<button class="btn ghost" id="records">🏆 Your records</button>' : ''}
     <button class="btn ghost" id="how">❓ Help & tutorial</button>
     <button class="btn ghost" id="restore">📥 Restore from a backup</button>
+    <button class="btn ghost" id="newphone">📱 I'm the new phone</button>
     <button class="btn ghost" id="settings">⚙️ Settings</button>
     ${Object.keys(store.get(BADGE_KEY) || {}).length ? `<div class="muted" style="margin-top:10px;font-size:0.8125rem">🏅 Badges collected across your lives: ${BADGES.filter(b => (store.get(BADGE_KEY) || {})[b.id]).map(b => b.ic).join(' ')} (${Object.keys(store.get(BADGE_KEY) || {}).length}/${BADGES.length})</div>` : ''}
     <div class="muted" style="margin-top:14px;font-size:0.75rem">v${APP_VERSION}</div>
   </div>`;
-  let bg = 'fresh', md = 'normal', aim = 'all';
-  const moreSum = () => { $('#moresum').textContent = `${BACKGROUNDS[bg].ic} ${BACKGROUNDS[bg].name} · ${MODES[md].ic} ${MODES[md].name} · ${AIMS[aim].ic} ${AIMS[aim].name}${um === 'all' ? ` · ${UNLOCK_MODES.all.ic} ${UNLOCK_MODES.all.name}` : ''}`; };
+  let bg = 'fresh', md = 'normal', aim = 'all', rules = {};
+  const moreSum = () => { const t = recordTier(rules), cu = Object.keys(rules).length;
+    $('#moresum').textContent = `${BACKGROUNDS[bg].ic} ${BACKGROUNDS[bg].name} · ${MODES[md].ic} ${MODES[md].name} · ${AIMS[aim].ic} ${AIMS[aim].name}${cu ? ` · 🎛️ ${TIERS[t].name} rules` : ''}${um === 'all' ? ` · ${UNLOCK_MODES.all.ic} ${UNLOCK_MODES.all.name}` : ''}`;
+    $('#rulesum').textContent = `${rulesSummary(rules)} · ${TIERS[t].ic} counts toward ${TIERS[t].shelf}`; };
   moreSum();
   // G2: starting backgrounds and modes live in a "More options" panel; open or closed is remembered
   $('#moreopts').onclick = () => {
@@ -99,30 +106,126 @@ function renderTitle(){
     document.querySelectorAll('[data-aim]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#aimdesc').textContent = aimDesc(aim); moreSum(); });
   document.querySelectorAll('[data-um]').forEach(b => b.onclick = () => { um = b.dataset.um; setPref('unlockMode', um);
     document.querySelectorAll('[data-um]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#umdesc').textContent = UNLOCK_MODES[um].desc; moreSum(); });
+  $('#rulesbtn').onclick = () => rulesSheet(rules, { bg, mode: md }, r => { rules = r; moreSum(); });   // i19-b02
   document.querySelectorAll('.len').forEach(b => b.onclick = () => {
     len = b.dataset.len; document.querySelectorAll('.len').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
   });
   document.querySelectorAll('[data-cont]').forEach(b => b.onclick = () => loadSlot(b.dataset.cont === WEEKLY_SLOT ? WEEKLY_SLOT : +b.dataset.cont));
   wireTitleExtras();
   document.querySelectorAll('[data-del]').forEach(b => b.onclick = () => askDelete(+b.dataset.del));
+  // the start as picked right now (name, length, background, mode, aim), run now or after the practice life
+  const startNow = () => { const name = ($('#nm').value.trim() || 'Dusty').slice(0,20), l = len, o = { bg, mode: md, aim, rules, unlock: um };
+    return () => { const free = slots().indexOf(null); if (free < 0) return askReplace(name, l, o); newGame(name, l, free, o); }; };
   $('#start').onclick = () => {
-    const name = ($('#nm').value.trim() || 'Dusty').slice(0,20);
-    const free = slots().indexOf(null);
-    if (free < 0) return askReplace(name, len, { bg, mode: md, aim, unlock: um });
-    newGame(name, len, free, { bg, mode: md, aim, unlock: um });
+    const go = startNow();
+    if (isBrandNew()) return newHereSheet(go);      // i23-a01: the very first start offers the practice life
+    go();
   };
+  if ($('#newbie')) $('#newbie').onclick = () => newbieSheet({   // i7-a06
+    len: k => { const b = document.querySelector(`.len[data-len="${k}"]`); if (b) b.click(); },
+    mode: k => { const b = document.querySelector(`[data-mode="${k}"]`); if (b) b.click(); }, startNow });
   $('#how').onclick = showHelp;
   $('#chal').onclick = challengesSheet;
   $('#weekly').onclick = () => {
     const cur = readSlot(WEEKLY_SLOT);
-    sheet(`<h2>📅 Weekly challenge ${isoWeek()}</h2><p>A 6-month life where everyone gets the same events and dice this week. Play it, then share your score card and compare with friends.</p><p class="muted">It has its own place, so it doesn't use one of your ${SLOT_COUNT} slots.${cur ? ` Starting again replaces ${esc(cur.name)}'s challenge in progress.` : ''}</p>${cur ? '<button class="btn primary" id="wcont">Continue this week\'s challenge</button>' : ''}<button class="btn ${cur ? 'ghost' : 'primary'}" id="y">${cur ? 'Start over' : 'Start'}</button><button class="btn ghost" id="n">Not now</button>`);
+    sheet(`<h2>📅 Weekly challenge ${isoWeek()}</h2><p>A 6-month life where everyone gets the same events and dice this week. Play it, then share your score card and compare with friends.</p><p class="muted">It has its own place, so it doesn't use one of your ${SLOT_COUNT} slots.${cur ? ` Starting again replaces ${esc(cur.name)}'s challenge in progress.` : ''}</p><p class="muted">🎛️ Everyone plays the weekly with the same rules: Normal, whatever you set under Change the rules.</p>${cur ? '<button class="btn primary" id="wcont">Continue this week\'s challenge</button>' : ''}<button class="btn ${cur ? 'ghost' : 'primary'}" id="y">${cur ? 'Start over' : 'Start'}</button><button class="btn ghost" id="n">Not now</button>`);
     if ($('#wcont')) $('#wcont').onclick = () => loadSlot(WEEKLY_SLOT);
     $('#y').onclick = () => { const name = (($('#nm') && $('#nm').value.trim()) || 'Dusty').slice(0,20); closeSheet(); startWeekly(name); };
     $('#n').onclick = closeSheet;
   };
   $('#restore').onclick = restoreSheet;
+  $('#newphone').onclick = newPhoneSheet;
   $('#settings').onclick = () => settingsSheet(false);
   if ($('#records')) $('#records').onclick = recordsSheet;
+  titleNotes();
+}
+/* ---------- title notes (i63-b04, i63-b05, i73-b12, i73-b13): when this browser may not keep your lives ---------- */
+// every key this game keeps (through length/key(), so the beta's storage wrapper is respected)
+function myKeys(){ const out = []; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(KEY_PREFIX)) out.push(k); } } catch (e) {} return out; }
+const BOOT_EMPTY = !myKeys().length;                 // read before boot writes anything: nothing of ours here at all
+const LAST_SEEN = prefs().lastSeen || 0, BOOT_AT = Date.now();   // the visit before this one (i73-b13)
+const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+// i63-b05: a tiny 'has played' flag in Cache Storage, a second place the browser keeps apart from localStorage
+const FLAG_CACHE = KEY_PREFIX + 'played';
+let FLAG_SET = false;
+async function playedFlag(set){
+  try {
+    if (typeof caches === 'undefined') return false;
+    const c = await caches.open(FLAG_CACHE);
+    if (set) { if (!FLAG_SET) { FLAG_SET = true; await c.put('played-flag', new Response('1')); } return true; }
+    return !!(await c.match('played-flag'));
+  } catch (e) { return false; }
+}
+// i73-b12: private windows: a small storage quota, or no persisted() while localStorage works. 2 signs = forgets, 1 = may forget
+let PRIVATE_SIGNS = null, PRIVATE_HOME_SEEN = false;
+async function privateSigns(){
+  if (PRIVATE_SIGNS != null) return PRIVATE_SIGNS;
+  let n = 0;
+  try { const k = KEY_PREFIX + 'probe'; localStorage.setItem(k, '1'); localStorage.removeItem(k); } catch (e) { return PRIVATE_SIGNS = 2; }
+  try { const e = navigator.storage && navigator.storage.estimate ? await navigator.storage.estimate() : null; if (e && e.quota && e.quota <= 120 * 1024 * 1024) n++; } catch (e) {}
+  if (!(navigator.storage && typeof navigator.storage.persisted === 'function')) n++;
+  return PRIVATE_SIGNS = n;
+}
+const privateText = n => n >= 2 ? 'This window forgets your lives when you close it.' : 'This window may forget your lives when you close it.';
+async function titleNotes(){
+  const lives = slots().some(Boolean), cards = [];
+  const [flag, priv] = await Promise.all([playedFlag(false), privateSigns()]);
+  const empty = !lives && BOOT_EMPTY;
+  if (flag && empty) cards.push(`<div class="card warn tnote" id="tn-cleared">🧹 <b>Your saved lives were cleared from this browser.</b> Have a backup? <button class="sm" data-tn="restore">📥 Restore it here</button></div>`);
+  else if (empty && isIOS() && isInstalled()) cards.push(`<div class="card tip tnote" id="tn-safari">📲 <b>Played in Safari before?</b> The home-screen app keeps its own lives. Open the game in Safari, tap Menu → 📤 Back up or restore → <b>Copy a backup code</b>, then come back here and paste it. <button class="sm" data-tn="restore">📥 Paste a backup code</button></div>`);
+  if (priv) cards.push(`<div class="card warn tnote" id="tn-private">🕶️ <b>${privateText(priv)}</b> Back up before you go, or open the game in a normal window.${lives ? ' <button class="sm" data-tn="backup">📤 Back up</button>' : ''}</div>`);
+  const p = prefs(), away = LAST_SEEN && Date.now() - LAST_SEEN > 4 * 864e5;
+  if (lives && isIOS() && !isInstalled() && (!p.iosWarnOk || (away && p.iosWarnOk < BOOT_AT))) cards.push(`<div class="card warn tnote" id="tn-ios">🧭 <b>Safari can delete your lives after 7 days without a visit.</b> Keep them by adding the Burg to your Home Screen: <b>1.</b> tap Share ⬆️, <b>2.</b> tap <b>Add to Home Screen</b>. <span class="slotbtns"><button class="sm" data-tn="backup">📤 Back up now</button><button class="sm alt" data-tn="iosok">Got it</button></span></div>`);
+  const box = $('#tnotes'); if (!box || !$('.title')) return;
+  box.innerHTML = cards.join('');
+  box.querySelectorAll('[data-tn]').forEach(b => b.onclick = () => {
+    const k = b.dataset.tn;
+    if (k === 'restore') restoreSheet();
+    else if (k === 'backup') backupSheet();
+    else if (k === 'iosok') { setPref('iosWarnOk', Date.now()); $('#tn-ios').remove(); announce('OK. Help has the Home Screen steps any time.'); }
+  });
+}
+// i73-b12: shown once on Home too, while playing in a window that may forget
+function privateCard(){
+  if (!PRIVATE_SIGNS || PRIVATE_HOME_SEEN || !S || S.practice) return '';
+  return `<div class="card warn" id="privcard">🕶️ <b>${privateText(PRIVATE_SIGNS)}</b> Back up before you close it (Menu → 📤 Back up or restore). <span class="slotbtns"><button class="sm" id="privbk">📤 Back up</button><button class="sm alt" id="privok">Got it</button></span></div>`;
+}
+/* ---------- i23-a01 / i7-a06: a first start offers the practice life; new players can answer three questions ---------- */
+const isBrandNew = () => !slots().some(Boolean) && !hasRecords() && !prefs().newHere;
+function newHereSheet(go){
+  setPref('newHere', 1);                            // shown once on this device
+  sheet(`<h2>👋 New here?</h2><p>A short <b>practice life</b> (about 4 minutes) shows you the ropes: jobs, your weekly focus, the week strip and how the Life Score adds up. A pulsing ring shows what to tap. Nothing in it is saved, and your real life starts right after.</p>
+    <button class="btn primary" id="yes">🎓 Practice life first</button><button class="btn ghost" id="jumpin">Jump right in</button>`);
+  $('#yes').onclick = () => { closeSheet(); startTutorial(go); };
+  $('#jumpin').onclick = () => { closeSheet(); go(); };
+}
+const NEWBIE_Q = [
+  ['len', 'How long do you want to play?', [['half', 'A few minutes'], ['two', 'About 10 minutes'], ['five', 'Longer, over a few sittings']]],
+  ['text', 'How do you like to read?', [['normal', 'Normal text'], ['l', 'Bigger text']]],
+  ['easy', 'Want it easy?', [['normal', 'No, the game as designed'], ['relaxed', 'Yes, go easy on me']]]
+];
+function newbieSheet(set){
+  const pick = { len: 'half', text: setting('textSize') === 'normal' ? 'normal' : 'l', easy: 'normal' };
+  const draw = () => {
+    sheet(`<h2>🌱 New to games like this?</h2><p>Three quick questions, and we'll set up a good first life. You can change any of it later.</p>
+      <div class="newq">${NEWBIE_Q.map(([k, q, opts]) => `<h3 id="nq-${k}">${q}</h3><div class="maptog wrap" role="group" aria-labelledby="nq-${k}">${opts.map(([v, l]) =>
+        `<button data-nq="${k}" data-v="${v}" class="${pick[k] === v ? 'on' : ''}" aria-pressed="${pick[k] === v}">${l}</button>`).join('')}</div>`).join('')}</div>
+      <p class="muted">${LENGTHS[pick.len].label}: ${LENGTHS[pick.len].mins}. ${pick.easy === 'relaxed' ? `${MODES.relaxed.ic} Relaxed: ${MODES.relaxed.desc}` : `${MODES.normal.ic} Normal: ${MODES.normal.desc}`}</p>
+      <button class="btn primary" id="yes">Set it up</button><button class="btn ghost" id="no">Back</button>`);
+    document.querySelectorAll('#sheet [data-nq]').forEach(b => b.onclick = () => { pick[b.dataset.nq] = b.dataset.v; const k = b.dataset.nq, v = b.dataset.v; draw();
+      const n = document.querySelector(`#sheet [data-nq="${k}"][data-v="${v}"]`); if (n) n.focus({ preventScroll: true }); });
+    $('#no').onclick = closeSheet;
+    $('#yes').onclick = () => {
+      set.len(pick.len); set.mode(pick.easy); setPref('textSize', pick.text); applyPrefs(); setPref('newHere', 1);
+      const go = set.startNow(), sum = `${LENGTHS[pick.len].label}, ${MODES[pick.easy].name}${pick.text === 'l' ? ', bigger text' : ''}`;
+      sheet(`<h2>✅ All set</h2><p>${sum}. Want a short <b>practice life</b> first? It takes about 4 minutes, a pulsing ring shows what to tap, and your real life starts right after.</p>
+        <button class="btn primary" id="yes">🎓 Practice life first</button><button class="btn ghost" id="jumpin">Start my life</button><button class="btn ghost" id="no">Back to the title</button>`);
+      $('#yes').onclick = () => { closeSheet(); startTutorial(go); };
+      $('#jumpin').onclick = () => { closeSheet(); go(); };
+      $('#no').onclick = closeSheet;
+    };
+  };
+  draw();
 }
 /* ---------- 🏆 Your records (G7, R7): best scores by length × mode, challenges, and this week's weekly challenge ---------- */
 // only the current week's weekly-challenge best is kept; older weeks are dropped when the game loads
@@ -141,11 +244,13 @@ function recordsSheet(){
   const notes = store.get(BEST_NOTE_KEY) || {};   // i63-a20: a best life's comeback line
   const cell = (v, k) => v == null ? '<span class="muted" aria-label="none yet">–</span>' : `<b>${v}</b>${notes[k] ? `<br><small class="muted comeback">${esc(notes[k])}</small>` : ''}`;
   const nWon = Object.keys(SCENARIOS).filter(k => won[k]).length, wk = best[`wk-${isoWeek()}`];
+  const cu = Object.keys(best).filter(k => k.startsWith('cu-') && bestLabel(k) && Number.isFinite(best[k]));   // i19-b03: the Custom shelf
   sheet(`<h2>🏆 Your records</h2>
     <p class="muted">Your best Life Scores on this device.</p>
     <table class="rec"><caption>Best score by game length and mode</caption>
       <thead><tr><th scope="col">Length</th>${mds.map(m => `<th scope="col">${MODES[m].ic} ${MODES[m].name}</th>`).join('')}</tr></thead>
       <tbody>${Object.entries(LENGTHS).map(([k, L]) => `<tr><th scope="row">${L.label}</th>${mds.map(m => `<td>${cell(best[bestKey(k, m)], bestKey(k, m))}</td>`).join('')}</tr>`).join('')}</tbody></table>
+    ${cu.length ? `<h3 style="margin-top:14px">🎛️ Custom rules</h3><p class="muted">Lives played with changed rules, kept apart from the table above.</p>${cu.map(k => `<div class="kv"><span>${esc(bestLabel(k.slice(3)))}</span><span>best <b>${best[k]}</b></span></div>`).join('')}` : ''}
     <h3 style="margin-top:14px">🏁 Challenges <span class="tag">${nWon}/${Object.keys(SCENARIOS).length} completed</span></h3>
     ${Object.entries(SCENARIOS).map(([k, sc]) => `<div class="kv"><span>${sc.ic} ${sc.name}${won[k] ? ' ✅' : ''}</span><span>${best['sc-' + k] != null ? `best <b>${best['sc-' + k]}</b>` : '<span class="muted">not played</span>'}</span></div>`).join('')}
     <h3 style="margin-top:14px">📅 This week's challenge (${isoWeek()})</h3>
@@ -300,7 +405,7 @@ function recapSheet(at){
 function askDelete(i){
   const g = slots()[i]; if (!g) return;
   sheet(`<h2>Delete ${esc(g.name)}'s life?</h2><p>${slotLine(g)}</p><p>This can't be undone.</p>
-    <button class="btn primary" id="yes">Delete</button><button class="btn ghost" id="no">Keep it</button>`);
+    <button class="btn primary" id="yes">Delete</button><button class="btn ghost" id="no" data-safe>Keep it</button>`);
   $('#yes').onclick = () => { writeSlot(i, null); closeSheet(); renderTitle(); toast('Deleted'); };
   $('#no').onclick = closeSheet;
 }
@@ -312,7 +417,7 @@ function askReplace(name, len, opts = {}){
     const i = +b.dataset.over, old = slots()[i];
     if (!old) { closeSheet(); return newGame(name, len, i, opts); }
     sheet(`<h2>Replace ${esc(old.name)}'s life?</h2><p>${slotLine(old)}</p><p>Slot ${i+1} will hold ${esc(name)}'s new life instead. This can't be undone.</p>
-      <button class="btn ghost" id="back">Back</button><button class="btn primary" id="yes">Replace it</button>`);
+      <button class="btn primary" id="yes">Replace it</button><button class="btn ghost" id="back" data-safe>Back</button>`);
     $('#yes').onclick = () => { closeSheet(); newGame(name, len, i, opts); };
     $('#back').onclick = () => askReplace(name, len, opts);
   });
@@ -335,7 +440,7 @@ function saveCopySheet(){
     };
     if (!old) return go();
     sheet(`<h2>Replace ${esc(old.name)}'s life?</h2><p>${slotLine(old)}</p><p>Slot ${i+1} will hold the copy instead. This can't be undone.</p>
-      <button class="btn primary" id="yes">Replace it</button><button class="btn ghost" id="back">Back</button>`);
+      <button class="btn primary" id="yes">Replace it</button><button class="btn ghost" id="back" data-safe>Back</button>`);
     $('#yes').onclick = go; $('#back').onclick = saveCopySheet;
   });
   $('#no').onclick = closeSheet;
@@ -344,30 +449,49 @@ function saveCopySheet(){
 /* ---------- 📤 backups: move your lives between devices ---------- */
 // A backup is every saved life plus best scores. It leaves as a .json file or a "backup code" (text you can paste
 // into a message to yourself); codes are gzip-compressed when the browser can.
-function backupData(){ return { app: 'theburg', kind: 'backup', v: 1, version: APP_VERSION, exported: new Date().toISOString(), slots: slots(), best: store.get(BEST_KEY) || {}, badges: store.get(BADGE_KEY) || {}, challenges: store.get(CHALLENGE_KEY) || {}, ends: ends() }; }
+// i63-b02: v is the format; minReader is the oldest app format that can read it. A backup newer than BACKUP_V asks you to update.
+const BACKUP_V = 2;
+function backupData(){ return { app: 'theburg', kind: 'backup', v: BACKUP_V, minReader: 1, version: APP_VERSION, exported: new Date().toISOString(), slots: slots(), best: store.get(BEST_KEY) || {}, badges: store.get(BADGE_KEY) || {}, challenges: store.get(CHALLENGE_KEY) || {}, ends: ends() }; }
 const b64 = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(s); };
 const unb64 = text => Uint8Array.from(atob(text.replace(/\s+/g, '')), c => c.charCodeAt(0));
+const CRC_T = [...Array(256)].map((_, n) => { for (let k = 0; k < 8; k++) n = n & 1 ? 0xEDB88320 ^ (n >>> 1) : n >>> 1; return n >>> 0; });
+const crc32 = bytes => { let c = 0xFFFFFFFF; for (const b of bytes) c = CRC_T[(c ^ b) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+// i63-b01: BURG2:<packed bytes in base64>.<how many bytes>.<CRC32>, so a cut-off or changed code is caught before unpacking.
+// The bytes are gzip when the browser can (they start 1f 8b), otherwise plain JSON.
 async function backupCode(obj){
   const json = JSON.stringify(obj);
-  if (window.CompressionStream) {
-    const gz = new Blob([json]).stream().pipeThrough(new CompressionStream('gzip'));
-    return 'BURG1:' + b64(new Uint8Array(await new Response(gz).arrayBuffer()));
-  }
-  return 'BURG0:' + b64(new TextEncoder().encode(json));
+  let bytes = new TextEncoder().encode(json);
+  if (window.CompressionStream) bytes = new Uint8Array(await new Response(new Blob([json]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
+  return `BURG2:${b64(bytes)}.${bytes.length}.${crc32(bytes).toString(16).padStart(8, '0')}`;
+}
+const gunzip = async bytes => {
+  if (!window.DecompressionStream) throw new Error('This browser can\'t open compressed codes. Use the backup file instead.');
+  return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+};
+const backupErr = (msg, extra = {}) => Object.assign(new Error(msg), extra);
+async function unpackBurg2(text){
+  const t = text.replace(/\s+/g, ''), m = t.match(/^BURG2:([A-Za-z0-9+/=]*)\.(\d+)\.([0-9a-fA-F]{8})$/);
+  if (!m) throw backupErr('The last part of this code is missing. Copy the whole code again, right to the end, and paste it here.', { part: 'end' });
+  let bytes = null;
+  try { bytes = unb64(m[1]); } catch (e) {}
+  if (!bytes || bytes.length < +m[2]) throw backupErr('A piece in the middle of this code is missing. Copy the whole code again and paste it here.', { part: 'middle' });
+  if (bytes.length !== +m[2] || crc32(bytes).toString(16).padStart(8, '0') !== m[3].toLowerCase()) throw backupErr('One piece of this code was changed (a letter retyped or swapped). Copy the code again from the original and paste it here.', { part: 'changed' });
+  return bytes[0] === 0x1f && bytes[1] === 0x8b ? gunzip(bytes) : new TextDecoder().decode(bytes);
 }
 async function readBackup(text){
   text = (text || '').trim();
   let d;
   try {
     if (text.startsWith('{')) d = JSON.parse(text);
-    else if (text.startsWith('BURG1:')) {
-      if (!window.DecompressionStream) throw new Error('This browser can\'t open compressed codes. Use the backup file instead.');
-      const raw = new Blob([unb64(text.slice(6))]).stream().pipeThrough(new DecompressionStream('gzip'));
-      d = JSON.parse(await new Response(raw).text());
-    } else if (text.startsWith('BURG0:')) d = JSON.parse(new TextDecoder().decode(unb64(text.slice(6))));
+    else if (text.startsWith('BURG2:')) d = JSON.parse(await unpackBurg2(text));
+    else if (text.startsWith('BURG1:')) d = JSON.parse(await gunzip(unb64(text.slice(6))));
+    else if (text.startsWith('BURG0:')) d = JSON.parse(new TextDecoder().decode(unb64(text.slice(6))));
+    else if (/^BURG\d+:/.test(text)) throw backupErr('This backup is from a newer Burg. Update the game first, then restore it.', { newer: true });
     else throw new Error('');
-  } catch (e) { throw new Error(e.message || 'That doesn\'t look like a backup from The Burg.'); }
+  } catch (e) { throw e.part || e.newer ? e : new Error(e.message || 'That doesn\'t look like a backup from The Burg.'); }
   if (!d || d.app !== 'theburg' || !Array.isArray(d.slots)) throw new Error('That doesn\'t look like a backup from The Burg.');
+  const need = Number.isFinite(d.minReader) ? d.minReader : Number.isFinite(d.v) ? d.v : 1;
+  if (need > BACKUP_V) throw backupErr('This backup is from a newer Burg. Update the game first, then restore it.', { newer: true });
   const ok = isLife;   // H1: anything else a thin backup is missing, migrate() fills in
   const lives = d.slots.slice(0, SLOT_COUNT).map(g => ok(g) ? migrate(g) : null);
   if (!lives.some(Boolean)) throw new Error('That backup has no saved lives in it.');
@@ -378,6 +502,8 @@ async function readBackup(text){
     .map(e => Object.fromEntries(Object.entries(e).map(([k, v]) => [k, typeof v === 'string' ? noTags(v).slice(0, 200) : Number.isFinite(v) || v == null ? v ?? null : k === 'parts' && obj(v) ? Object.fromEntries(Object.entries(v).filter(([, x]) => Number.isFinite(x))) : null])));
   return { lives, ends: endsIn, best: obj(d.best), badges: obj(d.badges), challenges: obj(d.challenges), exported: when && !isNaN(when) ? when.toISOString() : null };
 }
+// i63-b22: lives in a backup that are an earlier week of a life already on this phone (same life id)
+const olderCopies = b => b.lives.filter(Boolean).map(g => [g, slots().find(x => x && x.lid && x.lid === g.lid && (x.turn || 0) > (g.turn || 0))]).filter(([, x]) => x);
 // put a backup's lives in: 'add' fills empty slots (returns how many didn't fit), 'replace' swaps all slots
 function restoreBackup(b, mode){
   const cur = slots(), best = store.get(BEST_KEY) || {};
@@ -388,6 +514,7 @@ function restoreBackup(b, mode){
   for (const k of Object.keys(b.badges || {})) if (BADGES.some(x => x.id === k)) badges[k] = 1;
   for (const k of Object.keys(b.challenges || {})) if (SCENARIOS[k]) wins[k] = 1;
   store.set(BADGE_KEY, badges); store.set(CHALLENGE_KEY, wins);
+  for (const [g] of olderCopies(b)) g.rewound = true;            // i63-b22: it still plays, but its ending sets no records
   { const have = ends(), seen = new Set(have.map(e => `${e.name}|${e.at}|${e.score}`));
     const add = (b.ends || []).filter(e => !seen.has(`${e.name}|${e.at}|${e.score}`));
     if (add.length) store.set(ENDS_KEY, keepEnds([...have, ...add].sort((x, y) => (y.at || 0) - (x.at || 0)))); }
@@ -403,7 +530,8 @@ function restoreBackup(b, mode){
   const landed = want.reduce((n, g, i) => n + (g && now[i] && now[i].name === g.name && now[i].savedAt === g.savedAt && (mode === 'replace' || !cur[i]) ? 1 : 0), 0);
   return { skipped, meant, landed };
 }
-function backupSheet(){
+// the backup sheet; onClose (i63-b08's nudge) runs when it's closed, so the week carries on
+function backupSheet(onClose = null){
   if (S && !S.over && !S.practice) save();
   const n = slots().filter(Boolean).length;
   sheet(`<h2>📤 Back up or restore</h2>
@@ -412,8 +540,9 @@ function backupSheet(){
     <button class="btn primary" id="bkfile" ${n ? '' : 'disabled'}>⬇️ Download a backup file</button>
     <button class="btn ghost" id="bkcode" ${n ? '' : 'disabled'}>📋 Copy a backup code</button>
     <div id="bkout"></div>
+    ${onClose ? '' : `<button class="btn ghost" id="bkmove" ${n ? '' : 'disabled'}>📱 Moving to a new phone</button>
     <h3 style="margin-top:14px">Restore</h3>
-    <button class="btn ghost" id="bkrestore">📥 Restore from a backup</button>
+    <button class="btn ghost" id="bkrestore">📥 Restore from a backup</button>`}
     <button class="btn ghost" id="no">Close</button>`);
   $('#bkfile').onclick = () => {
     const blob = new Blob([JSON.stringify(backupData(), null, 1)], { type: 'application/json' });
@@ -427,45 +556,77 @@ function backupSheet(){
     let copied = false;
     try { await navigator.clipboard.writeText(code); copied = true; } catch (e) {}
     $('#bkout').innerHTML = `<p class="${copied ? '' : 'muted'}">${copied ? '✅ Copied! Paste it into a note or a message to yourself.' : 'Copy this code (select it all), then paste it into a note or a message to yourself:'}</p>
-      <textarea class="code" id="bkcodetext" readonly aria-label="Backup code" rows="4">${code}</textarea>`;
+      <textarea class="code" id="bkcodetext" readonly aria-label="Backup code" rows="4">${code}</textarea>
+      <p class="muted" style="font-size:0.8125rem">The code checks itself: if a piece goes missing or changes on the way, restoring it says so.</p>`;
     const ta = $('#bkcodetext'); ta.focus(); ta.select();
     announce(copied ? 'Backup code copied' : 'Backup code shown, select and copy it');
   };
-  $('#bkrestore').onclick = restoreSheet;
-  $('#no').onclick = closeSheet;
+  if ($('#bkmove')) $('#bkmove').onclick = movePhoneSheet;
+  if ($('#bkrestore')) $('#bkrestore').onclick = restoreSheet;
+  $('#no').onclick = () => { closeSheet(); if (onClose) onClose(); };
+}
+// i63-b02: look for a newer version of the game, and reload into it if there is one
+async function checkUpdate(out){
+  const say = t => { if (out) out.textContent = t; announce(t); };
+  say('Checking for an update…');
+  try {
+    const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
+    if (!reg) throw new Error('none');
+    await reg.update();
+    const w = reg.installing || reg.waiting;
+    if (!w) return say('No newer version yet. Try again later, or restore this backup on the phone that made it.');
+    say('Found an update. Getting it ready, then the game reopens: paste your backup again after that.');
+    await new Promise(r => { if (w.state === 'activated') return r(); w.addEventListener('statechange', () => { if (w.state === 'activated') r(); }); setTimeout(r, 20000); });
+    location.reload();
+  } catch (e) { say('Couldn\'t check right now. Connect to the internet and try again.'); }
 }
 function restoreSheet(){
   sheet(`<h2>📥 Restore from a backup</h2>
     <p class="muted">Paste a backup code, or choose a backup file.</p>
-    <textarea class="code" id="rscode" rows="4" aria-label="Paste a backup code" placeholder="BURG1:…"></textarea>
+    <textarea class="code" id="rscode" rows="4" aria-label="Paste a backup code" placeholder="BURG2:…"></textarea>
     <button class="btn ghost" id="rsfilebtn">📁 Choose a backup file</button><input type="file" id="rsfile" accept=".json,application/json,text/plain" hidden>
     <button class="btn primary" id="rscheck">Check this backup</button>
     <div id="rsout" role="status"></div>
     <button class="btn ghost" id="no">Cancel</button>`);
-  const check = async text => {
-    const out = $('#rsout');
-    try {
-      const b = await readBackup(text);
-      const lives = b.lives.filter(Boolean), free = slots().filter(g => !g).length;
-      out.innerHTML = `<p><b>This backup has ${lives.length} ${lives.length === 1 ? 'life' : 'lives'}</b>${b.exported ? ` (saved ${new Date(b.exported).toLocaleDateString()})` : ''}:</p>
-        <div class="slots">${b.lives.map((g, i) => g ? slotCard(g, i, '') : '').join('')}</div>
-        <button class="btn primary" id="rsadd" ${free ? '' : 'disabled'}>Add to my empty slots (${free} free)</button>
-        <button class="btn ghost" id="rsrep">Replace all my lives with these</button>`;
-      $('#rsadd').onclick = () => finishRestore(b, 'add');
-      $('#rsrep').onclick = () => {
-        out.innerHTML = `<p><b>Replace all your lives?</b> Every life saved on this device now is deleted and replaced by the backup's. This can't be undone.</p>
-          <button class="btn primary" id="rsyes">Replace them</button><button class="btn ghost" id="rsback">Back</button>`;
-        $('#rsyes').onclick = () => finishRestore(b, 'replace');
-        $('#rsback').onclick = () => check(text);
-        $('#rsyes').focus();
-      };
-      $('#rsadd').focus();
-    } catch (e) { out.innerHTML = `<p class="warnline">⚠️ ${esc(e.message)}</p>`; }
-  };
-  $('#rscheck').onclick = () => check($('#rscode').value);
+  $('#rscheck').onclick = () => backupCheck($('#rscode').value, $('#rsout'));
   $('#rsfilebtn').onclick = () => $('#rsfile').click();
-  $('#rsfile').onchange = async e => { const f = e.target.files && e.target.files[0]; if (!f) return; const text = await f.text(); $('#rscode').value = ''; check(text); };
+  $('#rsfile').onchange = async e => { const f = e.target.files && e.target.files[0]; if (!f) return; const text = await f.text(); $('#rscode').value = ''; backupCheck(text, $('#rsout')); };
   $('#no').onclick = closeSheet;
+}
+// reads a pasted or chosen backup into `out`: what's in it, then Add or Replace (shared by restore and the new-phone guide)
+async function backupCheck(text, out){
+  try {
+    const b = await readBackup(text);
+    const lives = b.lives.filter(Boolean), free = slots().filter(g => !g).length;
+    out.innerHTML = `<p><b>This backup has ${lives.length} ${lives.length === 1 ? 'life' : 'lives'}</b>${b.exported ? ` (saved ${new Date(b.exported).toLocaleDateString()})` : ''}:</p>
+      <div class="slots">${b.lives.map((g, i) => g ? slotCard(g, i, '') : '').join('')}</div>
+      <button class="btn primary" id="rsadd" ${free ? '' : 'disabled'}>Add to my empty slots (${free} free)</button>
+      <button class="btn ghost" id="rsrep">Replace all my lives with these</button>`;
+    // i63-b22: an earlier week of a life already here asks first
+    const rewind = go => {
+      const old = olderCopies(b);
+      if (!old.length) return go();
+      out.innerHTML = `<p><b>⏪ ${old.length === 1 ? `This is an older copy of ${esc(old[0][0].name)}'s life` : 'Some of these are older copies of lives on this phone'}.</b></p>
+        ${old.map(([g, x]) => `<div class="kv"><span>${esc(g.name)}</span><span>backup week ${g.turn || 0} · this phone week ${x.turn || 0}</span></div>`).join('')}
+        <p>Restoring it rewinds the life. It still plays, but when it ends it won't set best scores or badges.</p>
+        <button class="btn primary" id="rsrw">Restore it, marked rewound</button><button class="btn ghost" id="rsback">Back</button>`;
+      $('#rsrw').onclick = go;
+      $('#rsback').onclick = () => backupCheck(text, out);
+      $('#rsrw').focus();
+    };
+    $('#rsadd').onclick = () => rewind(() => finishRestore(b, 'add'));
+    $('#rsrep').onclick = () => {
+      out.innerHTML = `<p><b>Replace all your lives?</b> Every life saved on this device now is deleted and replaced by the backup's. This can't be undone.</p>
+        <button class="btn primary" id="rsyes">Replace them</button><button class="btn ghost" id="rsback">Back</button>`;
+      $('#rsyes').onclick = () => rewind(() => finishRestore(b, 'replace'));
+      $('#rsback').onclick = () => backupCheck(text, out);
+      $('#rsyes').focus();
+    };
+    $('#rsadd').focus();
+  } catch (e) {
+    out.innerHTML = `<p class="warnline">⚠️ ${esc(e.message)}</p>${e.newer ? '<button class="btn primary" id="rsupd">🔄 Check for an update</button><p id="rsupdout" class="muted" role="status"></p>' : ''}`;
+    if (e.newer) $('#rsupd').onclick = () => checkUpdate($('#rsupdout'));
+  }
 }
 function finishRestore(b, mode){
   const { skipped, meant, landed } = restoreBackup(b, mode);
@@ -477,6 +638,69 @@ function finishRestore(b, mode){
     : skipped ? `Restored ${lives(landed)}. ${lives(skipped)} didn't fit: free up a slot and restore again.` : `Backup restored: ${lives(landed)}`;
   if (landed < meant) sheet(`<h2>Restore didn't finish</h2><p>${msg}</p><button class="btn primary" id="ok">OK</button>`), $('#ok').onclick = closeSheet;
   toast(msg); announce(msg);
+}
+/* ---------- 📱 moving to a new phone (i63-b15): a two-screen guide around the backup code and file ---------- */
+function movePhoneSheet(){
+  if (S && !S.over && !S.practice) save();
+  const n = slots().filter(Boolean).length;
+  if (!n) { sheet(`<h2>📱 Moving to a new phone</h2><p>There are no saved lives on this phone to move yet.</p><button class="btn primary" id="ok">OK</button>`); $('#ok').onclick = closeSheet; return; }
+  const step1 = () => {
+    sheet(`<h2>📱 Moving to a new phone</h2>
+      <p class="muted"><b>Step 1 of 2 · on this phone</b> (the old one)</p>
+      <p>Send ${n === 1 ? 'your life' : `all ${n} lives`} to yourself: copy the backup code into a text or an email to yourself, or save a backup file where the new phone can open it.</p>
+      <button class="btn primary" id="mvcode">📋 Copy the backup code</button>
+      <div id="mvout"></div>
+      <button class="btn ghost" id="mvfile">⬇️ Download a backup file</button>
+      <button class="btn primary" id="mvnext">Next: on the new phone →</button>
+      <button class="btn ghost" id="close">Close</button>`);
+    $('#mvcode').onclick = async () => {
+      const code = await backupCode(backupData());
+      let copied = false;
+      try { await navigator.clipboard.writeText(code); copied = true; } catch (e) {}
+      $('#mvout').innerHTML = `<p>${copied ? '✅ Copied! Send it to yourself (a text or an email), then paste it on the new phone.' : 'Select all of this code and copy it, then send it to yourself:'}</p>
+        <textarea class="code" id="mvcodetext" readonly aria-label="Backup code" rows="3">${code}</textarea>`;
+      if (!copied) { $('#mvcodetext').focus(); $('#mvcodetext').select(); }
+      announce(copied ? 'Backup code copied' : 'Backup code shown');
+    };
+    $('#mvfile').onclick = () => {
+      const blob = new Blob([JSON.stringify(backupData(), null, 1)], { type: 'application/json' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = `the-burg-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      toast('Backup file downloaded'); announce('Backup file downloaded');
+    };
+    $('#mvnext').onclick = step2;
+    $('#close').onclick = closeSheet;
+  };
+  const step2 = () => {
+    sheet(`<h2>📱 Moving to a new phone</h2>
+      <p class="muted"><b>Step 2 of 2 · on the new phone</b></p>
+      <ol class="steps"><li>Open <b>krazow.github.io/The-Burg</b> on the new phone (or the app, if you installed it there).</li>
+      <li>On the title screen, tap <b>📱 I'm the new phone</b>.</li>
+      <li>Paste the code you sent yourself, or choose the backup file.</li>
+      <li>Check the lives it lists, then tap <b>Add to my empty slots</b>.</li></ol>
+      <p class="muted">Your lives stay on this phone too, until you delete them.</p>
+      <button class="btn ghost" id="back">← Back to step 1</button>
+      <button class="btn primary" id="ok">Done</button>`);
+    $('#back').onclick = step1;
+    $('#ok').onclick = closeSheet;
+  };
+  step1();
+}
+// the new phone's side: paste the old phone's code, or choose its backup file
+function newPhoneSheet(){
+  sheet(`<h2>📱 I'm the new phone</h2>
+    <p class="muted">On the old phone, open the game and tap Menu → <b>📱 Moving to a new phone</b>, and send yourself the backup code or file.</p>
+    <label class="field" for="rscode">Paste the code</label>
+    <textarea class="code" id="rscode" rows="3" placeholder="BURG2:…"></textarea>
+    <button class="btn primary" id="rscheck">Check this code</button>
+    <button class="btn ghost" id="rsfilebtn">📁 Or choose a backup file</button><input type="file" id="rsfile" accept=".json,application/json,text/plain" hidden>
+    <div id="rsout" role="status"></div>
+    <button class="btn ghost" id="no">Cancel</button>`);
+  $('#rscheck').onclick = () => backupCheck($('#rscode').value, $('#rsout'));
+  $('#rsfilebtn').onclick = () => $('#rsfile').click();
+  $('#rsfile').onchange = async e => { const f = e.target.files && e.target.files[0]; if (!f) return; const text = await f.text(); $('#rscode').value = ''; backupCheck(text, $('#rsout')); };
+  $('#no').onclick = closeSheet;
 }
 
 function loadSheet(){
@@ -496,6 +720,9 @@ function newGame(name, len, slot = 0, opts = {}){
   S = blankLife(name, len, slot);                 // road and work events (health plan, ski pass, job-hunt help and more) included
   S.bg = BACKGROUNDS[opts.bg] ? opts.bg : 'fresh'; S.mode = MODES[opts.mode] ? opts.mode : 'normal'; S.aim = AIMS[opts.aim] ? opts.aim : 'all';
   if (BACKGROUNDS[S.bg].set) BACKGROUNDS[S.bg].set(S);
+  // i19-b01/b28: custom rules, except in weekly challenges, scenarios and practice, where everyone plays Normal rules
+  S.rules = opts.weekly || SCENARIOS[opts.scenario] || opts.practice ? {} : cleanRules(opts.rules); S.tier0 = recordTier(S.rules);
+  if (rule('startSet') != null) S.money = rule('startSet'); S.money += rule('startAdd');
   S.weekly = opts.weekly || null; S.rng = opts.weekly ? weekSeed(opts.weekly) : null; S.rngEv = opts.weekly ? weekSeed(`${opts.weekly}:events`) : null; useDice();
   if (len === 'half') { S.happy -= HALF_START_DIP; S.health -= HALF_START_DIP; }   // B2: 26 weeks is short, so a 6-month life starts a little worn
   if (SCENARIOS[opts.scenario]) { S.scenario = opts.scenario; if (SCENARIOS[S.scenario].set) SCENARIOS[S.scenario].set(S); }
@@ -508,7 +735,55 @@ function newGame(name, len, slot = 0, opts = {}){
   log(S.bg === 'fresh' ? `${name} turns 18 and rents a room above Main Street in Waitsburg. Time to find a job.`
     : `${name} starts a new life in Waitsburg: ${BACKGROUNDS[S.bg].name.toLowerCase()}. ${BACKGROUNDS[S.bg].desc}`);
   tab = S.jobId ? 'home' : 'jobs'; save(); render();
+  if (!opts.practice) playedFlag(true);            // i63-b05
   if (!opts.practice) toast('Welcome to the Burg! Start by finding a job.');
+}
+
+/* ---------- 🎛️ Change the rules (i19-b02..b05, b19) ---------- */
+// the rules sheet from the start screen: grouped knobs, each with its Normal value, a plain preview and a live record badge;
+// every change goes straight back through done(), so closing the sheet any way keeps it
+function rulesSheet(start, ctx, done){
+  let r = cleanRules(start);
+  const ids = Object.keys(RULES);
+  const row = id => `<div class="rulerow" role="group" aria-labelledby="rl-${id}"><div class="t" id="rl-${id}"></div>
+    <div class="maptog wrap">${Object.entries(RULES[id].opts).map(([k, o]) => `<button data-rule="${id}" data-opt="${k}">${o.name}</button>`).join('')}</div>
+    <div class="muted rp" id="rp-${id}"></div></div>`;
+  sheet(`<h2>🎛️ Change the rules</h2>
+    <p class="muted">Like Normal, but with a few knobs turned. Each one shows the Normal value, so you can always put it back. Standard is how the game is meant to be played.</p>
+    <div class="card tip" id="tierbadge" role="status" aria-live="polite"></div>
+    ${RULE_GROUPS.map(g => `<h3 style="margin-top:12px">${g}</h3>${ids.filter(id => RULES[id].grp === g).map(row).join('')}`).join('')}
+    <button class="btn primary" id="rdone">Done</button>
+    <button class="btn ghost" id="rnormal">Back to Normal</button>`);
+  const upd = () => {
+    for (const id of ids) {
+      const cur = ruleOpt(id, r);
+      $(`#rl-${id}`).textContent = ruleLabel(id, cur, ctx); $(`#rp-${id}`).textContent = rulePreview(id, cur, ctx);
+      document.querySelectorAll(`[data-rule="${id}"]`).forEach(b => { const on = b.dataset.opt === cur; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+    }
+    const t = recordTier(r); $('#tierbadge').innerHTML = `<span>${TIERS[t].ic} <b>This life counts toward ${TIERS[t].shelf}.</b> ${TIERS[t].desc}</span>`;
+    done(cleanRules(r));
+  };
+  document.querySelectorAll('[data-rule]').forEach(b => b.onclick = () => { r = { ...r, [b.dataset.rule]: b.dataset.opt }; upd(); });
+  $('#rnormal').onclick = () => { r = {}; upd(); announce('All rules back to Normal.'); };
+  $('#rdone').onclick = closeSheet;
+  upd();
+}
+// i19-b19: a read-only card on the Life tab for lives with changed rules; assists can be switched off, never on
+function rulesCard(){
+  const ch = Object.keys(cleanRules(S.rules)); if (!ch.length && lifeTier() === 'standard') return '';
+  const t = lifeTier(), ctx = { bg: S.bg, mode: mode() };
+  return `<div class="card" id="rulescard"><h3>🎛️ Rules for this life</h3>
+    <p class="muted">${TIERS[t].ic} Counts toward ${TIERS[t].shelf}. Rules are set when a life starts. Assists can be turned off, but not back on.</p>
+    ${ch.map(id => `<div class="kv"><span>${esc(ruleLabel(id, ruleOpt(id), ctx))}</span>${RULES[id].assist ? `<button class="sm" style="flex:none;white-space:nowrap" data-assistoff="${id}" aria-label="Turn off ${esc(RULES[id].name)}">Turn off</button>` : ''}</div>`).join('')}
+    <p class="muted">Everything else: Normal.</p></div>`;
+}
+function assistOffSheet(id){
+  const after = cleanRules({ ...S.rules, [id]: RULES[id].def }), t = tierMax(S.tier0 || 'standard', recordTier(after));
+  sheet(`<h2>Turn off "${esc(RULES[id].name)}"?</h2><p>You can't turn it back on in this life.</p>
+    <p>${TIERS[t].ic} This life ${t === lifeTier() ? 'stays on' : 'moves to'} <b>${TIERS[t].shelf}</b>.</p>
+    <button class="btn primary" id="y">Turn it off</button><button class="btn ghost" id="n">Keep it on</button>`);
+  $('#y').onclick = () => { S.rules = after; save(); closeSheet(); render(); toast(`🎛️ ${RULES[id].name}: off for the rest of this life`); };
+  $('#n').onclick = closeSheet;
 }
 
 /* ---------- main render ---------- */
@@ -527,7 +802,7 @@ function render(){
     <div class="progress"><i style="width:${pct}%"></i></div>
   </header>
   <main id="main"></main>
-  ${tab==='home' ? `${S.run ? `<button class="weekstrip" id="strip" aria-label="What the last ${S.run.weeks > 1 ? S.run.weeks + ' weeks' : 'week'} did: details"><span class="wl">${S.run.weeks > 1 ? `Last ${S.run.weeks} wks` : 'Last week'}</span><span class="wc">${runChips()}</span><span class="more">›</span></button>` : ''}
+  ${tab==='home' ? `${S.run ? `<button class="weekstrip" id="strip" aria-label="${esc(runWords())}. Details"><span class="wl">${S.run.weeks > 1 ? `Last ${S.run.weeks} wks` : 'Last week'}</span><span class="wc">${runChips()}</span><span class="more">›</span></button>` : ''}
     <div class="endbar${ROLL ? ' rolling' : ''}">${ROLL ? `<button class="btn primary" id="stoproll">⏹ Stop<small>${S.run.weeks} of up to ${ROLL.n} weeks</small></button>`
       : `<button class="btn primary" id="end" aria-keyshortcuts="Shift+Enter" aria-description="Press and hold, or Shift+Enter, for more ways to skip ahead">End Week →<small>${FOCUS[S.focus].ic} ${FOCUS_SHORT[S.focus]}</small></button>
     <button class="btn ghost${nar}" id="ff4" aria-label="Skip 4 weeks">⏩ 4</button>${big ? `<button class="btn ghost${nar}" id="ff13" aria-label="Skip 13 weeks">⏩ 13</button>` : ''}<button class="btn ghost" id="auto" aria-label="Auto: play until ${autoUntil() === 'event' ? 'something needs you' : AUTO_UNTIL[autoUntil()].short + ' or something needs you'}. Press and hold for options">⏭ Auto</button>`}</div>` : ''}
@@ -590,14 +865,17 @@ function skipSheet(){
   document.querySelectorAll('#sheet [data-speed]').forEach(b => b.onclick = () => { setPref('speed', b.dataset.speed); keep('speed'); });
 }
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const statColor = v => v >= 60 ? 'var(--sage)' : v >= 35 ? 'var(--wheat-d)' : 'var(--barn)';
-const statBar = (label, v) => `<div class="stat"><label><span>${label}</span><span>${Math.round(v)}</span></label>
-  <div class="bar"><i style="width:${v}%;background:${statColor(v)}"></i></div></div>`;
+// i74-b15: bar colours that keep 3:1 against the track in both themes
+const statColor = v => v >= 60 ? 'var(--bar-good)' : v >= 35 ? 'var(--bar-ok)' : 'var(--bar-low)';
+// i7-a03: every stat also says a word, and its bar has notches where the word changes
+const statWord = v => v >= 80 ? 'Great' : v >= 60 ? 'Good' : v >= 35 ? 'OK' : 'Low';
+const statBar = (label, v) => `<div class="stat"><label><span>${label}</span><span>${Math.round(v)} · ${statWord(v)}</span></label>
+  <div class="bar notched"><i style="width:${v}%;background:${statColor(v)}"></i></div></div>`;
 
 const FOCUS_SHORT = { work:'Work extra', rest:'Rest', community:'Town', study:'Classes', outdoors:'Outside', hustle:'Hustle' };
-const statBtn = (k, label, v) => `<button class="stat statbtn" data-stat="${k}" aria-label="${label} ${Math.round(v)}: what moves it">
-  <label><span>${label} <span class="info">ⓘ</span></span><span>${Math.round(v)}</span></label>
-  <div class="bar"><i style="width:${v}%;background:${statColor(v)}"></i></div></button>`;
+const statBtn = (k, label, v, cap = 100) => `<button class="stat statbtn" data-stat="${k}" aria-label="${label} ${Math.round(v)}, ${statWord(v)}${cap < 100 ? `, tops out at ${Math.round(cap)}` : ''}: what moves it">
+  <label><span>${label} <span class="info">ⓘ</span></span><span>${Math.round(v)}${cap < 100 ? `<small class="muted"> / ${Math.round(cap)}</small>` : ''} · ${statWord(v)}</span></label>
+  <div class="bar notched"><i style="width:${v}%;background:${statColor(v)}"></i></div></button>`;
 // i2-a16: a first-month checklist for new players; finished steps are remembered on this device (prefs().cl), no rewards
 const CHECKLIST = [
   { id:'job', ic:'💼', t:'Get a job', done:() => !!S.jobId || S.retired, go:'jobs', b:'Jobs' },
@@ -639,9 +917,26 @@ function overtimeTip(){
 }
 // what the selected focus does this week (Take classes names the certificate or diploma it works toward)
 function focusDesc(f){
-  if (f.study && S.certStudy) { const c = CERTS[S.certStudy.id]; return `work toward your ${c.name} certificate (${Math.floor(S.certStudy.prog)}/${c.weeks} weeks, already paid for).`; }
+  if (f.study && S.certStudy) { const c = CERTS[S.certStudy.id]; return `work toward your ${c.name} certificate (${Math.floor(S.certStudy.prog)}/${c.weeks} weeks, ${certOwed() ? `paid as you go, ${fmt(certOwed())} left` : 'already paid for'}).`; }
   if (f.study && S.edu < 3) return `work toward a ${EDU[S.edu+1].toLowerCase()}${S.program ? ` in ${PROGRAMS[S.program].name.toLowerCase()}` : ''} (${studyDone()}/${STUDY_NEED[S.edu]} weeks). ${tuitionWords()}.`;
   return f.desc + (f.cost ? ` ${wk(cost(f.cost))}.` : '');
+}
+// i72-b02/b03: no job yet: how long your cash lasts at your bills, and a Side hustle to bridge the gap
+function noPayCard(){
+  const wkB = weekBills(), n = cashWeeks(), low = S.money < wkB * 2, g = currentGig(), pay = Math.round(hustlePay(g, 0.5));
+  const debt = fmt(1000 * (mode() === 'relaxed' ? 0.01 : 0.015) * W);
+  const line = S.money <= 0 ? `<p class="cashline low">💸 You're out of cash: bills of about ${fmt(wkB)} a week go on debt, at about ${debt} interest a week for each ${fmt(1000)}.</p>`
+    : `<p class="cashline${low ? ' low' : ''}">💵 Your cash lasts about <b>${n} week${n === 1 ? '' : 's'}</b> at your bills (${fmt(wkB)} a week: rent, food, insurance, gas).${low ? ` After that it's debt, at about ${debt} interest a week for each ${fmt(1000)}.` : ''}</p>`;
+  const hustle = S.focus === 'hustle' ? `<p class="muted" style="margin:4px 0 0">🔧 Your focus is already Side hustle: ${g.name}, about ${fmt(pay)} a week.</p>`
+    : `<button class="sm alt" data-sugg="hustle">🔧 Side hustle meanwhile (about ${fmt(pay)} a week)</button>`;
+  // i72-b01: the first Home tip, before there's a job (the "pick a focus" tip assumes one)
+  const tip = `<p class="cashline">👉 One job application a week${S.applied ? ', and this week\'s is sent' : ''}. While you wait, pick a focus below and tap End Week.</p>`;
+  return `<div class="card warn nopay">💼 No paycheck coming in. ${line}${tip}<div class="slotbtns"><button class="sm" data-go="jobs">Find a job</button>${hustle}</div></div>`;
+}
+// i52-a03: the first time Work extra is picked, say it's overtime on top of a job (shown until that week is played)
+function otNote(){
+  if (S.seenOT || S.focus !== 'work' || S.practice || !job() || S.retired) return '';
+  return `<p class="otnote" role="note">⏱️ <b>Work extra is overtime</b>, on top of your regular job: your job already pays every week without it. Overtime adds ${Math.round((FOCUS.work.payMult - 1) * 100)}% pay but wears down happiness and health, so use it now and then.</p>`;
 }
 function renderHome(){
   const j = job(), f = FOCUS[S.focus];
@@ -651,16 +946,18 @@ function renderHome(){
     : `<div class="card warn">${why} <button class="sm" data-sugg="${fk}">${FOCUS[fk].ic} ${FOCUS[fk].name} this week</button></div>`;
   $('#main').innerHTML = `<div class="homegrid"><div class="hmain">
   <div class="card"><div class="stats">
-    ${statBtn('happy','Happiness', S.happy)}${statBtn('health','Health', S.health)}
+    ${statBtn('happy','Happiness', S.happy)}${statBtn('health','Health', S.health, maxHealth())}
     ${statBtn('community','Community', S.community)}
-    <button class="stat statbtn" data-stat="net" aria-label="Net worth: what counts"><label><span>Net worth <span class="info">ⓘ</span></span></label><div style="font-weight:800;font-size:1.125rem;margin-top:2px">${fmt(netWorth())}</div></button>
+    <button class="stat statbtn" data-stat="net" aria-label="Net worth ${fmt(netWorth())}: what counts"><label><span>Net worth <span class="info">ⓘ</span></span></label><div style="font-weight:800;font-size:1.125rem;margin-top:2px">${fmt(netWorth())}</div></button>
   </div>${scoreButton()}</div>
   ${unlockCard()}${cl}${hint ? `<div class="card next"><div>👉 <b>Next step:</b> ${hint.t}</div><button class="sm" data-next="${hint.go}">${hint.b}</button></div>` : ''}
   ${installReady() ? `<div class="card tip installcard"><div>📲 <b>Enjoying the Burg?</b> Install it: it opens from your home screen like an app and plays offline.</div><div class="slotbtns"><button class="sm" id="install">Install</button><button class="sm alt" id="installno">Not now</button></div></div>` : ''}
-  ${!j && !S.retired ? `<div class="card warn">💼 No paycheck coming in. <button class="sm" data-go="jobs">Find a job</button></div>` : ''}
+  ${privateCard()}
+  ${!j && !S.retired ? noPayCard() : ''}
   ${S.happy < 30 ? sugg('happy', 'outdoors', `😟 Happiness is low (${Math.round(S.happy)}).`) : ''}
   ${S.health < 30 ? sugg('health', 'rest', `🤒 Health is low (${Math.round(S.health)}).`) : ''}
   ${overtimeTip() ? `<div class="card warn">${overtimeTip()}</div>` : ''}
+  ${S.money < 0 && !inCollections() ? firstTime('collect') : ''}
   ${S.money < debtWarnAt() ? `<div class="card warn" id="debtwarn">⚠️ Your debt is getting dangerous.${debtLimit() == null ? ` In Relaxed it never ends your life (a debt counselor stops it at ${fmt(RELAXED_FLOOR)}), but the interest keeps eating your cash.` : ` Below ${fmt(debtLimit())} you'll have to leave town${canBankrupt() ? ' or file for bankruptcy' : ''}.`}</div>` : onPlan() ? `<div class="card">📞 <b>On a payment plan.</b> Your debt is still in collections (worse odds on job applications and loans until you're back above $0), but the calls stop while your cash keeps going up.</div>` : inCollections() ? `<div class="card warn">📞 Your debt is in collections: daily calls (−happiness) and worse odds on job applications and loans until you're back above $0. Raise your cash ${PLAN_WEEKS} weeks in a row to get on a payment plan.</div>` : ''}
   <div class="card"><div class="focushead"><h3>This week's focus</h3>${isOpen('plan') ? `<button class="sm alt" id="planbtn" aria-pressed="${!!(S.plan && S.plan.length)}" aria-label="Focus plan: ${S.plan && S.plan.length ? 'on' : 'off'}${newTag('plan') ? ', new' : ''}">🗓 Plan${S.plan && S.plan.length ? ' ✓' : ''}${newTag('plan')}</button>` : ''}</div>${scenarioLine()}${seasonLine()}${mapToggle()}
     ${prefs().mapView ? mapBlock('T') : `<div class="fgrid">${Object.entries(FOCUS).map(([k,x]) => {
@@ -669,7 +966,7 @@ function renderHome(){
       const eff = dis ? 1 : focusEffect(k, S.streakF === k ? S.streakN + 1 : 1);   // i2-a02: a fading focus says how strong it still is
       return `<button class="fbtn ${S.focus===k?'on':''}" data-f="${k}" ${dis?'disabled':''} aria-pressed="${S.focus===k}"${eff < 1 ? ` aria-label="${FOCUS_SHORT[k]}, works at ${Math.round(eff * 100)}%"` : ''}><span class="ic">${x.ic}</span><b>${FOCUS_SHORT[k]}</b>${eff < 1 ? `<small class="fade">${Math.round(eff * 100)}%</small>` : ''}${newTag(UNLOCK_FOCUS[k])}</button>`;
     }).join('')}</div>
-    <div class="fdesc"><b>${f.ic} ${f.name}:</b> ${focusDesc(f)}${previewLine(S.focus)}</div>`}
+    <div class="fdesc"><b>${f.ic} ${f.name}:</b> ${focusDesc(f)}${previewLine(S.focus)}</div>${otNote()}`}
     ${prefs().mapView ? previewLine(S.focus) : ''}
     ${planLine()}
     ${isOpen('out') ? outButton() : ''}
@@ -697,6 +994,7 @@ function renderHome(){
   document.querySelectorAll('[data-cl], [data-next]').forEach(b => b.onclick = () => goTo(b.dataset.cl || b.dataset.next));
   if ($('#clhide')) $('#clhide').onclick = () => { setPref('clHide', true); renderHome(); announce('Checklist hidden. It\'s in the Help guide under Finding your way.'); };
   if ($('#install')) $('#install').onclick = installNow;
+  if ($('#privok')) { $('#privok').onclick = () => { PRIVATE_HOME_SEEN = true; renderHome(); }; $('#privbk').onclick = () => { PRIVATE_HOME_SEEN = true; backupSheet(); }; }
   if ($('#installno')) $('#installno').onclick = () => { setPref('installNo', Date.now()); renderHome(); announce('OK. Help has the install steps any time.'); };
 }
 /* ---------- 🔓 open as you go (i31): New tags, the unlock card and the 'coming soon' teaser ---------- */
@@ -830,6 +1128,7 @@ function showStatInfo(k){
     sheet(`<h2>${x.t}: ${Math.round(S[k])}</h2>
       <h3>Goes up with</h3>${x.up.map(u => `<div class="logitem">▲ ${u}</div>`).join('')}
       <h3 style="margin-top:10px">Goes down with</h3>${x.down.map(u => `<div class="logitem">▼ ${u}</div>`).join('')}
+      ${k === 'health' ? `<p><b>${maxHealth() < 100 ? `At ${age()}, health tops out at ${Math.round(maxHealth())}.` : 'Health can reach 100 until 55; after that it tops out a little lower each year.'}</b></p>` : ''}
       <p class="muted">${x.note}</p><button class="btn primary" id="ok">Got it</button>`);
   }
   $('#ok').onclick = closeSheet;
@@ -838,6 +1137,13 @@ function showStatInfo(k){
 // weekly take-home: pay after ~15% taxes, minus commuting gas in your current vehicle
 const takeHome = x => payNow(x, S.jobId === x.id) * W * (1 - taxRate(payNow(x, S.jobId === x.id))) -   // i75-b03: taxed by bracket
   commuteCost(CITIES[x.city].miles, CARS[S.car], x) * W;
+// i52-a01: in a first life, before the first hire, tag the two best jobs within 25 miles (take-home less a happiness cost for the drive)
+let GOOD_JOBS = [];
+function goodFirstJobs(){
+  if (!S || S.practice || S.jobId || S.retired || prefs().hired || hasRecords()) return [];
+  return JOBS.filter(x => CITIES[x.city].miles <= 25 && x.edu <= S.edu && !extraLock(x) && jobInSeason(x))
+    .map(x => [x.id, takeHome(x) - CITIES[x.city].miles * 10 - (x.stress + x.wear) * 40]).sort((a, b) => b[1] - a[1]).slice(0, 2).map(a => a[0]);
+}
 function jobRow(x){
   const c = CITIES[x.city], cur = S.jobId === x.id && !S.retired, th = takeHome(x);
   const base = job() && !S.retired ? takeHome(job()) : 0, diff = th - base;
@@ -847,7 +1153,7 @@ function jobRow(x){
     : back ? `<button class="sm" data-recall="${x.id}">Go back</button>`
     : !jobInSeason(x) ? `<button class="sm" disabled aria-label="Hires again in ${MONTHS[x.season[0]]}">Hires ${MONTHS[x.season[0]].slice(0,3)}</button>`
     : `<button class="sm" data-apply="${x.id}" ${S.applied?'disabled':''}>Apply</button>`;
-  const tags = [x.remote === 5 ? '🏠 fully remote' : x.remote ? `🏠 ${x.remote} remote days` : '', x.season ? `🗓️ ${seasonWords(x)}` : '', x.union ? '🪪 union' : '',
+  const tags = [GOOD_JOBS.includes(x.id) ? '<b class="goodjob">⭐ Good first job</b>' : '', x.remote === 5 ? '🏠 fully remote' : x.remote ? `🏠 ${x.remote} remote days` : '', x.season ? `🗓️ ${seasonWords(x)}` : '', x.union ? '🪪 union' : '',
     x.apprentice && !cur ? `🧰 apprentice, ${x.apprentice.weeks / 52} yrs to full pay` : '', CLEARANCE.includes(x.id) && !cur ? '🔐 clearance' : '', majorFits(x) ? '🎓 your major' : ''].filter(Boolean);
   return `<div class="kv job${lock ? ' lockedrow' : ''}" data-job="${x.id}"><div><div class="t">${cur ? esc(jobTitle(x)) : x.title}</div>
     <div class="s">${x.where ? esc(x.where) + ', ' : ''}${c.name}${c.miles ? ` · ${c.miles} mi` : ' · no commute'} · pay ${wk(payNow(x, cur))}${c.miles ? `, gas ${wk(commuteCost(c.miles, CARS[S.car], x))}` : ''}${tags.length ? ` · ${tags.join(' · ')}` : ''}</div></div>
@@ -890,7 +1196,7 @@ function myJobCard(){
   const L = ladderOf(j), rung = Math.min(S.rung || 0, 2), next = L[rung + 1];
   const steps = L.map((x, i) => `<li${i === rung ? ' aria-current="step"' : ''}>${i < rung ? '✅' : i === rung ? '➡️' : '⬜'} ${i === rung ? `<b>${esc(x.title)}</b>` : esc(x.title)}${i ? ` <small class="muted">+${Math.round((x.payMult - 1) * 100)}% pay</small>` : ''}</li>`).join('');
   const a = j.apprentice, app = apprenticing(j) ? `<div class="kv"><span>🧰 Apprenticeship: year ${Math.floor((S.appWeeks || 0) / 52) + 1} of ${a.weeks / 52}</span><span>${Math.round(appMult(j, true) * 100)}% pay</span></div>
-    <div class="bar" role="progressbar" aria-label="Apprenticeship progress" aria-valuenow="${S.appWeeks || 0}" aria-valuemin="0" aria-valuemax="${a.weeks}"><i style="width:${(S.appWeeks || 0) / a.weeks * 100}%;background:var(--sky)"></i></div>` : '';
+    <div class="bar" role="progressbar" aria-label="Apprenticeship progress" aria-valuenow="${S.appWeeks || 0}" aria-valuemin="0" aria-valuemax="${a.weeks}"><i style="width:${(S.appWeeks || 0) / a.weeks * 100}%;background:var(--bar-sky)"></i></div>` : '';
   const facts = [clearing() ? `🔐 Clearance pending: ${S.clearAt - S.turn} more weeks at ${Math.round(CLEAR_PAY * 100)}% pay. Heavy debt (below ${fmtc(-5000)}) can sink the check.` : '',
     j.union ? `🪪 Union job: dues ${wk(payNow(j) * UNION_DUES)}, a 1.5% step raise each January, half the layoff risk.${S.strike ? ` On strike for ${S.strike.until - S.turn} more weeks (40% strike pay).` : ''}` : '',
     S.furlough && S.turn < S.furlough.until ? `🏛️ Furloughed for ${S.furlough.until - S.turn} more weeks. Back pay so far: ${fmt(S.furlough.owed)}.` : '',
@@ -900,14 +1206,14 @@ function myJobCard(){
     S.notice != null ? `👋 You gave notice: your last day is in ${Math.max(0, S.notice - S.turn)} week${S.notice - S.turn === 1 ? '' : 's'}.` : ''].filter(Boolean);
   const bus = busOK(j) ? `<p class="muted" style="margin:6px 0">🚌 ${S.bus ? 'You ride the county bus' : 'County bus'} to ${CITIES[j.city].name}: ${wk(cost(BUS_PASS))} pass, 90% less commute gas and half the truck wear, but longer days (▼ a little happiness).</p>
     <button class="sm${S.bus ? ' alt' : ''}" id="bus" aria-pressed="${!!S.bus}">${S.bus ? '🚙 Drive instead' : '🚌 Ride the bus'}</button>` : '';
-  return `<div class="card"><h3>💼 ${esc(jobTitle(j))}</h3>${wait}
+  return `${j.union ? firstTime('union') : ''}${firstTime('ladder')}<div class="card"><h3>💼 ${esc(jobTitle(j))}</h3>${wait}
     <p class="muted" style="margin:0 0 4px">${esc(j.where ? j.where + ', ' : '')}${CITIES[j.city].name} · ${wk(payNow(j))} · ${Math.floor(S.tenure || 0)} months on the job</p>
     <ol class="ladder" aria-label="Job ladder">${steps}</ol>
     ${next ? `<p class="muted" style="margin:4px 0">Next step up: ${esc(next.title)}. ${rungNeeds(next) ? `Needs ${rungNeeds(next)}.` : 'You qualify: watch for a promotion offer.'}</p>` : '<p class="muted" style="margin:4px 0">You\'re at the top of this ladder.</p>'}
     ${app}${facts.map(t => `<p class="muted" style="margin:4px 0">${t}</p>`).join('')}${bus}${rec}${refLine}</div>`;
 }
 function renderJobs(){
-  syncCarpool();
+  syncCarpool(); GOOD_JOBS = goodFirstJobs();
   const j = job();
   const cur = S.jobId && !S.retired ? S.jobId : null;
   const list = JOBS.filter(x => (jobCity === 'all' || x.city === jobCity) && (!jobOK || (x.edu <= S.edu && !extraLock(x))))
@@ -920,7 +1226,7 @@ function renderJobs(){
   ${jobCity!=='all' ? `<div class="card muted">${CITIES[jobCity].blurb}</div>` : ''}
   <div class="card">
     <h3>Job board <span class="tag">${S.applied ? 'Applied this week' : '1 application per week'}</span></h3>
-    <p class="muted" style="margin:0 0 4px;font-size:0.8125rem">${term('takehome')} is pay after taxes and gas${job() && !S.retired ? ', with ▲▼ against your current job' : ''}.</p>
+    <p class="muted" style="margin:0 0 4px;font-size:0.8125rem">${term('takehome')} is pay after taxes and gas${job() && !S.retired ? ', with ▲▼ against your current job' : ''}.${GOOD_JOBS.length ? ' ⭐ Good first jobs are close to home: the top of the list can mean an hour on the road each way, and long drives wear down happiness.' : ''}</p>
     ${list.map(jobRow).join('') || '<p class="muted">No jobs match.</p>'}
   </div>`}
   ${j && !S.retired && commuteOneWay() >= 20 && !onBus() ? `${firstTime('carpool')}<div class="card"><h3>🚙 Carpool</h3>
@@ -945,7 +1251,7 @@ function renderJobs(){
       <h3>What will change</h3><ul class="changes">${changes.map(l => `<li>${l}</li>`).join('')}</ul>
       <button class="btn primary" id="notice">Give two weeks' notice${ok ? ' (a good reference)' : ''}</button>
       ${!ok ? '<p class="muted">You\'ve been here under 6 months, so there isn\'t much of a reference to give either way.</p>' : ''}
-      <button class="btn ghost" id="y">Walk out today (a bad reference for a year)</button><button class="btn ghost" id="n">Never mind</button>`);
+      <button class="btn ghost" id="y">Walk out today (a bad reference for a year)</button><button class="btn ghost" id="n" data-safe>Never mind</button>`);
     $('#notice').onclick = () => { S.notice = S.turn + 2; log(`Gave two weeks' notice at the ${job().title.toLowerCase()} job.`); closeSheet(); save(); render(); toast('Two weeks to go'); };
     $('#y').onclick = () => { log(`Quit the job as ${job().title}.`); leaveJob('walk'); adj({happy:3}); closeSheet(); save(); render(); };
     $('#n').onclick = closeSheet;
@@ -978,7 +1284,7 @@ function eduCard(){
   return `<div class="card" id="educard"><h3>📚 Education</h3>
     <div class="kv"><span>Highest</span><span><b>${EDU[S.edu]}</b>${S.major ? ` <small>(${PROGRAMS[S.major].ic} ${PROGRAMS[S.major].name})</small>` : ''}</span></div>
     ${S.edu < 3 ? `<div class="kv"><span>Next: ${EDU[S.edu+1]}${pr ? ` in ${pr.name.toLowerCase()}` : ''}</span><span>${studyDone()}/${STUDY_NEED[S.edu]} weeks</span></div>
-    <div class="bar"><i style="width:${S.studyProg/STUDY_NEED[S.edu]*100}%;background:var(--sky)"></i></div>
+    <div class="bar"><i style="width:${S.studyProg/STUDY_NEED[S.edu]*100}%;background:var(--bar-sky)"></i></div>
     <p class="muted">Pick "Take classes" as your focus to study through ${SCHOOL[S.edu]} (${tuitionWords()}).${cs ? ' Your certificate course comes first.' : ''}</p>
     <p style="margin:6px 0 2px"><b>Program</b> <small class="muted">Same weeks and tuition. Your diploma counts as a major in it: +${Math.round(MAJOR_PAY * 100)}% pay and better odds at matching jobs.</small></p>
     <div class="chips" role="group" aria-label="Program">${[['', '📘 General studies'], ...Object.entries(PROGRAMS).map(([k, x]) => [k, `${x.ic} ${x.name}`])].map(([k, l]) =>
@@ -988,7 +1294,7 @@ function eduCard(){
     <h3 style="margin-top:12px">📜 Short certificates</h3>
     <p class="muted" style="margin:0 0 4px">A few weeks of Take classes and a one-time fee open one door, without the whole school ladder.</p>
     ${cs ? `<div class="kv"><span>${cs.ic} ${cs.name}</span><span>${Math.floor(S.certStudy.prog)}/${cs.weeks} weeks</span></div>
-      <div class="bar"><i style="width:${S.certStudy.prog / cs.weeks * 100}%;background:var(--sky)"></i></div>` : ''}
+      <div class="bar"><i style="width:${S.certStudy.prog / cs.weeks * 100}%;background:var(--bar-sky)"></i></div>` : ''}
     ${Object.entries(CERTS).map(([k, c]) => `<div class="kv job"><div><div class="t">${c.ic} ${c.name}</div><div class="s">${c.weeks} weeks · ${fmtc(c.fee)} · ${c.what}</div></div>
       ${(S.certs || {})[k] ? '<span class="tag cur">Earned</span>' : S.certStudy && S.certStudy.id === k ? '<span class="tag">In progress</span>'
         : `<button class="sm" data-cert="${k}" ${S.certStudy ? 'disabled' : ''}>Sign up</button>`}</div>`).join('')}
@@ -997,8 +1303,8 @@ function eduCard(){
 function renderLife(){
   const h = HOMES[S.home], u = undoTop();
   $('#main').innerHTML = `${u ? `<div class="card undo" role="status"><span>↩ ${esc(u.label)}</span><button class="sm" id="undo" aria-label="Undo: ${esc(u.label)}">Undo</button></div>` : ''}${S.practice || !isOpen('goals') ? '' : goalsCard()}${S.practice ? '' : aimCard()}${S.practice || !isOpen('skills') ? '' : skillsCard()}${S.practice || !(isOpen('biz') || S.biz) ? '' : bizCard()}${S.practice ? '' : townLifeCard()}${healthCard()}
-${S.edu < 3 ? firstTime('school') : ''}${eduCard()}
-  <div class="card"><h3>🏡 Home in Waitsburg</h3>
+${S.edu < 3 ? firstTime('school') : ''}${S.edu < 3 ? firstTime('program') : ''}${eduCard()}
+  ${h.own ? firstTime('ptax') : ''}<div class="card"><h3>🏡 Home in Waitsburg</h3>
     ${Object.entries(HOMES).map(([k,x]) => {
       const cur = S.home === k;
       let btn = cur ? '<span class="tag cur">Home</span>' : `<button class="sm ${x.own?'':'alt'}" data-home="${k}">${x.own ? `Buy (${fmt(homeDown(k))} down)` : 'Move'}</button>`;
@@ -1041,17 +1347,23 @@ ${S.edu < 3 ? firstTime('school') : ''}${eduCard()}
     <div class="kv"><span>Prices since 2027</span><span>${S.col > 1.005 ? `+${Math.round((S.col-1)*100)}%` : 'Same'}</span></div>
     <div class="kv"><span>Town council</span><span>${S.council ? 'Council member' : '—'}</span></div>
   </div>`;
+  if (!S.practice) { $('#main').insertAdjacentHTML('beforeend', rulesCard()); document.querySelectorAll('[data-assistoff]').forEach(b => b.onclick = () => assistOffSheet(b.dataset.assistoff)); }   // i19-b19
   if ($('#goals')) $('#goals').onclick = goalsSheet;
   wireAimCard();
   if ($('#undo')) $('#undo').onclick = lifeUndo;
   document.querySelectorAll('[data-biz]').forEach(b => b.onclick = () => startBiz(b.dataset.biz));
   if ($('#renew')) $('#renew').onclick = () => { const err = renewLease(); if (err) return toast(err); save(); render(); toast('🌾 Lease renewed for 5 years'); };
-  if ($('#bizsell')) $('#bizsell').onclick = () => { sheet(`<h2>Sell your business?</h2><p>You'd get about ${fmt(bizValue())}.</p><button class="btn primary" id="y">Sell</button><button class="btn ghost" id="n">Keep it</button>`); $('#y').onclick = () => { closeSheet(); sellBiz(); }; $('#n').onclick = closeSheet; };
+  if ($('#bizsell')) $('#bizsell').onclick = () => { sheet(`<h2>Sell your business?</h2><p>You'd get about ${fmt(bizValue())}.</p><button class="btn primary" id="y">Sell</button><button class="btn ghost" id="n" data-safe>Keep it</button>`); $('#y').onclick = () => { closeSheet(); sellBiz(); }; $('#n').onclick = closeSheet; };
   document.querySelectorAll('[data-prog]').forEach(b => b.onclick = () => { S.program = b.dataset.prog || null; save(); render(); toast(S.program ? `${PROGRAMS[S.program].ic} Studying ${PROGRAMS[S.program].name.toLowerCase()}` : 'General studies'); });
-  document.querySelectorAll('[data-cert]').forEach(b => b.onclick = () => { const c = CERTS[b.dataset.cert];
-    sheet(`<h2>${c.ic} ${c.name}</h2><p>${c.what}</p><p>${c.weeks} weeks of 📚 Take classes, and ${fmtc(c.fee)} up front. Your diploma classes wait until it's done.</p>
-      <button class="btn primary" id="yes">Sign up (${fmtc(c.fee)})</button><button class="btn ghost" id="no">Not now</button>`);
-    $('#yes').onclick = () => { startCert(b.dataset.cert); closeSheet(); save(); render(); toast(`📜 Signed up: ${c.name}. Pick Take classes to study.`); };
+  // i72-b04: pay as you go comes first, so one tap doesn't put a new player in debt
+  document.querySelectorAll('[data-cert]').forEach(b => b.onclick = () => { const c = CERTS[b.dataset.cert], fee = Math.round(cost(c.fee)), per = fee / c.weeks;
+    const bills = -billLines().reduce((a, l) => a + l[1], 0), low = S.money - per - bills < 0, lowAll = S.money - fee < 0;
+    sheet(`<h2>${c.ic} ${c.name}</h2>${firstTime('cert')}<p>${c.what}</p><p>${c.weeks} weeks of 📚 Take classes for ${fmt(fee)} in all. Your diploma classes wait until it's done.</p>
+      ${low ? `<div class="card warn">⚠️ Even ${fmt(per)} a week would take you below $0 with this week's bills (about ${fmt(bills)}). Debt costs 1.5% a month.</div>` : ''}
+      <button class="btn primary" id="yes">Pay as you go: ${fmt(per)} a week for ${c.weeks} weeks</button>
+      <button class="btn ghost" id="all">Pay it all now (${fmt(fee)})${lowAll && !low ? ': that leaves you below $0' : ''}</button><button class="btn ghost" id="no">Not now</button>`);
+    const go = payGo => { startCert(b.dataset.cert, payGo); closeSheet(); save(); render(); toast(`📜 Signed up: ${c.name}. Pick Take classes to study.`); };
+    $('#yes').onclick = () => go(true); $('#all').onclick = () => go(false);
     $('#no').onclick = closeSheet; });
   document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => moveHome(b.dataset.home));
   document.querySelectorAll('[data-car]').forEach(b => b.onclick = () => buyCar(b.dataset.car));
@@ -1068,7 +1380,10 @@ ${S.edu < 3 ? firstTime('school') : ''}${eduCard()}
   if ($('#cropins')) $('#cropins').onclick = () => { S.biz.ins = !S.biz.ins; save(); render(); const b = $('#cropins'); if (b) b.focus({ preventScroll: true }); announce(S.biz.ins ? `Crop insurance on: ${fmt(cost(CROP_INS))} each April.` : 'Crop insurance off.'); };
   document.querySelectorAll('[data-inv]').forEach(b => b.onclick = () => {
     const v = b.dataset.inv === 'all' ? -(S.stocks || 0) : +b.dataset.inv;
-    if (invest(v)) { save(); render(); toast(v > 0 ? `📈 Put ${fmt(v)} in index funds` : `📈 Took ${fmt(-v)} out`); announce(`Index funds now ${fmt(S.stocks)}. Cash ${fmt(S.money)}.`); }
+    const go = () => { if (invest(v)) { save(); render(); toast(v > 0 ? `📈 Put ${fmt(v)} in index funds` : `📈 Took ${fmt(-v)} out`); announce(`Index funds now ${fmt(S.stocks)}. Cash ${fmt(S.money)}.`); } };
+    const worry = investWorry(v);                  // i72-b05: a month of bills stays in cash unless you say so
+    if (!worry) return go();
+    confirmSheet({ title: '📈 Invest that much?', intro: worry, yes: 'Invest anyway', no: 'Keep the cash', onYes: go });
   });
   if ($('#wine')) $('#wine').onclick = () => { if (buyWine()) { save(); render(); toast(`🍷 You're in on the ${wineYear()} vintage`); } };
 }
@@ -1186,6 +1501,7 @@ function showMenu(){
     <button class="btn primary" id="save">💾 Save game</button>
     <button class="btn primary" id="load">📂 Load game</button>
     <button class="btn ghost" id="backup">📤 Back up or restore</button>
+    <button class="btn ghost" id="movephone">📱 Moving to a new phone</button>
     <p class="muted" style="margin-top:12px">${esc(S.name)}'s life is in ${slotName(S.slot)} and also saves itself after every week.</p>
     <button class="btn ghost" id="settings">⚙️ Settings</button>
     <button class="btn ghost" id="skipopts">⏩ Skip and Auto options</button>
@@ -1195,7 +1511,8 @@ function showMenu(){
     <button class="btn ghost" id="close">Close</button>`);
   $('#save').onclick = saveCopySheet;
   $('#load').onclick = loadSheet;
-  $('#backup').onclick = backupSheet;
+  $('#backup').onclick = () => backupSheet();
+  $('#movephone').onclick = movePhoneSheet;
   $('#settings').onclick = () => settingsSheet(true);
   $('#skipopts').onclick = skipSheet;
   $('#help').onclick = showHelp;
@@ -1211,6 +1528,7 @@ const SETTING_ROWS = [
   ['sound', '🎵 Sounds', 'Small sounds for a new week, events and badges. Quiet while ⏩ and Auto play.'],
   ['vibrate', '📳 Vibration', 'A short buzz for events and badges, on phones that can (not iPhones).'],
   ['swipe', '👆 Swipes', 'Swipe left or right to change tabs, and swipe a pop-up\'s handle down to close it.'],
+  ['srWeek', '🗣️ Week summary (screen readers)', 'What a screen reader says after End Week: one short sentence, or every number.'],
   ['motion', '✨ Animations', 'Stat bars that slide, cash that counts up after a week, and confetti for badges. Always off when your device asks for reduced motion.']
 ];
 function settingsSheet(fromMenu = false, keep = null){
@@ -1234,12 +1552,13 @@ function settingsSheet(fromMenu = false, keep = null){
 }
 
 // H2: ending a life early asks first, with the score so far and 'Keep playing' as the safe choice (Escape = keep playing)
+// i70-b17: on every yes/no sheet that ends or deletes something, the safe answer is the bottom button and gets the first focus
 function confirmRetire(){
   const { score, title } = lifeScore();
   sheet(`<h2>End ${esc(S.name)}'s life now?</h2>
     <p>Life Score so far: <b>${score}</b> (${title}).</p><p>The game ends here and this slot is cleared. This can't be undone.</p>
-    <button class="btn primary" id="no">Keep playing</button>
-    <button class="btn ghost" id="yes">End this life</button>`);
+    <button class="btn ghost" id="yes">End this life</button>
+    <button class="btn primary" id="no" data-safe>Keep playing</button>`);
   $('#no').onclick = closeSheet;
   $('#yes').onclick = () => { closeSheet(); finish('You chose to wrap things up.'); };
 }
@@ -1283,7 +1602,9 @@ function sheet(html){
   const sh = $('#sheet'); sh.className = 'sheet'; sh.style.transform = ''; sh.innerHTML = html; $('#modal').classList.remove('hidden'); sh.scrollTop = 0;
   if (sheetCloser(sh)) sh.insertAdjacentHTML('afterbegin', '<div class="grab" aria-hidden="true"><i></i></div>');   // i2-a22: a handle to swipe it away
   const h = sh.querySelector('h2'); sh.setAttribute('aria-label', h ? h.textContent : 'Message');
-  const first = sh.querySelector('[data-i], button.primary, button');
+  const d = sh.querySelector('[data-desc]');                       // i43-a02: an event's story is read with its title
+  if (d) { d.id = d.id || 'sheetdesc'; sh.setAttribute('aria-describedby', d.id); } else sh.removeAttribute('aria-describedby');
+  const first = sh.querySelector('[data-safe]') || sh.querySelector('[data-i], button.primary, button');   // i74-b02: a yes/no sheet opens on its safe button
   if (first && !(typeof TUT !== 'undefined' && TUT)) setTimeout(() => first.focus({ preventScroll: true }), 30);   // the tutorial places focus itself
   histSync();
 }
@@ -1331,7 +1652,7 @@ addEventListener('popstate', () => {
   histSync();
 });
 const sheetCloser = (sh = $('#sheet')) => sh.querySelector('[data-i]') ? null : ['#no', '#close', '#back', '#ok'].map(q => sh.querySelector(q)).find(Boolean) || null;
-const focusables = root => [...root.querySelectorAll('button:not([disabled]), [tabindex="0"], input, a[href]')].filter(e => e.offsetParent !== null || e.closest('svg'));
+const focusables = root => [...root.querySelectorAll('button:not([disabled]), [tabindex="0"], input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href]')].filter(e => e.offsetParent !== null || e.closest('svg'));
 // say something to screen readers without showing it
 function announce(msg){ const r = $('#sr'); if (!r) return; r.textContent = ''; setTimeout(() => { r.textContent = msg; }, 60); }
 document.addEventListener('keydown', e => {
@@ -1343,9 +1664,10 @@ document.addEventListener('keydown', e => {
     if (modalOpen) { e.preventDefault(); if (mustChoose()) return pickOne(); const b = ['#no', '#n', '#close', '#back', '#ok'].map(q => $('#sheet ' + q)).find(Boolean); if (b) b.click(); return; }
     if (helpOpen) { e.preventDefault(); return closeHelp(); }
   }
-  if (e.key === 'Tab' && root) {                               // keep Tab inside the open sheet or help page
-    const f = focusables(root); if (!f.length) return;
+  if (e.key === 'Tab' && (root || coach)) {                    // keep Tab inside the open sheet or help page
+    const f = coach ? coachStops() : focusables(root); if (!f.length) return;   // i43-a05: the tutorial keeps Tab on its lit spot, Next and Skip
     const i = f.indexOf(document.activeElement);
+    if (coach) { e.preventDefault(); f[i === -1 ? 0 : (i + (e.shiftKey ? f.length - 1 : 1)) % f.length].focus(); return; }   // its stops aren't side by side on the page
     if (e.shiftKey && (i <= 0)) { e.preventDefault(); f[f.length - 1].focus(); }
     else if (!e.shiftKey && (i === -1 || i === f.length - 1)) { e.preventDefault(); f[0].focus(); }
   }

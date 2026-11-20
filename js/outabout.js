@@ -52,7 +52,7 @@ const PLACES = [
           { id:'board', ic:'🧀', name:'A cheese board and sparkling cider', cost:22, fx:{happy:3}, date:true }] },   // i26-b05: for any age
   { id:'basket', name:'Burg Basket Grocery', ic:'🛒', lb:'Grocery', addr:'200 Main St.', st:'main', x:240, y:110, kind:'Grocery store',
     desc:'The town grocery. A little pricier than the big stores in Walla Walla, but you see everybody.', hours:'Every day',
-    acts:[{ id:'shop', ic:'🛒', name:'Shop local this week', cost:12, fx:{happy:1, community:2}, note:'A few dollars more than the big store, and a chat in every aisle.' }] },
+    acts:[{ id:'shop', ic:'🛒', name:'Shop local this week', cost:12, fx:{happy:1, community:2}, note:'A few dollars more than the big store, and a chat in every aisle (it counts for community once every 4 weeks).' }] },
   { id:'bean', name:'Howlin\' Bean', ic:'☕', lb:'Coffee', addr:'206 Main St.', st:'main', x:275, y:40, kind:'Coffee shop',
     desc:'Coffee and pastries, and the best place in town to run into people.', hours:'Mornings, most days',
     acts:[{ id:'coffee', ic:'☕', name:'Coffee and a pastry', cost:8, fx:{happy:2, community:1}, note:'You might run into someone you know.' }] },
@@ -87,16 +87,30 @@ const PLACES = [
     acts:[{ id:'class', ic:'🧘', name:'An evening yoga class', cost:15, fx:{health:3, happy:2} }] },
   { id:'mcgrub', name:'McGrub & Grain Co.', ic:'🌾', lb:'Farm supply', addr:'115 Garden St.', st:'town', kind:'Farm supply',
     desc:'Seed, fertilizer and advice for the wheat farms around town.', hours:'Weekdays, and long days at harvest',
-    acts:[{ id:'counter', ic:'🧢', name:'Talk shop at the farm counter', cost:0, fx:{community:1}, note:'Free. Farm folks get more out of it.' }] },
+    acts:[{ id:'counter', ic:'🧢', name:'Talk shop at the farm counter', cost:0, fx:{community:1}, note:'Free. Farm folks (farm hands, ag techs and wheat growers) get more out of it every time; everyone else once a season.' }] },
   { id:'trades', name:'Local trades', ic:'🔨', lb:'Trades', addr:'Waitsburg', st:'town', kind:'Contractors',
     desc:'Fair Price Pours (concrete), Sharp Point Builders (construction), Tim\'s Trim & Timber (carpentry) and LC Spray & Spread (applicators). They fix roofs, porches and kitchens around town.', hours:'Weekdays',
     acts:[{ id:'call', ic:'📞', name:'Who to call for repairs', cost:0, info:'trades', note:'Doesn\'t use a visit.' }] }
 ];
 const placeById = id => PLACES.find(p => p.id === id);
+// i15-a02/i38-a11/i26-b02: visits do less near the top: gains taper from 80 to 92, no health at 70 or more (except the clinic),
+// the farm counter helps non-farm folks once a season, and the grocery's chats count once every 4 weeks
+const OUT_HEALTH_MAX = 70, MCGRUB_WEEKS = 13, BASKET_WEEKS = 4;
+const outTaper = k => clamp((95 - S[k]) / 15, 0.2, 1);   // full strength to 80, a fifth from 92
+const farmFolk = () => ['farmhand', 'agtech'].includes(S.jobId) && !S.retired || !!(S.biz && S.biz.type === 'wheat');
+// a plain note on what this option won't do for you right now ('' when nothing is held back)
+function outLimitNote(p, a){
+  const o = outState(), fx = a.fx || {}, out = [];
+  if (fx.health && p.id !== 'clinic' && S.health >= OUT_HEALTH_MAX) out.push(`No health from this while yours is ${OUT_HEALTH_MAX} or more: only a checkup adds health then.`);
+  if (p.id === 'mcgrub' && !farmFolk() && S.turn - (o.mcg ?? -99) < MCGRUB_WEEKS) out.push(`You've talked shop here this season: once every ${MCGRUB_WEEKS} weeks unless you farm.`);
+  if (p.id === 'basket' && S.turn - (o.last.basket ?? -99) < BASKET_WEEKS) out.push(`No community this time: the chats count once every ${BASKET_WEEKS} weeks.`);
+  if (Object.entries(fx).some(([k, v]) => v > 0 && !(k === 'health' && p.id !== 'clinic' && S.health >= OUT_HEALTH_MAX) && outTaper(k) < 1)) out.push('Does less: that stat is already past 80.');
+  return out.join(' ');
+}
 const actOf = (p, aid) => p.acts.find(a => a.id === aid);
 
 /* ---- saved state: S.out ---- */
-const outDefault = () => ({ wk:0, n:0, here:[], gain:{ happy:0, health:0, community:0 }, last:{}, ad:-99, look:-99, will:false, moved:-99, visits:0 });
+const outDefault = () => ({ wk:0, n:0, here:[], gain:{ happy:0, health:0, community:0 }, last:{}, ad:-99, look:-99, will:false, moved:-99, visits:0, mcg:-99 });
 // this week's visits; reading never changes the save, only a visit does (write = true)
 function outState(write){
   const d = outDefault(), o = S.out && typeof S.out === 'object' ? { ...d, ...S.out } : d;
@@ -151,13 +165,17 @@ function visit(pid, aid){
   if (pid === 'clinic' && S.health < 50) mult *= 1.7;
   if (pid === 'junque' && ([10, 11].includes(curMonth()) || newHome())) mult *= 1.5;
   if (pid === 'garden' && (HOMES[S.home].own || newHome())) mult *= 1.5;
-  if (pid === 'mcgrub' && ['farmhand', 'agtech'].includes(S.jobId)) mult *= 2;
+  if (pid === 'mcgrub' && farmFolk()) mult *= 2;
   const fx = { ...(a.fx || {}) };
   let extra = '';
+  // i26-b02: free and cheap visits stop carrying an idle life
+  if (pid === 'mcgrub' && !farmFolk()) { if (S.turn - (o.mcg ?? -99) < MCGRUB_WEEKS) delete fx.community; else o.mcg = S.turn; }
+  if (pid === 'basket' && S.turn - (o.last.basket ?? -99) < BASKET_WEEKS) delete fx.community;
+  if (pid !== 'clinic' && S.health >= OUT_HEALTH_MAX) delete fx.health;   // i38-a11: healthy already: only the clinic adds health
   if (pid === 'bean' && chance(0.35)) { fx.community = (fx.community || 0) + 3; extra = ' You ran into an old friend and talked for an hour.'; }
   const before = { happy:S.happy, health:S.health, community:S.community };
   for (const [k, v] of Object.entries(fx)) {
-    const d = Math.min(v * mult * OUT_FX, Math.max(0, OUT_WEEK_CAP - o.gain[k]));   // capped per stat per week
+    const d = Math.min(v * mult * OUT_FX * (v > 0 ? outTaper(k) : 1), Math.max(0, OUT_WEEK_CAP - o.gain[k]));   // capped per stat per week; i15-a02: less in the 80s
     o.gain[k] += d; adj({ [k]: d });
   }
   if (pid === 'shavings') { practice('handy', 1); if (S.streakN > 4) S.streakN = Math.max(1, S.streakN - 2); }
@@ -184,7 +202,7 @@ function outSheet(){
   openSystem('out', { quiet:true, how:'used' });   // i31: using it from anywhere (the checklist) opens it
   const grp = (title, list) => `<h3 class="triph">${title}</h3>` + list.map(p => `<button class="kv job tripto" data-place="${p.id}"><span><span class="t">${p.ic} ${esc(p.name)}</span><span class="s">${esc(p.addr)} · ${placeLine(p)}</span></span><span aria-hidden="true">›</span></button>`).join('');
   sheet(`<h2>🛍️ Out and about</h2>
-    <p class="muted">Quick visits around town, on top of your week's focus: up to ${OUT_MAX} a week, one per place. ${visitsLeft()} left this week. Going back within ${OUT_REPEAT} weeks is half as special.</p>
+    <p class="muted">Quick visits around town, on top of your week's focus: up to ${OUT_MAX} a week, one per place. ${visitsLeft()} left this week. Going back within ${OUT_REPEAT} weeks is half as special, and visits do less as a stat climbs past 80.</p>
     ${grp('Main Street', PLACES.filter(p => p.st === 'main'))}${grp('Preston Avenue', PLACES.filter(p => p.st === 'preston'))}${grp('Around town', PLACES.filter(p => p.st === 'town' && !(p.hide && p.hide())))}
     <p class="muted">Places use stand-in names. Days and seasons last checked ${PLACES_CHECKED}.</p>
     <button class="btn ghost" id="no">Close</button>`);
@@ -202,7 +220,7 @@ function bizSheet(pid, fromList){
     <p>${esc(p.desc)}</p>
     <p class="muted">🕒 ${esc(p.hours)}.<br><b>${shut ? '🚪 ' + esc(shut) + '.' : '✅ Open this week.'}</b></p>
     ${acts.map(a => { const why = actBlocked(p, a);
-      return `<button class="stopbtn" data-act="${a.id}" ${why ? 'disabled' : ''}><span class="t">${a.ic} ${a.name}</span><span class="s">${why || actWhat(a)}</span>${a.note && !why ? `<span class="s">${a.note}</span>` : ''}</button>`; }).join('')}
+      return `<button class="stopbtn" data-act="${a.id}" ${why ? 'disabled' : ''}><span class="t">${a.ic} ${a.name}</span><span class="s">${why || actWhat(a)}</span>${a.note && !why ? `<span class="s">${a.note}</span>` : ''}${!why && outLimitNote(p, a) ? `<span class="s">${outLimitNote(p, a)}</span>` : ''}</button>`; }).join('')}
     ${hidden ? '<p class="muted">Drinks here are for 21 and over.</p>' : ''}
     ${acts.some(a => !a.info) ? `<p class="muted">Visits this week: ${o.n} of ${OUT_MAX}.</p>` : ''}
     ${jobs ? `<h3 class="triph">Work here</h3>${jobs}<p class="muted">Apply on the Jobs tab.</p>` : ''}
@@ -251,7 +269,6 @@ function bizRecent(pid){
 
 /* ---- maps: the Main Street close-up, and Preston Avenue pins on the town map ---- */
 const MSW = 420, MSH = 330;
-const pinKeys = `onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.dispatchEvent(new MouseEvent('click',{bubbles:true}))}"`;
 function mainStreetSVG(){
   let s = `<svg class="mapsvg msmap" viewBox="0 0 ${MSW} ${MSH}" role="group" aria-label="Main Street close-up: tap a business">
     <rect width="${MSW}" height="${MSH}" style="fill:var(--map-block)"/>
@@ -261,7 +278,7 @@ function mainStreetSVG(){
     <text x="${MSW - 6}" y="${MSH - 4}" class="mlbl" text-anchor="end" font-size="7.5">Not to scale</text>`;
   for (const p of PLACES.filter(x => x.st === 'main')) {
     const shut = !!placeClosed(p) || only21(p), recent = (S.evPins || []).find(x => OUT_EVENT_BIZ[x.t] === p.id && S.turn - x.turn <= 4);
-    s += `<g class="mpin mspin" data-biz="${p.id}" tabindex="0" role="button" aria-label="${esc(p.name)}, ${esc(p.addr)}: ${only21(p) ? '21 and over' : shut ? 'closed this week' : 'open this week'}" onclick="BIZTAP('${p.id}')" ${pinKeys}>
+    s += `<g class="mpin mspin" data-biz="${p.id}" tabindex="0" role="button" aria-label="${esc(p.name)}, ${esc(p.addr)}: ${only21(p) ? '21 and over' : shut ? 'closed this week' : 'open this week'}" data-call="BIZTAP" data-arg="${p.id}">
       <circle cx="${p.x}" cy="${p.y}" r="42" fill="transparent"/><circle cx="${p.x}" cy="${p.y}" r="15" style="fill:${shut ? 'var(--map-pin-off)' : 'var(--map-pin)'};stroke:var(--map-ink)" stroke-width="1.4"${shut ? ' stroke-dasharray="3 2"' : ''}/>
       <text x="${p.x}" y="${p.y + 5.5}" font-size="15" text-anchor="middle">${p.ic}</text>
       <text x="${p.x}" y="${p.y + 27}" class="mtown" text-anchor="middle">${p.lb}${only21(p) ? ' 21+' : ''}</text></g>`;
@@ -272,17 +289,17 @@ function mainStreetSVG(){
 function mainStreetBlock(){
   return `<h3 class="triph">🔍 Main Street close-up</h3>${mainStreetSVG()}
     <div class="mapcap">Tap a business for its card: when it's open and what you can do there. Dashed pins are closed this week.</div>
-    <button class="btn ghost" onclick="outSheet()">🛍️ Out and about: every place in town</button>`;
+    <button class="btn ghost" data-call="outSheet">🛍️ Out and about: every place in town</button>`;
 }
 // Preston Avenue businesses as pins on the town map (along Highway 12 heading out toward Dayton)
 const outTownPins = () => PLACES.filter(p => p.st === 'preston').map(p => ({ k:p.id, lb:p.lb, ic:p.ic, x:p.x, y:p.y, name:p.name, biz:p.id, desc:`${p.desc} ${p.addr}.` }));
 function outTownDetail(p){
   const b = placeById(p.biz), f = p.focus && FOCUS[p.focus];
   const btn = !f ? '' : S.focus === p.focus ? `<span class="tag cur">This week's focus: ${f.name}</span>`
-    : `<button class="sm" onclick="MAPFOCUS('${p.focus}')">${f.ic} Spend this week here</button>`;
+    : `<button class="sm" data-call="MAPFOCUS" data-arg="${p.focus}">${f.ic} Spend this week here</button>`;
   return `<div class="card mapdet"><h3>${b.ic} ${esc(b.name)}</h3><p style="margin:0 0 4px;font-size:0.875rem">${p.work ? `You work here as ${esc(p.work.toLowerCase())}. ` : ''}${esc(b.desc)}</p>
     <p class="muted" style="margin:0 0 8px">📍 ${esc(b.addr)} · ${placeLine(b)}</p>
-    <button class="sm alt" onclick="BIZTAP('${b.id}')">🛍️ Visit or see the card</button> ${btn}${recentList('T', p.k)}</div>`;
+    <button class="sm alt" data-call="BIZTAP" data-arg="${b.id}">🛍️ Visit or see the card</button> ${btn}${recentList('T', p.k)}</div>`;
 }
 window.BIZTAP = id => bizSheet(id);
 
@@ -330,7 +347,7 @@ const OUT_EVENTS = [
     ]},
   // i26-b05: the same band plays an early all-ages set, so under-21s get music night too
   { ic:'🎸', title:'All-ages show at The Royal Brick', biz:'brick', w:2, when:() => age() < 21,
-    text:'A band from Walla Walla is playing an early all-ages set at The Royal Brick before the bar opens on Saturday.',
+    text:'A band from Walla Walla plays an early show at The Royal Brick on Saturday. It\'s for all ages, and it ends before the bar opens.',
     choices:() => [
       {label:`Go (-${fmtc(12)})`, go:() => { adj({money:-cost(12), happy:4, community:2}); return 'You stood up front, and the drummer tossed you a broken stick.'; }},
       {label:'Early night', go:() => 'You slept well, at least.'}
@@ -381,7 +398,7 @@ for (const [t, b] of Object.entries(OUT_EVENT_BIZ)) EVENT_PLACE[t] = ['T', place
 /* ---- life systems at real places (#53): the Life tab's Around town card ---- */
 function townLifeCard(){
   const a0 = age(), food = cost(FOOD_UTIL - (S.turn < S.stockUntil ? GROCERY_SHARE * STOCK_OFF : 0)) * (1 - skillLv('cook') * 0.04);
-  const btn = id => `<button class="sm alt" onclick="BIZTAP('${id}')">${placeById(id).ic} ${esc(placeById(id).name)}</button>`;
+  const btn = id => `<button class="sm alt" data-call="BIZTAP" data-arg="${id}">${placeById(id).ic} ${esc(placeById(id).name)}</button>`;
   return `<div class="card"><h3>🏘️ Around town</h3>
     <div class="kv"><span>🏦 Savings and loans</span><span>Standard Bearer Bank</span></div>
     <div class="kv"><span>🩺 Health care${healthMonthly() ? ` (${wk(cost(healthMonthly()))})` : a0 < 50 ? ' (Apple Health, $0)' : ''}</span><span>The Burg Clinic</span></div>

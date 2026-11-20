@@ -11,7 +11,7 @@ function fxWords(fx){
 }
 /* ---------- i2-a20: tap a word to see what it means ---------- */
 const GLOSSARY = {
-  networth: { w:'Net worth', d:() => 'Everything you own minus what you owe: cash (below $0 it counts against you), your home equity, your vehicle, your 401(k), index funds at today\'s value, wine futures at what you paid until they pay out, and what your business would sell for. Then it takes off what\'s left on a truck loan, student loans and a home equity loan. It counts for 30% of your Life Score (15% with a life aim other than All-around).' },
+  networth: { w:'Net worth', d:() => 'Everything you own minus what you owe. It adds up your cash (below $0 it counts against you), home equity, vehicle and 401(k). It adds index funds at today\'s value, and wine futures at what you paid until they pay out. It adds what your business would sell for. Then it takes off what\'s left on a truck loan, student loans and a home equity loan. It counts for 30% of your Life Score (15% with a life aim other than All-around).' },
   equity: { w:'Home equity', d:() => `The part of your home that is yours: the down payment, plus each mortgage payment's share, plus whatever the housing market adds or takes away (about ${HOME_GROW * 100}% a year in a normal market). A home equity loan borrows against it and counts against your net worth until it's paid. Selling costs ${SELL_FEE * 100}% in agent fees.` },
   takehome: { w:'Take-home', d:() => 'Pay after taxes (13% on a small paycheck up to 22% on a big one) and the gas to drive to work and back (half with a carpool, less on remote days, and a bus pass instead of gas if you ride the county bus). Union dues and any 401(k) savings come out of it too.' },
   k401: { w:'401(k)', d:() => `A retirement account. Put ${K401.slice(1).map(r => r * 100 + '%').join(' or ')} of each paycheck in before taxes; at 5% or more your employer adds 3% (yours after ${K401_VEST_MONTHS / 12} years at the job). It grows about 6% a year and counts in your net worth at ${Math.round(K401_AFTER_TAX * 100)}%, since it's taxed when it comes out.` },
@@ -44,7 +44,22 @@ const FIRST = {
   biz: { ic:'🏪', t:'Your own business', d:() => `One at a time: ${Object.values(BIZ).map(b => `${b.ic} ${b.name.toLowerCase()} (${fmtc(b.cost)})`).join(', ')}. Selling gets back 60% of the price, less about ${BIZ_DEP * 100}% a year as it ages.` },
   k401: { ic:'🏦', t:'The 401(k)', d:() => `Save ${K401.slice(1).map(r => r * 100 + '%').join(' or ')} of each paycheck before taxes. At 5% or more your employer adds 3%: free money that grows about 6% a year.` },
   school: { ic:'📚', t:'School', d:() => `Pick Take classes as your focus. ${EDU.slice(1).map((e, i) => `${e}: ${STUDY_NEED[i]} weeks`).join(', ')}. Classes never put you in a rut.` },
-  carpool: { ic:'🚙', t:'Carpools', d:() => 'With community 30 or more you can ride with neighbors on a 20+ mile commute: half the gas, an easier drive, and a little community. The carpool goes with the job.' }
+  carpool: { ic:'🚙', t:'Carpools', d:() => 'With community 30 or more you can ride with neighbors on a 20+ mile commute: half the gas, an easier drive, and a little community. The carpool goes with the job.' },
+  // i68-b10: the jobs and school systems
+  interview: { ic:'🗣️', t:'Interviews', d:() => 'Pick how to answer. Being straight helps a little, selling hard needs People skill, and asking about pay suits hard-to-fill jobs. Decide later keeps today\'s odds.' },
+  offer: { ic:'🤝', t:'Asking for more', d:() => `Hard-to-fill jobs let you ask for 5% more pay or a ${fmtc(SIGN_ON)} sign-on bonus. Asking risks the offer: about 1 time in ${Math.round(1 / ASK_LOSE)} they pull it.` },
+  union: { ic:'🪪', t:'Union jobs', d:() => `Dues are ${UNION_DUES * 100}% of your pay. In return: a 1.5% step raise each January, half the layoff risk, and a contract vote now and then.` },
+  ladder: { ic:'🪜', t:'The job ladder', d:() => 'Every job has three steps. The second (+12% pay) comes after a year on the job; the top (+25%) needs 3 years plus more school or People skill 2. A promotion offer shows up when you qualify.' },
+  program: { ic:'🎓', t:'Programs', d:() => `Pick a program before you study. Same weeks and tuition, but your diploma counts as a major: +${Math.round(MAJOR_PAY * 100)}% pay and better odds at matching jobs.` },
+  cert: { ic:'📜', t:'Certificates', d:() => `A short course of Take classes weeks that opens one kind of job: ${Object.values(CERTS).map(c => `${c.name.replace(/ \(.*/, '')} ${c.weeks} weeks, ${fmtc(c.fee)}`).join('; ')}. Pay as you go or all at once.` },
+  // i68-b11: the money systems
+  invest: { ic:'📈', t:'Index funds', d:() => `About 6% a year on average, but about 1 year in ${Math.round(1 / MKT.badOdds)} the market drops about ${MKT.drop * 100}%. Keep a month of bills in cash first: debt costs 1.5% a month.` },
+  ins: { ic:'🛡️', t:'Insurance', d:() => `Cheaper coverage saves a little each month. When something breaks, you pay the first part: ${fmtc(AUTO_DED)} for your car or truck on full coverage, ${fmtc(RENTERS_DED)} with renters insurance.` },
+  will: { ic:'📜', t:'A will', d:() => `${fmtc(WILL_FEE)} from age ${WILL_MIN_AGE}. With one, your grandkid gets their share and the family home right away. Without one, the house is sold and probate takes ${PROBATE_CUT * 100}% and 6 months.` },
+  ltc: { ic:'📋', t:'Long-term care', d:() => `From ${LTC_AGE}, you can buy care insurance for ${fmtc(LTC_PREMIUM)} a month. If you need help at home or a care home after ${CARE_AGE}, it pays ${LTC_COVER * 100}% of the bill. Care costs ${fmtc(CARE.aide.cost)} to ${fmtc(CARE.living.cost)} a month without it.` },
+  ptax: { ic:'🏛️', t:'Property tax', d:() => `Owners pay the county ${PROP_TAX * 100}% of the home's value a year, half in April and half in October: about ${fmt(propTax())} each time right now.` },
+  collect: { ic:'📞', t:'Debt and collections', d:() => `Below $0, debt costs 1.5% a month. After ${COLLECT_WEEKS} weeks in a row it goes to collections: a ${fmtc(COLLECT_FEE)} fee, daily calls (▼ happiness) and worse odds on jobs and loans.` },
+  wheat: { ic:'🌾', t:'Stored wheat', d:() => `The elevator keeps your grain while you wait for a better price, for ${fmtc(WHEAT_STORE_FEE * 1000)} a month per 1,000 bushels. It has to be sold by July, when the new crop comes in.` }
 };
 let FIRST_SLOT = null;          // one explainer per screen: render() opens the slot, the first unseen explainer takes it
 function firstTime(key){
@@ -72,7 +87,7 @@ function guideHTML(){
   const eduRows = [1,2,3].map(l => `<tr><td>${EDU[l]}</td><td>${STUDY_NEED[l-1]} weeks</td><td>${pw(TUITION[l-1])}</td><td>${SCHOOL[l-1]}</td></tr>`).join('');
   const homeRows = Object.values(HOMES).map(h => `<tr><td>${h.name}</td><td>${h.own ? 'Buy: $' + h.down.toLocaleString('en-US') + ' down, then ' : 'Rent '}${pw(h.cost)}</td><td>${h.own ? 'Builds equity' : '—'}</td></tr>`).join('');
   const carRows = Object.values(CARS).map(c => `<tr><td>${c.name}</td><td>${c.mpg} mpg</td><td>${c.price ? '$' + c.price.toLocaleString('en-US') : c.down ? '$' + c.down.toLocaleString('en-US') + ' down + ' + pw(c.pay) + ' for 5 years' : 'Starter'}</td></tr>`).join('');
-  const sec = (id, title, body) => `<section id="g-${id}"><h2>${title}</h2>${body}<button class="totop" onclick="document.querySelector('#helpview').scrollTo({top:0,behavior:'smooth'})">↑ Back to contents</button></section>`;
+  const sec = (id, title, body) => `<section id="g-${id}"><h2>${title}</h2>${body}<button class="totop" data-call="helptop">↑ Back to contents</button></section>`;
   const S2 = [
     ['start', '🌾 Getting started', `
       <p>You're 18 and just moved into a rented room above Main Street in <b>Waitsburg, WA</b>, with $1,500, a 1998 pickup and a high school diploma. Make the best life you can before the game ends.</p>
@@ -86,18 +101,19 @@ function guideHTML(){
     ['week', '📅 Your week', `
       <p>Each turn is <b>one week</b>. On <b>Home</b>, pick one <b>focus</b> for the week, then tap <b>End Week</b>. The button shows your focus, and it repeats every week until you change it.</p>
       <table><tr><th>Focus</th><th>What it does</th><th>Cost</th></tr>${focusRows}</table>
-      <p><b>Town goals:</b> each season the town has a goal you work toward with your focus: ${SEASON_GOALS.map(g => `${g.ic} <b>${g.name}</b> (${g.need} weeks of ${g.what})`).join(', ')}. Finish it before the season ends for a boost in community and happiness. Your progress shows above the focus buttons.</p>
-      <p><b>Mix it up.</b> A focus works at full strength for 4 weeks in a row, then fades (down to 30%). After 8 weeks of the same thing you're <b>in a rut</b>, and happiness drops every week until you switch. Classes are the exception: study as long as you like.</p>
+      <p><b>Town goals:</b> each season the town has a goal. Your focus works toward it: ${SEASON_GOALS.map(g => `${g.ic} <b>${g.name}</b> (${g.need} weeks of ${g.what})`).join(', ')}. Finish it before the season ends to gain community and happiness. Your progress shows above the focus buttons.</p>
+      <p><b>Mix it up.</b> A focus works at full strength for 4 weeks in a row, then fades (down to 30%). After 8 weeks of the same thing you're <b>in a rut</b>, and happiness drops every week until you switch. Classes are the exception: study as long as you like. A rut costs a little less happiness in Relaxed.</p>
+      <p><b>Tops out:</b> Rest and Get outside do less as a stat nears the low 80s (the high 70s on Hard), so the top of each stat takes a mix of things.</p>
       <p><b>Skipping ahead:</b> <b>⏩ 4</b> and <b>⏩ 13</b> play several weeks with the same focus (or your focus plan). <b>⏭ Auto</b> plays until something needs you (up to 26 weeks). Skips stop when an event needs a choice, at a milestone, or at New Year. An event with only one way to go plays out on its own and shows in the week strip. On small phones, press and hold <b>End Week</b> (or press Shift+Enter) for the ⏩ skips and the options; they're also in the Menu.</p>
       <p><b>Auto until…</b> In the skip options, pick what else stops ⏭ Auto: a stat dropping below 35, cash dropping below $0, or the season changing. Skipping never changes what happens, only how many taps it takes. Pick <b>Watch the weeks go by</b> to see each week roll past (tap <b>Stop</b> any time); if your device asks for less motion (or Animations is off in Settings), skips always jump straight there.</p>
       <p><b>Focus plan:</b> tap <b>🗓 Plan</b> to set up to 4 focuses that take turns, one a week. Picking a focus by hand pauses the plan for that week only. Plans follow the same rules as picking by hand: a focus that comes up week after week still fades.</p>
       <p><b>What the week did:</b> the strip above End Week shows your money (events included) and ▲▼ for each stat. Tap it to see every paycheck, bill and event. Tap a line there to see <b>why</b> it cost what it did, and read why your stats moved.</p>
       <p><b>Before you pick:</b> under the focus buttons, <b>Next week</b> estimates what the focus will add (stats and cash, before events). A button shows a percentage when that focus is fading from repeating it.</p>`],
     ['stats', '📊 Stats', `
-      <p>Tap any stat on Home to see what moves it.</p>
-      <ul><li><b>😊 Happiness (0–100).</b> Up: Rest, Get outside, Show up for town, a partner, a dog, kids, a nicer home, retirement. Down: stressful jobs, long commutes, overtime, classes, side hustles, debt, no job, ruts.</li>
-      <li><b>❤️ Health (0–100).</b> Up: Rest, Get outside, a doctor visit. Down: physical jobs, overtime, side hustles, and age. At 0 you land in the hospital (a big bill), or in Lifetime after 50 it can end your life.</li>
-      <li><b>🤝 Community (0–100).</b> Up: Show up for town, working in Waitsburg (a little in Dayton), kids, a council seat, helping in events. It fades slowly if you don't show up. Higher standing helps you get hired.</li>
+      <p>Tap any stat on Home to see what moves it. Each stat also shows a word: <b>Low</b> (under 35), <b>OK</b>, <b>Good</b> (60 and up) or <b>Great</b> (80 and up). The small notches on its bar mark where the word changes.</p>
+      <ul><li><b>😊 Happiness (0–100).</b> Up: Rest, Get outside, Show up for town, a partner, a dog, kids, a nicer home, a new job (once every ${HIRE_JOY_WEEKS} weeks), retirement (a partner, pets, kids and your home lift you toward the high 80s, not past them). Down: stressful jobs, long commutes, overtime, classes, side hustles, debt, no job, ruts.</li>
+      <li><b>❤️ Health (0–100).</b> Up: Rest, Get outside, a doctor visit. Down: physical jobs, overtime, side hustles, and age. From 55 your health tops out lower each year (about ${Math.round(maxHealth(70))} at 70 and ${Math.round(maxHealth(85))} at 85); the Health card shows your cap. At 0 you land in the hospital (a big bill), or in Lifetime after 50 it can end your life.</li>
+      <li><b>🤝 Community (0–100).</b> Up: Show up for town, working in Waitsburg (a little in Dayton), kids, a council seat, helping in events. It fades slowly if you don't show up, and faster above 60. A Seattle transplant's community slips back toward 10 in the first year, until people know you. Higher standing helps you get hired.</li>
       <li><b>💰 Net worth.</b> Cash + home equity + your vehicle + 401(k) + a business + index funds (at today's value) + wine futures (at what you paid), minus what's left on truck, student and home equity loans. Tap it on Home for the breakdown.</li></ul>
       <p>A red banner appears when happiness or health drops below 30, with a suggested focus to fix it.</p>`],
     ['money', '💵 Money', `
@@ -111,7 +127,7 @@ function guideHTML(){
       <p><b>Debt:</b> going below $0 charges about 1.5% interest a month. After ${COLLECT_WEEKS} weeks below $0 it goes to <b>collections</b>: a $${COLLECT_FEE} fee, calls that cost happiness every week (they stop once your cash has gone up ${PLAN_WEEKS} weeks in a row: you're <b>on a payment plan</b>), and worse odds on job applications and loans until you're back above $0. At ${fmt(debtWarnAt('normal'))} you get a warning (${fmt(debtWarnAt('hard'))} on Hard), and at ${fmt(debtLimit('normal'))} (${fmt(debtLimit('hard'))} on Hard) you have to leave town, which ends the game (in Relaxed debt never ends it: a debt counselor stops it at ${fmt(RELAXED_FLOOR)}), unless you <b>file for bankruptcy</b> (once a life): the debt is wiped, but you lose index funds, wine futures, any business and any vehicle better than a 1998 pickup. Your home and 401(k) are protected. For 7 years banks won't lend to you (mortgages cost 3 points more) and better-paying jobs are harder to land, and it takes ${BK_PENALTY} points off your Life Score.</p>`],
     ['jobs', '💼 Jobs', `
       <p>There are ${JOBS.length} jobs in six towns, including work at Waitsburg's own businesses. You always live in Waitsburg, so other towns mean a commute. You can apply for <b>one job per week</b>. Higher community standing, extra schooling and local jobs improve your odds.</p>
-      <p><b>Making a long commute work:</b> office jobs (insurance agent, courthouse clerk, professor, scientist) have <b>2 remote days</b> a week, so you drive in only 3; the loan officer and lab administrator have 3. The <b>mall</b> in Kennewick is always hiring and gives 10% off Tri-Cities trip stops, and the <b>Pasco food plant</b> pays 30% overtime in the August–October harvest pack. With community 30 or more you can <b>join a carpool</b> on the Jobs tab: half the gas, the drive wears on you less, and you stay in the loop. A carpool goes with the job: when you change jobs you drive alone until you join one again. <b>Side hustles</b> follow the seasons (harvest work in summer, plowing snow in winter, yard work, fixing cars) and pay up to 60% more as you get good at them. After 6 months without a side hustle (food-truck weekends count) you slowly get rusty and that extra fades.</p>
+      <p><b>Making a long commute work:</b> some office jobs (insurance agent, courthouse clerk, professor, scientist) let you work at home <b>2 days</b> a week, so you drive in only 3. The loan officer and lab administrator get 3. The <b>mall</b> in Kennewick is always hiring. It gives 10% off Tri-Cities trip stops. The <b>Pasco food plant</b> pays 30% overtime in the August–October harvest pack. With community 30 or more you can <b>join a carpool</b> on the Jobs tab. You pay half the gas. The drive tires you less, and you hear the news. A carpool goes with the job: when you change jobs you drive alone until you join one again. <b>Side hustles</b> follow the seasons: harvest work in summer, plowing snow in winter, yard work, fixing cars. They pay up to 60% more as you get good at them. Go 6 months with no side hustle (food-truck weekends count) and you get rusty, so the extra fades.</p>
       <p>The list puts jobs you can apply for first. <b>✅ Can apply</b> hides the rest, and ▲▼ compares each job's take-home with your current one. 🔒 jobs need more schooling, a certificate or a program: tap one to see exactly what it takes. Seasonal jobs only hire in season.</p>
       <p><b>Applying and interviews:</b> each application leads to a short interview. Being straight about yourself helps a little; selling yourself hard works only with People skill; asking about pay suits hard-to-fill jobs. Tap <b>Decide later</b> and they call by the end of the week, at the usual odds. Your People skill, a fresh haircut, the right program and your <b>reference</b> all count.</p>
       <p><b>Offers:</b> for hard-to-fill jobs (nurses, nursing assistants, imaging techs, truckers, linemen, wind and reactor techs, teachers, phlebotomists, the lab) you can take the offer, ask for 5% more (People skill helps) or ask for a $3,000 sign-on bonus that you pay back if you leave inside a year. Asking can lose the offer (1 in 10).</p>
@@ -163,7 +179,7 @@ function guideHTML(){
       <li><b>🚑 Ambulance district</b> (insurance sheet, $${AMB_YEAR} a year): members pay nothing for the ride on a hospital trip. Without it, a hospital stay adds a $${AMB_RIDE.toLocaleString('en-US')} ride bill.</li>
       <li><b>💉 Grown-up shots:</b> from 50, the pharmacy (a stop in Dayton or Walla Walla) has the shingles shot, and from 65 the pneumonia shot. With them a flu week is shorter and milder.</li>
       <li><b>🎣 Get outside</b> reads differently with age: hiking the Blues when you're young, creek walks in your 50s, the riverwalk bench at 75. Skiing Bluewood on a powder day wants a fair health score (${SKI_HEALTH} or more); otherwise you can ride up for the view. With a <b>Bluewood season pass</b> (on sale each October), every Get outside week from December through March is a ski day: a little extra happiness and health, no lift ticket.</li>
-      <li><b>🩺 The health plan at work</b> (chosen each January): the cheaper plan puts about $240 back in your pocket that year; better coverage halves doctor, urgent-care, therapy and emergency dentist bills.</li>
+      <li><b>🩺 The health plan at work</b> (you pick it each January). The cheap plan saves you about $240 that year. The better plan cuts doctor, urgent care, therapy and emergency dentist bills in half.</li>
       <li><b>🪑 Chair exercise:</b> from ${CHAIR_AGE}, the Touchet Valley Senior Center (Out and about) has a cheap morning class: a little health, a little community, and people who ask how you are.</li>
       <li><b>🚐 The county medical van:</b> at ${VAN_AGE} and up, Walla Walla appointments can go on the van: $${VAN_FARE} instead of gas, but it takes the whole day (your focus works at ${VAN_TIME * 100}% that week).</li>
       <li><b>🧓 Dad's appointments</b> (Lifetime, in your late 40s or 50s): your sister calls from Spokane. Split the drives with her (money), pay for a driver and helper (more money), or take every drive yourself (happiness and health). With a job you can take Washington's <b>paid family leave</b>: up to ${LEAVE_WEEKS} weeks at 90% of your pay (up to a cap), with your job's wear paused. While you're helping, a <b>🌿 respite weekend</b> at the adult day program in Walla Walla gives back health and happiness caregiving took, never more.</li></ul>`],
@@ -173,7 +189,7 @@ function guideHTML(){
       <li><b>Summer:</b> wheat harvest, Walla Walla Sweets, the Dayton depot festival, the fair and rodeo.</li>
       <li><b>Fall and winter:</b> deer season, snow on Highway 12, powder days at Bluewood, Friday night games.</li>
       <li><b>Any time:</b> truck trouble, layoffs, raises, a friendly stray, someone special, a power outage, a tip about a job. Windstorms come October to March, once a year at most: trimming the big limb and tying things down first halves the damage.</li>
-      <li><b>Every year, for sure:</b> Celebration Days comes every May.</li>
+      <li><b>Every year, for sure:</b> Celebration Days is in May, each year.</li>
       <li><b>Kids:</b> toddlers (2 to 5) bring fevers, daycare spots, potty training, story time and a first haircut. Every kid gets a send-off the week they turn 18, and moving out goes in your Journal. Most weeks the week strip's details have a line about one of the kids.</li>
       <li><b>🚓 Speeding tickets:</b> traffic school keeps one off your record, but only once every ${TICKET_YEARS} years. A ticket you pay stays on your record for ${TICKET_YEARS} years and adds ${fmtc(TICKET_INS)} a month to your insurance.</li>
       <li><b>Around Waitsburg:</b> the park cleanup, the trout opener, the Fourth of July parade, the yard sale, ice storms and frozen pipes, mice in the walls. Helping in the park cleanup, an ice storm or a field fire counts as a week toward the season's town goal. A generator bought in an ice storm keeps the power on in later outages.</li></ul>
@@ -201,9 +217,9 @@ function guideHTML(){
       <p class="muted">Prices are in 2027 dollars and rise over the years. Places are described, not named.</p>`],
     ['out', '🛍️ Out and about in Waitsburg', `
       <p>Waitsburg's own businesses are in the game, under friendly stand-in names, at their real street addresses. Tap <b>🛍️ Out and about</b> under your weekly focus on Home for the list, or switch Home to <b>🗺️ Map</b> and tap <b>Main Street</b> for a close-up of the downtown blocks. The Preston Avenue places (the ale house, the sports bar and the smokehouse) have their own pins on the town map. Every pin opens a card: what the place is, when it's open, and what you can do there.</p>
-      <ul><li><b>Quick visits:</b> up to ${OUT_MAX} a week, on top of your focus (they don't use up your week). One visit per place a week, and going back within ${OUT_REPEAT} weeks is half as special. Visits can add at most ${OUT_WEEK_CAP} points to any one stat in a week.</li>
+      <ul><li><b>Quick visits:</b> up to ${OUT_MAX} a week, on top of your focus (they don't use up your week). One visit per place a week, and going back within ${OUT_REPEAT} weeks is half as special. Visits can add at most ${OUT_WEEK_CAP} points to any one stat in a week, and do less as a stat climbs past 80. With health at ${OUT_HEALTH_MAX} or more, only a checkup at the clinic adds health. The farm counter at McGrub & Grain helps farm folks every time and everyone else once a season; the grocery's chats count for community once every ${BASKET_WEEKS} weeks.</li>
       <li><b>Open days and seasons:</b> places keep their real rhythms. Simply Shavings and The Junque Sisters take a winter break in January and February. Dreamy Garden Center is open in the spring. Laughing Lad's outdoor grill runs from May to October. Tonnage Coffee & Strings is a private space: it opens to the public only on community event days like Celebration Days, and for a bluegrass jam every other week.</li>
-      <li><b>21 and over:</b> drinks at The Little Kiss Pasta Bar, Grenache & Gather, The Royal Brick and Laughing Lad's taproom only show once you're 21. Under 21 you can still get a cheese board at Grenache & Gather and catch the all-ages open-mic hour and early shows at The Royal Brick. A place with nothing for you yet says 21+.</li>
+      <li><b>21 and over:</b> you can't buy drinks until you're 21. That goes for The Little Kiss Pasta Bar, Grenache & Gather, The Royal Brick and Laughing Lad's taproom. Under 21 you can still get a cheese board at Grenache & Gather. You can catch the all-ages open mic and early shows at The Royal Brick too. A place with nothing for you yet says 21+.</li>
       <li><b>Little extras:</b> a haircut or spa day at Rouge helps your job applications for ${LOOK_WEEKS} weeks, an ad in The Touchet Tattler raises side-hustle pay ${AD_BOOST * 100}% for ${AD_WEEKS} weeks, and a woodworking class eases a rut.</li>
       <li><b>Around town (Life tab):</b> Standard Bearer Bank holds your savings and loans, The Burg Clinic is where you see a doctor, Burg Basket Grocery is where your weekly food money goes, and the local trades fix your roof and porch. Just moved? The Junque Sisters and Dreamy Garden Center help make it home.</li>
       <li><b>Events and jobs:</b> the bluegrass jam, Grenache Fest, music nights, the grill opening, the spring garden rush, a summer cookout and more. Local jobs include line cook, barista, grocery clerk, bank teller, reporter, trades apprentice, medical assistant and ag technician.</li></ul>
@@ -213,7 +229,7 @@ function guideHTML(){
       <p><b>Badges:</b> earn them as your life unfolds. They're collected across all your lives (see them on the title screen).</p>
       <table><tr><th>Badge</th><th>How to earn it</th></tr>${BADGES.map(b => `<tr><td>${b.ic} ${b.name}</td><td>${b.desc}</td></tr>`).join('')}</table>
       <p><b>Life goals:</b> on the <b>Life</b> tab, pin up to ${GOAL_MAX} badges as goals for this life. Each one you reach <b>after</b> pinning it adds <b>${GOAL_POINTS} points</b> to your Life Score.</p>
-      <p><b>Stories:</b> some events unfold over weeks: fixing up the fixer-upper, a friend's food truck, a Little League season you coach (a losing streak, a comeback and the season party), and the flood that leads to a new levee (it can follow any spring the Touchet runs high, whether you sandbagged or stayed dry, and if it reaches your place you'll spend a few weeks drying out). What you choose at each step changes what comes next.</p>
+      <p><b>Stories:</b> some events play out over weeks. You fix up the fixer-upper. A friend starts a food truck. You coach a Little League season: a losing streak, a comeback and the season party. A flood leads to a new levee. It can come any spring the Touchet runs high, sandbags or not. If it reaches your place, you spend a few weeks drying out. What you pick at each step changes what comes next.</p>
       <p><b>🏁 Challenges</b> (on the title screen): set-up stories with a goal. ${Object.values(SCENARIOS).map(c => `${c.ic} <b>${c.name}</b>: ${c.desc}`).join(' ')}</p>`],
     ['grow', '🧰 Skills and your own business', `
       <p><b>Skills</b> grow with practice and show on the Life tab (★ levels 1–3):</p>
@@ -239,7 +255,12 @@ function guideHTML(){
       <li><b>Menu → 💾 Save game:</b> Save writes your current life right now. Save here or Replace on another slot makes a copy as a checkpoint you can go back to.</li>
       <li><b>Menu → 📂 Load game:</b> switches to any saved life. The one you're playing is saved first.</li></ul>
       <p>Finishing a life frees its slot. Saves live on this device and in this browser.</p>
-      <p><b>Menu → 📤 Back up or restore:</b> download a backup file or copy a backup code, then on another device use <b>📥 Restore from a backup</b> (on the title screen or in the same menu). You can add the backup's lives to empty slots or replace all your lives.</p>`],
+      <p><b>Menu → 📤 Back up or restore:</b> download a backup file or copy a backup code, then on another device use <b>📥 Restore from a backup</b> (on the title screen or in the same menu). You can add the backup's lives to empty slots or replace all your lives.</p>
+      <ul><li><b>Codes check themselves.</b> If a backup code gets cut off or a letter changes on the way, restoring it says which: the last part is missing, a piece in the middle is missing, or one piece was changed. Copy it again from the original.</li>
+      <li><b>A backup from a newer game</b> asks you to update first. Tap <b>Check for an update</b>.</li>
+      <li><b>📱 Moving to a new phone</b> (in the Menu and under Back up or restore): a two-step guide. On the old phone, copy the backup code into a text or email to yourself (or download a backup file). On the new phone, tap <b>📱 I'm the new phone</b> on the title screen and paste the code or choose the file.</li>
+      <li><b>Older copies are "rewound".</b> Restoring an earlier week of a life that's already on this phone asks first. A rewound life still plays, but its ending doesn't set best scores or badges.</li>
+      <li><b>Near the end:</b> four weeks before a 2-year or 5-year life ends, the week's report offers <b>📤 Back up now</b>, once.</li></ul>`],
     ['score', '🏆 The Life Score', `
       <p><b>Life Score so far:</b> Home shows the score you'd get if the game ended today. Tap it for the breakdown and a tip for your weakest part. A report card goes in your Journal every 13 weeks. In the <b>📜 Journal</b>, the chips at the top show just Money, Events, Milestones (badges, skills, report cards, town goals, stories) or Trips.</p>
       <p>At the end, your life gets a score out of 100 from four parts:</p>
@@ -249,11 +270,12 @@ function guideHTML(){
       <tr><td>Community</td><td>Your average: 10 → 0, 90 → 100</td><td>20%</td></tr>
       <tr><td>Net worth</td><td>Against the target for your game length (in 2027 dollars). Student loans count at half.</td><td>30%</td></tr></table>
       <p><b>A balanced life counts more:</b> the weighted parts make ${100 - WEAK_SHARE * 100}% of the score and your weakest part the other ${WEAK_SHARE * 100}%, so maxing one part while another sits low doesn't carry a life.</p>
-      <p><b>Report cards count:</b> the final score is ${CARD_SHARE * 100}% the average of your report cards (one every 13 weeks, judged against how far through the game you are) and ${100 - CARD_SHARE * 100}% how your life ends, so a strong last month can't undo three bad years, and a bad last week can't undo a good life.</p>
+      <p><b>Report cards count:</b> you get a report card every 13 weeks. It is judged on how far into the game you are. Your final score is ${CARD_SHARE * 100}% the average of your report cards and ${100 - CARD_SHARE * 100}% how your life ends. So a strong last month can't undo three bad years. And a bad last week can't undo a good life.</p>
       <p><b>💳 Debt:</b> below $0, net worth counts against you (against $90,000, down to −${-DEBT_FLOOR.normal} points of the part, −${-DEBT_FLOOR.relaxed} on Relaxed). Each week your cash is below −$1,000 adds to a debt drag of up to ${DRAG_PTS.normal} points (${DRAG_PTS.relaxed} on Relaxed). End the life with cash at $0 or more and net worth above $0 and the drag drops to a third. Life Score so far shows what debt is costing you and what climbing out would win back, and a life that climbed out says so under its title.</p>
       <p><b>🧭 Life aims:</b> under <b>More options</b> when you start a life, pick what you're playing for. <b>All-around</b> is the classic score. ${Object.entries(AIMS).filter(([k]) => k !== 'all').map(([, a]) => `<b>${a.ic} ${a.name}</b>: ${a.line.replace(/\.$/, '')}.`).join(' ')} Each aim takes ${AIM_W} of net worth's 30 points for its own measure. You can change your aim on the <b>Life</b> tab once a year; the aim part counts each aim by the weeks you held it.</p>
       <p><b>☀️ Good weeks:</b> a week where happiness and health are both ${GOOD_MIN}+ and your cash is at $0 or more. The end screen shows how many of your weeks were good ones; they're the Contentment aim's measure.</p>
       <p>Titles: 85+ <b>Legend of the Burg</b>, 70+ <b>Pillar of the Community</b>, 55+ <b>Solid Waitsburger</b>, 40+ <b>Getting By on Main Street</b>, below that <b>Tumbleweed</b>. Your best score for each length is kept, and Relaxed and Hard scores are labeled and kept separately from Normal ones: tap <b>🏆 Your records</b> on the title screen to see them by length and mode, with your challenges and this week's weekly challenge.</p>
+      <p><b>🎛️ Changing the rules:</b> under More options on the title screen, <b>Change the rules</b> lets you set starting money, how fast prices rise, where debt ends the game, how often things happen, and an assist that handles routine events (flat tires, fog, mice) the way a careful player would. Every knob shows the Normal value. A badge tells you where the life counts before you start: <b>Standard</b> (the normal records; Normal rules, or only the routine assist), <b>Custom</b> (its own shelf in Your records) or <b>Sandbox</b> (never recorded, for example with no events at all). Rules are set when a life starts and show on the Life tab; an assist can be turned off later but not back on, and the life keeps the shelf it started on. Weekly challenges and Challenges always use Normal rules.</p>
       <p><b>On track?</b> Life Score so far also shows whether your net worth is on track for how far through the game you are (in Lifetime, counted from 18 to 65). In the first weeks it says <b>Just getting started</b> instead of a title.</p>`],
     ['way', '🧭 Finding your way', `
       <ul><li><b>Your first month:</b> a checklist on Home walks you through the basics: a job, your first week, the week strip, the 401(k), a life goal and a visit around town. Ticked steps are remembered on this device, and you can hide it.</li>
@@ -275,26 +297,68 @@ function guideHTML(){
     ['settings', '⚙️ Settings: night theme, text size, sounds', `
       <p>Open <b>Menu → ⚙️ Settings</b> (or Settings on the title screen). Settings are saved on this device for every life and never change the game's numbers.</p>
       <ul><li><b>Theme:</b> Day, Night, or Match phone (the default), which follows your phone's dark mode.</li>
-      <li><b>Text size:</b> Normal, Large or Larger.</li>
+      <li><b>Text size:</b> Normal, Large or Larger. Normal starts from your phone's own text size, and every part of the screen grows with it, the header, tabs and End Week too.</li>
       <li><b>Sounds:</b> off at first. Soft or Normal plays small sounds made by the game itself (nothing to download, so they work offline): a tick for each week, a chime for events, a fanfare for badges. ⏩ and Auto stay quiet until something happens.</li>
       <li><b>Vibration:</b> a short buzz for events and badges on phones that can (iPhones can't).</li>
       <li><b>Swipes:</b> swipe left or right on the page to move between Home, Jobs, Life and the Journal. Pull the little handle at the top of a pop-up down to close it. Events that ask you to choose can't be swiped away.</li>
+      <li><b>Week summary (screen readers):</b> after End Week a screen reader says one short sentence (Short, the default), or every number (Full).</li>
+
       <li><b>Back button:</b> your phone's Back closes the pop-up on top, then Help, then takes you to Home; it stays in the game. On an event it just reminds you to pick one, so a stray Back never answers for you.</li></ul>
       <p>On a tablet, a computer or a phone held sideways, Home shows two columns, with your job, home, ride and recent journal entries at the side.</p>`],
     ['install', '📱 Installing and playing offline', `
       <p>The Burg is a web app you can install. On iPhone, open it in Safari, tap Share, then <b>Add to Home Screen</b>. On Android, open it in Chrome and tap <b>Install app</b> (or ⋮ → Add to Home screen). After the first visit it works offline. After you've played a couple of months, Home may offer an <b>Install</b> button where your browser supports it; <b>Not now</b> hides it for two weeks.</p>
+      <p><b>When the browser may not keep your lives</b>, the title screen says so. In a private window, back up before you close it. In a Safari tab on iPhone, Safari can wipe a site after 7 days away, so add the game to your Home Screen. If the browser wiped your lives, load a backup. On iPhone the Home Screen app keeps its own lives, not Safari's. To bring them, copy a backup code in Safari and paste it in the app.</p>
+      <p>The game downloads itself once and then opens from your device, with no download at all on a normal launch. A new version is fetched in the background when there is one.</p>
       <p>There's also an <b>Android app (APK)</b> and a <b>Windows installer</b> on the game's GitHub releases page: github.com/krazow/The-Burg/releases.</p>
-      <p>Version ${APP_VERSION}.</p>`]
+      <p>Version ${APP_VERSION}.</p>`],
+    ['device', '🔒 What this game keeps on your device', deviceHTML()]
   ];
   return `<div class="guide">
     <h2 class="gt">📖 Game guide</h2>
-    <nav class="toc" aria-label="Guide contents">${S2.map(([id,t]) => `<button onclick="helpJump('${id}')">${t}</button>`).join('')}</nav>
+    <nav class="toc" aria-label="Guide contents">${S2.map(([id,t]) => `<button data-call="helpgo" data-arg="${id}">${t}</button>`).join('')}</nav>
     ${S2.map(([id,t,b]) => sec(id, t, b)).join('')}
   </div>`;
 }
+/* ---------- i57-a23: what the game keeps on this device, and erasing all of it ---------- */
+function storageKB(){ let n = 0; for (const k of myKeys()) { try { n += k.length + (localStorage.getItem(k) || '').length; } catch (e) {} } return Math.max(n ? 1 : 0, Math.round(n / 1024)); }
+function deviceHTML(){
+  const lives = slots().filter(Boolean).length, best = Object.keys(store.get(BEST_KEY) || {}).length, badges = Object.keys(store.get(BADGE_KEY) || {}).length;
+  return `<p>Everything stays in this browser on this device. <b>Nothing is sent anywhere:</b> there's no account and no server, and the game only goes online to download itself and its updates.</p>
+      <ul><li><b>Your lives:</b> ${lives} of ${SLOT_COUNT} slots in use, each saved after every week.</li>
+      <li><b>Best scores:</b> ${best} kept, by length and mode, plus challenges and this week's weekly challenge.</li>
+      <li><b>Badges and challenge wins:</b> ${badges} badge${badges === 1 ? '' : 's'} collected.</li>
+      <li><b>Settings and little notes to itself:</b> theme, text size, sounds, which tips you've seen, and when you last visited.</li>
+      <li><b>The game's own files</b>, so it works with no signal. It also keeps a tiny note that you have played here. That way the title screen can tell you if your lives were wiped.</li></ul>
+      <p>All together your saved data is about <b>${storageKB()} KB</b>.</p>
+      <button class="btn ghost" id="eraseall">🗑 Erase everything</button>`;
+}
+function eraseSheet(){
+  closeHelp();                                      // the sheet sits under the Help page, so Help steps aside
+  sheet(`<h2>🗑 Erase everything?</h2>
+    <p>This deletes every life, best score, badge and setting this game keeps on this device, and its offline copy. It can't be undone. Back up first if you might want them.</p>
+    <label class="field" for="erasetype">Type ERASE to confirm</label>
+    <input type="text" id="erasetype" autocomplete="off" autocapitalize="characters">
+    <button class="btn primary" id="yes" disabled>Erase everything</button>
+    <button class="btn ghost" id="no">Keep it all</button>`);
+  $('#erasetype').oninput = () => { $('#yes').disabled = $('#erasetype').value.trim().toUpperCase() !== 'ERASE'; };
+  $('#no').onclick = () => { closeSheet(); showHelp(); };
+  $('#yes').onclick = () => {
+    for (const k of myKeys()) store.del(k);
+    FLAG_SET = false; S = null; LIFE_UNDO = [];
+    closeSheet(); renderTitle();
+    toast('Everything was erased'); announce('Everything was erased from this device');
+    // then the offline copy, in the background: it never redraws, so a life started meanwhile isn't thrown back to the title
+    const cachePre = KEY_PREFIX === 'theburgbeta.' ? 'theburgbeta-' : 'theburg-';
+    (async () => {
+      try { if (typeof caches !== 'undefined') for (const k of await caches.keys()) if (k.startsWith(cachePre) || k === FLAG_CACHE) await caches.delete(k); } catch (e) {}
+      try { if ('serviceWorker' in navigator) for (const r of await navigator.serviceWorker.getRegistrations()) if (new URL(r.scope).pathname === new URL('./', location.href).pathname) await r.unregister(); } catch (e) {}
+    })();
+  };
+  setTimeout(() => { if ($('#erasetype')) $('#erasetype').focus(); }, 60);
+}
 // i43-b03: guide sections lay out only when scrolled near (content-visibility); a contents jump lays them all out
 // first so it lands on the right spot
-function helpJump(id){ const g = document.querySelector('#helpview .guide'); if (g) g.classList.add('full'); const el = document.getElementById('g-' + id); if (el) el.scrollIntoView({ behavior: 'smooth' }); }
+function helpJump(id){ const g = document.querySelector('#helpview .guide'); if (g) g.classList.add('full'); const el = document.getElementById('g-' + id); if (el) el.scrollIntoView({ behavior: calmMotion() ? 'auto' : 'smooth' }); }
 function showHelp(){
   // i54-a04/a07: remember what to go back to; Help opened from a sheet (the Menu) goes back to what opened that sheet
   if (!lastHelpFocus) { const a = document.activeElement; lastHelpFocus = a && a.closest && a.closest('#sheet') ? lastFocus : opener(a); }
@@ -305,7 +369,7 @@ function showHelp(){
   v.innerHTML = `<div class="helphead"><h1>❓ Help</h1><button class="sm alt" id="helpclose" aria-label="Close help">✕ Close</button></div>
     <div class="helpbody">
       <div class="card tutcard"><h3>🎮 Gameplay tutorial</h3>
-        <p>Play a short <b>practice life</b>, about 4 minutes: jobs, your weekly focus, skips and plans, Out and about, trips, insurance, the money outlook, the maps and Settings. A pulsing ring shows exactly what to tap, and each step waits for your tap. ${HELP_FROM === 'game' ? 'Your current life is saved first and comes right back afterward.' : 'Nothing is saved.'}</p>
+        <p>Play a short <b>practice life</b>, about 4 minutes: jobs, your weekly focus, skips and plans, how the Life Score adds up, Out and about, trips, insurance, the money outlook, the maps and Settings. A pulsing ring shows exactly what to tap, and each step waits for your tap. ${HELP_FROM === 'game' ? 'Your current life is saved first and comes right back afterward.' : 'Nothing is saved.'}</p>
         <button class="btn primary" id="tutstart">Start the tutorial</button></div>
       ${comingUpCard()}
       ${guideHTML()}
@@ -314,6 +378,7 @@ function showHelp(){
   $('#helpclose').onclick = closeHelp;
   $('#tutstart').onclick = startTutorial;
   comingUpWire();
+  if ($('#eraseall')) $('#eraseall').onclick = eraseSheet;
   histSync();
 }
 let lastHelpFocus = null;
@@ -339,7 +404,9 @@ const TSTEPS = [
   { before:() => showEvent(EVENTS.find(e => e.title === 'Celebration Days')), sel:'#modal:not(.hidden) [data-i="0"]', tap:1, text:'<b>Events</b> pop up as life happens. Tap the first choice.' },
   { sel:'#modal:not(.hidden) #ok', tap:1, text:'Every choice shows what it did. Tap <b>Continue</b>.' },
   { sel:'#ff4', tap:1, text:'<b>⏩</b> plays several weeks with the same focus and stops if something needs you. On small phones it hides behind a long press on End Week. Tap <b>⏩ 4</b>.' },
-  { sel:'#auto', text:'<b>⏭ Auto</b> plays until something needs you. Press and hold it (or Menu → Skip and Auto options) to pick <b>Auto until</b>: a stat getting low, cash below $0, or a new season.' },
+  { sel:'#app:has(#auto) #scorenow', tap:1, text:'This is how you win. Your <b>🏆 Life Score</b> is made of four parts. Tap <b>Life Score so far</b>.' },
+  { sel:'#modal:not(.hidden) .card.tip', text:'Happiness counts 30%, net worth 30%, health 20% and community 20%. Your <b>weakest part</b> counts extra. This tip names it and what helps it, so balance beats grinding one thing.' },
+  { before:() => closeSheet(), sel:'#auto', text:'<b>⏭ Auto</b> plays until something needs you. Press and hold it (or Menu → Skip and Auto options) to pick <b>Auto until</b>: a stat getting low, cash below $0, or a new season.' },
   { sel:'#planbtn', text:'<b>🗓 Plan</b> sets up to 4 focuses that take turns, one a week. Picking a focus by hand pauses the plan for that week.' },
   { sel:'#outbtn', tap:1, text:'Quick visits to Waitsburg\'s shops, on top of your focus. Tap <b>🛍️ Out and about</b>.' },
   { sel:'#modal:not(.hidden) #no', tap:1, text:'Every place has a card: when it\'s open and what you can do there. Up to 3 visits a week. Tap <b>Close</b>.' },
@@ -369,10 +436,11 @@ const TSTEPS = [
   { sel:'#modal:not(.hidden) #close', tap:1, text:'Tap <b>Close</b>.' },
   { sel:'#helpbtn', text:'🎉 That\'s the basics! Balance <b>happiness, health, community and money</b>, and mix up your focus. When a life ends, your <b>life story</b> plays before the score. Tap <b>?</b> any time for the game guide or this tutorial.', done:1 }
 ];
-function startTutorial(){
+// after: what to do when the practice life ends from the title screen (i23-a01: start the real life the player picked)
+function startTutorial(after){
   closeHelp(); closeSheet();
   if (S && !S.over && !S.practice) save();
-  TUT = { i: -1, skipped: [], prev: { S: S && !S.over ? clone(S) : null, tab, prefs: clone(prefs()), jobCity, jobOK, undo: LIFE_UNDO } };
+  TUT = { i: -1, skipped: [], prev: { S: S && !S.over ? clone(S) : null, tab, prefs: clone(prefs()), jobCity, jobOK, undo: LIFE_UNDO, after: typeof after === 'function' ? after : null } };
   LIFE_UNDO = [];
   setPref('mapView', false); jobCity = 'all'; jobOK = false;
   newGame('Practice', 'half', 0, { practice: true });
@@ -436,6 +504,13 @@ function placeBubble(b, box, vw, vh, tap){
   if (!tap && room < 120) return at({ top: 'auto', bottom: `${m}px` });   // a big area to look at: the bubble may sit over part of it
   at({ maxHeight: `${Math.max(80, room)}px`, overflowY: 'auto', top: below >= above ? `${box.y + box.h + gap}px` : `${Math.max(m, box.y - gap - Math.min(bh, room))}px` });
 }
+// i43-a05: where Tab may go during the tutorial: the lit spot (when it's for tapping), then Next and Skip
+function coachStops(){
+  const st = TUT && TSTEPS[TUT.i], el = st && st.tap && st.sel ? document.querySelector(st.sel) : null;
+  const own = !el ? [] : el.matches('button:not([disabled]), [tabindex="0"], input, a[href]') ? [el] : focusables(el);
+  const b = document.querySelector('#coach .cbubble');
+  return [...own, ...(b ? focusables(b) : [])];
+}
 function hideCoach(){ const c = $('#coach'); if (c) { c.classList.add('hidden'); c.innerHTML = ''; } }
 // i54-a10: on a look-only step the ringed spot is just for looking: taps, long presses and right-clicks on it do nothing
 ['click', 'pointerdown', 'contextmenu'].forEach(ev => document.addEventListener(ev, e => {
@@ -456,7 +531,7 @@ function endTutorial(done){
   if (prev.mini) { tab = prev.tab || 'home'; render(); window.scrollTo(0,0); return; }   // i31-b17: a Show me tour changed nothing but the tab
   store.set(PREF_KEY, prev.prefs); applyPrefs(); jobCity = prev.jobCity; jobOK = prev.jobOK; LIFE_UNDO = prev.undo || [];
   S = prev.S; tab = prev.tab || 'home'; MAPSIDE = null; MAPSEL = null;
-  if (S) { render(); window.scrollTo(0,0); } else renderTitle();
+  if (S) { render(); window.scrollTo(0,0); } else { renderTitle(); if (prev.after) { prev.after(); return; } }
   toast(done ? '🎉 Tutorial finished' : 'Tutorial closed');
 }
 
