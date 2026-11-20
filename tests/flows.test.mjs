@@ -500,7 +500,8 @@ await t.check('What\'s new shows once to returning players after an update, neve
     store.set(SEEN_KEY, '0.1.0'); TUT = { i: 0 }; const tut = whatsNew(); TUT = null;
     return { fresh, freshSeen, first, text, again, tut, v: baseVersion() }; });
   assert(!r.fresh && r.freshSeen === r.v, 'a brand-new player should not see it (but it counts as seen)');
-  assert(r.first && /What's new in 0\.2\.0/.test(r.text) && /Trips around the region/.test(r.text) && /Legacy/.test(r.text), r.text.slice(0, 200));
+  // a 0.1.0 player sees the newest list they haven't seen (this version's)
+  assert(r.first && new RegExp(`What's new in ${r.v.replace(/\./g, '\\.')}`).test(r.text) && /Safer saves/.test(r.text) && /Weather and hard years/.test(r.text), r.text.slice(0, 200));
   assert(!r.again && !r.tut, JSON.stringify(r));
   await page.evaluate(() => closeSheet());
 });
