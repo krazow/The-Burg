@@ -101,6 +101,8 @@ await t.check('quitting your job asks first, then shows the "Find a job" banner'
 await t.check('in Lifetime, retiring at 62 swaps the paycheck for Social Security', async () => {
   await life({ jobId: 'clerk', ageMonths: 62 * 12 + 1 }, 'jobs', 'life');
   await page.click('#retire');
+  assert(/can't un-retire/.test(await page.textContent('#sheet')), 'i8-a04: retiring asks first');
+  await page.click(`${open} #y`); await page.click(`${open} #ok`);   // i8-a04: the ask, then the retirement moment
   const s = await S();
   assert(s.retired && s.jobId === null, 'not retired');
   await page.click('[data-tab=home]'); await page.click('#end'); await clearSheets();
@@ -461,7 +463,7 @@ await t.check('pick life goals on the Life tab, and start a challenge from the t
   await page.click('#chal');
   await page.click(`${open} [data-sc="farm"]`);
   const s = await S();
-  assert(s.scenario === 'farm' && s.bg === 'farm' && s.len === 'five', JSON.stringify({ sc: s.scenario, bg: s.bg, len: s.len }));
+  assert(s.scenario === 'farm' && s.bg === 'farm' && s.len === 'two' && s.home === 'folks', JSON.stringify({ sc: s.scenario, bg: s.bg, len: s.len }));
   assert(/Challenge/.test(await page.textContent('#main')), 'Home should show the challenge');
 });
 
@@ -712,6 +714,7 @@ await t.check('🗓 Plan: build a rotation, End Week follows it, and picking by 
 // ---- jobs and school (ideas round 3), by tapping ----
 await t.check('i3-a07/a08: Apply opens an interview; an answer leads to the offer, and a hard-to-fill job lets you ask for more', async () => {
   await life({ edu: 2, community: 60 }, 'jobs');
+  await page.evaluate(() => { window._jo = jobOpen; jobOpen = () => true; render(); });   // i8-a06: openings are checked in the rules tests
   await page.click('[data-apply="rn"]');
   await page.waitForSelector(`${open} >> text=Interview: Registered nurse`);
   assert((await page.$$(`${open} [data-i]`)).length === 3, 'three interview answers');
@@ -723,8 +726,9 @@ await t.check('i3-a07/a08: Apply opens an interview; an answer leads to the offe
   await page.evaluate(() => { Math.random = window._r; });
   await page.waitForSelector(`${open} >> text=5% more`);
   await page.click(`${open} #ok`);
-  const s = await S();
-  assert(s.jobId === 'rn' && Math.abs(s.raise - 1.05) < 1e-9, JSON.stringify({ job: s.jobId, raise: s.raise }));
+  await page.evaluate(() => { jobOpen = window._jo; });
+  const s = await S();   // i37-b05: a nurse's job starts 6 weeks after hiring, with the 5% kept for that day
+  assert(s.startLater && s.startLater.id === 'rn' && Math.abs(s.startLater.raise - 1.05) < 1e-9, JSON.stringify({ later: s.startLater }));
 });
 
 await t.check('i3-a07: Decide later leaves the interview pending until End Week', async () => {
@@ -973,7 +977,7 @@ await t.check('i2-a02: the focus preview uses the same math as the week, shows a
 });
 
 await t.check('i2-a21: every money line says why, and the details explain why stats moved', async () => {
-  await life({ jobId: 'foodplant', dog: true, partner: true, money: -500, k401rate: 1 });
+  await life({ jobId: 'foodplant', dog: true, partner: true, money: -1500, k401rate: 1 });
   await page.click('#end'); await clearSheets();
   const s = await S();
   const missing = s.last.lines.filter(l => !l[2]).map(l => l[0]);
@@ -1230,7 +1234,7 @@ await t.check('i3-a24: the retire button counts a vested pension', async () => {
   await life({ ageMonths: 63 * 12, jobId: 'para', pensionYears: 20, pensionPay: 2900 }, 'jobs', 'life');
   const label = await page.textContent('#retire');
   assert(/pension/.test(label), label);
-  await page.click('#retire'); await page.click('[data-tab=home]'); await page.click('#end'); await clearSheets();
+  await page.click('#retire'); await page.click(`${open} #y`); await page.click(`${open} #ok`); await page.click('[data-tab=home]'); await page.click('#end'); await clearSheets();
   const l = Object.fromEntries((await S()).last.lines);
   assert(l['Pension'] > 0 && l['Social Security'] > 0, JSON.stringify(l));
 });

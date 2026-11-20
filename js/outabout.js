@@ -244,7 +244,7 @@ function bankSheet(pid){
   sheet(`<h2>🏦 Standard Bearer Bank</h2><p class="evplace">📍 215 Main St.</p>
     <p>A banker walks you through where your money stands.</p>
     ${row('Cash on hand', fmt(S.money))}${row('401(k) savings', `${fmt(S.k401 || 0)}${S.retired ? '' : ` · saving ${K401[S.k401rate || 0] * 100}%`}`)}
-    ${h.own ? row('Home loan (mortgage)', `${wk(S.mortgage || cost(h.cost))}, locked in`) : row('Home', 'Renting')}
+    ${h.own ? (outright() ? row('Home loan (mortgage)', 'None: paid for') : row('Home loan (mortgage)', `${wk(S.mortgage || cost(h.cost))}, locked in`)) : row('Home', HOMES[S.home].folks ? 'At your folks\' place' : 'Renting')}
     ${S.loanLeft > 0 ? row('Truck loan', `${wk(S.loanPay || CARS.truck.pay)} · ${Math.ceil(S.loanLeft / W)} payments left`) : ''}
     ${S.sloanLeft > 0 ? row('Student loan', `${wk(S.sloanPay)} · ${Math.ceil(S.sloanLeft / W)} payments left`) : ''}
     <p class="muted">${S.money < 0 ? 'You\'re overdrawn: debt costs about 1.5% a month in interest.' : 'Saving 5% or more in your 401(k) gets the 3% match.'} Change your 401(k) and buy a home or vehicle on the Life tab: the bank handles the loans.</p>
@@ -307,7 +307,7 @@ Object.assign(jobById('diner'), { title:'Line cook', where:'Bourbon Gulch Sports
 JOBS.push(
   {id:'barista',   city:'waitsburg', title:'Barista',           where:'Howlin\' Bean',       place:'bean',    pay:3050, edu:0, stress:.3, wear:.3},
   {id:'grocer',    city:'waitsburg', title:'Grocery clerk',     where:'Burg Basket Grocery', place:'basket',  pay:3100, edu:0, stress:.3, wear:.4},
-  {id:'reporter',  city:'waitsburg', title:'Reporter',          where:'The Touchet Tattler', place:'tattler', pay:3150, edu:0, stress:.6, wear:.1},
+  {id:'reporter',  city:'waitsburg', title:'Reporter',          where:'The Touchet Tattler', place:'tattler', pay:3300, edu:0, stress:.6, wear:.1},
   {id:'teller',    city:'waitsburg', title:'Bank teller',       where:'Standard Bearer Bank',place:'bank',    pay:3250, edu:0, stress:.5, wear:0},
   {id:'apprentice',city:'waitsburg', title:'Trades apprentice', where:'Sharp Point Builders',place:'trades',  pay:3400, edu:0, stress:.4, wear:1.0, outdoor:1},
   {id:'medasst',   city:'waitsburg', title:'Medical assistant', where:'The Burg Clinic',     place:'clinic',  pay:3300, edu:1, stress:.5, wear:.3},
