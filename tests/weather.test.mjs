@@ -11,7 +11,7 @@ const errors = [];
 page.on('pageerror', e => errors.push(String(e)));
 await page.goto(srv.url, { waitUntil: 'load' });
 await page.evaluate(() => {
-  window.fresh = (len = 'two', extra = {}) => { newGame('Wx', len, 0); S.noEvents = true; Object.assign(S, extra); return S; };
+  window.fresh = (len = 'two', extra = {}) => { newGame('Wx', len, 0); S.diff = 'hard'; S.noEvents = true; Object.assign(S, extra); return S; };
   window.byTitle = t => EVENTS.find(e => e.title === t) || DUE_EVENTS.find(e => e.title === t);
   window.choose = (t, i = 0) => { const e = byTitle(t); const ch = e.choices().filter(c => !c.if || c.if()); return ch[i].go(); };
   window.labels = t => byTitle(t).choices().filter(c => !c.if || c.if()).map(c => c.label);
