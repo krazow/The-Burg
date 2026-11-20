@@ -126,10 +126,12 @@ for (const [label, w, h, nightXL] of SIZES) {
     ['life-goals', async () => { await page.evaluate(() => { endTutorial(false); $('#toast').classList.add('hidden'); tab = 'life'; render(); }); await page.click('#goals'); }],
     ['money-outlook', async () => { await page.evaluate(() => { closeSheet(); S.home = 'fixer'; S.mortgage = 950; S.roomHost = true; S.money = 200; S.jobId = null; tab = 'life'; render(); outlookSheet(); }); }],
     ['life-planning', async () => { await page.evaluate(() => { closeSheet(); S.money = 200000; S.scholar = { y: 2027, n: 2 }; S.pensionYears = 6; S.pensionPay = 3500; render(); document.querySelector('#outlook').scrollIntoView({ block: 'center' }); }); }],
+    ['rules-card', async () => { await page.evaluate(() => { closeSheet(); S.rules = { start: 'comfy', routine: 'on' }; S.tier0 = 'custom'; tab = 'life'; render(); document.querySelector('#rulescard').scrollIntoView({ block: 'center' }); }); }],   // i19-b19
     ['end', async () => { await page.evaluate(() => { closeSheet(); S.badges = { job: 1, dog: 3 }; finish('You chose to wrap things up.'); }); }],
     ['legacy-will', async () => { await page.evaluate(() => { legacySheet({ name: 'Screens', nw: 300000, community: 50, home: 'fixer', equity: 50000, will: false, col: 1, slot: 0, gen: 1 }); }); }],
     ['title-options', async () => { await page.evaluate(() => { closeSheet(); S = null; useDice(); renderTitle(); }); await page.click('#moreopts'); }],
-    ['challenges', async () => { await page.click('#chal'); }],
+    ['rules', async () => { await page.click('#rulesbtn'); await page.evaluate(() => document.querySelector('[data-rule="start"][data-opt="comfy"]').click()); }],   // i19-b02..b05
+    ['challenges', async () => { await page.evaluate(() => closeSheet()); await page.click('#chal'); }],
     ['weekly', async () => { await page.evaluate(() => closeSheet()); await page.click('#weekly'); }],
     ['records', async () => { await page.evaluate(() => { closeSheet(); store.set(CHALLENGE_KEY, { farm: 1 }); const b = store.get(BEST_KEY) || {}; b['half-hard'] = 41; b['sc-farm'] = 77; b['wk-' + isoWeek()] = 63; store.set(BEST_KEY, b); renderTitle(); }); await page.click('#records'); }],
     ['whats-new', async () => { await page.evaluate(() => { closeSheet(); store.set(SEEN_KEY, '0.1.0'); whatsNew(); }); }]

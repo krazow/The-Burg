@@ -431,7 +431,7 @@ function rulesSheet(start, ctx, done){
       $(`#rl-${id}`).textContent = ruleLabel(id, cur, ctx); $(`#rp-${id}`).textContent = rulePreview(id, cur, ctx);
       document.querySelectorAll(`[data-rule="${id}"]`).forEach(b => { const on = b.dataset.opt === cur; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
     }
-    const t = recordTier(r); $('#tierbadge').innerHTML = `${TIERS[t].ic} <b>This life counts toward ${TIERS[t].shelf}.</b> ${TIERS[t].desc}`;
+    const t = recordTier(r); $('#tierbadge').innerHTML = `<span>${TIERS[t].ic} <b>This life counts toward ${TIERS[t].shelf}.</b> ${TIERS[t].desc}</span>`;
     done(cleanRules(r));
   };
   document.querySelectorAll('[data-rule]').forEach(b => b.onclick = () => { r = { ...r, [b.dataset.rule]: b.dataset.opt }; upd(); });
@@ -445,7 +445,7 @@ function rulesCard(){
   const t = lifeTier(), ctx = { bg: S.bg, mode: mode() };
   return `<div class="card" id="rulescard"><h3>🎛️ Rules for this life</h3>
     <p class="muted">${TIERS[t].ic} Counts toward ${TIERS[t].shelf}. Rules are set when a life starts. Assists can be turned off, but not back on.</p>
-    ${ch.map(id => `<div class="kv"><span>${esc(ruleLabel(id, ruleOpt(id), ctx))}</span>${RULES[id].assist ? `<button class="sm" data-assistoff="${id}" aria-label="Turn off ${esc(RULES[id].name)}">Turn off</button>` : ''}</div>`).join('')}
+    ${ch.map(id => `<div class="kv"><span>${esc(ruleLabel(id, ruleOpt(id), ctx))}</span>${RULES[id].assist ? `<button class="sm" style="flex:none;white-space:nowrap" data-assistoff="${id}" aria-label="Turn off ${esc(RULES[id].name)}">Turn off</button>` : ''}</div>`).join('')}
     <p class="muted">Everything else: Normal.</p></div>`;
 }
 function assistOffSheet(id){
