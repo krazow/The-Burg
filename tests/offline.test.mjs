@@ -95,11 +95,14 @@ await t.check('a new version replaces the old one: new cache, old cache gone, sa
   fs.writeFileSync(path.join(dir, 'sw.js'), fs.readFileSync(path.join(dir, 'sw.js'), 'utf8').replace(`const VERSION = CACHE_PREFIX + '${oldVersion}'`, `const VERSION = CACHE_PREFIX + '${NEW}'`));
   fs.writeFileSync(path.join(dir, 'js/state.js'), fs.readFileSync(path.join(dir, 'js/state.js'), 'utf8').replace(/const APP_VERSION = '[^']*'/, `const APP_VERSION = '${NEW}'`));
   await reloadSafe();                      // the old cached page loads; the browser finds the new worker
-  let names = [];
+  // i3-b08: the new version downloads and waits; the old one keeps running until the player taps Update ready
+  await page.waitForSelector('#updnow', { timeout: 15000 });
+  let names = await cacheNames();
+  assert(names.includes('theburg-' + NEW) && names.includes('theburg-' + oldVersion), `while waiting: ${names}`);
+  await Promise.all([page.waitForEvent('load', { timeout: 15000 }), page.click('#updnow')]);
   for (let i = 0; i < 40; i++) { names = await cacheNames(); if (names.includes('theburg-' + NEW) && !names.includes('theburg-' + oldVersion)) break; await page.waitForTimeout(250); }
   assert(names.includes('theburg-' + NEW), `new cache missing: ${names}`);
   assert(!names.includes('theburg-' + oldVersion), `old cache not removed: ${names}`);
-  await reloadSafe();                      // now the new page comes from the new cache
   let shown = '';
   for (let i = 0; i < 3 && !shown.includes(NEW); i++) { shown = await page.evaluate(() => APP_VERSION); if (!shown.includes(NEW)) await reloadSafe(); }
   assert(shown === NEW, `still running ${shown}`);

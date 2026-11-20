@@ -66,7 +66,7 @@ function routinePick(ev){
 // i71-b03: one way to settle an event, for a tapped choice and for one resolved on its own during a skip: the choice,
 // the weather bill, the Journal, the week strip and the map pin, and only now the event's cooldown (i22-a01)
 function resolveChoice(ev, choice, auto = false){
-  const m0 = S.money, result = choice.go() || '', dm = S.money - m0;
+  const m0 = S.money, d = evDice(ev), result = (() => { try { return choice.go() || ''; } finally { d.done(); } })(), dm = S.money - m0;
   wxTrack(ev, dm);                          // i75-a30: the weather bill
   if (result) { log(`${ev.title}: ${result}`); if (S.evLabel) S.log[0].d = S.evLabel; }   // dated the week it happened
   if (S.run) S.run.happened.push({ ic: ev.ic, title: ev.title, money: dm, wx: !!ev.wx, ...(auto ? { auto: 1 } : {}) });
@@ -77,14 +77,26 @@ function resolveChoice(ev, choice, auto = false){
   S.pendingEv = null; S.evAt = null;
   return { result, dm };
 }
+// i3-b02: an event waiting when the app closed comes back with the same dice: its text, its choices and what a
+// choice does roll from a seed made of this life, the week and the event, so closing the app can't reroll it.
+// Seeded lives (the weekly challenge) already keep their own dice.
+function evDice(ev){
+  if (!S || S.rng != null || S.pendingEv !== ev.title) return { done(){} };
+  const prev = Math.random; let a = weekSeed(`${S.lifeId || S.name}:${S.evAt ?? S.turn}:${ev.title}`);
+  Math.random = () => { const [n, v] = diceStep(a); a = n; return v; };
+  return { done(){ Math.random = prev; } };
+}
 function showEvent(ev, then = null){
   const before = {happy:S.happy, health:S.health, community:S.community};
-  const choices = ev.choices().filter(c => !c.if || c.if());
+  const dice = evDice(ev);
+  let choices, body;
+  try { choices = ev.choices().filter(c => !c.if || c.if()); body = typeof ev.text==='function'?ev.text():ev.text; } finally { dice.done(); }
   const pin = S.evPins && S.evPins[0] && S.evPins[0].t === ev.title ? [S.evPins[0].m, S.evPins[0].k] : eventPlace(ev);
   const hints = choices.length > 1 ? choiceHints(choices) : [];   // i2-a01
-  sheet(`<div class="big">${ev.ic}</div><h2 style="text-align:center">${ev.title}</h2><p class="evplace">📍 ${esc(placeName(pin))}${pin[0] === 'R' ? ' · on the region map' : ''}</p><p id="evtext" data-desc>${typeof ev.text==='function'?ev.text():ev.text}</p>
+  sheet(`<div class="big">${ev.ic}</div><h2 style="text-align:center">${ev.title}</h2><p class="evplace">📍 ${esc(placeName(pin))}${pin[0] === 'R' ? ' · on the region map' : ''}</p><p id="evtext" data-desc>${body}</p>
     <div class="evchoices">${choices.map((c,i) => `<button class="btn ${i===0?'primary':'ghost'}" data-i="${i}">${c.label}${hints[i] ? `<small class="hint">${hints[i]}</small>` : ''}</button>`).join('')}</div>`);
   $('#sheet').classList.add('ev');            // i2-a24: the choices sit at the bottom of the pop-up, in thumb reach
+  holdToast();                                // i20-a04: a toast already up waits until the event closes
   sfx('event'); buzz('event');
   document.querySelectorAll('#sheet [data-i]').forEach(b => b.onclick = () => {
     const { result, dm } = resolveChoice(ev, choices[+b.dataset.i]);
@@ -318,7 +330,7 @@ const EVENTS = [
   // i75-a12: owners lose shingles, and every roofer in the valley is booked for weeks (windChoices, below)
   // i15-a03: storm season (October to March), once a year at most, with a choice to get ready (last in windChoices)
   { ic:'🌬️', title:'Windstorm', yr:1, w:2, when:m => inM(m,9,10,11,0,1,2),
-    text:() => `The forecast calls for a big wind tonight, and the old limb over the ${HOMES[S.home].own ? 'roof' : 'driveway'} is already creaking.${HOMES[S.home].own ? ' If the shingles go, every roofer in the valley will be booked.' : ''}`,
+    text:() => `The forecast calls for a big wind tonight, and the old limb over the ${HOMES[S.home].own ? 'roof' : 'driveway'} is already creaking.${HOMES[S.home].own && on('weather.homeDamage') ? ' If the shingles go, every roofer in the valley will be booked.' : ''}`,
     choices:() => windChoices() },
   { ic:'🧅', title:'Walla Walla Sweets are in', yr:1, w:3, when:m => inM(m,5,6),
     text:'The sweet onion harvest is here.',
@@ -481,7 +493,7 @@ function roadTown(){
 const roadName = () => CITIES[roadTown()].name;
 // the ski season that starts each October (December to March count with the October before)
 const skiSeason = () => { const d = new Date(S.date); return d.getMonth() >= 9 ? d.getFullYear() : d.getFullYear() - 1; };
-const skiPass = () => S.skiPass === skiSeason();
+const skiPass = () => on('trips.ski') && S.skiPass === skiSeason();
 // i66-b16: with a pass, a December-March Get outside week is a ski day at Bluewood
 const skiWeek = () => S.focus === 'outdoors' && skiPass() && [11, 0, 1, 2].includes(curMonth()) && S.health >= SKI_HEALTH;
 // J29: better coverage halves doctor and urgent-care bills from events until next January
@@ -1107,14 +1119,14 @@ const smokeYear = () => wxSmoke();
 const heatYear = () => wxHeat();
 const SMOKE_RULE_MONTHS = [6, 7];                     // July and August
 const outdoorJob = () => working() && !!job().outdoor;
-const smokeRuleWeek = () => SMOKE_RULE_MONTHS.includes(curMonth()) && outdoorJob() && smokeYear();   // cheap checks first: no weather roll for others
+const smokeRuleWeek = () => on('weather.smoke') && SMOKE_RULE_MONTHS.includes(curMonth()) && outdoorJob() && smokeYear();   // cheap checks first: no weather roll for others
 const pushingSmoke = () => !!(S.smokeRule && S.smokeRule.y === thisYear() && S.smokeRule.push);
 // i75-a07: in a smoke week outdoor crews work shorter days (pay ×0.9, wear ×0.5), unless you chose to push through
 const SMOKE_PAY = 0.9, SMOKE_WEAR = 0.5, SMOKE_SICK = 0.08;
 const smokePayMult = () => smokeRuleWeek() && !pushingSmoke() ? SMOKE_PAY : 1;
 const smokeWearMult = () => smokeRuleWeek() && !pushingSmoke() ? SMOKE_WEAR : 1;
 const airFilterOn = () => S.airFilter === thisYear();           // i75-a08: good for this year's smoke
-const isCaptain = () => !!S.captain;                            // i75-a33
+const isCaptain = () => !!S.captain && on('weather.neighbors');   // i75-a33
 const peopleHome = () => !!(S.partner || kidsAtHome() || S.community >= 30);
 const FLOOD_PROOF_OFF = 0.8;                                    // i75-a14: a raised furnace cuts flood cleanup 80%
 const ROOF_RUSH = 0.3, ROOF_WAIT = [4, 8], ROOF_LEAK = 0.05;    // i75-a12
@@ -1129,7 +1141,7 @@ function roofWaitList(c){
 }
 // i75-a12/a13: the windstorm's choices. Owners pick how the roof gets fixed; renters lose a day of power.
 function windChoices(){
-  const own = !!HOMES[S.home].own;
+  const own = !!HOMES[S.home].own && on('weather.homeDamage');   // to-do 2: below Hard, the wind never damages your home
   const plan = isCaptain() ? [{label:own ? 'Run the block\'s storm plan, and get on a roofer\'s list' : 'Run the block\'s storm plan (an evening)',
     go:() => runPlan('the windstorm') + (own ? ' ' + roofWaitList(roofCost()) : '')}] : [];
   if (!own) return [...outageChoices('Check the damage', () => { if (S.generator) return 'Power was out a day, but your generator kept the fridge cold.'; adj({money:-cost(60), happy:-1}); return 'Power was out a day and the fridge food spoiled.'; }, 'the windstorm'),
@@ -1155,6 +1167,7 @@ const roofCost = () => Math.round(cost(ri(1000, 4000)) * (1 - skillLv('handy') *
 // i75-a19/a26/a33: an outage's choices. The outage's own cost (base) always happens; remote workers also decide about the
 // work day, people at home can make an evening of it, and a block captain runs the plan.
 function outageChoices(label, base, what){
+  if (!on('weather.neighbors')) return [{label, go:base}];      // to-do 2: below Hard, an outage is just the outage
   const remote = working() && !!job().remote, g = Math.round(tripGas('wallawalla')), day = Math.round(dayPay()), list = [];
   const both = extra => () => `${base()} ${extra()}`;
   if (isCaptain()) list.push({label:'Run the block\'s storm plan (an evening)', go:both(() => runPlan(what))});
@@ -1250,7 +1263,7 @@ function weatherLines(lines, notes){
     }
   }
   // i75-a21: a snowy week (about one in three December to March; half in a hard winter, one in seven in a mild one)
-  if (S.walk && inM(curMonth(), 11, 0, 1, 2) && chance(wxHard() ? 0.5 : wxMild() ? 0.15 : 0.35)) {
+  if (S.walk && on('town.walk') && inM(curMonth(), 11, 0, 1, 2) && chance(wxHard() ? 0.5 : wxMild() ? 0.15 : 0.35)) {
     adj({health:isCaptain() ? -0.5 : -1, community:1});
     if (S.walkWinter !== winterYear()) { S.walkWinter = winterYear(); S.walkWinters = (S.walkWinters || 0) + 1;
       notes.push(`❄️ First snow of the winter: you cleared Edna's walk next door before breakfast${isCaptain() ? ', and the block\'s shovel crew took the rest' : ''}.`); }

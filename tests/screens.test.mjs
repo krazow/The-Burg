@@ -52,7 +52,7 @@ const audit = () => {
     if (!el || seen.has(el) || !node.textContent.trim() || /^[\p{Emoji}\s·›✕↑]+$/u.test(node.textContent.trim())) continue;
     seen.add(el);
     if (!vis(el) || el.closest('svg, .cdim') || covered(el)) continue;
-    if (el.closest('button[disabled], [aria-hidden=true]')) continue;              // inactive controls are exempt
+    if (el.closest('button[disabled], [aria-hidden=true], .toast.out')) continue;   // inactive controls, and a toast fading out (i20-a03), are exempt
     const cs = getComputedStyle(el), px = parseFloat(cs.fontSize), bold = Number(cs.fontWeight) >= 700;
     if (px < 11) out.smallText.push(`${node.textContent.trim().slice(0, 24)} (${px}px)`);
     const fg = rgba(cs.color); fg[3] *= opac(el);
