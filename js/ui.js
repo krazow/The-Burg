@@ -846,7 +846,7 @@ function cashSheet(){
     ${nx ? `<h3 style="margin-top:12px">Next week</h3>
       <div class="kv"><span>Regular pay and bills${nx.big.length ? `<br><small class="muted">${nx.big.map(([l, v]) => `${esc(l)} ${v > 0 ? '+' : ''}${fmt(v)}`).join(' · ')}</small>` : ''}</span><span><b>${nx.net >= 0 ? '+' : ''}${fmt(nx.net)}</b></span></div>
       <div class="kv"><span>Cash after</span><span>${fmt(nx.cash)}</span></div>` : ''}
-    ${nx ? '<button class="btn primary" id="cashout">📅 Money outlook: next 13 weeks</button>' : ''}
+    ${nx && on('money.outlook') ? '<button class="btn primary" id="cashout">📅 Money outlook: next 13 weeks</button>' : ''}
     <button class="btn ghost" id="ok">Close</button>`);
   if ($('#cashout')) $('#cashout').onclick = () => outlookSheet(cashSheet);
   $('#ok').onclick = closeSheet;
@@ -978,7 +978,7 @@ function renderHome(){
   ${S.happy < 30 ? sugg('happy', 'outdoors', `😟 Happiness is low (${Math.round(S.happy)}).`) : ''}
   ${S.health < 30 ? sugg('health', 'rest', `🤒 Health is low (${Math.round(S.health)}).`) : ''}
   ${overtimeTip() ? `<div class="card warn">${overtimeTip()}</div>` : ''}
-  ${S.money < 0 && !inCollections() ? firstTime('collect') : ''}
+  ${S.money < 0 && !inCollections() && on('money.collections') ? firstTime('collect') : ''}
   ${S.money < debtWarnAt() ? `<div class="card warn" id="debtwarn">⚠️ Your debt is getting dangerous.${debtLimit() == null ? ` In Relaxed it never ends your life (a debt counselor stops it at ${fmt(RELAXED_FLOOR)}), but the interest keeps eating your cash.` : ` Below ${fmt(debtLimit())} you'll have to leave town${canBankrupt() ? ' or file for bankruptcy' : ''}.`}</div>` : onPlan() ? `<div class="card">📞 <b>On a payment plan.</b> Your debt is still in collections (worse odds on job applications and loans until you're back above $0), but the calls stop while your cash keeps going up.</div>` : inCollections() ? `<div class="card warn">📞 Your debt is in collections: daily calls (−happiness) and worse odds on job applications and loans until you're back above $0. Raise your cash ${PLAN_WEEKS} weeks in a row to get on a payment plan.</div>` : ''}
   <div class="card"><div class="focushead"><h3>This week's focus</h3><button class="sm alt" id="planbtn" aria-pressed="${!!(S.plan && S.plan.length)}" aria-label="Focus plan: ${S.plan && S.plan.length ? 'on' : 'off'}">🗓 Plan${S.plan && S.plan.length ? ' ✓' : ''}</button></div>${scenarioLine() || seasonLine()}${mapToggle()}
     ${prefs().mapView ? mapBlock('T') : `<div class="fgrid">${Object.entries(FOCUS).map(([k,x]) => {
@@ -1082,7 +1082,7 @@ function showStatInfo(k){
       <div class="kv"><span>Cash</span><span>${fmt(S.money)}</span></div>
       <div class="kv"><span>${term('equity')}</span><span>${fmt(S.equity)}</span></div>
       <div class="kv"><span>${CARS[S.car].name}</span><span>${fmt(S.carValue)}</span></div>
-      <div class="kv"><span>401(k), after tax (${Math.round(K401_AFTER_TAX * 100)}% of ${fmt(S.k401 || 0)})</span><span>${fmt((S.k401 || 0) * K401_AFTER_TAX)}</span></div>
+      ${on('money.k401') || S.k401 ? `<div class="kv"><span>401(k), after tax (${Math.round(K401_AFTER_TAX * 100)}% of ${fmt(S.k401 || 0)})</span><span>${fmt((S.k401 || 0) * K401_AFTER_TAX)}</span></div>` : ''}
       ${S.biz ? `<div class="kv"><span>${BIZ[S.biz.type].name}</span><span>${fmt(bizValue())}</span></div>` : ''}
       ${S.stocks > 0 ? `<div class="kv"><span>Index funds</span><span>${fmt(S.stocks)}</span></div>` : ''}
       ${wineAtCost() ? `<div class="kv"><span>Wine futures (at cost)</span><span>${fmt(wineAtCost())}</span></div>` : ''}
@@ -1110,7 +1110,7 @@ const takeHome = x => payNow(x, S.jobId === x.id) * W * (1 - taxRate(payNow(x, S
 let GOOD_JOBS = [];
 function goodFirstJobs(){
   if (!S || S.practice || S.jobId || S.retired || prefs().hired || hasRecords()) return [];
-  return JOBS.filter(x => CITIES[x.city].miles <= 25 && x.edu <= S.edu && !extraLock(x) && jobInSeason(x))
+  return JOBS.filter(x => CITIES[x.city].miles <= 25 && x.edu <= S.edu && jobOn(x) && !extraLock(x) && jobInSeason(x))
     .map(x => [x.id, takeHome(x) - CITIES[x.city].miles * 10 - (x.stress + x.wear) * 40]).sort((a, b) => b[1] - a[1]).slice(0, 2).map(a => a[0]);
 }
 function jobRow(x){
@@ -1122,8 +1122,8 @@ function jobRow(x){
     : back ? `<button class="sm" data-recall="${x.id}">Go back</button>`
     : !jobInSeason(x) ? `<button class="sm" disabled aria-label="Hires again in ${MONTHS[x.season[0]]}">Hires ${MONTHS[x.season[0]].slice(0,3)}</button>`
     : `<button class="sm" data-apply="${x.id}" ${S.applied?'disabled':''}>Apply</button>`;
-  const tags = [GOOD_JOBS.includes(x.id) ? '<b class="goodjob">⭐ Good first job</b>' : '', x.remote === 5 ? '🏠 fully remote' : x.remote ? `🏠 ${x.remote} remote days` : '', x.season ? `🗓️ ${seasonWords(x)}` : '', x.union ? '🪪 union' : '',
-    x.apprentice && !cur ? `🧰 apprentice, ${x.apprentice.weeks / 52} yrs to full pay` : '', CLEARANCE.includes(x.id) && !cur ? '🔐 clearance' : '', majorFits(x) ? '🎓 your major' : ''].filter(Boolean);
+  const tags = [GOOD_JOBS.includes(x.id) ? '<b class="goodjob">⭐ Good first job</b>' : '', remoteDays(x) === 5 ? '🏠 fully remote' : remoteDays(x) ? `🏠 ${x.remote} remote days` : '', seasonal(x) ? `🗓️ ${seasonWords(x)}` : '', unionJob(x) ? '🪪 union' : '',
+    x.apprentice && !cur ? `🧰 apprentice, ${x.apprentice.weeks / 52} yrs to full pay` : '', CLEARANCE.includes(x.id) && !cur && on('jobs.perks') ? '🔐 clearance' : '', majorFits(x) ? '🎓 your major' : ''].filter(Boolean);
   return `<div class="kv job${lock ? ' lockedrow' : ''}" data-job="${x.id}"><div><div class="t">${cur ? esc(jobTitle(x)) : x.title}</div>
     <div class="s">${x.where ? esc(x.where) + ', ' : ''}${c.name}${c.miles ? ` · ${c.miles} mi` : ' · no commute'} · pay ${wk(payNow(x, cur))}${c.miles ? `, gas ${wk(commuteCost(c.miles, CARS[S.car], x))}` : ''}${tags.length ? ` · ${tags.join(' · ')}` : ''}</div></div>
     <div style="text-align:right"><div class="pay">${fmt(th)}/wk</div>
@@ -1167,18 +1167,19 @@ function myJobCard(){
   const a = j.apprentice, app = apprenticing(j) ? `<div class="kv"><span>🧰 Apprenticeship: year ${Math.floor((S.appWeeks || 0) / 52) + 1} of ${a.weeks / 52}</span><span>${Math.round(appMult(j, true) * 100)}% pay</span></div>
     <div class="bar" role="progressbar" aria-label="Apprenticeship progress" aria-valuenow="${S.appWeeks || 0}" aria-valuemin="0" aria-valuemax="${a.weeks}"><i style="width:${(S.appWeeks || 0) / a.weeks * 100}%;background:var(--bar-sky)"></i></div>` : '';
   const facts = [clearing() ? `🔐 Clearance pending: ${S.clearAt - S.turn} more weeks at ${Math.round(CLEAR_PAY * 100)}% pay. Heavy debt (below ${fmtc(-5000)}) can sink the check.` : '',
-    j.union ? `🪪 Union job: dues ${wk(payNow(j) * UNION_DUES)}, a 1.5% step raise each January, half the layoff risk.${S.strike ? ` On strike for ${S.strike.until - S.turn} more weeks (40% strike pay).` : ''}` : '',
+    unionJob(j) ? `🪪 Union job: dues ${wk(payNow(j) * UNION_DUES)}, a 1.5% step raise each January, half the layoff risk.${S.strike ? ` On strike for ${S.strike.until - S.turn} more weeks (40% strike pay).` : ''}` : '',
     S.furlough && S.turn < S.furlough.until ? `🏛️ Furloughed for ${S.furlough.until - S.turn} more weeks. Back pay so far: ${fmt(S.furlough.owed)}.` : '',
-    j.season ? `🗓️ Seasonal: ${seasonWords(j)}. You're laid off when it ends and called back next season.` : '',
-    j.remote === 5 ? '🏠 Fully remote: no commute, but no coworkers, so your community fades faster.' : '',
+    seasonal(j) ? `🗓️ Seasonal: ${seasonWords(j)}. You're laid off when it ends and called back next season.` : '',
+    remoteDays(j) === 5 ? '🏠 Fully remote: no commute, but no coworkers, so your community fades faster.' : '',
     S.bonus && S.bonus.job === j.id && S.turn < S.bonus.until ? `💵 Sign-on bonus: leave in the next ${S.bonus.until - S.turn} weeks and you pay back ${fmt(S.bonus.amt)}.` : '',
     S.notice != null ? `👋 You gave notice: your last day is in ${Math.max(0, S.notice - S.turn)} week${S.notice - S.turn === 1 ? '' : 's'}.` : ''].filter(Boolean);
   const bus = busOK(j) ? `<p class="muted" style="margin:6px 0">🚌 ${S.bus ? 'You ride the county bus' : 'County bus'} to ${CITIES[j.city].name}: ${wk(cost(BUS_PASS))} pass, 90% less commute gas and half the truck wear, but longer days (▼ a little happiness).</p>
     <button class="sm${S.bus ? ' alt' : ''}" id="bus" aria-pressed="${!!S.bus}">${S.bus ? '🚙 Drive instead' : '🚌 Ride the bus'}</button>` : '';
-  return `${j.union ? firstTime('union') : ''}${firstTime('ladder')}<div class="card"><h3>💼 ${esc(jobTitle(j))}</h3>${wait}
+  const lad = on('jobs.ladder');                   // difficulty: no ladder in Easy, just the job
+  return `${unionJob(j) ? firstTime('union') : ''}${lad ? firstTime('ladder') : ''}<div class="card"><h3>💼 ${esc(jobTitle(j))}</h3>${wait}
     <p class="muted" style="margin:0 0 4px">${esc(j.where ? j.where + ', ' : '')}${CITIES[j.city].name} · ${wk(payNow(j))} · ${Math.floor(S.tenure || 0)} months on the job</p>
-    <ol class="ladder" aria-label="Job ladder">${steps}</ol>
-    ${next ? `<p class="muted" style="margin:4px 0">Next step up: ${esc(next.title)}. ${rungNeeds(next) ? `Needs ${rungNeeds(next)}.` : 'You qualify: watch for a promotion offer.'}</p>` : '<p class="muted" style="margin:4px 0">You\'re at the top of this ladder.</p>'}
+    ${lad ? `<ol class="ladder" aria-label="Job ladder">${steps}</ol>` : ''}
+    ${!lad ? '' : next ? `<p class="muted" style="margin:4px 0">Next step up: ${esc(next.title)}. ${rungNeeds(next) ? `Needs ${rungNeeds(next)}.` : 'You qualify: watch for a promotion offer.'}</p>` : '<p class="muted" style="margin:4px 0">You\'re at the top of this ladder.</p>'}
     ${app}${facts.map(t => `<p class="muted" style="margin:4px 0">${t}</p>`).join('')}${bus}${rec}${refLine}</div>`;
 }
 // i20-a09: the board in three parts, so the jobs you can take now aren't mixed in with the locked ones
@@ -1198,7 +1199,7 @@ function renderJobs(){
   syncCarpool(); GOOD_JOBS = goodFirstJobs();
   const j = job();
   const cur = S.jobId && !S.retired ? S.jobId : null;
-  const list = JOBS.filter(x => (jobCity === 'all' || x.city === jobCity) && (!jobOK || (x.edu <= S.edu && !extraLock(x))))
+  const list = JOBS.filter(x => jobOn(x) && (jobCity === 'all' || x.city === jobCity) && (!jobOK || (x.edu <= S.edu && !extraLock(x))))
     .sort((a, b) => (b.id === cur) - (a.id === cur) || (a.edu > S.edu || !!extraLock(a)) - (b.edu > S.edu || !!extraLock(b)) || (a.edu > S.edu ? a.edu - b.edu : 0) || takeHome(b) - takeHome(a));
   const mapOn = !!prefs().mapView;
   $('#main').innerHTML = `${myJobCard()}${mapToggle()}
@@ -1211,7 +1212,7 @@ function renderJobs(){
     <p class="muted" style="margin:0 0 4px;font-size:0.8125rem">${term('takehome')} is pay after taxes and gas${job() && !S.retired ? ', with ▲▼ against your current job' : ''}.${GOOD_JOBS.length ? ' ⭐ Good first jobs are close to home: the top of the list can mean an hour on the road each way, and long drives wear down happiness.' : ''}</p>
     ${boardHTML(list)}
   </div>`}
-  ${j && !S.retired && commuteOneWay() >= 20 && !onBus() ? `${firstTime('carpool')}<div class="card"><h3>🚙 Carpool</h3>
+  ${j && !S.retired && commuteOneWay() >= 20 && !onBus() && on('jobs.commute') ? `${firstTime('carpool')}<div class="card"><h3>🚙 Carpool</h3>
     ${S.carpool ? `<p class="muted" style="margin:0 0 6px">You ride with neighbors to ${CITIES[j.city].name}: half the gas, the drive wears on you less, and you stay in the loop (▲ community).</p><button class="sm alt" id="carpool">Drive alone</button>`
       : canCarpool() ? `<p class="muted" style="margin:0 0 6px">Split the drive to ${CITIES[j.city].name} with neighbors: half the gas, less wear from the commute, and a little community.</p><button class="sm" id="carpool">Join a carpool</button>`
       : `<p class="muted" style="margin:0">Know more people in town (community 30+) and you can join a carpool: half the gas and an easier commute.</p>`}</div>` : ''}
@@ -1250,11 +1251,12 @@ function commuteCost(miles, car = CARS[S.car], j = null){ return miles * 2 * WOR
 
 // i3-a07: an application leads to an interview (features.js); a recruiter's sure thing or a practice life skips it
 function apply(id){
-  const x = jobById(id); if (!x || S.applied || extraLock(x) || !jobInSeason(x)) return;
+  const x = jobById(id); if (!x || !jobOn(x) || S.applied || extraLock(x) || !jobInSeason(x)) return;
   S.applied = true;
   const p = hireOdds(x), sure = (S.hireBy ?? -1) >= S.turn;   // a recruiter set up the interview (event)
   S.applyBoost = 0; S.hireBy = -1;                 // both count for the next application only
   if (S.practice || sure) return hired(x);
+  if (!on('jobs.interview')) { const ok = chance(Math.min(0.92, p)); save(); return hireResult(x, ok); }   // difficulty: Easy hires on the odds alone
   S.interview = { id, p };
   interviewSheet(x);
   save();
@@ -1271,15 +1273,15 @@ function eduCard(){
     <p style="margin:6px 0 2px"><b>Program</b> <small class="muted">Same weeks and tuition. Your diploma counts as a major in it: +${Math.round(MAJOR_PAY * 100)}% pay and better odds at matching jobs.</small></p>
     <div class="chips" role="group" aria-label="Program">${[['', '📘 General studies'], ...Object.entries(PROGRAMS).map(([k, x]) => [k, `${x.ic} ${x.name}`])].map(([k, l]) =>
       `<button class="chip ${(S.program || '') === k ? 'on' : ''}" data-prog="${k}" aria-pressed="${(S.program || '') === k}">${l}</button>`).join('')}</div>
-    ${pr ? `<p class="muted" style="margin:2px 0 0">${pr.ic} Matching jobs: ${pr.jobs.map(id => jobById(id)).filter(Boolean).map(x => x.title.toLowerCase()).join(', ')}.</p>` : ''}`
+    ${pr ? `<p class="muted" style="margin:2px 0 0">${pr.ic} Matching jobs: ${pr.jobs.map(id => jobById(id)).filter(jobOn).map(x => x.title.toLowerCase()).join(', ')}.</p>` : ''}`
     : '<p class="muted">You\'ve finished all the schooling the game offers.</p>'}
-    <h3 style="margin-top:12px">📜 Short certificates</h3>
+    ${on('school.certs') ? `<h3 style="margin-top:12px">📜 Short certificates</h3>
     <p class="muted" style="margin:0 0 4px">A few weeks of Take classes and a one-time fee open one door, without the whole school ladder.</p>
     ${cs ? `<div class="kv"><span>${cs.ic} ${cs.name}</span><span>${Math.floor(S.certStudy.prog)}/${cs.weeks} weeks</span></div>
       <div class="bar"><i style="width:${S.certStudy.prog / cs.weeks * 100}%;background:var(--bar-sky)"></i></div>` : ''}
     ${Object.entries(CERTS).map(([k, c]) => `<div class="kv job"><div><div class="t">${c.ic} ${c.name}</div><div class="s">${c.weeks} weeks · ${fmtc(c.fee)} · ${c.what}</div></div>
       ${(S.certs || {})[k] ? '<span class="tag cur">Earned</span>' : S.certStudy && S.certStudy.id === k ? '<span class="tag">In progress</span>'
-        : `<button class="sm" data-cert="${k}" ${S.certStudy ? 'disabled' : ''}>Sign up</button>`}</div>`).join('')}
+        : `<button class="sm" data-cert="${k}" ${S.certStudy ? 'disabled' : ''}>Sign up</button>`}</div>`).join('')}` : ''}
   </div>`;
 }
 function renderLife(){
@@ -1296,7 +1298,7 @@ function renderLife(){
   const insCard = `<div class="card"><h3>🛡️ Insurance & phone</h3>
     ${insParts().map(([l, v]) => `<div class="kv"><span>${l}</span><span>${fmtc(v)}/mo</span></div>`).join('')}
     <div class="kv"><span><b>Total</b></span><span><b>${wk(cost(insMonthly()))}</b></span></div>
-    <button class="sm alt" id="inssheet">Change coverage</button>
+    ${on('money.insuranceChoices') ? '<button class="sm alt" id="inssheet">Change coverage</button>' : '<p class="muted" style="margin:4px 0 0">The standard plan through Wheatland Mutual.</p>'}
   </div>`;
   const rideCard = `<div class="card"><h3>🛻 Ride</h3>
     ${Object.entries(CARS).map(([k,c]) => {
@@ -1308,7 +1310,7 @@ function renderLife(){
     <p class="muted">Trade-in value of your ride: ${fmt(S.carValue)}${tradeBonus() ? ` (+${fmt(tradeBonus())} dealer bonus this week)` : ''}${S.loanLeft>0?` · ${Math.ceil(S.loanLeft/W)} weekly payments left`:''}</p>
     <p class="muted">🔧 ${S.turn - (S.svc ?? 0) <= 26 ? 'Oil changed recently: fewer breakdowns.' : S.turn - (S.svc ?? 0) <= 52 ? `Last oil change ${S.turn - (S.svc ?? 0)} weeks ago.` : 'Overdue for an oil change: breakdowns are more likely.'} ${S.tires === S.car ? '❄️ Winter tires on.' : ''} Get car care on a trip to Dayton, Walla Walla or the Tri-Cities.</p>
   </div>`;
-  const k401Card = `${S.retired ? '' : firstTime('k401')}<div class="card"><h3>🏦 Retirement savings (${term('k401')})</h3>
+  const k401Card = !on('money.k401') ? '' : `${S.retired ? '' : firstTime('k401')}<div class="card"><h3>🏦 Retirement savings (${term('k401')})</h3>
     <div class="kv"><span>Balance</span><span><b>${fmt(S.k401)}</b></span></div>
     <div class="kv"><span>After tax (counts in net worth)</span><span>${fmt(S.k401 * K401_AFTER_TAX)}</span></div>
     ${(S.k401match || 0) >= 1 && !S.retired ? `<div class="kv"><span>Employer match not yours yet<br><small class="muted">Vests after ${K401_VEST_MONTHS / 12} years at this job (${Math.max(0, Math.ceil((K401_VEST_MONTHS - (S.tenure || 0)) / 12 * 10) / 10)} years to go). Leave sooner and it goes back.</small></span><span>${fmt(S.k401match)}</span></div>` : ''}
@@ -1325,7 +1327,7 @@ function renderLife(){
     <div class="kv"><span>Dog</span><span>${S.dog ? 'One good dog 🐕' : 'None'}</span></div>
     ${S.cat ? '<div class="kv"><span>Cat</span><span>A barn cat 🐈</span></div>' : ''}${S.generator ? '<div class="kv"><span>Generator</span><span>Ready for outages ⚡</span></div>' : ''}
     <div class="kv"><span>Kids</span><span>${S.kids.length ? S.kids.map(kidAge).map(a => a < 18 ? `age ${a}` : 'grown').join(', ') : 'None'}</span></div>
-    <div class="kv"><span>Prices since 2027</span><span>${S.col > 1.005 ? `+${Math.round((S.col-1)*100)}%` : 'Same'}</span></div>
+    ${on('money.inflation') ? `<div class="kv"><span>Prices since 2027</span><span>${S.col > 1.005 ? `+${Math.round((S.col-1)*100)}%` : 'Same'}</span></div>` : ''}
     <div class="kv"><span>Town council</span><span>${S.council ? 'Council member' : '—'}</span></div>
   </div>`;
   if (!S.practice) { $('#main').insertAdjacentHTML('beforeend', rulesCard()); document.querySelectorAll('[data-assistoff]').forEach(b => b.onclick = () => assistOffSheet(b.dataset.assistoff)); }   // i19-b19

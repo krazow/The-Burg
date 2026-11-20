@@ -142,7 +142,7 @@ function showRunDetails(){
     ${r.happened.length ? `<h3 style="margin-top:12px">What happened</h3>${happenedRows(r.happened)}` : ''}
     <div class="kv"><span><b>Total change in cash</b></span><span><b>${dm>=0?'+':''}${fmt(dm)}</b></span></div>${kidMoment()}${tattlerLine()}
     ${S.last && S.last.why && S.last.why.length ? `<h3 style="margin-top:12px">Why your stats moved${r.weeks > 1 ? ' last week' : ''}</h3>${S.last.why.map(w => `<div class="logitem">${w}</div>`).join('')}` : ''}
-    ${S.practice ? '' : '<button class="btn ghost" id="outlook">📅 Money outlook: next 13 weeks</button>'}
+    ${S.practice || !on('money.outlook') ? '' : '<button class="btn ghost" id="outlook">📅 Money outlook: next 13 weeks</button>'}
     <button class="btn primary" id="ok">Close</button>`);
   setPref('cl', { ...(prefs().cl || {}), strip: 1 });   // i2-a16: the checklist's "look at your week" step
   document.querySelectorAll('[data-why]').forEach(b => b.onclick = () => {
@@ -226,7 +226,7 @@ function showReview(rv){
 
 // i3-a28: the bills that come every week, the same in weekTick and the 13-week money outlook (off = weeks from now)
 function billLines(off = 0){
-  const m = W, home = HOMES[S.home], car = CARS[S.car], out = [], c = v => cost(v) * Math.pow(1 + rule('col'), off / 52);
+  const m = W, home = HOMES[S.home], car = CARS[S.car], out = [], c = v => cost(v) * Math.pow(1 + growth('col'), off / 52);
   const rentV = -(home.own && S.mortgage ? S.mortgage : c(home.cost))*m;
   out.push([home.own ? 'Mortgage' : 'Rent', rentV]);
   const stocked = S.turn + off < S.stockUntil;
@@ -238,7 +238,7 @@ function billLines(off = 0){
   out.push([commuteOneWay() ? 'Gas (commute + errands)' : 'Gas (errands)', -miles*c(GAS)/car.mpg]);
   if (onBus()) out.push(['County bus pass', -c(BUS_PASS)*m]);          // i3-a14
   { const j = S.retired ? null : job();                                 // i3-a10: union dues, not while on strike or gone
-    if (j && j.union && !(S.strike && S.turn + off < S.strike.until) && !(S.notice != null && S.turn + off >= S.notice) && !(j.season && !jobInSeason(j, new Date(S.date + off * 7 * 864e5).getMonth()))) out.push(['Union dues', -payNow(j) * Math.pow(1 + rule('wage'), off / 52) * UNION_DUES * m]); }
+    if (unionJob(j) && !(S.strike && S.turn + off < S.strike.until) && !(S.notice != null && S.turn + off >= S.notice) && !(j.season && !jobInSeason(j, new Date(S.date + off * 7 * 864e5).getMonth()))) out.push(['Union dues', -payNow(j) * Math.pow(1 + rule('wage'), off / 52) * UNION_DUES * m]); }
   if (S.dog) out.push(['Dog food & vet', -c(45)*m]);
   if (S.cat) out.push(['Cat food', -c(CAT_MONTHLY)*m]);              // W14: the barn cat
   if (S.partner) out.push(['Date nights', -c(120)*m]);
@@ -263,9 +263,9 @@ function healthMonthly(a0 = age(), off = 0){
 // i75-b05: unemployment benefits a month: 41% of the last job's pay (set when you were laid off), between $1,500 and $4,900
 const uiFor = j => clamp(UI_SHARE * payNow(j) / (S.wage || 1), UI_MIN, UI_MAX);
 const uiMonthly = () => (S.uiPay || UI_MIN) * S.wage;
-const plantOT = (j, mo = curMonth()) => j && j.id === 'foodplant' && PLANT_OT_MONTHS.includes(mo) ? 1 + PLANT_OT : 1;
+const plantOT = (j, mo = curMonth()) => j && j.id === 'foodplant' && on('jobs.seasonal') && PLANT_OT_MONTHS.includes(mo) ? 1 + PLANT_OT : 1;
 // i75-b08: a mall retail associate gets 10% off stops in the Tri-Cities
-const retailPerk = town => !!(S && S.jobId === 'retail' && !S.retired && ['kennewick', 'pasco', 'richland'].includes(town));
+const retailPerk = town => !!(S && S.jobId === 'retail' && !S.retired && on('jobs.seasonal') && ['kennewick', 'pasco', 'richland'].includes(town));
 // i75-b13/b14: a retiree's money for one week: Social Security, the pension, the 401(k) draw, and the tax on them
 function retireeIncome(lines, m, draw = true){
   const ss = ssPay() * m, pen = pensionVested() ? pensionPay() * m : 0;
@@ -331,7 +331,7 @@ function weekTick(auto){
   else if (j) gross = jobPay(j, payNow(j) * m * (f.payMult||1) * plantOT(j) * wxPayF(j) * smokePayMult(), lines, f);   // i75-a29 a short pack season; i75-a07 the smoke rule's shorter days; i3: strikes, furloughs, clearances, union dues
   if (!S.retired) gross += furloughBackPay(lines);
   if (j) workYear(j, m);                           // i3-a24/a25: years worked count toward Social Security and a public pension
-  if (j && !S.retired && S.k401rate) {           // pre-tax contribution, with a 3% employer match at 5% or more
+  if (j && !S.retired && S.k401rate && on('money.k401')) {           // pre-tax contribution, with a 3% employer match at 5% or more
     k401 = gross * K401[S.k401rate]; const match = gross * K401_MATCH;
     lines.push(['401(k) contribution', -k401, `You save ${K401[S.k401rate]*100}% of your pay before taxes, and your employer adds ${K401_MATCH * 100}% more. Your savings are always yours; the match is yours after ${K401_VEST_MONTHS / 12} years at the job.`]);
     S.k401 += k401 + match;
@@ -390,7 +390,7 @@ function weekTick(auto){
   if (home.own) S.equity = S.equity * Math.pow(1 + (S.homeGrow ?? 0.025), 1/52) + home.equityPer * m;
   S.carValue = Math.max(cost(500), S.carValue * Math.pow(0.99, m));   // i30-b02: the floor rises with prices
   S.k401 *= Math.pow(1.06, 1/52); if (S.k401match) S.k401match = Math.min(S.k401, S.k401match * Math.pow(1.06, 1/52));
-  S.col *= Math.pow(1 + rule('col'), 1/52); S.wage *= Math.pow(1 + rule('wage'), 1/52);
+  S.col *= Math.pow(1 + growth('col'), 1/52); S.wage *= Math.pow(1 + growth('wage'), 1/52);
 
   // ---- stats drift for the week ----
   const a = age();
@@ -413,7 +413,7 @@ function weekTick(auto){
   const cRest = commRest();                        // i35-b05 Hard 20; i37-b06 a newcomer's first year 10
   let dc = (cRest - S.community) * (S.community > 60 ? 0.1 : 0.05) * (S.community > cRest ? 1 - skillLv('people') * 0.15 : 1);   // people skill: community fades slower; i38-a08: harder above 60
   if (S.retired) dh += 1;
-  else if (j) { dh -= j.stress + rungOf(j).stress; dH -= onLeave() ? 0 : j.wear * smokeWearMult(); dc += j.remote === 5 ? -0.4 : j.city==='waitsburg' ? 0.6 : j.city==='dayton' ? 0.2 : 0; }   // i3-a01 rung stress; i3-a13 no coworkers
+  else if (j) { dh -= j.stress + rungOf(j).stress; dH -= onLeave() ? 0 : j.wear * smokeWearMult(); dc += remoteDays(j) === 5 ? -0.4 : j.city==='waitsburg' ? 0.6 : j.city==='dayton' ? 0.2 : 0; }   // i3-a01 rung stress; i3-a13 no coworkers
   else dh -= 2;
   dh -= commuteOneWay() / 40 * driveDays() * (carpooling() ? 0.6 : 1);
   if (carpooling()) dc += 0.3;                    // riding with neighbors keeps you in the loop
@@ -497,7 +497,9 @@ function weekTick(auto){
     if (S.yearStart) S.years = [...(S.years || []), { year: oldYear, age: age(), start: S.yearStart, end: snap, m: yearMilestones(oldYear) }].slice(-120);   // i2-a29: for the life story
     S.yearStart = snap; S.yearEvents = 0;
     // i3-a10: union jobs get a step raise every January after 6 months on the job
-    if (working() && job().union && !S.strike && (S.tenure || 0) >= 6) { const g = bumpPay(1.015); if (g > 0.0005) log(`Union step raise: ${pctTxt(g)} at the ${job().title.toLowerCase()} job.`); }
+    if (unionJob() && working() && !S.strike && (S.tenure || 0) >= 6) { const g = bumpPay(1.015); if (g > 0.0005) log(`Union step raise: ${pctTxt(g)} at the ${job().title.toLowerCase()} job.`); }
+    // difficulty: with no job ladders (Easy), a small raise each January after 6 months on the job
+    else if (!on('jobs.ladder') && working() && (S.tenure || 0) >= 6) { const g = bumpPay(YEAR_RAISE); if (g > 0.0005) log(`Yearly raise: ${pctTxt(g)} at the ${job().title.toLowerCase()} job.`, 'money'); }
   }
 
   badgeWeek(notes); scenarioWeek(notes);

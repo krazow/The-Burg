@@ -124,7 +124,7 @@ await t.check('reaching 0 health sends you to the hospital, with a bill', async 
 });
 
 await t.check('falling below -$40,000 offers bankruptcy; leaving town ends the game', async () => {
-  await life({ money: -40500 });
+  await life({ money: -40500, diff: 'hard' });   // bankruptcy is a Hard feature
   await page.click('#end');
   await page.waitForSelector(`${open} #bkfile`);
   await page.click(`${open} #bkleave`);
@@ -1121,7 +1121,7 @@ await t.check('i2-a29: the ending tells your life story year by year, skippable 
 
 /* ---------- round 3: money (insurance, housing, loans, investing, farm markets, debt help) ---------- */
 await t.check('i3-a27: filing for bankruptcy wipes the debt and keeps the life going, once', async () => {
-  await life({ money: -40500, car: 'truck', carValue: 30000, loanLeft: 30, loanPay: 640, k401: 5000, stocks: 2000 });
+  await life({ money: -40500, car: 'truck', carValue: 30000, loanLeft: 30, loanPay: 640, k401: 5000, stocks: 2000, diff: 'hard' });
   await page.click('#end');
   await page.waitForSelector(`${open} #bkfile`);
   const txt = await page.textContent('#sheet');
@@ -1140,7 +1140,7 @@ await t.check('i3-a27: filing for bankruptcy wipes the debt and keeps the life g
 });
 
 await t.check('i3-a19: the insurance sheet changes coverage and the weekly bill', async () => {
-  await life({ jobId: 'farmhand', money: 5000 }, 'life');
+  await life({ jobId: 'farmhand', money: 5000, diff: 'hard' }, 'life');   // insurance choices are a Hard feature
   assert((await page.textContent('#main')).includes('Insurance & phone'), 'no insurance card on Life');
   await page.click('#inssheet');
   await page.click(`${open} [data-ins="auto"][data-v="liab"]`);
