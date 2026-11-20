@@ -163,6 +163,7 @@ function townSVG(){
     <text x="${TW-6}" y="14" class="mlbl" text-anchor="end">↗ Dayton 11 mi</text>
     <text x="126" y="${TH-6}" class="mlbl">↙ Walla Walla 21 mi</text>
     <text x="8" y="14" class="mlbl" font-weight="700">N ↑</text><text x="${TW-6}" y="${TH-6}" class="mlbl" text-anchor="end" font-size="7.5">Not to scale</text>`;
+  s += decoSVG();                                  // i6-b05: Main Street changes as you play (js/starts.js)
   for (const p of P) {
     const sel = MAPSEL === p.k, on = p.focus && S.focus === p.focus;
     s += `<g class="mpin${p.focus?'':' info'}" data-k="${p.k}" tabindex="0" role="button" aria-label="${esc(p.name)}" data-call="MAPTAP" data-arg="${p.k}">
@@ -185,7 +186,7 @@ function townDetail(k){
     btn = S.focus === p.focus ? `<span class="tag cur">This week's focus: ${f.name}</span>`
       : `<button class="sm" data-call="MAPFOCUS" data-arg="${p.focus}" ${dis?'disabled':''}>${f.ic} Spend this week here${extra}</button>`;
   }
-  return `<div class="card mapdet"><h3>${p.ic} ${esc(p.name)}</h3><p style="margin:0 0 8px;font-size:0.875rem">${p.desc}</p>${btn}${recentList('T', k)}${k === 'mainst' ? mainStreetBlock() : ''}</div>`;
+  return `<div class="card mapdet"><h3>${p.ic} ${esc(p.name)}</h3><p style="margin:0 0 8px;font-size:0.875rem">${p.desc}</p>${btn}${decoNotes(k)}${recentList('T', k)}${k === 'mainst' ? mainStreetBlock() : ''}</div>`;
 }
 
 /* ---- the map block, the toggle, and taps ---- */

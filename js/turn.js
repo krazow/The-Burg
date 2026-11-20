@@ -291,8 +291,8 @@ function lineWhy(l, f, j){
   if (/^Vehicle tabs/.test(l)) return 'Every January: about 1% of what your vehicle is worth, at least $60.';
   if (/^Gas \(/.test(l)) return `${commuteOneWay() ? `${commuteOneWay()} miles each way${driveDays() < 1 ? `, ${Math.round(driveDays() * 5)} days a week` : ''}${carpooling() ? ', half of it with the carpool' : ''}, plus errands` : 'Errands around town'}, at ${car.mpg} mpg.`;
   if (l === 'Dog food & vet') return 'Food and the vet for your dog.';
-  if (l === 'Date nights') return 'Time out with your partner.';
-  if (/^Partner's paycheck/.test(l)) return 'Your partner works part-time until 65.';
+  if (l === 'Date nights') return `Time out with ${partnerWord()}.`;
+  if (/^Partner's paycheck/.test(l)) return `${partnerWord(true)} works part-time until 65.`;
   if (/^Kids? ?/.test(l) && /^Kid/.test(l)) return `About ${fmtc(KID_COST)} a month for each kid at home, ${fmtc(KID_CARE)} of it childcare${commuteOneWay() >= 20 ? `, plus ${fmtc(KID_CARE_COMMUTE)} more childcare because you commute 20+ miles` : ''}${childcareHelp() ? `. Your income qualifies for Working Connections childcare, so you pay only ${fmtc(WCCC_CAP)} of the childcare` : ''}.`;
   if (l === 'Health care') return age() >= 65 ? 'Health care costs more from 65.' : age() >= 50 ? 'Health care costs more from 50.' : `Your share of the health plan at work. With no job, or pay under ${fmtc(APPLE_HEALTH_PAY)} a month, Apple Health covers you for $0.`;
   if (l === 'Long-term care insurance') return 'A monthly premium so care late in life is covered.';
@@ -356,6 +356,7 @@ function weekTick(auto){
   if (f.cost) lines.push([f.name, -cost(f.cost)*m]);
   healthWeek(lines, notes, j, gross);              // i74: sick hours, physical therapy, Dad's care
   planWeek(lines, notes);                          // i3-a30/a31/a33/a34: winters south, late-life care, probate and spare-room guests
+  startsWeek(lines);                               // i7-a27 aid, i7-a21 a disability's costs, i17-a20 the FAFSA reminder (js/starts.js)
   // i3-a03: a certificate course takes the week's classes first (its fee was paid up front)
   if (f.study && !certWeek(trip && trip.away ? TRIP_TIME : 1, notes) && S.edu < 3) {
     const tu = tuitionNow() * m, gr = grantShare();
@@ -389,7 +390,7 @@ function weekTick(auto){
   if (smokeRuleWeek()) why.push(pushingSmoke() ? '😷 Pushing through full shifts in the smoke: full pay, full wear, and a chance of a sick week.' : '😷 The smoke rule at work: shorter days, 10% less pay, half the wear on your body.');
   if (commuteOneWay() >= 20) why.push(`🛣️ ${commuteOneWay()} miles each way${carpooling() ? ' (the carpool helps)' : ''}: ▼ happiness.`);
   if (S.money < 0) why.push('💳 Being in debt: ▼ happiness.');
-  if (S.partner || S.dog || S.cat || kidsAtHome()) why.push(`🏡 ${[S.partner ? 'your partner' : '', S.dog ? 'your dog' : '', S.cat ? 'your cat' : '', kidsAtHome() ? 'kids at home' : ''].filter(Boolean).join(', ').replace(/^./, c => c.toUpperCase())}: ▲ happiness.`);
+  if (S.partner || S.dog || S.cat || kidsAtHome()) why.push(`🏡 ${[S.partner ? partnerWord() : '', S.dog ? 'your dog' : '', S.cat ? 'your cat' : '', kidsAtHome() ? 'kids at home' : ''].filter(Boolean).join(', ').replace(/^./, c => c.toUpperCase())}: ▲ happiness.`);
   if (S.health < 35 && (S.focus === 'work' || S.focus === 'hustle')) why.push('😮‍💨 Pushing through low health with extra work: ▼▼ health.');
   if (S.focus !== 'study' && S.streakF === S.focus && S.streakN + 1 > RUT_WEEKS) why.push(`🔁 In a rut (${S.streakN + 1} weeks of the same thing): ▼ happiness.`);
   why.push(`⚖️ Stats drift toward the middle: high ones slip, low ones recover a little${a >= 50 ? ', and health drifts lower with age' : ''}.`);
@@ -413,6 +414,7 @@ function weekTick(auto){
   if (mode() === 'relaxed') { if (dh < 0) dh *= 0.6; if (dH < 0) dH *= 0.6; if (dc < 0) dc *= 0.6; }
   if (mode() === 'hard') { if (dh < 0) dh *= 1.25; if (dH < 0) dH *= 1.25; if (dc < 0) dc *= 1.25; }
     S.happy = clamp(S.happy + dh*m); S.health = clamp(S.health + dH*m); S.community = clamp(S.community + dc*m);
+  startsStats(why);                                // i17-a04: chores and a small house, staying with family
   // doing the same thing week after week loses its punch (classes excepted), and a long rut wears on you
   if (S.streakF === S.focus) S.streakN++; else { S.streakF = S.focus; S.streakN = 1; }
   S.recentF = [S.focus, ...(S.recentF || [])].slice(0, 4);

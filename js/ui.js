@@ -8,9 +8,13 @@ const SEASON_COLORS = {
   Fall:   { sky:'#efe1cc', sun:'#f0c27a', hill:'#b38a52', fieldA:'#dba15a', fieldB:'#a8692f', river:'#7fa9c4' }
 };
 const seasonColors = m => SEASON_COLORS[SEASON(((m % 12) + 12) % 12)];
-function scene(m = new Date().getMonth()){
-  if (!Number.isInteger(m)) m = new Date().getMonth();
-  const se = SEASON(((m % 12) + 12) % 12), c = SEASON_COLORS[se];
+// i6-b03: the time of day of your newest save: dawn and dusk warm the sky, night darkens it and lights the windows
+const timeOfDay = h => !Number.isFinite(h) ? 'day' : h >= 21 || h < 5 ? 'night' : h < 8 ? 'dawn' : h >= 17 ? 'dusk' : 'day';
+const TOD = { dawn:{ sky:'#f3d9c4', sun:'#f4b77a', dim:0 }, dusk:{ sky:'#e9b99a', sun:'#e98a4f', dim:.12 }, night:{ sky:'#25324a', sun:'#eef0f5', dim:.35 } };
+function scene(m = new Date().getMonth(), hour = 12){ return sceneFor(SEASON(((Number.isInteger(m) ? m : new Date().getMonth()) % 12 + 12) % 12), hour); }
+function sceneFor(se, hour = 12){
+  if (!SEASON_COLORS[se]) se = SEASON(new Date().getMonth());
+  const tod = timeOfDay(hour), t = TOD[tod], c = t ? { ...SEASON_COLORS[se], sky:t.sky, sun:t.sun } : SEASON_COLORS[se];
   const extra = {
     Winter: `<path d="M76 41 L95 19 L114 41 Z" fill="#fff"/><path d="M224 81 L257 56 L290 81 Z" fill="#fff"/>
       ${[[40,30],[150,22],[190,50],[300,28],[380,40],[60,70],[360,70]].map(([x,y]) => `<circle cx="${x}" cy="${y}" r="2.6" fill="#fff"/>`).join('')}`,
@@ -18,9 +22,11 @@ function scene(m = new Date().getMonth()){
     Summer: '<circle cx="335" cy="48" r="31" fill="#f4d58d" opacity=".35"/>',
     Fall: [[170,92],[196,86],[322,92]].map(([x,y], i) => `<rect x="${x-1.5}" y="${y}" width="3" height="16" fill="#6b4a2b"/><circle cx="${x}" cy="${y-2}" r="10" fill="${['#c8642a','#e0a03a','#b5452a'][i]}"/>`).join('')
   }[se];
-  return `<svg class="scene" viewBox="0 0 420 170" aria-hidden="true" data-season="${se}">
+  const sunY = tod === 'dawn' || tod === 'dusk' ? 76 : 48;
+  return `<svg class="scene" viewBox="0 0 420 170" aria-hidden="true" data-season="${se}" data-tod="${tod}">
   <rect width="420" height="170" rx="18" fill="${c.sky}"/>
-  <circle cx="335" cy="48" r="24" fill="${c.sun}"/>
+  ${tod === 'night' ? [[40,24],[120,40],[170,18],[220,34],[280,20],[390,30]].map(([x,y]) => `<circle cx="${x}" cy="${y}" r="1.4" fill="#fff"/>`).join('') : ''}
+  <circle cx="335" cy="${sunY}" r="${tod === 'night' ? 16 : 24}" fill="${c.sun}"/>${tod === 'night' ? `<circle cx="342" cy="${sunY - 4}" r="14" fill="${c.sky}"/>` : ''}
   <path d="M0 105 C70 70 130 90 200 80 S330 60 420 85 V170 H0Z" fill="${c.hill}"/>
   <rect x="78" y="40" width="34" height="80" fill="#fbf6ea"/><polygon points="78,40 95,20 112,40" fill="#fbf6ea"/>
   <rect x="114" y="62" width="26" height="58" fill="#efe3c8"/><rect x="86" y="50" width="18" height="10" fill="#9b2f1f"/>
@@ -30,18 +36,26 @@ function scene(m = new Date().getMonth()){
   <path d="M0 145 C100 130 220 152 320 142 S400 132 420 138 V170 H0Z" fill="${c.fieldB}"/>
   <path d="M30 160 C120 150 200 162 300 155" stroke="${c.river}" stroke-width="5" fill="none" stroke-linecap="round"/>
   ${extra}
+  ${tod === 'night' || tod === 'dusk' ? '<rect x="88" y="66" width="8" height="10" fill="#f4d58d"/><rect x="254" y="100" width="6" height="8" fill="#f4d58d"/>' : ''}
+  ${t && t.dim ? `<rect width="420" height="170" rx="18" fill="#0d1526" opacity="${t.dim}" pointer-events="none"/>` : ''}
 </svg>`;
 }
 // the title screen shows the season of the life you played last (or today's, with no lives yet)
-const titleMonth = () => { const g = slots().filter(Boolean).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0], m = g && g.date ? new Date(g.date).getMonth() : NaN; return Number.isInteger(m) ? m : new Date().getMonth(); };
+const newestLife = () => slots().filter(Boolean).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0] || null;
+const titleMonth = () => { const g = newestLife(), m = g && g.date ? new Date(g.date).getMonth() : NaN; return Number.isInteger(m) ? m : new Date().getMonth(); };
+// i6-b03: the hour you last played that life (or now, with no lives yet)
+const titleHour = () => { const g = newestLife(); return g && g.savedAt ? new Date(g.savedAt).getHours() : new Date().getHours(); };
+// i6-b11: the header band and buttons take a touch of the season's color
+function seasonAccent(m){ try { document.body.dataset.season = SEASON(((m % 12) + 12) % 12); } catch (e) {} }
 
 function renderTitle(){
   histSync();
   const all = slots(), used = all.filter(Boolean).length;
   const more = !!prefs().moreOpts;
   let len = 'half';
+  seasonAccent(titleMonth());
   $('#app').innerHTML = `<div class="title">
-    ${scene(titleMonth())}
+    ${scene(titleMonth(), titleHour())}
     <h1>The Burg</h1>
     <div class="sub">Make a life in Waitsburg, Washington.</div>
     <div id="tnotes"></div>
@@ -51,6 +65,8 @@ function renderTitle(){
     ${titleExtras()}
     <label class="field" for="nm">Your citizen's name</label>
     <input type="text" id="nm" maxlength="20" placeholder="e.g. Dusty" autocomplete="off">
+    <label class="field">Pronouns</label>
+    <div class="maptog" role="group" aria-label="Pronouns">${Object.entries(PRONS).map(([k, p]) => `<button class="${k === 'they' ? 'on' : ''}" data-pron="${k}" aria-pressed="${k === 'they'}">${p.label}</button>`).join('')}</div>
     <label class="field">Game length</label>
     <div class="lengths">${Object.entries(LENGTHS).map(([k,L]) =>
       `<button class="len ${k===len?'on':''}" data-len="${k}" aria-pressed="${k===len}"><b>${L.label}</b><span>${L.sub}</span></button>`).join('')}</div>
@@ -61,6 +77,9 @@ function renderTitle(){
       <div class="bgs" role="group" aria-label="How your life begins">${Object.entries(BACKGROUNDS).map(([k,b]) =>
         `<button class="chip ${k==='fresh'?'on':''}" data-bg="${k}" aria-pressed="${k==='fresh'}">${b.ic} ${b.name}</button>`).join('')}</div>
       <div class="muted bgdesc" id="bgdesc">${BACKGROUNDS.fresh.desc} <b>${BACKGROUNDS.fresh.hint}.</b></div>
+      <div id="diswrap" class="hidden">${disPicker('wheel')}</div>
+      <label class="field">Your look</label>
+      <div id="lookwrap">${lookPicker(null)}</div>
       <label class="field">Mode</label>
       <div class="maptog" role="group" aria-label="Mode">${Object.entries(MODES).map(([k,m]) =>
         `<button class="${k==='normal'?'on':''}" data-mode="${k}" aria-pressed="${k==='normal'}">${m.ic} ${m.name}</button>`).join('')}</div>
@@ -80,7 +99,7 @@ function renderTitle(){
     ${Object.keys(store.get(BADGE_KEY) || {}).length ? `<div class="muted" style="margin-top:10px;font-size:0.8125rem">🏅 Badges collected across your lives: ${BADGES.filter(b => (store.get(BADGE_KEY) || {})[b.id]).map(b => b.ic).join(' ')} (${Object.keys(store.get(BADGE_KEY) || {}).length}/${BADGES.length})</div>` : ''}
     <div class="muted" style="margin-top:14px;font-size:0.75rem">v${APP_VERSION}</div>
   </div>`;
-  let bg = 'fresh', md = 'normal', aim = 'all';
+  let bg = 'fresh', md = 'normal', aim = 'all', pr = 'they', dsel = 'wheel', face = okFace(null);
   const moreSum = () => { $('#moresum').textContent = `${BACKGROUNDS[bg].ic} ${BACKGROUNDS[bg].name} · ${MODES[md].ic} ${MODES[md].name} · ${AIMS[aim].ic} ${AIMS[aim].name}`; };
   moreSum();
   // G2: starting backgrounds and modes live in a "More options" panel; open or closed is remembered
@@ -90,7 +109,17 @@ function renderTitle(){
     setPref('moreOpts', open);
   };
   document.querySelectorAll('[data-bg]').forEach(b => b.onclick = () => { bg = b.dataset.bg;
-    document.querySelectorAll('[data-bg]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#bgdesc').innerHTML = `${BACKGROUNDS[bg].desc} <b>${BACKGROUNDS[bg].hint}.</b>`; moreSum(); });
+    document.querySelectorAll('[data-bg]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#bgdesc').innerHTML = `${BACKGROUNDS[bg].desc} <b>${BACKGROUNDS[bg].hint}.</b>`; moreSum();
+    $('#diswrap').classList.toggle('hidden', bg !== 'access'); });
+  // i7-a20 pronouns, i7-a21 which disability, i6-b01 your look
+  const pressOne = (attr, b) => document.querySelectorAll(`[data-${attr}]`).forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
+  document.querySelectorAll('[data-pron]').forEach(b => b.onclick = () => { pr = b.dataset.pron; pressOne('pron', b); });
+  const wireDis = () => document.querySelectorAll('[data-dis]').forEach(b => b.onclick = () => { dsel = b.dataset.dis; pressOne('dis', b); $('#disdesc').textContent = DISABILITIES[dsel].desc; });
+  wireDis();
+  const wireLook = () => document.querySelectorAll('#lookwrap [data-skin], #lookwrap [data-hair], #lookwrap [data-hc], #lookwrap [data-glasses]').forEach(b => b.onclick = () => {
+    const d = b.dataset; if (d.skin != null) face.skin = +d.skin; if (d.hair) face.hair = d.hair; if (d.hc != null) face.hc = +d.hc; if (d.glasses) face.glasses = !face.glasses;
+    const k = Object.keys(d)[0]; $('#lookwrap').innerHTML = lookPicker(face); wireLook(); const n = $(`#lookwrap [data-${k}="${d[k]}"]`); if (n) n.focus(); });
+  wireLook();
   document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { md = b.dataset.mode;
     document.querySelectorAll('[data-mode]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#modedesc').textContent = MODES[md].desc; moreSum(); });
   document.querySelectorAll('[data-aim]').forEach(b => b.onclick = () => { aim = b.dataset.aim;   // i20-b01
@@ -104,8 +133,9 @@ function renderTitle(){
   $('#start').onclick = () => {
     const name = ($('#nm').value.trim() || 'Dusty').slice(0,20);
     const free = slots().indexOf(null);
-    if (free < 0) return askReplace(name, len, { bg, mode: md, aim });
-    newGame(name, len, free, { bg, mode: md, aim });
+    const opts = { bg, mode: md, aim, pron: pr, face: { ...face }, dis: bg === 'access' ? dsel : null };
+    if (free < 0) return askReplace(name, len, opts);
+    newGame(name, len, free, opts);
   };
   $('#how').onclick = showHelp;
   $('#chal').onclick = challengesSheet;
@@ -663,7 +693,10 @@ function newGame(name, len, slot = 0, opts = {}){
   LIFE_UNDO = []; PLAY_AT = -1e9; resetFilters();
   S = blankLife(name, len, slot);                 // road and work events (health plan, ski pass, job-hunt help and more) included
   S.bg = BACKGROUNDS[opts.bg] ? opts.bg : 'fresh'; S.mode = MODES[opts.mode] ? opts.mode : 'normal'; S.aim = AIMS[opts.aim] ? opts.aim : 'all';
+  S.pron = PRONS[opts.pron] ? opts.pron : 'they'; S.face = okFace(opts.face);   // i7-a20, i6-b01
+  if (S.bg === 'access') S.disability = DISABILITIES[opts.dis] ? opts.dis : 'wheel';   // i7-a21
   if (BACKGROUNDS[S.bg].set) BACKGROUNDS[S.bg].set(S);
+  S.startAge = age();
   S.weekly = opts.weekly || null; S.rng = opts.weekly ? weekSeed(opts.weekly) : null; S.rngEv = opts.weekly ? weekSeed(`${opts.weekly}:events`) : null; useDice();
   if (len === 'half') { S.happy -= HALF_START_DIP; S.health -= HALF_START_DIP; }   // B2: 26 weeks is short, so a 6-month life starts a little worn
   if (SCENARIOS[opts.scenario]) { S.scenario = opts.scenario; if (SCENARIOS[S.scenario].set) SCENARIOS[S.scenario].set(S); }
@@ -671,9 +704,10 @@ function newGame(name, len, slot = 0, opts = {}){
   if (opts.practice) { S.practice = true; S.noEvents = true; }      // the tutorial's throwaway life: never saved, no random events
   log(S.bg === 'fresh' ? `${name} turns 18 and rents a room above Main Street in Waitsburg. Time to find a job.`
     : `${name} starts a new life in Waitsburg: ${BACKGROUNDS[S.bg].name.toLowerCase()}. ${BACKGROUNDS[S.bg].desc}`);
-  tab = S.jobId ? 'home' : 'jobs'; save(); render();
+  // i17-a02: a new life opens on Home, where three doors (a job, a program, a place) replace the old "find a job" toast
+  tab = S.jobId || !opts.practice ? 'home' : 'jobs'; save(); render();
   if (!opts.practice) playedFlag(true);            // i63-b05
-  if (!opts.practice) toast('Welcome to the Burg! Start by finding a job.');
+  if (!opts.practice) toast('Welcome to the Burg!');
 }
 
 /* ---------- main render ---------- */
@@ -684,6 +718,7 @@ function render(){
   const big = L.turns === Infinity || L.turns >= 104;
   const left = L.turns === Infinity ? `Age ${age()}` : `${L.turns - S.turn} weeks left`;
   const nar = S.practice ? '' : ' skipx';          // i2-a23: on narrow phones the ⏩ buttons hide behind a long press on End Week
+  seasonAccent(curMonth());                        // i6-b11
   $('#app').innerHTML = `
   <header class="top">
     <div class="row"><h2>${esc(S.name)}${S.practice ? ' <span class="tag">Practice</span>' : ''}${mode() !== 'normal' && !S.practice ? ` <span class="tag">${MODES[mode()].ic} ${MODES[mode()].name}</span>` : ''}${S.scenario ? ` <span class="tag">🏁</span>` : ''}${S.weekly ? ` <span class="tag">📅</span>` : ''}${S.gen > 1 ? ` <span class="tag">🌳 ${S.gen}</span>` : ''}</h2><div class="hdr-r"><div class="money">${fmt(S.money)}</div><button id="helpbtn" aria-label="Help and tutorial">?</button></div></div>
@@ -817,6 +852,8 @@ function renderHome(){
   const sugg = (stat, fk, why) => S.focus === fk ? `<div class="card warn">${why} Your focus is already ${FOCUS[fk].name}.</div>`
     : `<div class="card warn">${why} <button class="sm" data-sugg="${fk}">${FOCUS[fk].ic} ${FOCUS[fk].name} this week</button></div>`;
   $('#main').innerHTML = `<div class="homegrid"><div class="hmain">
+  ${S.practice ? '' : `<div class="homeart" id="homeart">${myFace(60)}${houseArt()}</div>`}
+  ${gradCard()}${doorsCard()}
   <div class="card"><div class="stats">
     ${statBtn('happy','Happiness', S.happy)}${statBtn('health','Health', S.health)}
     ${statBtn('community','Community', S.community)}
@@ -829,7 +866,7 @@ function renderHome(){
   ${S.happy < 30 ? sugg('happy', 'outdoors', `😟 Happiness is low (${Math.round(S.happy)}).`) : ''}
   ${S.health < 30 ? sugg('health', 'rest', `🤒 Health is low (${Math.round(S.health)}).`) : ''}
   ${overtimeTip() ? `<div class="card warn">${overtimeTip()}</div>` : ''}
-  ${S.money < debtWarnAt() ? `<div class="card warn" id="debtwarn">⚠️ Your debt is getting dangerous.${debtLimit() == null ? ` In Relaxed it never ends your life (a debt counselor stops it at ${fmt(RELAXED_FLOOR)}), but the interest keeps eating your cash.` : ` Below ${fmt(debtLimit())} you'll have to leave town${canBankrupt() ? ' or file for bankruptcy' : ''}.`}</div>` : onPlan() ? `<div class="card">📞 <b>On a payment plan.</b> Your debt is still in collections (worse odds on job applications and loans until you're back above $0), but the calls stop while your cash keeps going up.</div>` : inCollections() ? `<div class="card warn">📞 Your debt is in collections: daily calls (−happiness) and worse odds on job applications and loans until you're back above $0. Raise your cash ${PLAN_WEEKS} weeks in a row to get on a payment plan.</div>` : ''}
+  ${S.money < debtWarnAt() ? `<div class="card warn" id="debtwarn">⚠️ Your debt is getting dangerous.${debtLimit() == null ? ` In Relaxed it never ends your life (a debt counselor stops it at ${fmt(RELAXED_FLOOR)}), but the interest keeps eating your cash.` : ` Below ${fmt(debtLimit())} you'll have to leave town${canBankrupt() ? ' or file for bankruptcy' : ''}.`} <button class="sm alt" data-go="life">🤝 Help you can get</button></div>` : onPlan() ? `<div class="card">📞 <b>On a payment plan.</b> Your debt is still in collections (worse odds on job applications and loans until you're back above $0), but the calls stop while your cash keeps going up.</div>` : inCollections() ? `<div class="card warn">📞 Your debt is in collections: daily calls (−happiness) and worse odds on job applications and loans until you're back above $0. Raise your cash ${PLAN_WEEKS} weeks in a row to get on a payment plan.</div>` : ''}
   <div class="card"><div class="focushead"><h3>This week's focus</h3><button class="sm alt" id="planbtn" aria-pressed="${!!(S.plan && S.plan.length)}" aria-label="Focus plan: ${S.plan && S.plan.length ? 'on' : 'off'}">🗓 Plan${S.plan && S.plan.length ? ' ✓' : ''}</button></div>${scenarioLine()}${seasonLine()}${mapToggle()}
     ${prefs().mapView ? mapBlock('T') : `<div class="fgrid">${Object.entries(FOCUS).map(([k,x]) => {
       const dis = (x.needsJob && (!j || S.retired)) || (x.study && !canStudy());
@@ -852,6 +889,7 @@ function renderHome(){
   ${S.log.length ? `<div class="card wideonly"><h3>📜 Lately</h3>${S.log.slice(0, 6).map(e => `<div class="logitem"><em>${esc(e.d)}</em>${esc(e.m)}</div>`).join('')}<button class="sm alt" data-go="log" style="margin-top:8px">Open the Journal</button></div>` : ''}
   </aside></div>`;
   $('#tripchip').onclick = () => S.trip ? tripSheet(S.trip.city) : tripPicker();
+  doorsWire();                                     // i17-a01/a02
   $('#outbtn').onclick = outSheet;
   document.querySelectorAll('#main .fbtn[data-f]').forEach(b => b.onclick = () => { handFocus(b.dataset.f); const n = document.querySelector(`.fbtn[data-f="${S.focus}"]`); if (n) n.focus({ preventScroll: true }); const p = $('#fprev'); if (p) announce(p.textContent.replace(/\s+/g, ' ').trim()); });
   $('#planbtn').onclick = planSheet;
@@ -965,7 +1003,7 @@ function jobRow(x){
     : !jobInSeason(x) ? `<button class="sm" disabled aria-label="Hires again in ${MONTHS[x.season[0]]}">Hires ${MONTHS[x.season[0]].slice(0,3)}</button>`
     : `<button class="sm" data-apply="${x.id}" ${S.applied?'disabled':''}>Apply</button>`;
   const tags = [x.remote === 5 ? '🏠 fully remote' : x.remote ? `🏠 ${x.remote} remote days` : '', x.season ? `🗓️ ${seasonWords(x)}` : '', x.union ? '🪪 union' : '',
-    x.apprentice && !cur ? `🧰 apprentice, ${x.apprentice.weeks / 52} yrs to full pay` : '', CLEARANCE.includes(x.id) && !cur ? '🔐 clearance' : '', majorFits(x) ? '🎓 your major' : ''].filter(Boolean);
+    x.apprentice && !cur ? `🧰 apprentice, ${x.apprentice.weeks / 52} yrs to full pay` : '', CLEARANCE.includes(x.id) && !cur ? '🔐 clearance' : '', majorFits(x) ? '🎓 your major' : '', accTag(x)].filter(Boolean);
   return `<div class="kv job${lock ? ' lockedrow' : ''}" data-job="${x.id}"><div><div class="t">${cur ? esc(jobTitle(x)) : x.title}</div>
     <div class="s">${x.where ? esc(x.where) + ', ' : ''}${c.name}${c.miles ? ` · ${c.miles} mi` : ' · no commute'} · pay ${wk(payNow(x, cur))}${c.miles ? `, gas ${wk(commuteCost(c.miles, CARS[S.car], x))}` : ''}${tags.length ? ` · ${tags.join(' · ')}` : ''}</div></div>
     <div style="text-align:right"><div class="pay">${fmt(th)}/wk</div>
@@ -1097,6 +1135,7 @@ function eduCard(){
     ${S.edu < 3 ? `<div class="kv"><span>Next: ${EDU[S.edu+1]}${pr ? ` in ${pr.name.toLowerCase()}` : ''}</span><span>${studyDone()}/${STUDY_NEED[S.edu]} weeks</span></div>
     <div class="bar"><i style="width:${S.studyProg/STUDY_NEED[S.edu]*100}%;background:var(--bar-sky)"></i></div>
     <p class="muted">Pick "Take classes" as your focus to study through ${SCHOOL[S.edu]} (${tuitionWords()}).${cs ? ' Your certificate course comes first.' : ''}</p>
+    ${fafsaCard()}
     <p style="margin:6px 0 2px"><b>Program</b> <small class="muted">Same weeks and tuition. Your diploma counts as a major in it: +${Math.round(MAJOR_PAY * 100)}% pay and better odds at matching jobs.</small></p>
     <div class="chips" role="group" aria-label="Program">${[['', '📘 General studies'], ...Object.entries(PROGRAMS).map(([k, x]) => [k, `${x.ic} ${x.name}`])].map(([k, l]) =>
       `<button class="chip ${(S.program || '') === k ? 'on' : ''}" data-prog="${k}" aria-pressed="${(S.program || '') === k}">${l}</button>`).join('')}</div>
@@ -1113,10 +1152,10 @@ function eduCard(){
 }
 function renderLife(){
   const h = HOMES[S.home], u = undoTop();
-  $('#main').innerHTML = `${u ? `<div class="card undo" role="status"><span>↩ ${esc(u.label)}</span><button class="sm" id="undo" aria-label="Undo: ${esc(u.label)}">Undo</button></div>` : ''}${S.practice ? '' : goalsCard()}${S.practice ? '' : aimCard()}${S.practice ? '' : skillsCard()}${S.practice ? '' : bizCard()}${S.practice ? '' : townLifeCard()}${healthCard()}
+  $('#main').innerHTML = `${aidCard()}${u ? `<div class="card undo" role="status"><span>↩ ${esc(u.label)}</span><button class="sm" id="undo" aria-label="Undo: ${esc(u.label)}">Undo</button></div>` : ''}${S.practice ? '' : goalsCard()}${S.practice ? '' : aimCard()}${S.practice ? '' : skillsCard()}${S.practice ? '' : bizCard()}${S.practice ? '' : townLifeCard()}${healthCard()}
 ${S.edu < 3 ? firstTime('school') : ''}${eduCard()}
   <div class="card"><h3>🏡 Home in Waitsburg</h3>
-    ${Object.entries(HOMES).map(([k,x]) => {
+    ${Object.entries(HOMES).filter(([k, x]) => !x.family || S.home === k).map(([k,x]) => {   // i17-a04: once you move out of the family home, it's gone
       const cur = S.home === k;
       let btn = cur ? '<span class="tag cur">Home</span>' : `<button class="sm ${x.own?'':'alt'}" data-home="${k}">${x.own ? `Buy (${fmt(homeDown(k))} down)` : 'Move'}</button>`;
       return `<div class="kv job"><div><div class="t">${x.name}</div><div class="s">${x.own?'Mortgage':'Rent'} ${wk(cur && x.own && S.mortgage ? S.mortgage : x.own ? newMortgage(k) : cost(x.cost))}${x.own?` · builds equity · worth ${fmt(homeValue(k))}`:''}</div></div>${btn}</div>`;
@@ -1151,7 +1190,8 @@ ${S.edu < 3 ? firstTime('school') : ''}${eduCard()}
   </div>
   ${planningCard()}
   <div class="card"><h3>❤️ Household</h3>
-    <div class="kv"><span>Partner</span><span>${S.partner ? 'Together 💕' : 'Single'}</span></div>
+    <div class="kv"><span>Partner</span><span>${S.partner ? `${S.partnerName ? `${esc(S.partnerName)} (${partnerP().label}), together` : 'Together'} 💕` : 'Single'}</span></div>
+    <div class="kv"><span>You</span><span>${pron().label}${dis() ? ` · ${dis().ic} ${dis().name}` : ''}</span></div>
     <div class="kv"><span>Dog</span><span>${S.dog ? 'One good dog 🐕' : 'None'}</span></div>
     ${S.cat ? '<div class="kv"><span>Cat</span><span>A barn cat 🐈</span></div>' : ''}${S.generator ? '<div class="kv"><span>Generator</span><span>Ready for outages ⚡</span></div>' : ''}
     <div class="kv"><span>Kids</span><span>${S.kids.length ? S.kids.map(kidAge).map(a => a < 18 ? `age ${a}` : 'grown').join(', ') : 'None'}</span></div>
@@ -1188,6 +1228,7 @@ ${S.edu < 3 ? firstTime('school') : ''}${eduCard()}
     if (invest(v)) { save(); render(); toast(v > 0 ? `📈 Put ${fmt(v)} in index funds` : `📈 Took ${fmt(-v)} out`); announce(`Index funds now ${fmt(S.stocks)}. Cash ${fmt(S.money)}.`); }
   });
   if ($('#wine')) $('#wine').onclick = () => { if (buyWine()) { save(); render(); toast(`🍷 You're in on the ${wineYear()} vintage`); } };
+  aidWire(); fafsaWire();                          // i7-a27, i17-a20
 }
 
 /* i2-a25: undo Life-tab changes until End Week. Each change made from the Life tab (or a sheet it opened) keeps a
@@ -1230,12 +1271,13 @@ document.addEventListener('click', e => {
 function moveHome(k){
   const x = HOMES[k], old = HOMES[S.home];
   const he = old.own ? heBalance() : 0, sale = old.own ? Math.round(S.equity * (1 - SELL_FEE) - he) : 0;   // i3-a21: 6% agent fees; i3-a23: the equity loan is paid off
-  const down = x.own ? homeDown(k) : 0, need = down + cost(300), md = MOODS[homeMood()];
+  if (x.family && S.home !== k) return toast('That home is only for the Staying with family start.');
+  const ramp = moveExtra(k), down = x.own ? homeDown(k) : 0, need = down + cost(300) + ramp, md = MOODS[homeMood()];
   if (S.money + sale < need) return toast(`You need ${fmt(need - sale)} on hand (down payment + moving).`);
   const nowPay = old.own && S.mortgage ? S.mortgage : cost(old.cost), newPay = x.own ? newMortgage(k) : cost(x.cost), dPay = (newPay - nowPay) * W;
   const dNw = -cost(300) - (old.own ? S.equity * SELL_FEE : 0);
   confirmSheet({ title: `${x.own ? 'Buy' : 'Move to'} ${x.name}?`, yes: 'Do it',
-    intro: `${x.own ? `Down payment ${fmt(down)}, then ${wk(newMortgage(k))} mortgage at ${buyRate().toFixed(2)}% (locked in) from Standard Bearer Bank, with the closing papers at Mother Hubbard's Legal Cupboard.` : `Rent is ${wk(cost(x.cost))}.`} Moving costs ${fmt(cost(300))}.${old.own ? ` You'll sell your current place and pocket ${fmt(sale)} after the 6% agent fees${he ? ` and paying off the ${fmt(he)} home equity loan` : ''}.` : ''}`,
+    intro: `${x.own ? `Down payment ${fmt(down)}, then ${wk(newMortgage(k))} mortgage at ${buyRate().toFixed(2)}% (locked in) from Standard Bearer Bank, with the closing papers at Mother Hubbard's Legal Cupboard.` : `Rent is ${wk(cost(x.cost))}.`} Moving costs ${fmt(cost(300))}.${ramp ? ` A ramp and a wider bathroom door add ${fmt(ramp)} (the county's home repair program pays the rest).` : ''}${old.own ? ` You'll sell your current place and pocket ${fmt(sale)} after the 6% agent fees${he ? ` and paying off the ${fmt(he)} home equity loan` : ''}.` : ''}`,
     after: `<p class="muted">${md.ic} The housing market is <b>${md.name.toLowerCase()}</b>: ${md.desc}.</p>`,
     lines: [`💵 Cash: ${fmt(S.money)} → ${fmt(S.money + sale - need)}`,
       `🏠 ${old.own ? 'Mortgage' : 'Rent'} ${wk(nowPay)} → ${x.own ? 'mortgage' : 'rent'} ${wk(newPay)} (${dPay >= 0 ? '+' : '−'}${fmt(Math.abs(dPay))} a week)`,

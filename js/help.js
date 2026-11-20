@@ -70,7 +70,7 @@ function guideHTML(){
   const certRows = Object.values(CERTS).map(c => `<tr><td>${c.ic} ${c.name}</td><td>${c.weeks} weeks</td><td>$${c.fee.toLocaleString('en-US')}</td><td>${c.what}</td></tr>`).join('');
   const progRows = Object.values(PROGRAMS).map(x => `<tr><td>${x.ic} ${x.name}</td><td>${x.jobs.map(id => JOBS.find(j => j.id === id)).filter(Boolean).map(j => j.title.toLowerCase()).join(', ')}</td></tr>`).join('');
   const eduRows = [1,2,3].map(l => `<tr><td>${EDU[l]}</td><td>${STUDY_NEED[l-1]} weeks</td><td>${pw(TUITION[l-1])}</td><td>${SCHOOL[l-1]}</td></tr>`).join('');
-  const homeRows = Object.values(HOMES).map(h => `<tr><td>${h.name}</td><td>${h.own ? 'Buy: $' + h.down.toLocaleString('en-US') + ' down, then ' : 'Rent '}${pw(h.cost)}</td><td>${h.own ? 'Builds equity' : '—'}</td></tr>`).join('');
+  const homeRows = Object.values(HOMES).filter(h => !h.family).map(h => `<tr><td>${h.name}</td><td>${h.own ? 'Buy: $' + h.down.toLocaleString('en-US') + ' down, then ' : 'Rent '}${pw(h.cost)}</td><td>${h.own ? 'Builds equity' : '—'}</td></tr>`).join('');
   const carRows = Object.values(CARS).map(c => `<tr><td>${c.name}</td><td>${c.mpg} mpg</td><td>${c.price ? '$' + c.price.toLocaleString('en-US') : c.down ? '$' + c.down.toLocaleString('en-US') + ' down + ' + pw(c.pay) + ' for 5 years' : 'Starter'}</td></tr>`).join('');
   const sec = (id, title, body) => `<section id="g-${id}"><h2>${title}</h2>${body}<button class="totop" data-call="helptop">↑ Back to contents</button></section>`;
   const S2 = [
@@ -81,6 +81,10 @@ function guideHTML(){
       <p>Backgrounds and modes are under <b>More options</b>, below Start.</p>
       <p><b>How your life begins:</b> ${Object.values(BACKGROUNDS).map(b => `${b.ic} <b>${b.name}</b> (${b.hint.toLowerCase()}): ${b.desc}`).join(' ')}</p>
       <p><b>Mode:</b> ${Object.values(MODES).map(m => `${m.ic} <b>${m.name}</b>: ${m.desc}`).join(' ')} Best scores are kept separately for each mode.</p>
+      <p><b>You:</b> pick she, he or they under your name, and your look (skin, hair, glasses) under More options. Your drawing on Home grays and wrinkles as the years pass. The person you date gets a name and pronouns too. None of this changes the rules or the score.</p>
+      <p><b>Staying with family:</b> rent is ${pw(HOMES.family.cost)} and chores give a little community each week, but happiness tops out at ${FAM_CAP}. After a year the room feels small, and happiness slips each week, unless you're taking classes or have ${fmt(FAM_SAVE)} saved to move. Once you move out, you can't move back.</p>
+      <p><b>Living with a disability:</b> ${Object.values(DISABILITIES).map(d => `${d.ic} <b>${d.name}</b>: ${d.desc}`).join(' ')} Every job stays open. Job rows say ✓ fits or 🛠️ needs an accommodation, and your employer sets that up at no cost to you. DVR, the state's job-training office, pays half your tuition. The score and goals are the same as any life.</p>
+      <p><b>Week one:</b> an 18-year-old start begins with graduation night: a river party (+community, ${fmt(40)}), family dinner (+happiness) or a night shift (+${fmt(120)}, −happiness). Home also shows three ways to start: a starter job, a program and a place. The first ${START_WEEKS} weeks have their own few small events. If you start under 20, friends leave for college in August and come home at Thanksgiving.</p>
       <p><b>First moves:</b> find a job on the <b>Jobs</b> tab, pick a weekly focus on <b>Home</b>, and tap <b>End Week</b>. Want to see it done? Play the <b>gameplay tutorial</b> at the top of this page.</p>`],
     ['week', '📅 Your week', `
       <p>Each turn is <b>one week</b>. On <b>Home</b>, pick one <b>focus</b> for the week, then tap <b>End Week</b>. The button shows your focus, and it repeats every week until you change it.</p>
@@ -126,6 +130,8 @@ function guideHTML(){
       <table><tr><th>Job</th><th>Pay (2027)</th><th>Needs</th></tr>${jobRows}</table>`],
     ['school', '🎓 School', `
       <p>Pick <b>📚 Take classes</b> as your focus to study. Each week of classes counts toward your next diploma and charges tuition. Under ${fmtc(GRANT_FULL)} a month in pay, the <b>Washington College Grant</b> pays all of your tuition, and less as pay rises, until none from ${fmtc(GRANT_NONE)}. Tuition in a week you're below $0 goes on a federal <b>student loan</b> (about ${SLOAN_RATE * 100}%, 10 years) instead of your card. A week with a trip out of town counts as 3/4 of a week of classes. Studying never puts you in a rut.</p>
+      <p><b>📝 The FAFSA:</b> file it from January to March with one tap on the Life tab. It covers your classes until the next March 31. While your pay is under ${fmtc(PELL_LINE)} a month, a <b>Pell Grant</b> pays half of the tuition that's left after the Washington College Grant. A reminder goes in the Journal each January.</p>
+      <p><b>🤝 Help you can get:</b> when cash runs low (under ${fmtc(AID_SHOW)}), the Life tab lists help you can apply for with one tap: ${Object.values(AIDS).map(a => `${a.ic} ${a.name}`).join(', ')}. Each one checks that your household pay is under ${fmtc(AID_LINE)} a month and your cash under ${fmtc(AID_CASH)} (the food bank asks nothing), and stops on its own as you recover.</p>
       <table><tr><th>Diploma</th><th>Weeks</th><th>Tuition</th><th>Where</th></tr>${eduRows}</table>
       <p><b>Programs:</b> on the Life tab, pick a program before you study (same weeks and tuition). The diploma you finish makes it your <b>major</b>: +10% pay and better odds at matching jobs. The wind turbine tech job needs the wind energy program, and the school teacher job needs teaching.</p>
       <table><tr><th>Program</th><th>Matching jobs</th></tr>${progRows}</table>
