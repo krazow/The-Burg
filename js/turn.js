@@ -257,14 +257,14 @@ function showReview(rv, pre = []){
 // i3-a28: the bills that come every week, the same in weekTick and the 13-week money outlook (off = weeks from now)
 function billLines(off = 0){
   const m = W, home = HOMES[S.home], car = CARS[S.car], out = [], c = v => cost(v) * Math.pow(1 + growth('col'), off / 52);
-  const rentV = -(home.own && S.mortgage ? S.mortgage : c(home.cost))*m;
-  out.push([home.own ? 'Mortgage' : 'Rent', rentV]);
+  const rentV = -(home.own && S.mortgage != null ? S.mortgage : c(home.cost))*m;
+  if (!outright()) out.push([home.own ? 'Mortgage' : 'Rent', rentV]);   // i30-b06: a home bought outright has no payment
   const stocked = S.turn + off < S.stockUntil;
   const foodV = -c(FOOD_UTIL - (stocked ? GROCERY_SHARE * STOCK_OFF : 0))*(1 - skillLv('cook') * 0.04)*m, insV = -c(insMonthly())*m;   // i3-a19: what you picked on the insurance sheet ($220 by default)
   out.push([stocked ? 'Food & utilities (stocked up)' : 'Food & utilities', foodV]);
   out.push(['Insurance & phone', insV]);
   if (mode() === 'hard') out.push(['Higher living costs (Hard, +10%)', (rentV + foodV + insV) * HARD_LIVING]);   // R15: 10% of rent, food and insurance
-  const miles = (commuteOneWay()*2*WORKDAYS*commuteGasFactor() + ERRAND_MILES) * m;
+  const miles = (commuteOneWay()*2*WORKDAYS*commuteGasFactor() + ERRAND_MILES + (home.errand || 0)) * m;   // i37-b04: errands from the farm are a longer drive
   out.push([commuteOneWay() ? 'Gas (commute + errands)' : 'Gas (errands)', -miles*c(GAS)/car.mpg]);
   if (onBus()) out.push(['County bus pass', -c(BUS_PASS)*m]);          // i3-a14
   { const j = S.retired ? null : job();                                 // i3-a10: union dues, not while on strike or gone
@@ -420,7 +420,7 @@ function weekTick(auto){
   // i3-a21: the valley's home prices move with this year's market (2.5% a year on average); owners gain principal + appreciation
   { const hg = on('home.market') ? S.homeGrow ?? 0.025 : 0;   // to-do 2: in Easy homes keep their listed price
     S.homeIdx = (S.homeIdx || 1) * Math.pow(1 + hg, 1/52);
-    if (home.own) S.equity = S.equity * Math.pow(1 + hg, 1/52) + home.equityPer * m; }
+    if (home.own) S.equity = S.equity * Math.pow(1 + hg, 1/52) + (outright() ? 0 : home.equityPer * m); }   // i30-b06: no payments, no principal
   S.carValue = Math.max(cost(500), S.carValue * Math.pow(0.99, m));   // i30-b02: the floor rises with prices
   S.k401 *= Math.pow(1.06, 1/52); if (S.k401match) S.k401match = Math.min(S.k401, S.k401match * Math.pow(1.06, 1/52));
   S.col *= Math.pow(1 + growth('col'), 1/52); S.wage *= Math.pow(1 + growth('wage'), 1/52);
@@ -435,6 +435,7 @@ function weekTick(auto){
   if (smokeRuleWeek()) why.push(pushingSmoke() ? '😷 Pushing through full shifts in the smoke: full pay, full wear, and a chance of a sick week.' : '😷 The smoke rule at work: shorter days, 10% less pay, half the wear on your body.');
   if (commuteOneWay() >= 20) why.push(`🛣️ ${commuteOneWay()} miles each way${carpooling() ? ' (the carpool helps)' : ''}: ▼ happiness.`);
   if (S.money < 0) why.push('💳 Being in debt: ▼ happiness.');
+  if (HOMES[S.home].folks && a >= FOLKS_FROM) why.push('🏡 Still living at your folks\' place: ▼ a little happiness. A place in town would fix that.');   // i37-b04
   if (S.partner || S.dog || S.cat || kidsAtHome()) why.push(`🏡 ${[S.partner ? partnerWord() : '', S.dog ? 'your dog' : '', S.cat ? 'your cat' : '', kidsAtHome() ? 'kids at home' : ''].filter(Boolean).join(', ').replace(/^./, c => c.toUpperCase())}: ▲ happiness${comfortF() < 1 ? `, ${comfortF() <= 0 ? 'but not past the high 80s' : 'less as you near the high 80s'}` : ''}.`);
   if (S.health < 35 && (S.focus === 'work' || S.focus === 'hustle')) why.push('😮‍💨 Pushing through low health with extra work: ▼▼ health.');
   if (S.focus !== 'study' && S.streakF === S.focus && S.streakN + 1 > RUT_WEEKS) why.push(`🔁 In a rut (${S.streakN + 1} weeks of the same thing): ▼ happiness.`);
@@ -451,7 +452,8 @@ function weekTick(auto){
   dh -= commuteOneWay() / 40 * driveDays() * (carpooling() ? 0.6 : 1);
   if (carpooling()) dc += 0.3;                    // riding with neighbors keeps you in the loop
   if (onBus()) dh -= 0.3;                          // i3-a14: longer days on the bus
-  dh += (home.happy * 0.4 + (S.partner ? 0.6 : 0) + (S.dog ? 0.4 : 0) + (S.cat ? 0.2 : 0) + kidsHome * kidJoy()) * comfortF() - (S.money < 0 ? 2 : 0);   // i30-b04: home comforts pull toward the mid-80s
+  dh += (home.happy * 0.4 + (S.partner ? 0.6 : 0) + (S.dog ? 0.4 : 0) + (S.cat ? 0.2 : 0) + kidsHome * kidJoy()) * comfortF() - (S.money < 0 ? 2 : 0)
+    - (home.folks && age() >= FOLKS_FROM ? FOLKS_TUG : 0);   // i37-b04: still living with your folks   // i30-b04: home comforts pull toward the mid-80s
   dc += kidsHome * 0.2;
   if (S.council) dc += 0.8;
   if (awaySouth()) { dh = Math.max(dh, 0.5); dH = Math.max(dH, 0.3); dc -= 1.2; }   // i3-a30: sun holds you up, but town forgets you a little

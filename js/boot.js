@@ -10,7 +10,7 @@ window.addEventListener('appinstalled', () => { INSTALL_EVT = null; setPref('ins
 // i57-a10: no inline handlers (the page's content security policy forbids them). Buttons drawn as HTML strings
 // name a game function in data-call (and its argument in data-arg); pins drawn as SVG also answer Enter and Space.
 const CALLS = { MAPTAP: k => MAPTAP(k), MAPTAB: k => MAPTAB(k), MAPPREF: v => MAPPREF(v === '1'), TRIPTO: k => TRIPTO(k), MAPFOCUS: f => MAPFOCUS(f),
-  BIZTAP: id => BIZTAP(id), outSheet: () => outSheet(), teaserSheet: id => teaserSheet(id),
+  BIZTAP: id => BIZTAP(id), outSheet: () => outSheet(), teaserSheet: id => teaserSheet(id), retireSheet: () => retireSheet(),
   helpgo: id => helpJump(id),
   helptop: () => $('#helpview').scrollTo({ top: 0, behavior: calmMotion() ? 'auto' : 'smooth' }) };
 document.addEventListener('click', e => {
