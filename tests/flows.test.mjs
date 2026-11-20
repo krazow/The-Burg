@@ -24,11 +24,12 @@ async function clearSheets(max = 8) {
   }
 }
 // a fresh life on a chosen tab, set up for the check, with no random events getting in the way
-async function life(extra = {}, tabName = 'home', len = 'two') {
-  await setup(([extra, tabName, len]) => {
-    localStorage.clear(); newGame('Flow', len, 0); Object.assign(S, extra); S.noEvents = true;
+// (with every system open, i31-b20, unless a check passes unlock 'go' to play 'Open as I go')
+async function life(extra = {}, tabName = 'home', len = 'two', unlock = 'all') {
+  await setup(([extra, tabName, len, unlock]) => {
+    localStorage.clear(); newGame('Flow', len, 0, { unlock }); Object.assign(S, extra); S.noEvents = true;
     setPref('tips', ['focus', 'strip', 'tabs']); closeSheet(); tab = tabName; render();
-  }, [extra, tabName, len]);
+  }, [extra, tabName, len, unlock]);
 }
 
 await page.goto(srv.url, { waitUntil: 'load' });
@@ -1260,6 +1261,93 @@ await t.check('W22: the Little League season runs coach → losing streak → co
   await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Little League needs a coach')));
   await page.click(`${open} [data-i="1"]`); await clearSheets();
   assert(!(await page.evaluate(() => leagueOn() || !!planDue(curMonth()))), 'skipping started the season');
+});
+
+// ---- i31: systems open as you go ----
+for (const len of ['half', 'two', 'five', 'life']) {
+  await t.check(`i31-b02/b22/b33: a ${len} life starts with four focuses and opens every system by its deadline`, async () => {
+    await life({ jobId: 'farmhand', money: 2000 }, 'home', len, 'go');
+    const r = await setup(() => {
+      const start = { open: [...document.querySelectorAll('#main .fbtn[data-f]')].map(b => b.dataset.f), soon: document.querySelectorAll('#main .fbtn[data-soon]').length,
+        out: !!document.querySelector('#outbtn'), plan: !!document.querySelector('#planbtn'), trip: !!document.querySelector('#tripchip'), score: !!document.querySelector('#scorenow') };
+      const last = Math.max(...UNLOCKS.map(u => unlockBy(u) ?? 0));
+      const dl = UNLOCKS.filter(u => unlockBy(u) != null).map(u => u.id);
+      let maxQ = 0, w1 = null;
+      for (let i = 0; i <= last && !S.over; i++) { weekTick(false); maxQ = Math.max(maxQ, S.unlockQ.length);
+        if (i === 0) { tab = 'home'; render(); w1 = document.querySelectorAll('#main .fbtn[data-f]').length; } }
+      tab = 'home'; render();
+      return { start, w1, dl, opened: S.opened, cards: document.querySelectorAll('#unlockcard').length, maxQ, turn: S.turn };
+    });
+    assert(r.start.open.join() === 'work,rest,community,outdoors' && r.start.soon === 2, JSON.stringify(r.start));
+    assert(!r.start.out && !r.start.plan && !r.start.trip && !r.start.score, `week 1 is just focuses and End Week: ${JSON.stringify(r.start)}`);
+    assert(r.w1 === 5, `study opens after the first week (${r.w1} focuses)`);
+    for (const id of r.dl) assert(r.opened[id], `${id} should be open by week ${r.turn} of a ${len} life`);
+    assert(r.cards === 1, `one unlock card at a time (${r.cards}), queue ${r.maxQ}`);
+  });
+}
+
+await t.check('i31-b15/b16/b17: the unlock card shows one at a time, Got it moves on, Show me runs a tour that changes nothing', async () => {
+  await life({ jobId: 'farmhand', money: 2000 }, 'life', 'two', 'go');
+  await setup(() => { for (let i = 0; i < 4; i++) weekTick(false); tab = 'life'; render(); });
+  const q0 = (await S()).unlockQ;
+  assert(q0.length >= 2, `several systems waiting: ${q0}`);
+  assert(await page.$('#app > nav button[data-tab="home"] .ndot'), 'the Home tab gets a New dot');
+  assert(/new/.test(await page.getAttribute('#app > nav button[data-tab="home"]', 'aria-label')), 'screen readers hear new');
+  await page.click('#app > nav button[data-tab="home"]');
+  assert((await page.$$('#unlockcard')).length === 1, 'one card');
+  const first = await page.getAttribute('#unlockcard', 'data-unlock');
+  assert(first === q0[0], `${first} is first in line`);
+  await page.click('#unok');
+  const second = await page.getAttribute('#unlockcard', 'data-unlock');
+  assert(second === q0[1], `${second} comes next`);
+  const before = await S();
+  await page.click('#unshow');
+  await page.waitForSelector('#coach:not(.hidden) .cbubble');
+  assert(/Show me how/.test(await page.textContent('#coach .cstep')), 'a short tour');
+  for (let i = 0; i < 6; i++) {
+    await page.waitForFunction(() => !TUT || document.querySelector('#coach:not(.hidden) #cnext'));
+    if (!(await page.evaluate(() => !!TUT))) break;
+    await page.click('#coach #cnext');
+  }
+  await page.waitForFunction(() => !TUT);
+  const after = await S();
+  assert(after.turn === before.turn && after.money === before.money, 'the tour plays no week and spends nothing');
+  assert(!after.unlockQ.includes(second), 'Show me also clears the card');
+});
+
+await t.check('i31-b19: a Soon spot offers "I know this one", which opens it quietly and works the same', async () => {
+  await life({ jobId: 'farmhand', money: 2000 }, 'home', 'two', 'go');
+  await page.click('#main .fbtn[data-soon="hustle"]');
+  await page.click(`${open} #early`);
+  const s = await S();
+  assert(s.opened.hustle && s.opened.hustle.how === 'early' && !s.unlockQ.includes('hustle'), JSON.stringify(s.opened.hustle));
+  assert(await page.$('#main .fbtn[data-f="hustle"]'), 'the Side hustle focus is in the grid');
+  assert(!(await page.$('#unlockcard[data-unlock="hustle"]')), 'no card for an early open');
+});
+
+await t.check('i31-b20: "Everything open" opens every system at the start with no cards or tags', async () => {
+  await setup(() => { localStorage.clear(); setPref('tips', ['focus', 'strip', 'tabs']); });
+  await page.evaluate(() => renderTitle());
+  await page.click('#moreopts');
+  await page.click('[data-um="all"]');
+  await page.click('#start');
+  await setup(() => { closeSheet(); S.jobId = 'farmhand'; S.noEvents = true; for (let i = 0; i < 4; i++) weekTick(false); tab = 'home'; render(); });
+  const s = await S();
+  assert(s.unlockMode === 'all' && Object.keys(s.opened).length === await page.evaluate(() => UNLOCKS.length), JSON.stringify(s.opened));
+  assert(!(await page.$('#unlockcard')) && !(await page.$('.newtag')) && !(await page.$('.ndot')), 'no cards, tags or dots');
+  assert((await page.$$('#main .fbtn[data-f]')).length === 6, 'all six focuses');
+  await setup(() => setPref('unlockMode', 'go'));
+});
+
+await t.check('i31: an older save keeps every system it already uses open', async () => {
+  const r = await setup(() => {
+    localStorage.clear(); newGame('Old', 'five', 0);
+    const g = JSON.parse(JSON.stringify(S)); delete g.opened; delete g.unlockQ; delete g.unlockMode;
+    Object.assign(g, { turn: 1, hustleWeeks: 3, plan: ['work', 'rest'], biz: { type: 'truck', earned: 0 }, skills: { cook: 2 } });
+    return migrate(g).opened;
+  });
+  for (const id of ['hustle', 'plan', 'biz', 'skills', 'study', 'out', 'goals']) assert(r[id], `${id} stays open: ${Object.keys(r)}`);
+  assert(!r.score && !r.trip, `nothing unused and not due yet opens: ${Object.keys(r)}`);
 });
 
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });

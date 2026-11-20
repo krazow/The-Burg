@@ -634,7 +634,8 @@ function unlockCard(){
   if (!S || S.practice) return '';
   const id = (S.unlockQ || []).find(x => UNLOCK[x] && S.opened && S.opened[x]); if (!id) return '';
   const u = UNLOCK[id];
-  if (UNLOCK_SAID !== id) { UNLOCK_SAID = id; setTimeout(() => announce(`New: ${u.label}. ${u.moment}`), 400); }
+  if (UNLOCK_SAID !== id) { UNLOCK_SAID = id;   // said after anything else just announced (like the week's summary), not over it
+    setTimeout(() => { const r = $('#sr'), cur = r ? r.textContent.trim() : ''; announce(`${cur ? cur + ' ' : ''}New: ${u.label}. ${u.moment}`); }, 400); }
   return `<div class="card tip unlockcard" id="unlockcard" data-unlock="${id}"><div><b>✨ New: ${u.ic} ${u.label}</b><div class="s">${u.moment}</div></div>
     <div class="slotbtns"><button class="sm" id="unshow" aria-label="Show me: ${u.label}">Show me</button><button class="sm alt" id="unok" aria-label="Got it: ${u.label}">Got it</button></div></div>`;
 }

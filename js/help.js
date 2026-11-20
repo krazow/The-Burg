@@ -81,6 +81,7 @@ function guideHTML(){
       <p>Backgrounds and modes are under <b>More options</b>, below Start.</p>
       <p><b>How your life begins:</b> ${Object.values(BACKGROUNDS).map(b => `${b.ic} <b>${b.name}</b> (${b.hint.toLowerCase()}): ${b.desc}`).join(' ')}</p>
       <p><b>Mode:</b> ${Object.values(MODES).map(m => `${m.ic} <b>${m.name}</b>: ${m.desc}`).join(' ')} Best scores are kept separately for each mode.</p>
+      <p><b>Systems:</b> ${Object.values(UNLOCK_MODES).map(m => `${m.ic} <b>${m.name}</b>: ${m.desc}`).join(' ')} In <b>Open as I go</b>, these open during your life, each at its moment or by a set week at the latest: ${UNLOCKS.map(u => `${u.ic} ${u.label}`).join(', ')}. A <b>New</b> tag and a dot on the tab point to what just opened. Tap a ✨ <b>Soon</b> spot, or <b>I know this one</b> at the top of Help, to open one early: it works exactly the same either way. Opening early or late never changes your score. Everything in this guide is there for you to read, open or not.</p>
       <p><b>First moves:</b> find a job on the <b>Jobs</b> tab, pick a weekly focus on <b>Home</b>, and tap <b>End Week</b>. Want to see it done? Play the <b>gameplay tutorial</b> at the top of this page.</p>`],
     ['week', '📅 Your week', `
       <p>Each turn is <b>one week</b>. On <b>Home</b>, pick one <b>focus</b> for the week, then tap <b>End Week</b>. The button shows your focus, and it repeats every week until you change it.</p>
