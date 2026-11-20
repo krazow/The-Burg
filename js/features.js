@@ -576,8 +576,11 @@ const MONEY_STATE = () => ({ ins:{ auto:'full', renters:true, ded:1000, dental:f
   debtWeeks:0, debtUp:0, debtPrev:null, bk:null, ptaxDone:null, due:[], monKey:2027 * 12 });
 
 /* ---- i3-a19: the insurance sheet. The defaults (full coverage, renters) add up to $220 a month with the phone (i75-b26). ---- */
+// difficulty: below Hard everyone has the standard $220 plan (full vehicle coverage, renters or homeowners, the phone)
+const STD_INS = { auto:'full', renters:true, ded:1000 };
+const insOf = () => on('money.insuranceChoices') ? S.ins || {} : STD_INS;
 function insParts(){
-  const i = S.ins || {}, own = !!HOMES[S.home].own, ded = INS_DED[i.ded] != null ? i.ded : 1000;
+  const i = insOf(), own = !!HOMES[S.home].own, ded = INS_DED[i.ded] != null ? i.ded : 1000;
   return [['📱 Phone', INS_PHONE], [i.auto === 'liab' ? '🛻 Vehicle: liability only' : '🛻 Vehicle: full coverage', INS_AUTO[i.auto === 'liab' ? 'liab' : 'full']],
     own ? [`🏡 Homeowners ($${ded.toLocaleString('en-US')} deductible)`, (INS_HOME[S.home] ?? INS_HOME_DEF) + INS_DED[ded]] : [i.renters === false ? '🏠 No renters insurance' : '🏠 Renters insurance', i.renters === false ? 0 : INS_RENTERS], ...insExtras(),   // i74-a04/a08
     ...(own && i.wind === 'pct' ? [[`🌬️ Wind and hail: ${WIND_PCT * 100}% deductible`, -windSave()]] : []),   // i75-a13
@@ -590,7 +593,7 @@ const windSave = () => Math.round((HOMES[S.home].value || 0) * WIND_SAVE / 12); 
 const insMonthly = () => insParts().reduce((a, [, v]) => a + v, 0);
 // what a loss costs you after insurance: 'auto' (your vehicle), 'home' (an owned house; a landlord covers a rented one), 'stuff' (your belongings)
 function youPay(kind, c, cause){
-  const i = S.ins || {}, own = !!HOMES[S.home].own, ded = cost(INS_DED[i.ded] != null ? i.ded : 1000);
+  const i = insOf(), own = !!HOMES[S.home].own, ded = cost(INS_DED[i.ded] != null ? i.ded : 1000);
   if (kind === 'auto') return i.auto === 'liab' ? c : Math.min(c, cost(AUTO_DED));
   if (kind === 'home') return own ? Math.min(c, cause === 'wind' && i.wind === 'pct' ? Math.max(ded, windDed()) : ded) : 0;   // i75-a13
   return own ? Math.min(c, ded) : i.renters === false ? c : Math.min(c, cost(RENTERS_DED));
@@ -681,7 +684,7 @@ function homeMoneyHTML(){
 /* ---- i3-a29: index funds, and i3-a17: wine futures ---- */
 const wineAtCost = () => (S.wine || []).reduce((a, l) => a + (l.paid || 0), 0);
 const wineYear = () => new Date(S.date).getFullYear();
-const wineOpen = () => [8, 9, 10].includes(curMonth()) && !(S.wine || []).some(l => l.y === wineYear());
+const wineOpen = () => on('money.index') && [8, 9, 10].includes(curMonth()) && !(S.wine || []).some(l => l.y === wineYear());
 function buyWine(){
   if (!wineOpen()) return false;
   const c = cost(WINE_COST); if (S.money < c) { toast(`You need ${fmt(c)} on hand.`); return false; }
@@ -691,6 +694,7 @@ function buyWine(){
 }
 function invest(amount){
   amount = Math.round(amount);
+  if (amount > 0 && !on('money.index')) return false;
   if (amount > 0) { if (S.money < amount) { toast(`You need ${fmt(amount)} on hand.`); return false; } S.money -= amount; S.stocks = (S.stocks || 0) + amount; }
   else { const v = Math.min(S.stocks || 0, -amount); if (!(v > 0)) return false; S.stocks -= v; S.money += v; if (S.stocks < 1) S.stocks = 0; }
   return true;
@@ -706,6 +710,7 @@ function investWorry(amount){
   return left < monthBills() ? `That leaves ${fmt(left)}, about ${cashWeeks(left)} week${cashWeeks(left) === 1 ? '' : 's'} of bills. Invest anyway?` : '';
 }
 function investCard(){
+  if (!on('money.index')) return '';               // difficulty: index funds and wine futures are Normal and up
   const y = wineYear(), m = S.mkt && S.mkt.y === y ? S.mkt : null, dropped = m && m.dropped, thin = S.money < monthBills();
   return `${firstTime('invest')}<div class="card"><h3>📈 Investing</h3>
     <div class="kv"><span>Index funds at ${BROKER}, Walla Walla<br><small class="muted">About 6% a year on average, but some years drop 20% or more. Counts in net worth at today's value.</small></span><span><b>${fmt(S.stocks || 0)}</b></span></div>
@@ -729,7 +734,7 @@ function moneyMonth(notes){
   if (!S.mkt || S.mkt.y !== y) {                                   // New Year: home prices, mortgage rates and the stock market
     S.homeGrow = HOME_GROW + (Math.random() - 0.5) * 0.12;
     S.rate = Math.round(clamp(S.rate + (BASE_RATE - S.rate) * 0.3 + (Math.random() - 0.5) * 2, 4, 9.5) * 4) / 4;
-    const bad = chance(MKT.badOdds); S.mkt = { y, bad, dropAt: bad ? S.turn + ri(8, 40) : null };
+    const bad = on('money.index') && chance(MKT.badOdds); S.mkt = { y, bad, dropAt: bad ? S.turn + ri(8, 40) : null };
   }
   const wheat = S.biz && S.biz.type === 'wheat';
   if (mo === 6) {                                                   // July: the new crop's price, and the old crop has to go
@@ -764,13 +769,14 @@ function moneyWeek(lines, notes){
 const inCollections = () => (S.debtWeeks || 0) > COLLECT_WEEKS;
 const PLAN_WEEKS = 4, onPlan = () => inCollections() && (S.debtUp || 0) >= PLAN_WEEKS;   // i75-b22
 const bkActive = () => S.bk != null && S.turn - S.bk < BK_WEEKS;
-const canBankrupt = () => S.bk == null && !S.practice && mode() !== 'relaxed';
+const canBankrupt = () => S.bk == null && !S.practice && mode() !== 'relaxed' && on('money.bankruptcy');
 function loanBlock(){
   if (bkActive()) return `After the bankruptcy, no bank will lend to you until ${new Date(S.date + (BK_WEEKS - (S.turn - S.bk)) * 7 * 864e5).getFullYear()}.`;
   if (inCollections()) return 'With debt in collections, the bank turns you down until you\'re back above $0.';
   return '';
 }
 function debtWeek(notes){
+  if (!on('money.collections')) return;            // difficulty: below Hard, debt only charges interest
   if (S.money < 0) {
     S.debtWeeks = (S.debtWeeks || 0) + 1;
     if (S.debtWeeks === COLLECT_WEEKS + 1) {
@@ -1032,8 +1038,8 @@ function nextStep(){
   const order = Object.entries(parts).sort((a, b) => a[1] - b[1]).map(([k]) => k);
   const pick = {
     wealth: () => {
-      if (j && !S.k401rate) return { t:'Save 5% in your 401(k): your employer adds 3% on top.', go:'life', b:'Life' };
-      const now = j ? takeHome(j) : 0, better = JOBS.filter(x => x.edu <= S.edu && x.id !== S.jobId && takeHome(x) > now * 1.1).sort((a, b) => takeHome(b) - takeHome(a))[0];
+      if (j && !S.k401rate && on('money.k401')) return { t:'Save 5% in your 401(k): your employer adds 3% on top.', go:'life', b:'Life' };
+      const now = j ? takeHome(j) : 0, better = JOBS.filter(x => x.edu <= S.edu && jobOn(x) && x.id !== S.jobId && takeHome(x) > now * 1.1).sort((a, b) => takeHome(b) - takeHome(a))[0];
       if (better && !S.retired) return { t:`${better.title} in ${CITIES[better.city].name} takes home about ${fmt(takeHome(better) - now)} more a week.`, go:'jobs', b:'Jobs' };
       if (!S.retired && S.edu < 3 && S.focus !== 'study') return { t:`A ${EDU[S.edu + 1].toLowerCase()} opens better-paying jobs: try Take classes.`, go:'focus', b:'Focus' };
       if (!HOMES[S.home].own && S.money > cost(HOMES.fixer.down) + cost(2000)) return { t:'You have enough for a down payment: owning a home builds equity.', go:'life', b:'Life' };
@@ -1315,8 +1321,15 @@ function ladderOf(j){
     { title:t[1], payMult:1.25, stress:.6, needMonths:36, needEdu:Math.min(3, j.edu + 1), needSkill:['people', 2] }
   ]);
 }
-const rungOf = (j = job()) => j ? ladderOf(j)[Math.min(S.rung || 0, 2)] : null;
-const nextRung = () => working() ? ladderOf(job())[(S.rung || 0) + 1] || null : null;
+// difficulty: ladders are Normal and up (jobs.ladder); in Easy every job stays on its first rung and gets a small raise
+// each January instead (turn.js). Unions, seasonal layoffs and remote jobs switch off the same way.
+const YEAR_RAISE = 1.02;
+const rungOf = (j = job()) => j ? ladderOf(j)[on('jobs.ladder') ? Math.min(S.rung || 0, 2) : 0] : null;
+const nextRung = () => working() && on('jobs.ladder') ? ladderOf(job())[(S.rung || 0) + 1] || null : null;
+const unionJob = (j = job()) => !!(j && j.union && on('jobs.union'));
+const remoteDays = (j = job()) => j && j.remote && on('jobs.commute') ? j.remote : 0;
+const seasonal = x => !!(x && x.season && on('jobs.layoffs'));
+const jobOn = x => !!x && !(x.remote === 5 && !on('jobs.commute'));   // the fully remote job is part of remote work
 // i3-a04: apprentices earn startMult of full pay, stepping up each year until they're journeymen
 const apprenticing = (j = job()) => !!(j && j.apprentice && S.jobId === j.id && (S.appWeeks || 0) < j.apprentice.weeks);
 function appMult(j, cur){
@@ -1350,12 +1363,12 @@ function payPerks(j, cur){
 }
 // what a job needs beyond schooling: a certificate or a program ('' when nothing)
 function extraLock(x){
-  if (x.needCert && !(S.certs || {})[x.needCert]) return CERTS[x.needCert].name.replace(/ \(.*/, '');
+  if (x.needCert && on('school.certs') && !(S.certs || {})[x.needCert]) return CERTS[x.needCert].name.replace(/ \(.*/, '');
   if (x.needMajor && S.major !== x.needMajor) return `${PROGRAMS[x.needMajor].name} program`;
   return '';
 }
 // i3-a06: seasonal jobs
-const jobInSeason = (x, m = curMonth()) => !x.season || x.season.includes(m);
+const jobInSeason = (x, m = curMonth()) => !seasonal(x) || x.season.includes(m);
 const seasonWords = x => `${MONTHS[x.season[0]]} to ${MONTHS[x.season[x.season.length - 1]]}`;
 // i3-a09: a reference from your last job
 const refNow = () => S.ref && S.turn < S.ref.until ? S.ref.k : null;
@@ -1393,9 +1406,9 @@ function startJob(id, back = null){
   if (back) Object.assign(S, { raise:back.raise || 1, rung:back.rung || 0, tenure:back.tenure || 0 });
   if (S.recall && S.recall.job === id) S.recall = null;
   S.ui = 0;                                        // i22-a03: benefits stop with a new paycheck; leftover months aren't banked
-  S.clearAt = CLEARANCE.includes(id) && !back ? S.turn + CLEAR_WEEKS : -1;
-  if (x.union) S.contractAt = S.turn + ri(78, 156);
-  if (x.remote === 5 && !S.fiber) { const c = Math.round(cost(FIBER_COST)); S.money -= c; S.fiber = true; log(`Had fiber internet put in at home for the remote job (${fmt(c)}).`, 'money'); }
+  S.clearAt = CLEARANCE.includes(id) && !back && on('jobs.perks') ? S.turn + CLEAR_WEEKS : -1;
+  if (unionJob(x)) S.contractAt = S.turn + ri(78, 156);
+  if (remoteDays(x) === 5 && !S.fiber) { const c = Math.round(cost(FIBER_COST)); S.money -= c; S.fiber = true; log(`Had fiber internet put in at home for the remote job (${fmt(c)}).`, 'money'); }
   if (!busOK(x)) S.bus = false;
 }
 
@@ -1409,7 +1422,7 @@ function hireOdds(x){
   if (inCollections()) p -= 0.1;                   // i3-a26: a collections account shows up on background checks
   if (bkActive() && x.pay >= 4800) p -= 0.15;      // i3-a27: the better-paying jobs look hard at a bankruptcy
   p += refBonus();                                 // i3-a09
-  return x.id === 'retail' ? Math.max(RETAIL_HIRE, p) : p;   // i75-b08: the mall is always hiring
+  return x.id === 'retail' && on('jobs.seasonal') ? Math.max(RETAIL_HIRE, p) : p;   // i75-b08: the mall is always hiring
 }
 const INTERVIEW = [
   { k:'honest', label:'Be straight about what you can and can\'t do yet', d:() => 0.05,
@@ -1423,7 +1436,7 @@ function resolveInterview(k){
   const iv = S.interview; S.interview = null;
   const x = iv && jobById(iv.id); if (!x) return null;
   const a = INTERVIEW.find(q => q.k === k), p = iv.p + (a ? a.d(x) : 0);
-  return { x, ok: chance(x.id === 'retail' ? Math.max(RETAIL_HIRE, Math.min(0.92, p)) : Math.min(0.92, p)) };
+  return { x, ok: chance(x.id === 'retail' && on('jobs.seasonal') ? Math.max(RETAIL_HIRE, Math.min(0.92, p)) : Math.min(0.92, p)) };
 }
 function interviewSheet(x){
   const r = refNow(), notes = [skillLv('people') ? `🗣️ People skill ${skillLv('people')}` : '', outLookBonus() ? '💇 a fresh haircut' : '',
@@ -1453,7 +1466,7 @@ function hireResult(x, ok){
 function hireCheer(){ if (S.hireJoy != null && S.turn - S.hireJoy < HIRE_JOY_WEEKS) return; S.hireJoy = S.turn; adj({happy:5}); }
 // i52-a02: a 20+ mile job says what the drive takes: time each way, happiness a month and gas a week
 function driveLine(x){
-  const mi = CITIES[x.city].miles; if (mi < 20 || x.remote === 5) return '';
+  const mi = CITIES[x.city].miles; if (mi < 20 || remoteDays(x) === 5) return '';
   const mins = Math.round(mi * 60 / 55 / 5) * 5, t = mins >= 60 ? `an hour${mins > 60 ? ` and ${mins - 60} minutes` : ''}` : `${mins} minutes`;
   return `🛣️ It's ${mi} miles each way, about ${t} on the road. The drive wears on you: about −${(mi / 40 * driveDays(x)).toFixed(1)} happiness a month, and ${wk(commuteCost(mi, CARS[S.car], x))} in gas.`;
 }
@@ -1464,17 +1477,17 @@ function hired(x){
   log(`Hired as ${x.title} in ${CITIES[x.city].name}!`, undefined, 1); hireCheer();
   const extra = [x.apprentice ? `You start as an apprentice at ${Math.round(x.apprentice.startMult * 100)}% pay, stepping up every year for ${x.apprentice.weeks / 52} years.` : '',
     clearing() ? `Your security clearance takes about ${CLEAR_WEEKS} weeks. Until then you're badged out, at ${Math.round(CLEAR_PAY * 100)}% pay. Keep your money in order: heavy debt can sink the check.` : '',
-    x.union ? 'It\'s a union job: monthly dues, steadier raises and more protection from layoffs.' : '',
-    x.season ? `It's seasonal work, ${seasonWords(x)}. You're laid off between seasons and called back after.` : ''].filter(Boolean);
+    unionJob(x) ? 'It\'s a union job: monthly dues, steadier raises and more protection from layoffs.' : '',
+    seasonal(x) ? `It's seasonal work, ${seasonWords(x)}. You're laid off between seasons and called back after.` : ''].filter(Boolean);
   const drive = driveLine(x);
-  const ask = HARD_TO_FILL.includes(x.id) && !S.practice;
+  const ask = HARD_TO_FILL.includes(x.id) && !S.practice && on('jobs.interview');   // difficulty: asking for more is Normal and up
   sheet(`<div class="big">🎉</div><h2 style="text-align:center">You're hired!</h2>
     <p style="text-align:center">${x.title} in ${CITIES[x.city].name} at ${wk(payNow(x))}.</p>
     ${drive ? `<p class="otnote">${drive}</p>` : ''}${extra.map(t => `<p class="muted">${t}</p>`).join('')}
     ${ask ? `${firstTime('offer')}<p>They need people for this job, so you could ask for more. Ask too hard and they may pull the offer (1 in 10).</p>
       <button class="btn primary" data-i="0">Take it as it is</button>
       <button class="btn ghost" data-i="1">Ask for 5% more${skillLv('people') ? ' (your People skill helps)' : ''}</button>
-      <button class="btn ghost" data-i="2">Ask for a ${fmtc(SIGN_ON)} sign-on bonus (paid back if you leave inside a year)</button>`
+      ${on('jobs.perks') ? `<button class="btn ghost" data-i="2">Ask for a ${fmtc(SIGN_ON)} sign-on bonus (paid back if you leave inside a year)</button>` : ''}`
       : '<button class="btn primary" id="ok">Let\'s go</button>'}`);
   const done = msg => { if (msg) { log(`Job offer: ${msg}`); sheet(`<div class="big">🤝</div><p>${msg}</p><button class="btn primary" id="ok">Let's go</button>`); $('#ok').onclick = go; } else go(); };
   const go = () => { closeSheet(); tab = 'home'; render(); };
@@ -1536,7 +1549,7 @@ function jobWeekEnd(notes){
   }
   if (j && CLEARANCE.includes(j.id) && S.clearAt >= 0 && S.turn >= S.clearAt) {
     S.clearAt = -1;
-    if (S.money < -cost(5000) && chance(0.5)) {
+    if (S.money < -cost(5000) && on('jobs.layoffs') && chance(0.5)) {   // difficulty: below Hard, jobs only end when you leave
       const t = j.title; leaveJob('laid'); S.ref = null; log(`The security clearance for ${t} was denied.`);
       notes.push(`🪪 Your security clearance was denied: the background check flagged your debts. You lose the ${t.toLowerCase()} job.`);
     } else { log(`Security clearance came through for ${j.title}.`); notes.push(`🪪 Your security clearance came through. You're on full pay now: ${wk(payNow(j))}.`); }
@@ -1565,7 +1578,7 @@ function furloughBackPay(lines){
 // i3-a28 outlook: the job's money in week i from now (pay, strike, furlough, clearance, apprenticeship steps,
 // seasons, call-backs, notice and unemployment). Returns { gross, lines, big } before taxes; read-only.
 function jobOutlook(i, d, f){
-  const lines = [], big = [], mo = d.getMonth(), wage = Math.pow(1 + rule('wage'), i / 52);
+  const lines = [], big = [], mo = d.getMonth(), wage = Math.pow(1 + growth('wage'), i / 52);
   let j = S.retired ? null : job(), gross = 0;
   if (j && S.notice != null && S.turn + i >= S.notice) j = null;                  // gave notice
   if (j && j.season && !jobInSeason(j, mo)) j = null;                             // the season ends
@@ -1770,11 +1783,11 @@ function moneyOutlook(n = 13){
   let cash = S.money, tabsYear = S.tabsYear, lowWeek = null;
   const lease = S.biz && S.biz.type === 'wheat' ? (S.biz.lease ?? LEASE_WEEKS) - S.biz.weeks : null;
   for (let i = 0; i < n; i++) {
-    const d = new Date(d0.getTime() + i * 7 * 864e5), lines = [], big = [], grow = Math.pow(1 + rule('col'), i / 52);
+    const d = new Date(d0.getTime() + i * 7 * 864e5), lines = [], big = [], grow = Math.pow(1 + growth('col'), i / 52);
     let gross = 0;
     let rate = 0;
     if (S.retired) { gross = ssPay() * W + pensionPay() * W; lines.push(['Social Security and pension', gross]); rate = Math.max(0, gross - cost(RETIRE_TAX_FREE) * W) * RETIRE_TAX / gross; }
-    else { const jo = jobOutlook(i, d, f); rate = taxRate(jo.gross / W / Math.pow(1 + rule('wage'), i / 52)); gross = jo.gross * (1 - (S.k401rate ? K401[S.k401rate] : 0)); lines.push(...jo.lines.filter(l => l[0] !== 'Paycheck' && l[0] !== 'Strike pay'), [jo.lines.some(l => l[0] === 'Strike pay') ? 'Strike pay' : 'Paycheck', gross]); big.push(...jo.big); }   // i3: the job's own ups and downs
+    else { const jo = jobOutlook(i, d, f); rate = taxRate(jo.gross / W / Math.pow(1 + growth('wage'), i / 52)); gross = jo.gross * (1 - (S.k401rate && on('money.k401') ? K401[S.k401rate] : 0)); lines.push(...jo.lines.filter(l => l[0] !== 'Paycheck' && l[0] !== 'Strike pay'), [jo.lines.some(l => l[0] === 'Strike pay') ? 'Strike pay' : 'Paycheck', gross]); big.push(...jo.big); }   // i3: the job's own ups and downs
     if (gross && rate) lines.push(['Taxes', -gross * rate]);   // i75-b03/b14
     if (S.partner && age() < 65) lines.push(["Partner's paycheck", 1400 * S.wage * W]);
     lines.push(...billLines(i));
@@ -1826,7 +1839,7 @@ function planningCard(){
     pensionVested() ? `<b>${wk(pensionPay())}</b>` : 'Not vested yet') : '';
   const first = (!hasWill() && age() >= WILL_MIN_AGE ? firstTime('will') : '') || (life && age() >= LTC_AGE && !S.care ? firstTime('ltc') : '');   // i68-b11
   return `${first}<div class="card"><h3>🧭 Planning ahead</h3>
-    <button class="sm alt" id="outlook">📅 Money outlook: next 13 weeks</button>
+    ${on('money.outlook') ? '<button class="sm alt" id="outlook">📅 Money outlook: next 13 weeks</button>' : ''}
     ${row(`🇺🇸 Social Security${S.retired ? '' : ' (estimate)'}<br><small class="muted">${Math.floor(S.earnYears || 0)} years worked of ${SS_FULL_YEARS} · ${Math.round(ssFactor() * 100)}% of the standard amount</small>`, `<b>${wk(ssPay())}</b>`)}
     ${pens}
     ${life && S.ltc ? row('📋 Long-term care insurance', S.ltc.ins ? (S.care ? `Pays ${LTC_COVER * 100}% of care` : wk(cost(LTC_PREMIUM))) : 'None') : ''}
