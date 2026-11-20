@@ -45,6 +45,7 @@ export function gameLines(ctx = loadGame()){
     for (const ev of get(name) || []) if (typeof ev.text === 'string') add(`event: ${ev.title}`, ev.text);
   }
   for (const [k, v] of Object.entries(get('SCORE_TIPS') || {})) add(`tip: ${k}`, v);
+  for (const [k, d] of Object.entries(get('DIFFS') || {})) add(`difficulty: ${k}`, d.blurb);   // to-do 2 D1: the start screen's difficulty cards
   for (const [k, g] of Object.entries(get('GLOSSARY') || {})) { try { add(`word: ${g.w}`, typeof g.d === 'function' ? g.d() : g.d); } catch {} }
   for (const [i, st] of (get('TSTEPS') || []).entries()) add(`tutorial step ${i + 1}`, st.text);
   let guide = ''; try { guide = get('guideHTML()') || ''; } catch {}
