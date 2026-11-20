@@ -86,7 +86,7 @@ for (const [label, w, h, nightXL] of SIZES) {
   const screens = [
     ['title', async () => {}],
     ['help', async () => { await page.click('#how'); }],
-    ['home', async () => { await page.evaluate(() => { closeHelp(); localStorage.clear(); setPref('tips', ['focus','strip','tabs']); if (window.__NIGHTXL) { setPref('theme', 'night'); setPref('textSize', 'xl'); } applyPrefs(); newGame('Screens', 'two', 0); S.noEvents = true; S.jobId = 'farmhand'; tab = 'home'; render(); }); await page.click('#end'); await page.waitForTimeout(300);
+    ['home', async () => { await page.evaluate(() => { closeHelp(); localStorage.clear(); setPref('tips', ['focus','strip','tabs']); if (window.__NIGHTXL) { setPref('theme', 'night'); setPref('textSize', 'xl'); } applyPrefs(); newGame('Screens', 'two', 0, { diff: 'hard' }); S.noEvents = true; S.jobId = 'farmhand'; tab = 'home'; render(); }); await page.click('#end'); await page.waitForTimeout(300);
       if (await page.$('#modal:not(.hidden) #ok')) await page.click('#modal:not(.hidden) #ok'); }],   // i2-a10: the First paycheck badge card
     ['jobs', async () => { await page.click('[data-tab=jobs]'); }],
     ['life', async () => { await page.click('[data-tab=life]'); }],
