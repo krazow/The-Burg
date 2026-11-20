@@ -1233,7 +1233,7 @@ await t.check('W16–W30: every choice of the new Waitsburg events works, costs 
     const may = ev('Pour beer at the Celebration Days beer garden').when(4);
     S.community = 25; const lowCom = ev('Little League needs a coach').when(2); S.community = 50;
     const noWind = ev("Neighbor's tree takes out your fence").when(5);
-    S.evCd['Windstorm'] = S.turn + 6; const wind = ev("Neighbor's tree takes out your fence").when(5);
+    S.evCd['Windstorm'] = S.turn + 38; const wind = ev("Neighbor's tree takes out your fence").when(5);
     S.home = 'house'; const windRenter = ev("Neighbor's tree takes out your fence").when(5); S.home = 'fixer';
     return { renter, owner, april, dog, young, may, lowCom, noWind, wind, windRenter };
   });

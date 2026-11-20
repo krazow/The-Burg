@@ -263,8 +263,11 @@ let tab = 'home', jobCity = 'all';
 // wave 1: the Life Score's running tallies (features.js scoreWeek) and the life aim (i20-b01)
 const SCORE_STATE = () => ({ commSum:0, cardSum:0, cardCount:0, cardSeed:false, goodWeeks:0, deepWeeks:0, debtLow:0, tallyFrom:0,
   aim:'all', aimWeeks:{}, aimAt:0, townWeeks:0, outWeeks:0, tripsN:0, bizWeeks:0, bizSold:false });
-const age = () => Math.floor(S.ageMonths/12);
-const kidsAtHome = () => (S.kids || []).filter(b => S.ageMonths - b < 18*12).length;
+// i5-a01: whole years from months; 52 weeks of 12/52 add up to 11.99999..., so a tiny nudge keeps birthdays on time
+const yrsOf = mo => Math.floor(mo / 12 + 1e-6);
+const age = () => yrsOf(S.ageMonths);
+const kidAge = b => yrsOf(S.ageMonths - b);
+const kidsAtHome = () => (S.kids || []).filter(b => kidAge(b) < 18).length;
 // fill in fields that older saves don't have
 // H1: a fresh life's fields, used by newGame and to repair damaged saves
 function blankLife(name, len, slot = 0){
@@ -397,7 +400,16 @@ function logKind(m){
   if (/^(Hired as|Applied for|Quit the job|Retired at|Moved into|Drove home|Started a business|Sold the|Made the last truck payment|Paid off the)/.test(m)) return 'money';
   return 'ev';
 }
-function log(msg, k){ S.log.unshift({d: dateLabel(), m: msg, k: k || logKind(msg)}); if (S.log.length > 120) S.log.length = 120; }
+// i5-a03: big results (hired, a partner, a dog, a baby, a house, the council, a kid moving out) carry mile:1, so the year in
+// review and the Journal's Milestones chip show them even when they're an event's result
+function log(msg, k, mile){ S.log.unshift({d: dateLabel(), m: msg, k: k || logKind(msg), ...(mile ? { mile:1 } : {})}); if (S.log.length > 120) S.log.length = 120; }
+const isMile = e => !!e && (!!e.mile || (e.k || logKind(e.m)) === 'mile');
+// the year in review's milestones: big moments first when there are too many, kept in the order they happened
+function reviewMilestones(y, n = 8){
+  const yl = S.log.filter(e => e && String(e.d).endsWith(String(y))).reverse(), pick = yl.filter(e => e.mile || !String(e.m).includes(': '));
+  const keep = new Set([...pick.filter(e => e.mile), ...pick.filter(e => !e.mile)].slice(0, n));
+  return pick.filter(e => keep.has(e)).map(e => e.m);
+}
 /* ---------- save slots: up to 5 lives, each auto-saving to its own slot ---------- */
 const SLOTS_KEY = KEY_PREFIX + 'slots.v1', SLOT_COUNT = 5;
 function slots(){
