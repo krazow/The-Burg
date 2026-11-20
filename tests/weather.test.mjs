@@ -21,7 +21,7 @@ const t = runner();
 
 await t.check('a01: one weather year: a dry year is the bad harvest, smoke follows the year, odds stay as before', async () => {
   const r = await ev(() => {
-    fresh('two', { money: 20000 }); render(); startBiz('wheat');
+    fresh('two', { money: 20000, diff: 'hard' }); render(); startBiz('wheat');
     let dry = 0, smoke = 0, badDry = 0, smokeDry = 0; const N = 4000;
     for (let i = 0; i < N; i++) { S.wx = null; const w = wxYear(), y = wheatYield(); if (w.dry) { dry++; if (y <= 0.3) badDry++; if (w.smoke) smokeDry++; } if (w.smoke) smoke++; }
     S.wx = { y: new Date(S.date).getFullYear(), dry: false, wet: false, smoke: false, heat: false, rain: false };
@@ -84,7 +84,7 @@ await t.check('old saves load: weather fields get defaults and the year rolls on
 
 await t.check('a02/a20: a May rain lifts the wheat floor to 1.1; hail cuts it, mostly covered by crop insurance', async () => {
   const r = await ev(() => {
-    fresh('two', { money: 20000, date: new Date(2027, 4, 3).getTime() }); render(); startBiz('wheat');
+    fresh('two', { money: 20000, date: new Date(2027, 4, 3).getTime(), diff: 'hard' }); render(); startBiz('wheat');
     S.wx = { y: 2027, dry: false, wet: false, smoke: false, heat: false, rain: false };
     choose('A million-dollar rain'); const lo = Math.min(...Array.from({ length: 300 }, () => wheatYield()));
     S.wx.rain = false; S.biz.hail = { y: 2027, cut: 0.3 }; const hailNo = Math.max(...Array.from({ length: 300 }, () => wheatYield()));
@@ -159,7 +159,7 @@ await t.check('a10/a11: an outage brings the neighbor on oxygen and the line cre
 
 await t.check('a15/a16: a dry year asks about the herd; selling down pays now and the herd regrows; an ice storm thins calves', async () => {
   const r = await ev(() => {
-    fresh('two', { money: 20000, date: new Date(2027, 6, 5).getTime(), monKey: 0 }); S.noEvents = false; render(); startBiz('cattle');
+    fresh('two', { money: 20000, date: new Date(2027, 6, 5).getTime(), monKey: 0, diff: 'hard' }); S.noEvents = false; render(); startBiz('cattle');
     S.wx = { y: 2027, dry: true, wet: false, smoke: false, heat: false, rain: false };
     const l = []; wxWeek(l, []); const hay = l.find(x => /dry pasture/.test(x[0])), asked = S.due.includes('A dry year on the herd');
     const m0 = S.money; choose('A dry year on the herd', 0); const sold = { cows: S.biz.cows, cash: S.money - m0 };

@@ -34,7 +34,7 @@ const PLACES = [
           { id:'spa', ic:'🧖', name:'A spa day', cost:95, fx:{happy:6, health:1}, note:`Looking sharp for ${LOOK_WEEKS} weeks, too.` }] },
   { id:'legal', name:'Mother Hubbard\'s Legal Cupboard', ic:'⚖️', lb:'Law office', addr:'145 Main St.', st:'main', x:140, y:290, kind:'Law office',
     desc:'The town\'s law office: wills, estates and the closing papers when you buy a home.', hours:'Weekdays, by appointment',
-    acts:[{ id:'will', ic:'📜', name:'Write a will', cost:300, fx:{happy:2}, once:true, minAge:25, note:'Once. Peace of mind for you and your family.' }] },
+    acts:[{ id:'will', feat:'legacy.will', ic:'📜', name:'Write a will', cost:300, fx:{happy:2}, once:true, minAge:25, note:'Once. Peace of mind for you and your family.' }] },
   { id:'junque', name:'The Junque Sisters', ic:'🛋️', lb:'Vintage', addr:'Town Hall building, Main St.', st:'main', x:175, y:220, kind:'Vintage and gift shop',
     desc:'Vintage finds, gifts and decor. Good for holiday shopping and for making a new place feel like home.', hours:'Thursday to Saturday · closed for a winter break in January and February',
     closed:WINTER_BREAK, closedWhy:'Closed for the winter break until March',
@@ -131,7 +131,7 @@ function placeClosed(p){
   return '';
 }
 // which of a place's options show at all (drinks only for 21 and over)
-const shownActs = p => p.acts.filter(a => !(a.min21 && age() < 21) && !(a.info && !on('out.extras')));   // to-do 2: the bank and trades sheets are Normal+
+const shownActs = p => p.acts.filter(a => !(a.min21 && age() < 21) && !(a.feat && !on(a.feat)) && !(a.info && !on('out.extras')));   // to-do 2 D2: an act for a feature that's off (the will in Easy; the bank and trades sheets are Normal+)
 // i26-b05: a place where everything is 21 and over says so on its pin and in the list
 const only21 = p => age() < 21 && p.acts.some(a => a.min21) && !shownActs(p).some(a => !a.info);
 // why an option can't be done right now ('' when it can)
