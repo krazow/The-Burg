@@ -213,9 +213,9 @@ await t.check('i68-b10/b11: first-time explainers for the jobs, school and money
     firstOn('offer', () => hired(jobById('cna')));
     firstOn('union', () => { startJob('rail'); tab = 'jobs'; render(); });
     firstOn('ladder', () => { tab = 'jobs'; render(); });
+    firstOn('invest', () => { closeSheet(); tab = 'life'; render(); });   // i50-a04: Home comes first on Life now, so Investing's explainer shows before the school one
     firstOn('program', () => { tab = 'life'; render(); });
     firstOn('cert', () => { tab = 'life'; render(); document.querySelector('[data-cert="cdl"]').click(); });
-    firstOn('invest', () => { closeSheet(); tab = 'life'; render(); });
     firstOn('ins', () => insSheet());
     firstOn('will', () => { S.ageMonths = 30 * 12; tab = 'life'; render(); });
     firstOn('ltc', () => { S.ageMonths = 56 * 12; tab = 'life'; render(); });

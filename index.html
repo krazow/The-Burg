@@ -90,7 +90,7 @@ input[type=text]:focus{outline:none;border-color:var(--wheat-d)}
 .top{background:var(--barn);color:#fff;padding:calc(var(--safe-t) + 12px) 16px 12px;position:sticky;top:0;z-index:5}
 .top .row{display:flex;justify-content:space-between;align-items:baseline}
 .top h2{font-size:1.25rem}
-.top .money{font-weight:800;font-size:1.25rem}
+.top .money{font-weight:800;font-size:1.25rem;color:inherit;background:none;border:0;padding:0 4px;min-height:44px;min-width:44px;border-bottom:2px dotted rgba(255,255,255,.6);border-radius:0;font-family:inherit}
 .top .meta{font-size:0.8125rem;opacity:.85;margin-top:2px;display:flex;justify-content:space-between}
 .progress{height:4px;background:rgba(255,255,255,.25);border-radius:2px;margin-top:8px;overflow:hidden}
 .progress i{display:block;height:100%;background:var(--wheat)}
@@ -134,6 +134,24 @@ main{flex:1;padding:14px 14px calc(var(--safe-b) + 32px + 10.5rem)}
 .chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px;scrollbar-width:none}
 .chip{white-space:nowrap;padding:7px 12px;border-radius:20px;border:1.5px solid var(--edge);background:var(--card);font-size:0.875rem}
 .chip.on{background:var(--soil);color:var(--paper);border-color:var(--soil)}
+/* i20-a01/a02: chips keep their words and the row scrolls, with a soft fade while there's more to the right */
+.chips .chip{flex-shrink:0}
+.chips.more{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 32px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 32px),transparent)}
+.chip .n{display:inline-block;margin-left:5px;font-size:0.75rem;font-weight:800;opacity:.8}
+/* i20-a09: job board sections */
+.boardh{margin:14px 0 2px;font-size:0.9375rem;display:flex;align-items:center;gap:6px}.boardh:first-of-type{margin-top:6px}
+/* i20-a14: Buy over the down payment, the same width on every row */
+.sm.buy2{width:8.25em;white-space:normal;line-height:1.15;padding:6px 8px;text-align:center;flex-shrink:0}.sm.buy2 small{display:block;font-weight:600;font-size:0.75rem}
+/* i20-a23: a slim header that stays at the top of a long sheet */
+.sheethead{position:sticky;top:0;z-index:2;background:var(--paper);margin:-8px -18px 6px;padding:8px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.sheethead h2{font-size:1.125rem;margin:0;flex:1;min-width:0}.sheethead .cnt{font-size:0.8125rem;font-weight:700;color:var(--muted);white-space:nowrap}.sheethead .sm{flex-shrink:0}
+/* i20-a28: the end screen's score math */
+.rec.scoremath td,.rec.scoremath th{padding:7px 4px}.rec.scoremath th[scope=row]{font-weight:700}.rec.scoremath th[scope=row] small{display:block;font-weight:400;font-size:0.75rem;color:var(--muted)}
+.rec.scoremath td:last-child{font-weight:800}
+/* i20-a30: challenge rows put Start under the description */
+.chrow{padding:10px 0;border-bottom:1px dashed var(--line)}.chrow .t{font-weight:700}.chrow .s{font-size:0.8125rem;color:var(--muted);margin:2px 0 6px}.chrow .sm{width:100%}
+/* i2-a01: what an event choice does, under its label */
+.evchoices .btn small.hint{display:block;font-weight:500;font-size:0.8125rem;margin-top:2px}
 .job{display:flex;justify-content:space-between;gap:10px;align-items:center}
 .job .t{font-weight:700}.job .s{font-size:0.8125rem;color:var(--muted)}
 .job .pay{font-weight:800;color:var(--up);white-space:nowrap}
