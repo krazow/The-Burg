@@ -337,7 +337,12 @@ function guideSections(){
       <li><b>Menu → 💾 Save game:</b> Save writes your current life right now. Save here or Replace on another slot makes a copy as a checkpoint you can go back to.</li>
       <li><b>Menu → 📂 Load game:</b> switches to any saved life. The one you're playing is saved first.</li></ul>
       <p>Finishing a life frees its slot. Saves live on this device and in this browser.</p>
-      <p><b>Menu → 📤 Back up or restore:</b> download a backup file or copy a backup code, then on another device use <b>📥 Restore from a backup</b> (on the title screen or in the same menu). You can add the backup's lives to empty slots or replace all your lives.</p>` },
+      <p><b>Menu → 📤 Back up or restore:</b> download a backup file or copy a backup code, then on another device use <b>📥 Restore from a backup</b> (on the title screen or in the same menu). You can add the backup's lives to empty slots or replace all your lives.</p>
+      <ul><li><b>Codes check themselves.</b> If a backup code gets cut off or a letter changes on the way, restoring it says which: the last part is missing, a piece in the middle is missing, or one piece was changed. Copy it again from the original.</li>
+      <li><b>A backup from a newer version</b> asks you to update first, with a <b>Check for an update</b> button.</li>
+      <li><b>📱 Moving to a new phone</b> (in the Menu and under Back up or restore): a two-step guide. On the old phone, copy the backup code into a text or email to yourself (or download a backup file). On the new phone, tap <b>📱 I'm the new phone</b> on the title screen and paste the code or choose the file.</li>
+      <li><b>Older copies are "rewound".</b> Restoring an earlier week of a life that's already on this phone asks first. A rewound life still plays, but its ending doesn't set best scores or badges.</li>
+      <li><b>Near the end:</b> four weeks before a 2-year or 5-year life ends, the week's report offers <b>📤 Back up now</b>, once.</li></ul>` },
     { id:'settings', g:'app', t:'⚙️ Settings: night theme, text size, sounds', sum:'Theme, text size, sounds, swipes and Back.', w:'theme dark mode night text size sound vibration swipe back button tablet', b:`
       <p>Open <b>Menu → ⚙️ Settings</b> (or Settings on the title screen). Settings are saved on this device for every life and never change the game's numbers.</p>
       <ul><li><b>Theme:</b> Day, Night, or Match phone (the default), which follows your phone's dark mode.</li>
@@ -349,8 +354,11 @@ function guideSections(){
       <p>On a tablet, a computer or a phone held sideways, Home shows two columns, with your job, home, ride and recent journal entries at the side.</p>` },
     { id:'install', g:'app', t:'📱 Installing and playing offline', sum:'Add it to your home screen and play offline.', w:'install offline app apk windows iphone android home screen version', b:`
       <p>The Burg is a web app you can install. On iPhone, open it in Safari, tap Share, then <b>Add to Home Screen</b>. On Android, open it in Chrome and tap <b>Install app</b> (or ⋮ → Add to Home screen). After the first visit it works offline. After you've played a couple of months, Home may offer an <b>Install</b> button where your browser supports it; <b>Not now</b> hides it for two weeks.</p>
+      <p><b>When the browser may not keep your lives</b>, the title screen says so: in a private window (back up before you close it), in a Safari tab on iPhone (Safari can clear a site's data after 7 days without a visit, so add it to your Home Screen), or after the browser cleared them (restore a backup). On iPhone the Home Screen app keeps its own lives, apart from Safari's: copy a backup code in Safari and paste it in the app to bring them along.</p>
+      <p>The game downloads itself once and then opens from your device, with no download at all on a normal launch. A new version is fetched in the background when there is one.</p>
       <p>There's also an <b>Android app (APK)</b> and a <b>Windows installer</b> on the game's GitHub releases page: github.com/krazow/The-Burg/releases.</p>
-      <p>Version ${APP_VERSION}.</p>` }
+      <p>Version ${APP_VERSION}.</p>` },
+    { id:'device', g:'app', t:'🔒 What this game keeps on your device', sum:'What is kept here, nothing sent anywhere, and erasing it.', w:'privacy data storage erase delete everything kept', b:deviceHTML() }
   ];
 }
 function guideHTML(){
@@ -455,9 +463,49 @@ document.addEventListener('click', e => {
   if (t.dataset.helpgrp) { const h = document.getElementById('gg-' + t.dataset.helpgrp); if (h) { h.scrollIntoView({ block: 'start' }); h.focus({ preventScroll: true }); } }
   else if (t.dataset.hjump) helpJumpTo(t.dataset.hjump);
   else if (t.dataset.helpgo) helpGo(t.dataset.helpgo);
-  else if (t.dataset.helptop != null) { helpSearch(''); $('#helpview').scrollTo({ top: 0, behavior: 'smooth' }); const q = $('#helpq'); if (q) q.focus({ preventScroll: true }); }
+  else if (t.dataset.helptop != null) { helpSearch(''); $('#helpview').scrollTo({ top: 0, behavior: calmMotion() ? 'auto' : 'smooth' }); const q = $('#helpq'); if (q) q.focus({ preventScroll: true }); }
   else if (t.dataset.showme) showMe(+t.dataset.showme);
 });
+/* ---------- i57-a23: what the game keeps on this device, and erasing all of it ---------- */
+function storageKB(){ let n = 0; for (const k of myKeys()) { try { n += k.length + (localStorage.getItem(k) || '').length; } catch (e) {} } return Math.max(n ? 1 : 0, Math.round(n / 1024)); }
+function deviceHTML(){
+  const lives = slots().filter(Boolean).length, best = Object.keys(store.get(BEST_KEY) || {}).length, badges = Object.keys(store.get(BADGE_KEY) || {}).length;
+  return `<p>Everything stays in this browser on this device. <b>Nothing is sent anywhere:</b> there's no account and no server, and the game only goes online to download itself and its updates.</p>
+      <ul><li><b>Your lives:</b> ${lives} of ${SLOT_COUNT} slots in use, each saved after every week.</li>
+      <li><b>Best scores:</b> ${best} kept, by length and mode, plus challenges and this week's weekly challenge.</li>
+      <li><b>Badges and challenge wins:</b> ${badges} badge${badges === 1 ? '' : 's'} collected.</li>
+      <li><b>Settings and little notes to itself:</b> theme, text size, sounds, which tips you've seen, and when you last visited.</li>
+      <li><b>The game's own files</b>, so it opens offline, and a tiny note that this browser has played (it lets the title screen tell you if your lives were cleared).</li></ul>
+      <p>All together your saved data is about <b>${storageKB()} KB</b>.</p>
+      <button class="btn ghost" id="eraseall">🗑 Erase everything</button>`;
+}
+function eraseSheet(){
+  closeHelp();                                      // the sheet sits under the Help page, so Help steps aside
+  sheet(`<h2>🗑 Erase everything?</h2>
+    <p>This deletes every life, best score, badge and setting this game keeps on this device, and its offline copy. It can't be undone. Back up first if you might want them.</p>
+    <label class="field" for="erasetype">Type ERASE to confirm</label>
+    <input type="text" id="erasetype" autocomplete="off" autocapitalize="characters">
+    <button class="btn primary" id="yes" disabled>Erase everything</button>
+    <button class="btn ghost" id="no">Keep it all</button>`);
+  $('#erasetype').oninput = () => { $('#yes').disabled = $('#erasetype').value.trim().toUpperCase() !== 'ERASE'; };
+  $('#no').onclick = () => { closeSheet(); showHelp('device'); };
+  $('#yes').onclick = () => {
+    for (const k of myKeys()) store.del(k);
+    FLAG_SET = false; S = null; LIFE_UNDO = [];
+    closeSheet(); renderTitle();
+    toast('Everything was erased'); announce('Everything was erased from this device');
+    // then the offline copy, in the background: it never redraws, so a life started meanwhile isn't thrown back to the title
+    const cachePre = KEY_PREFIX === 'theburgbeta.' ? 'theburgbeta-' : 'theburg-';
+    (async () => {
+      try { if (typeof caches !== 'undefined') for (const k of await caches.keys()) if (k.startsWith(cachePre) || k === FLAG_CACHE) await caches.delete(k); } catch (e) {}
+      try { if ('serviceWorker' in navigator) for (const r of await navigator.serviceWorker.getRegistrations()) if (new URL(r.scope).pathname === new URL('./', location.href).pathname) await r.unregister(); } catch (e) {}
+    })();
+  };
+  setTimeout(() => { if ($('#erasetype')) $('#erasetype').focus(); }, 60);
+}
+// i43-b03: guide sections lay out only when scrolled near (content-visibility); a contents jump lays them all out
+// first so it lands on the right spot
+function helpJump(id){ const g = document.querySelector('#helpview .guide'); if (g) g.classList.add('full'); const el = document.getElementById('g-' + id); if (el) el.scrollIntoView({ behavior: calmMotion() ? 'auto' : 'smooth' }); }
 function showHelp(sec){
   if (typeof sec !== 'string') sec = null;           // also used straight as a click handler
   // i54-a04/a07: remember what to go back to; Help opened from a sheet (the Menu) goes back to what opened that sheet
@@ -484,6 +532,7 @@ function showHelp(sec){
   $('#helpclose').onclick = closeHelp; $('#helpclose2').onclick = closeHelp;
   $('#tutstart').onclick = startTutorial;
   $('#helpq').oninput = e => helpSearch(e.target.value);
+  if ($('#eraseall')) $('#eraseall').onclick = eraseSheet;
   histSync();
 }
 let lastHelpFocus = null;
