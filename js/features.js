@@ -298,9 +298,11 @@ const STORY_EVENTS = [
       if (f.good) { adj({community:5, happy:3}); return 'The truck is a hit, and your friend tells everyone you helped build it.'; }
       adj({community:2}); return 'The truck closed, but you made some good memories painting it.'; }}]},
   // 🌊 the flood and the levee
-  // R10: the flood only comes within 8 weeks of high water that you didn't help sandbag
+  // R10: the flood comes within 8 weeks of high water; i15-a05: sandbaggers get it too, with a line of their own
   { ic:'🌊', title:'Water in the basements', once:1, w:12, when:() => S.highWater != null && S.turn - S.highWater <= 8 && !S.chains?.levee,
-    text:'The Touchet jumped its banks overnight. Half a dozen homes near the river have water in the basement.',
+    text:() => S.sandbagged != null && S.sandbagged === S.highWater
+      ? 'You were there that night, and the sandbags held downtown. But the Touchet found a low spot, and half a dozen homes near the river have water in the basement. The town wants a real fix.'
+      : 'The Touchet jumped its banks overnight. Half a dozen homes near the river have water in the basement.',
     choices:() => [
       {label:'Help muck out', go:() => { adj({community:4, health:-2}); chainSet('levee', 2, { helped:true }); return 'Wet boots, heavy carpets, grateful neighbors.'; }},
       {label:'Stay out of it', go:() => { adj({community:-2}); chainSet('levee', 2, { helped:false }); return 'You heard about it at the grocery store.'; }}
@@ -401,10 +403,12 @@ const BIZ = {
     yearly:() => cost(6000) * wheatYield() * wheatPriceF(), month:7 },
   // i75-b17: a season's base pay of $1,700 a month in Side hustle weeks, and a county health permit each April
   truck: { ic:'🚚', name:'Food truck', cost:9000, desc:`Weekends at the fairgrounds and events, April through October. Takes your Side hustle weeks and pays more than a side hustle, more again with the Cook skill. The county health permit is ${fmtc(TRUCK_PERMIT)} each April.`,
-    weekly:() => [3,4,5,6,7,8,9].includes(curMonth()) && S.focus === 'hustle' ? truckPay(0.7 + Math.random() * 0.6) : 0 },
+    weekly:() => [3,4,5,6,7,8,9].includes(curMonth()) && S.focus === 'hustle' ? truckPay(0.7 + Math.random() * 0.6) : 0,
+    needs:'Food truck season is April to October, and the truck only runs in 🔧 Side hustle weeks. In any other week it sits in the driveway.' },
   // i75-b15: a real garage shop: $6,000, about $90 a month, and only in weeks you Rest or Side hustle
   shop:  { ic:'🪚', name:'Woodworking shop', cost:6000, desc:'Make and sell furniture from your garage. It only gets made in weeks you Rest or Side hustle; pays more with the Handy skill.',
-    weekly:() => SHOP_WEEKS.includes(S.focus) ? cost(SHOP_PAY) * (1 + skillLv('handy') * 0.4) * (0.6 + Math.random() * 0.8) * W : 0 },
+    weekly:() => SHOP_WEEKS.includes(S.focus) ? cost(SHOP_PAY) * (1 + skillLv('handy') * 0.4) * (0.6 + Math.random() * 0.8) * W : 0,
+    needs:'The woodworking shop only makes furniture in 🛋️ Rest & recharge and 🔧 Side hustle weeks.' },
   // i3-a18: a small herd that needs you outside: Get outside weeks count as checking on it
   cattle:{ ic:'🐄', name:'Cattle in the foothills', cost:16000, desc:'Six cow-calf pairs on rented pasture in the Blue Mountain foothills. Pasture rent, the vet, minerals and a bull lease cost money all year, hay November through March, calves come in spring, and they sell at the October livestock auction. Get outside weeks count as checking the herd: go too long without one and cows get lost.' }
 };
@@ -454,9 +458,15 @@ function bizWeek(lines, notes){
     if (S.biz.stored) lines.push(['🌾 Elevator storage', -S.biz.stored * WHEAT_STORE_FEE * W]);
   }
   if (S.biz.type === 'cattle') return cattleWeek(lines, notes);
+  const yr = bizYear();
   if (S.biz.type === 'truck' && curMonth() === 3 && S.biz.permitYear !== new Date(S.date).getFullYear()) {   // i75-b17
-    S.biz.permitYear = new Date(S.date).getFullYear(); lines.push(['🚚 County health permit', -cost(TRUCK_PERMIT)]); S.biz.earned -= cost(TRUCK_PERMIT); }
-  if (b.weekly) { const v = b.weekly(); if (v) { lines.push([`${b.ic} ${b.name}`, v]); S.biz.earned += v; } }
+    S.biz.permitYear = new Date(S.date).getFullYear(); lines.push(['🚚 County health permit', -cost(TRUCK_PERMIT)]); S.biz.earned -= cost(TRUCK_PERMIT); yr.out += cost(TRUCK_PERMIT); }
+  if (b.weekly) { const v = b.weekly(); if (v) { lines.push([`${b.ic} ${b.name}`, v]); S.biz.earned += v; yr.in += v; } }
+  if (b.needs) {                                   // i15-a04: each April what the business needs, each October what it earned
+    if (curMonth() === 3 && !yr.told) { yr.told = 1; notes.push(`${b.ic} ${b.needs}`); }
+    if (curMonth() === 9 && new Date(S.date + 7 * 864e5).getMonth() === 10 && !yr.sum) { yr.sum = 1;
+      notes.push(`${b.ic} ${b.name}, ${yr.y} so far: it earned ${fmt(yr.in)}${yr.out ? ` and the permit cost ${fmt(yr.out)}` : ''}.${yr.in < 1 ? ` ${b.needs}` : ''}`); }
+  }
   if (b.yearly && curMonth() === b.month && S.biz.paidYear !== new Date(S.date).getFullYear()) {
     S.biz.paidYear = new Date(S.date).getFullYear();
     const crop = cost(6000) * wheatYield(), bad = crop < cost(3000);
@@ -467,6 +477,8 @@ function bizWeek(lines, notes){
   }
 }
 // i3-a18: the herd's week: pasture rent all year, hay in winter, calving in spring, the auction in October
+// i15-a04: this year's earnings for the truck and the shop (what bizCard's "This season" shows)
+function bizYear(){ const y = new Date(S.date).getFullYear(); if (!S.biz.yr || S.biz.yr.y !== y) S.biz.yr = { y, in:0, out:0 }; return S.biz.yr; }
 function cattleWeek(lines, notes){
   const B = S.biz, mo = curMonth(), y = new Date(S.date).getFullYear();
   if (B.cows == null) B.cows = CATTLE_COWS;
@@ -508,7 +520,8 @@ function bizCard(){
       <div class="kv"><span>Last check on the herd</span><span>${B.check == null ? 'never' : S.turn - B.check === 0 ? 'this week' : `${S.turn - B.check} week${S.turn - B.check === 1 ? '' : 's'} ago`}</span></div>
       <p class="muted" style="margin:4px 0">${herdChecked(6) ? 'The herd is doing fine.' : '⚠️ Nobody has checked the herd lately: pick 🎣 Get outside to ride out and look them over.'}</p>` : '';
     return `<div class="card"><h3>🏪 Your business</h3><div class="kv"><span>${b.ic} ${b.name}<br><small class="muted">${b.desc}</small></span><span></span></div>
-      <div class="kv"><span>Earned so far</span><span><b>${fmt(B.earned)}</b></span></div>
+      <div class="kv"><span>Earned so far</span><span><b>${fmt(B.earned)}</b></span></div>${b.needs ? (() => { const y = B.yr && B.yr.y === new Date(S.date).getFullYear() ? B.yr.in : 0;   // i15-a04
+        return `<div class="kv"><span>This season</span><span${y < 1 ? ' style="color:var(--down)"' : ''}><b>${fmt(y)}</b></span></div>${y < 1 ? `<p class="muted" style="margin:4px 0">${b.needs}</p>` : ''}`; })() : ''}
       <div class="kv"><span>Worth if you sell</span><span>${fmt(bizValue())}</span></div>${lease}${wheat}${herd}
       <button class="sm alt" id="bizsell">Sell the business</button></div>`; }
   return `${firstTime('biz')}<div class="card"><h3>🏪 Start a business</h3><p class="muted" style="margin:0 0 6px">Small, risky, and it can grow. One at a time.</p>
@@ -550,7 +563,8 @@ function insParts(){
   const i = S.ins || {}, own = !!HOMES[S.home].own, ded = INS_DED[i.ded] != null ? i.ded : 1000;
   return [['📱 Phone', INS_PHONE], [i.auto === 'liab' ? '🛻 Vehicle: liability only' : '🛻 Vehicle: full coverage', INS_AUTO[i.auto === 'liab' ? 'liab' : 'full']],
     own ? [`🏡 Homeowners ($${ded.toLocaleString()} deductible)`, (INS_HOME[S.home] ?? INS_HOME_DEF) + INS_DED[ded]] : [i.renters === false ? '🏠 No renters insurance' : '🏠 Renters insurance', i.renters === false ? 0 : INS_RENTERS], ...insExtras(),   // i74-a04/a08
-    ...(own && i.wind === 'pct' ? [[`🌬️ Wind and hail: ${WIND_PCT * 100}% deductible`, -windSave()]] : [])];   // i75-a13
+    ...(own && i.wind === 'pct' ? [[`🌬️ Wind and hail: ${WIND_PCT * 100}% deductible`, -windSave()]] : []),   // i75-a13
+    ...(S.ticketUntil > S.turn ? [['🚓 A speeding ticket on your record', TICKET_INS]] : [])];   // i26-b06
 }
 // i75-a13: a cheaper homeowners plan where wind and hail damage carries a deductible of 1% of the home's value
 const WIND_PCT = 0.01, WIND_SAVE = 0.0015;
@@ -879,6 +893,7 @@ function startLegacy(parent, name = heirName(parent.name)){
   S.line = Array.isArray(parent.line) ? parent.line.slice(-40) : [];   // i73-b25
   S.gen = (parent.gen || 1) + 1; S.community = clamp(Math.round(parent.community / 2) + 15);
   S.date = parent.date; S.col = parent.col; S.wage = parent.wage; S.tabsYear = new Date(S.date).getFullYear();
+  S.carValue = cost(2500);                         // i30-b01: the old pickup is worth a starter truck in today's dollars
   if (inh.will) {
     S.money = inh.now;
     if (inh.home) { S.home = inh.home; S.equity = parent.equity || 0; S.mortgage = parent.mortgage || cost(HOMES[inh.home].cost); }
@@ -964,7 +979,7 @@ function nextStep(){
 }
 /* ---------- i2-a29: your life story, from the Journal and each year's review ---------- */
 const STORY_SKIP = /^(📋|Applied for|Trip to|Renewed the|The wheat lease came|Refinanced)/;
-const storyWorthy = e => e && (e.k || logKind(e.m)) !== 'ev' && !STORY_SKIP.test(e.m) || /^(Hired as|Retired at|Moved into|Started dating)/.test(e && e.m || '');
+const storyWorthy = e => e && (e.k || logKind(e.m)) !== 'ev' && !STORY_SKIP.test(e.m) || !!(e && e.mile) || /^(Hired as|Retired at|Moved into|Started dating)/.test(e && e.m || '');
 // at New Year, a few of the year's milestones go into S.years, so the story survives the Journal's 120-entry limit
 function yearMilestones(y){ return S.log.filter(e => e.d.endsWith(String(y)) && storyWorthy(e)).reverse().slice(0, 3).map(e => e.m); }
 function lifeStory(){
@@ -1224,7 +1239,7 @@ function hired(x){
   const before = { jobId:S.jobId, jobMonths:S.jobMonths, raise:S.raise, rung:S.rung, tenure:S.tenure, appWeeks:S.appWeeks, ref:S.ref, bonus:S.bonus,
     notice:S.notice, strike:S.strike, clearAt:S.clearAt, contractAt:S.contractAt, focus:S.focus, bus:S.bus, money:S.money, fiber:S.fiber };
   startJob(x.id);
-  log(`Hired as ${x.title} in ${CITIES[x.city].name}!`); adj({happy:5});
+  log(`Hired as ${x.title} in ${CITIES[x.city].name}!`, undefined, 1); adj({happy:5});
   const extra = [x.apprentice ? `You start as an apprentice at ${Math.round(x.apprentice.startMult * 100)}% pay, stepping up every year for ${x.apprentice.weeks / 52} years.` : '',
     clearing() ? `Your security clearance takes about ${CLEAR_WEEKS} weeks. Until then you're badged out, at ${Math.round(CLEAR_PAY * 100)}% pay. Keep your money in order: heavy debt can sink the check.` : '',
     x.union ? 'It\'s a union job: monthly dues, steadier raises and more protection from layoffs.' : '',
@@ -1264,7 +1279,7 @@ function negotiate(k, before){
 function jobWeekStart(notes){
   if (S.interview) {
     const r = resolveInterview(null);
-    if (r && r.ok) { startJob(r.x.id); log(`Hired as ${r.x.title} in ${CITIES[r.x.city].name}!`); adj({happy:5}); notes.push(`📞 The ${r.x.title.toLowerCase()} job called back: you're hired!`); }
+    if (r && r.ok) { startJob(r.x.id); log(`Hired as ${r.x.title} in ${CITIES[r.x.city].name}!`, undefined, 1); adj({happy:5}); notes.push(`📞 The ${r.x.title.toLowerCase()} job called back: you're hired!`); }
     else if (r) { log(`Applied for ${r.x.title} in ${CITIES[r.x.city].name}. They went with someone else.`); adj({happy:-2}); }
   }
   if (S.notice != null && S.turn >= S.notice && working()) {

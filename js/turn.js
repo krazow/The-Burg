@@ -109,7 +109,7 @@ function showRunDetails(){
       : `<div class="kv"><span>${l}</span><span style="color:${v<0?'var(--down)':'var(--up)'}">${v>0?'+':''}${fmt(v)}</span></div>`).join('')}
       <div class="kv"><span><b>Paychecks and bills</b></span><span><b>${S.last.net>=0?'+':''}${fmt(S.last.net)}</b></span></div>` : ''}
     ${r.happened.length ? `<h3 style="margin-top:12px">What happened</h3>${happenedRows(r.happened)}` : ''}
-    <div class="kv"><span><b>Total change in cash</b></span><span><b>${dm>=0?'+':''}${fmt(dm)}</b></span></div>${tattlerLine()}
+    <div class="kv"><span><b>Total change in cash</b></span><span><b>${dm>=0?'+':''}${fmt(dm)}</b></span></div>${kidMoment()}${tattlerLine()}
     ${S.last && S.last.why && S.last.why.length ? `<h3 style="margin-top:12px">Why your stats moved${r.weeks > 1 ? ' last week' : ''}</h3>${S.last.why.map(w => `<div class="logitem">${w}</div>`).join('')}` : ''}
     ${S.practice ? '' : '<button class="btn ghost" id="outlook">📅 Money outlook: next 13 weeks</button>'}
     <button class="btn primary" id="ok">Close</button>`);
@@ -211,7 +211,7 @@ function billLines(off = 0){
   if (S.partner) out.push(['Date nights', -c(120)*m]);
   const kidsHome = kidsAtHome();
   if (kidsHome) out.push([kidsHome > 1 ? `Kids (${kidsHome})` : 'Kid', -kidCost()*kidsHome*m]);
-  const a0 = Math.floor((S.ageMonths + off * m) / 12);
+  const a0 = yrsOf(S.ageMonths + off * m);
   { const h = healthMonthly(a0, off); if (h) out.push(['Health care', -c(h)*m]); }   // i75-b04: an employee share before 50
   if (S.ltc && S.ltc.ins && !S.care) out.push(['Long-term care insurance', -c(LTC_PREMIUM)*m]);
   if (S.care && careMonthly() > 0) out.push([CARE[S.care].bill, -c(careMonthly())*m]);
@@ -318,6 +318,7 @@ function weekTick(auto){
   weatherLines(lines, notes);                      // i75: smoke sick days, the roof on the waiting list, the neighbor's walk
   const trip = tripWeek(lines);                    // this week's trip around the region, if one is planned
   lines.push(...billLines());                      // i3-a28: the regular bills, shared with the money outlook
+  eventMoneyWeek(lines);                           // i58-b02: health-plan savings and light duty, week by week
   { const y = new Date(S.date).getFullYear(); if (curMonth() === 0 && S.tabsYear !== y) { lines.push(['Vehicle tabs (DMV)', -vehicleTabs()]); S.tabsYear = y; } }
   if (S.loanLeft > 0) {
     const n = Math.min(m, S.loanLeft); lines.push(['Truck payment', -(S.loanPay || CARS.truck.pay)*n, `Five years of payments on the new pickup: about ${Math.max(0, Math.ceil((S.loanLeft - n) / W))} weeks to go.`]); S.loanLeft -= n;
@@ -351,7 +352,7 @@ function weekTick(auto){
   // i3-a21: the valley's home prices move with this year's market (2.5% a year on average); owners gain principal + appreciation
   S.homeIdx = (S.homeIdx || 1) * Math.pow(1 + (S.homeGrow ?? 0.025), 1/52);
   if (home.own) S.equity = S.equity * Math.pow(1 + (S.homeGrow ?? 0.025), 1/52) + home.equityPer * m;
-  S.carValue = Math.max(500, S.carValue * Math.pow(0.99, m));
+  S.carValue = Math.max(cost(500), S.carValue * Math.pow(0.99, m));   // i30-b02: the floor rises with prices
   S.k401 *= Math.pow(1.06, 1/52); if (S.k401match) S.k401match = Math.min(S.k401, S.k401match * Math.pow(1.06, 1/52));
   S.col *= Math.pow(1 + COL_RATE, 1/52); S.wage *= Math.pow(1 + WAGE_RATE, 1/52);
 
@@ -428,6 +429,7 @@ function weekTick(auto){
   const oldAge = age(), oldYear = new Date(S.date).getFullYear();
   jobWeekEnd(notes);                               // i3: months on the job, apprenticeships, clearances, strikes
   S.date += 7 * 864e5; S.ageMonths += m; S.turn++; S.jobMonths += m; S.applied = false;
+  kidBirthdays(m);                                 // i46-a04: a kid turning 18 moves out, in the Journal
   if (age() > oldAge && age() % 10 === 0) notes.push(`🎂 Happy ${age()}th birthday!`);
   if (S.turn % 13 === 0 && !S.practice) {          // a quarterly report card in the Journal (doesn't stop skips)
     const sc = lifeScore().score, d = S.scoreQ == null ? null : sc - S.scoreQ;
@@ -442,7 +444,7 @@ function weekTick(auto){
   if (newYear > oldYear) {
     const snap = { nw: netWorth(), happy: S.happy, health: S.health, community: S.community };
     if (S.yearStart && LENGTHS[S.len].turns > 26) review = { year: oldYear, start: S.yearStart, end: snap, events: S.yearEvents || 0, wx: wxYearEnd(oldYear),
-      milestones: S.log.filter(e => e.d.endsWith(String(oldYear)) && !e.m.includes(': ')).map(e => e.m).reverse().slice(0, 8) };
+      milestones: reviewMilestones(oldYear) };   // i5-a03
     if (S.yearStart) S.years = [...(S.years || []), { year: oldYear, age: age(), start: S.yearStart, end: snap, m: yearMilestones(oldYear) }].slice(-120);   // i2-a29: for the life story
     S.yearStart = snap; S.yearEvents = 0;
     // i3-a10: union jobs get a step raise every January after 6 months on the job
