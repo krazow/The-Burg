@@ -12,10 +12,29 @@ function eventOdds(trip){
 function rollEvent(month, trip){
   S.roadTo = trip && trip.city ? trip.city : commuteOneWay() >= 20 ? job().city : null;   // where this week's drive goes
   const due = planDue(month); if (due) return due;   // i3-a30/a31/a32: life decisions that come when they're due
+  { const k = kidSendOff(); if (k) return k; }       // i46-a02: a kid turning 18 always gets a send-off
+  { const f = fixedEvent(month); if (f) return f; }  // i5-a04: the town's signature yearly events always come
   const odds = eventOdds(trip);
   let r = Math.random();
   for (const cat of ['town', 'road', 'work']) { if (r < odds[cat]) return pickEvent(month, cat); r -= odds[cat]; }
   return null;
+}
+// i5-a04: signature town-calendar events (fixed:1, for now Celebration Days, with its payoff scaled down a little so doing
+// nothing doesn't score more) come every year in their month: about half the time in a given week,
+// and for sure in the month's last week if they haven't come yet (an event's yearly cooldown says it already came)
+function fixedEvent(month){
+  const last = new Date(S.date + 7 * 864e5).getMonth() !== month;
+  const e = EVENTS.find(x => x.fixed && !(S.evCd[x.title] > S.turn) && (!x.when || x.when(month)));
+  return e && (last || chance(0.5)) ? e : null;
+}
+// i46-a02/a03: kids by birth order, and the one (if any) who turns 18 this week without a send-off yet
+const kidOrder = i => { const n = (S.kids || []).length; return n <= 1 ? 'Your kid' : i === 0 ? 'Your oldest' : i === n - 1 ? 'Your youngest' : 'Your middle one'; };
+const kidTurning18 = () => (S.kids || []).findIndex((b, i) => !(S.kidSent || []).includes(i) && yrsOf(S.ageMonths + W - b) >= 18 && kidAge(b) < 19
+  && (kidAge(b) < 18 || !(S.evCd['A kid heads off to college'] > S.turn)));   // an older save's kid who already had the old random send-off
+function kidSendOff(){ return kidTurning18() >= 0 ? EVENTS.find(e => e.title === 'A kid heads off to college') : null; }
+// each week (after birthdays): a kid who just turned 18 graduates and moves out, in the Journal and the year in review (i46-a04)
+function kidBirthdays(m){
+  (S.kids || []).forEach((b, i) => { if (kidAge(b) >= 18 && yrsOf(S.ageMonths - m - b) < 18) log(`${kidOrder(i)} graduated from Waitsburg High and moved out.`, 'mile', 1); });
 }
 function pickEvent(month, cat = 'town'){
   const wt = e => typeof e.w === 'function' ? e.w() : (e.w || 1);
@@ -101,10 +120,10 @@ const herd = () => S.biz && S.biz.type === 'cattle' ? S.biz : {};
 const commuting = () => commuteOneWay() > 0;
 
 const EVENTS = [
-  { ic:'🐎', title:'Celebration Days', yr:1, w:4, when:m => inM(m,4),
+  { ic:'🐎', title:'Celebration Days', yr:1, fixed:1, w:4, when:m => inM(m,4),
     text:'Waitsburg\'s big spring weekend: parade down Main Street, horse races, and a beer garden.',
     choices:() => [
-      {label:`Go to the parade and races (-${fmtc(60)})`, go:() => { adj({money:-cost(60), happy:8, community:3}); return 'You cheered yourself hoarse at the races.'; }},
+      {label:`Go to the parade and races (-${fmtc(60)})`, go:() => { adj({money:-cost(60), happy:6, community:2}); return 'You cheered yourself hoarse at the races.'; }},
       {label:`Put ${fmtc(100)} on a long-shot horse`, go:() => { if (chance(.28)) { adj({money:cost(400), happy:10}); return `The long shot came in! You won ${fmtc(500)} and bragging rights.`; } adj({money:-cost(100), happy:-1}); return 'Your horse is still running, probably.'; }},
       {label:'Stay home', go:() => { adj({happy:-2}); return 'You heard the parade from your porch.'; }}
     ]},
@@ -134,8 +153,8 @@ const EVENTS = [
   { ic:'🌊', title:'The Touchet is running high', yr:1, w:() => wxYear().wet ? 6 : wxDry() ? 0.5 : 2, when:m => inM(m,1,2,3),   // i75-a01: a wet spring brings it, a dry one rarely
     text:'Snowmelt and rain have the river climbing. Neighbors are filling sandbags.',
     choices:() => [
-      {label:'Help sandbag', go:() => { adj({community:6, health:-2, happy:2}); S.highWater = null; return 'Muddy, cold and proud. The town held the line.'; }},
-      {label:'Stay dry', go:() => { S.highWater = S.turn; if (S.home==='fixer' && chance(.4)) { const h = helpCut(floodBill(cost(2500))); adj({money:-h.c, happy:-6}); return `Water got in your basement. Cleanup cost ${fmt(h.c)}.${h.line}`; } adj({community:-2}); return 'The water stayed in its banks this time.'; }}
+      {label:'Help sandbag', go:() => { adj({community:6, health:-2, happy:2}); S.highWater = S.turn; S.sandbagged = S.turn; return 'Muddy, cold and proud. The town held the line, for now.'; }},   // i15-a05: the levee story can follow either way
+      {label:'Stay dry', go:() => { S.highWater = S.turn; S.sandbagged = null; if (S.home==='fixer' && chance(.4)) { const h = helpCut(floodBill(cost(2500))); adj({money:-h.c, happy:-6}); return `Water got in your basement. Cleanup cost ${fmt(h.c)}.${h.line}`; } adj({community:-2}); return 'The water stayed in its banks this time.'; }}
     ]},
   { ic:'🍷', title:'Wine country weekend', w:2, when:m => age() >= 21 && m >= 3 && m <= 9,   // i66-b02: April to October
     text:'Friends are heading to Walla Walla tasting rooms on Saturday.',
@@ -167,13 +186,13 @@ const EVENTS = [
   { ic:'🐕', title:'A friendly stray', w:3, when:() => !S.dog,
     text:'A scruffy dog follows you all the way home from the park.',
     choices:() => [
-      {label:'Keep it', go:() => { S.dog = true; adj({happy:8}); return 'You have a dog now. Best decision all year.'; }},
+      {label:'Keep it', go:() => { S.dog = true; adj({happy:8}); log('Took in a scruffy stray: you have a dog now.', undefined, 1); return 'You have a dog now. Best decision all year.'; }},
       {label:'Find it a home', go:() => { adj({community:3}); return 'A family on Main Street took it in.'; }}
     ]},
   { ic:'☕', title:'Someone catches your eye', w:2, when:() => !S.partner && age() >= 19 && age() < 75,
     text:'You keep running into the same person at Howlin\' Bean on Main Street.',
     choices:() => [
-      {label:'Ask them out', go:() => { const boost = S.danceBoost; S.danceBoost = false; if (chance(boost ? .72 : .6)) /* W27: a barn dance makes it 20% likelier */ { S.partner = true; adj({happy:10}); log('Started dating someone special.'); return 'They said yes! You\'re seeing each other now.'; } adj({happy:-3}); return 'They\'re flattered but not interested. Ouch.'; }},
+      {label:'Ask them out', go:() => { const boost = S.danceBoost; S.danceBoost = false; if (chance(boost ? .72 : .6)) /* W27: a barn dance makes it 20% likelier */ { S.partner = true; adj({happy:10}); log('Started dating someone special.', undefined, 1); return 'They said yes! You\'re seeing each other now.'; } adj({happy:-3}); return 'They\'re flattered but not interested. Ouch.'; }},
       {label:'Just smile', go:() => 'Maybe next time.'}
     ]},
   { ic:'💔', title:'A rough patch', w:1, when:() => S.partner,
@@ -185,7 +204,7 @@ const EVENTS = [
   { ic:'🏛️', title:'Run for town council?', yr:1, w:5, when:() => S.community >= 60 && !S.council && age() >= 21,
     text:'People keep telling you that you should run for Waitsburg city council.',
     choices:() => [
-      {label:`Run (-${fmtc(300)} for signs)`, go:() => { adj({money:-cost(300)}); if (chance(.65)) { S.council = true; adj({community:10, happy:5}); return 'You won the seat! Meetings are Wednesday nights.'; } adj({happy:-4}); return 'You lost by eleven votes.'; }},
+      {label:`Run (-${fmtc(300)} for signs)`, go:() => { adj({money:-cost(300)}); if (chance(.65)) { S.council = true; adj({community:10, happy:5}); log('Won a seat on the town council.', 'mile', 1); return 'You won the seat! Meetings are Wednesday nights.'; } adj({happy:-4}); return 'You lost by eleven votes.'; }},
       {label:'Not for me', go:() => 'You\'ll keep helping from the sidelines.'}
     ]},
   { ic:'🎡', title:'Fair & Frontier Days', yr:1, w:3, when:m => inM(m,7,8),
@@ -214,8 +233,9 @@ const EVENTS = [
       {label:'Tough it out', go:() => { adj({health:-4, happy:-4}); return 'Ice packs and ibuprofen. It still hurts.'; }}
     ]},
   // i75-a12: owners lose shingles, and every roofer in the valley is booked for weeks (windChoices, below)
-  { ic:'🌬️', title:'Windstorm', w:2,
-    text:() => `A big wind tears through the valley overnight.${HOMES[S.home].own ? ' Shingles are scattered across the yard, and every roofer in the valley is suddenly booked.' : ''}`,
+  // i15-a03: storm season (October to March), once a year at most, with a choice to get ready (last in windChoices)
+  { ic:'🌬️', title:'Windstorm', yr:1, w:2, when:m => inM(m,9,10,11,0,1,2),
+    text:() => `The forecast calls for a big wind tonight, and the old limb over the ${HOMES[S.home].own ? 'roof' : 'driveway'} is already creaking.${HOMES[S.home].own ? ' If the shingles go, every roofer in the valley will be booked.' : ''}`,
     choices:() => windChoices() },
   { ic:'🧅', title:'Walla Walla Sweets are in', yr:1, w:3, when:m => inM(m,5,6),
     text:'The sweet onion harvest is here.',
@@ -262,7 +282,7 @@ const EVENTS = [
   { ic:'👶', title:'Starting a family?', yr:1, w:3, when:() => S.partner && age() >= 23 && age() <= 42 && S.kids.length < 3,
     text:() => S.kids.length ? 'You and your partner are talking about another one.' : 'You and your partner have been talking about kids.',
     choices:() => [
-      {label:`Have a baby (about ${fmtc(kidMonthly())}/mo until they're 18${childcareHelp() ? ', with state childcare help' : ''})`, go:() => { S.kids.push(S.ageMonths); adj({happy:12, community:3, health:-2}); log(S.kids.length > 1 ? `Baby number ${S.kids.length} arrived!` : 'Became a parent!'); return S.kids.length > 1 ? 'Another little Waitsburger! The house is louder and happier.' : 'A baby! Sleepless, broke and over the moon.'; }},
+      {label:`Have a baby (about ${fmtc(kidMonthly())}/mo until they're 18${childcareHelp() ? ', with state childcare help' : ''})`, go:() => { S.kids.push(S.ageMonths); adj({happy:12, community:3, health:-2}); log(S.kids.length > 1 ? `Baby number ${S.kids.length} arrived!` : 'Became a parent!', undefined, 1); return S.kids.length > 1 ? 'Another little Waitsburger! The house is louder and happier.' : 'A baby! Sleepless, broke and over the moon.'; }},
       {label:'Not now', go:() => 'You decided to wait.'}
     ]},
   { ic:'✈️', title:'The trip of a lifetime', yr:1, w:2, when:() => age() >= 28 && S.money > cost(12000),
@@ -271,8 +291,9 @@ const EVENTS = [
       {label:'Book it', go:() => { adj({money:-Math.round(cost(5000)), happy:12, health:2}); return 'Two weeks away. You came home with a full camera roll and a new outlook.'; }},
       {label:'Keep saving', go:() => { adj({happy:-1}); return 'Maybe someday.'; }}
     ]},
-  { ic:'🎓', title:'A kid heads off to college', yr:1, w:4, when:() => (S.kids||[]).some(b => { const a = (S.ageMonths - b)/12; return a >= 18 && a < 19; }),
-    text:'Your oldest at home just graduated from Waitsburg High and wants to go to college.',
+  // i46-a02/a03: never rolled at random: kidSendOff() brings it, once per kid, the week they turn 18 (by birth order)
+  { ic:'🎓', title:'A kid heads off to college', yr:1, w:0, when:() => kidTurning18() >= 0,
+    text:() => `${kidOrder(Math.max(0, kidTurning18()))} just graduated from Waitsburg High and wants to go to college.`,
     // i22-a16: the full tuition only with the cash on hand; otherwise books, never more than you have
     choices:() => { const full = cr(15000), books = Math.min(cr(5000), Math.max(0, Math.floor(S.money))); return [
       {label:`Help with tuition (-${fmt(full)})`, if:() => S.money >= full, go:() => { adj({money:-full, happy:8, community:2}); return 'They\'re off to college with your help. Proud doesn\'t cover it.'; }},
@@ -334,7 +355,10 @@ const EVENT_STATE = () => ({ roadTo:null, healthPlan:null, skiPass:null, snowCha
   tradeBy:-1, raiseBoost:0, promoBoost:0, promo:null, danceBoost:false, ...townStateA(),   // danceBoost: W27
   // round 75 weather, part 2: the smoke rule at work, the air filter, a roof on the waiting list, the raised furnace,
   // a vacation day spent on an outage, the neighbor's walk, and the block captain's storm plan
-  smokeRule:null, airFilter:null, roofWait:null, floodAsk:null, vacDay:null, walk:false, walkWinter:null, walkWinters:0, walkPie:false, captain:null });
+  smokeRule:null, airFilter:null, roofWait:null, floodAsk:null, vacDay:null, walk:false, walkWinter:null, walkWinters:0, walkPie:false, captain:null,
+  // wave 1 events: traffic school and a ticket on record (i26-b06), toddler moments (i37-b01), college send-offs (i46-a02),
+  // health-plan savings and light duty paid by the week (i58-b02)
+  trafficSchool:null, ticketUntil:-1, toddlerLast:-99, kidSent:[], lightDuty:null, sandbagged:null });
 // the doc's job groups, mapped to every job in JOBS
 const JOB_GROUP = { farmhand:'field', cellar:'field', onion:'field', foodplant:'field', hanford:'field', lift:'field', airport:'field', agtech:'field',
   insure:'office', clerk:'office', loan:'office', labadmin:'office', prof:'office', scientist:'office', teller:'office', reporter:'office',
@@ -346,6 +370,8 @@ const JOB_GROUP = { farmhand:'field', cellar:'field', onion:'field', foodplant:'
 const working = () => !!job() && !S.retired;
 const jobIn = (...groups) => working() && groups.includes(JOB_GROUP[S.jobId]);
 const longCommute = () => commuteOneWay() >= 20;
+const TICKET_YEARS = 3, TICKET_INS = 10;          // i26-b06: years between traffic schools and on your record; $ a month (2027)
+const trafficSchoolOK = () => S.trafficSchool == null || S.turn - S.trafficSchool >= TICKET_YEARS * 52;
 const dayPay = () => working() ? payNow(job()) / WORKDAYS : 0;
 const weekPay = () => working() ? payNow(job()) * W : 0;
 const cr = v => Math.round(cost(v));
@@ -377,6 +403,17 @@ const skiPass = () => S.skiPass === skiSeason();
 const skiWeek = () => S.focus === 'outdoors' && skiPass() && [11, 0, 1, 2].includes(curMonth()) && S.health >= SKI_HEALTH;
 // J29: better coverage halves doctor and urgent-care bills from events until next January
 const planYear = () => new Date(S.date).getFullYear();
+// i58-b02: event money that runs over weeks shows up as weekly lines, only while you hold the job it came with
+const HEALTH_CHEAP = 20;                          // the cheaper plan saves this much a month (2027 dollars; i66-b15: $240 a year)
+function eventMoneyWeek(lines){
+  const hp = S.healthPlan, ld = S.lightDuty;
+  if (hp && hp.k === 'cheap' && hp.save && hp.y === planYear() && working() && (hp.job == null || hp.job === S.jobId))
+    lines.push(['Health plan savings', cost(hp.save) * W, `The cheaper health plan you picked at open enrollment: about ${fmtc(hp.save)} a month back, while you work this job.`]);
+  if (ld) {
+    if (S.turn < ld.until && working() && S.jobId === ld.job) lines.push(['Light duty (80% pay)', -weekPay() * 0.2, `Your back is healing on light duty at 80% pay: about ${Math.max(1, ld.until - S.turn)} week${ld.until - S.turn > 1 ? 's' : ''} to go.`]);
+    if (S.turn + 1 >= ld.until || S.jobId !== ld.job) S.lightDuty = null;
+  }
+}
 const medBill = v => cost(v) * (S.healthPlan && S.healthPlan.k === 'better' && S.healthPlan.y === planYear() ? 0.5 : 1);
 // weeks of class progress from an event; graduates you if that finishes the program
 function classWeeks(n){
@@ -422,8 +459,9 @@ const ROAD_EVENTS = [
   { ic:'🚓', title:'Speeding ticket', cat:'road', yr:1, w:2, when:() => longCommute(),
     text:'Lights in the mirror. You were doing 72 in a 60.',
     choices:() => [
-      {label:`Pay it (-${fmtc(160)})`, go:() => { adj({money:-cr(160), happy:-2}); return `Paid the ${fmtc(160)} ticket online. Ouch.`; }},
-      {label:`Traffic school (-${fmtc(60)}, an evening)`, go:() => { adj({money:-cr(60), happy:-1}); return 'An evening of videos, and the ticket stays off your record.'; }}
+      // i26-b06: traffic school keeps a ticket off your record only once every few years; a paid ticket raises insurance a little
+      {label:`Traffic school (-${fmtc(60)}, an evening)`, if:trafficSchoolOK, go:() => { adj({money:-cr(60), happy:-1}); S.trafficSchool = S.turn; return `An evening of videos, and the ticket stays off your record. Traffic school only works once every ${TICKET_YEARS} years.`; }},
+      {label:`Pay it (-${fmtc(160)})`, go:() => { adj({money:-cr(160), happy:-2}); S.ticketUntil = S.turn + TICKET_YEARS * 52; return `Paid the ${fmtc(160)} ticket online. Ouch. It stays on your record for ${TICKET_YEARS} years, so your car insurance goes up ${fmtc(TICKET_INS)} a month.${trafficSchoolOK() ? '' : ' (Traffic school was off the table: you went too recently.)'}`; }}
     ]},
   { ic:'🚧', title:'Road-construction detour', cat:'road', w:2, when:m => inM(m,5,6,7),
     text:'Orange signs: the highway is down to gravel for a mile and traffic is detoured.',
@@ -735,7 +773,7 @@ const WORK_EVENTS = [
   { ic:'🩺', title:'Health plan choice', cat:'work', yr:1, w:4, when:m => working() && inM(m,0),
     text:'Open enrollment: pick your health plan for the year.',
     choices:() => [
-      {label:`Cheaper plan (+${fmtc(240)} this year)`, go:() => { S.healthPlan = { k:'cheap', y: planYear() }; const v = cr(240); adj({money:v}); return `Smaller paycheck deductions: ${fmt(v)} back this year.`; }},   // i66-b15
+      {label:`Cheaper plan (+${fmtc(HEALTH_CHEAP)}/month, about ${fmtc(HEALTH_CHEAP * 12)} a year)`, go:() => { S.healthPlan = { k:'cheap', y: planYear(), save: HEALTH_CHEAP, job: S.jobId }; const v = cr(HEALTH_CHEAP * 12); return `Smaller paycheck deductions: about ${fmtc(HEALTH_CHEAP)} a month, about ${fmt(v)} this year, in each paycheck while you're at this job.`; }},   // i66-b15 amount, i58-b02: paid by the week
       {label:'Better coverage (doctor and dentist bills half off)', go:() => { S.healthPlan = { k:'better', y: planYear() }; return 'Doctor, urgent-care, emergency dentist and therapy bills are half off this year.'; }}
     ]},
   { ic:'💒', title:'A work friend\'s wedding', cat:'work', yr:1, w:2, when:() => working(),
@@ -746,6 +784,66 @@ const WORK_EVENTS = [
     ]}
 ];
 EVENTS.push(...ROAD_EVENTS, ...WORK_EVENTS);
+
+/* ---------- 👶 kids (wave 1): the college send-off, toddler moments, and a line a week about the kids ---------- */
+// i46-a02: whichever college choice you pick, that kid has had their send-off
+{ const e = EVENTS.find(x => x.title === 'A kid heads off to college'), orig = e.choices;
+  e.choices = () => { const i = kidTurning18(); return orig().map(c => ({ ...c, go: () => { if (i >= 0) S.kidSent = [...(S.kidSent || []), i]; return c.go(); } })); }; }
+// i37-b01: a kid from 2 to 5 at home; these trade money or work time for happiness and community
+const toddlerHome = () => (S.kids || []).some(b => { const a = kidAge(b); return a >= 2 && a <= 5; });
+const TODDLER_EVENTS = [
+  { ic:'🤒', title:'Daycare calls: a fever', yr:1, w:4, when:() => toddlerHome() && working(),
+    text:'The daycare calls at 10 a.m.: your toddler has a fever and has to be picked up. Now.',
+    choices:() => [
+      {label:`Leave work and stay home tomorrow too (-${fmt(dayPay() * 1.5)})`, go:() => { adj({money:-Math.round(dayPay() * 1.5), happy:2}); return 'Popsicles, cartoons and a nap on your chest. The fever broke by Thursday.'; }},
+      {label:`Ask the neighbor who watches kids (-${fmtc(40)})`, if:() => S.community >= 30, go:() => { adj({money:-cr(40), community:1}); return 'She had soup on the stove before you could say thanks. You owe her one.'; }},
+      {label:'Your partner takes the afternoon', if:() => !!S.partner, go:() => { adj({happy:-1}); return 'Your partner went. You called at lunch, at two and at four.'; }}
+    ]},
+  { ic:'🖍️', title:'A daycare spot opens up', yr:1, w:3, when:() => toddlerHome(),
+    text:'The waiting list at the little daycare on Main Street finally came through: a spot for your toddler, three mornings a week.',
+    choices:() => [
+      {label:`Take it (-${fmtc(150)} deposit)`, go:() => { adj({money:-cr(150), happy:3, community:2}); return 'Finger paint, other parents to talk to, and a toddler who comes home tired.'; }},
+      {label:'Keep things the way they are', go:() => 'Maybe next year.'}
+    ]},
+  { ic:'🚽', title:'Potty training rut', yr:1, w:3, when:() => (S.kids || []).some(b => { const a = kidAge(b); return a >= 2 && a <= 3; }),
+    text:'Three weeks in, and your toddler has decided the potty is the enemy.',
+    choices:() => [
+      {label:working() ? `Take a long weekend and stick with it (-${fmt(dayPay())})` : 'Spend the weekend sticking with it', go:() => { adj({money:-Math.round(dayPay()), happy:3}); return 'Three days, a lot of laundry, and a very proud toddler.'; }},
+      {label:`A sticker chart and the fancy potty (-${fmtc(35)})`, go:() => { adj({money:-cr(35), happy:1}); return 'The dinosaur stickers did most of the work.'; }},
+      {label:'Back off for a month', go:() => { adj({happy:-1}); return 'Diapers for a while longer. They\'ll get there.'; }}
+    ]},
+  { ic:'📚', title:'Story time at the library', yr:1, w:3, when:() => toddlerHome(),
+    text:'The Weller Public Library has toddler story time on Wednesday mornings: songs, a puppet and a pile of picture books.',
+    choices:() => [
+      {label:working() ? `Go every Wednesday this month (-${fmt(dayPay() * 2)} in missed work)` : 'Go every Wednesday this month', go:() => { adj({money:-Math.round(dayPay() * 2), happy:2, community:3}); return 'Your toddler knows every song now, and you know every parent in town.'; }},
+      {label:'Read at home instead', go:() => { adj({happy:1}); return 'The same dinosaur book, eleven nights in a row.'; }}
+    ]},
+  { ic:'💈', title:'First haircut on Main Street', yr:1, once:1, w:3, when:() => toddlerHome(),
+    text:'Those curls are in their eyes. The barber on Main Street does first haircuts with a lollipop and a certificate.',
+    choices:() => [
+      {label:`Take them in (-${fmtc(20)})`, go:() => { adj({money:-cr(20), happy:3, community:1}); return 'A lock of hair in an envelope, a lollipop and a certificate for the fridge.'; }},
+      {label:'Do it at the kitchen table', go:() => { adj({happy:1}); return 'A little crooked. Perfect.'; }}
+    ]}
+];
+EVENTS.push(...TODDLER_EVENTS);
+Object.assign(EVENT_PLACE, { 'Daycare calls: a fever':['T','mainst'], 'A daycare spot opens up':['T','mainst'], 'Potty training rut':['T','home'],
+  'Story time at the library':['T','library'], 'First haircut on Main Street':['T','mainst'] });
+// i46-a15: most weeks with kids at home, one plain line about one of them in the week sheet (no stats, never a pop-up)
+const KID_MOMENTS = [
+  [0, 1, ['Rolled over for the first time.', 'Slept four hours straight. A miracle.', 'Grabbed your nose and would not let go.', 'Laughed at a sneeze for ten minutes.', 'Spit up on your work shirt, right as you left.']],
+  [2, 4, ['Learned the word "tractor" and used it all week.', 'Said "no" to every single thing.', 'Hid your keys in the toy box.', 'Wanted the same book read nine times.', 'Waved at every combine on Highway 12.', 'Ate a crayon. The purple one.']],
+  [5, 12, ['Lost a tooth at recess.', 'Got 10 out of 10 on a spelling test.', 'Wants to show a calf at the county fair.', 'Built a fort in the living room and won\'t take it down.', 'Caught a crawdad in the Touchet.', 'Asked why the sky is blue, then why again.']],
+  [13, 17, ['Borrowed the truck keys, and brought them back.', 'Said their whole day was "fine."', 'Stayed up late finishing a history project.', 'Asked for a ride to Walla Walla, again.', 'Made the team. Practice is every night now.', 'Ate everything in the fridge.']]
+];
+function kidMoment(){
+  if (!S || S.practice) return '';
+  const home = (S.kids || []).map((b, i) => [i, kidAge(b)]).filter(([, a]) => a < 18);
+  if (!home.length || S.turn % 5 === 4) return '';          // most weeks, not every week
+  const [i, a] = home[S.turn % home.length], band = KID_MOMENTS.find(([lo, hi]) => a >= lo && a <= hi);
+  if (!band) return '';
+  const who = home.length > 1 ? kidOrder(i) : 'Your kid';
+  return `<p class="muted" style="margin-top:10px">🧒 ${who} (${a < 1 ? 'a baby' : `age ${a}`}): ${band[2][(S.turn * 7 + i * 3) % band[2].length]}</p>`;
+}
 
 /* ---------- events that must come up when they happen (round 3): they never roll at random ---------- */
 const DUE_EVENTS = [
@@ -791,8 +889,8 @@ function townGoalWeek(key){
   if (++S.sgoal.prog >= g.need) { S.sgoal.done = true; adj(g.fx); S.seasonWins = (S.seasonWins || 0) + 1; log(`Helped the town: ${g.name.toLowerCase()}.`, 'mile'); return ` That finished the town goal: ${g.name}!`; }
   return ' It counts as a week toward the town goal.';
 }
-// W26: a windstorm hit within the last 6 weeks (its 8-week cooldown tells when)
-const windstormLately = () => S.evCd && S.evCd['Windstorm'] != null && S.evCd['Windstorm'] - 8 >= S.turn - 6;
+// W26: a windstorm hit within the last 6 weeks (its once-a-year cooldown, 40 weeks, tells when)
+const windstormLately = () => S.evCd && S.evCd['Windstorm'] != null && S.evCd['Windstorm'] - 40 >= S.turn - 6;
 const TOWN_EVENTS_W2 = [
   { ic:'☃️', title:'Snow day', w:2, when:m => inM(m,11,0,1),
     text:'School is called off and the whole town is buried in white.',
@@ -951,15 +1049,22 @@ function windChoices(){
   const own = !!HOMES[S.home].own;
   const plan = isCaptain() ? [{label:own ? 'Run the block\'s storm plan, and get on a roofer\'s list' : 'Run the block\'s storm plan (an evening)',
     go:() => runPlan('the windstorm') + (own ? ' ' + roofWaitList(roofCost()) : '')}] : [];
-  if (!own) return outageChoices('Check the damage', () => { if (S.generator) return 'Power was out a day, but your generator kept the fridge cold.'; adj({money:-cost(60), happy:-1}); return 'Power was out a day and the fridge food spoiled.'; }, 'the windstorm');
+  if (!own) return [...outageChoices('Check the damage', () => { if (S.generator) return 'Power was out a day, but your generator kept the fridge cold.'; adj({money:-cost(60), happy:-1}); return 'Power was out a day and the fridge food spoiled.'; }, 'the windstorm'),
+    {label:`Tie things down and pack the fridge into a cooler (-${fmtc(20)})`, go:() => { adj({money:-cr(20)}); if (!S.generator) wxSave(cr(40)); practice('handy', 1);   // i15-a03
+      return 'You tied down the patio chairs and filled a cooler with ice. The power was out a day, but nothing blew away and nothing spoiled.'; }}];
   const c = roofCost(), p = youPay('home', c, 'wind'), rush = Math.round(c * ROOF_RUSH), diy = Math.round(c * 0.5);
+  // i15-a03: getting ready halves the damage (a smaller job on the roofer's list)
+  const prep = {label:`Trim the big limb and tie things down (-${fmtc(40)})`, go:() => { const half = Math.round(c / 2); adj({money:-cr(40)}); practice('handy', 1);
+    wxSave(p - youPay('home', half, 'wind'));
+    return `You took the limb down before dark and strapped down everything loose. The wind still took some shingles, about half the damage it could have done. ${roofWaitList(half)}`; }};
   return [...plan,
     {label:`Get on a roofer's list (you pay ${fmt(p)} when they come)`, go:() => { adj({happy:-1}); return roofWaitList(c); }},
     {label:`Pay a crew from out of town to come now (${fmt(p + rush)})`, go:() => { const h = helpCut(c), p2 = youPay('home', h.c, 'wind'); adj({money:-(p2 + rush), happy:-1});
       return `A crew from Spokane had it done by Saturday: ${fmt(h.c)} of work, plus ${fmt(rush)} extra to jump the line that insurance won't cover.${h.line}${covered(h.c, p2)}`; }},
     {label:`Fix it yourself (${fmt(diy)} in shingles)`, if:() => skillLv('handy') >= 1, go:() => { adj({money:-diy}); practice('handy', 2);
       if (chance(0.12)) { const b = Math.round(medBill(150)); adj({money:-b, health:-5, happy:-2}); return `The roof is fixed, but you slipped on the ladder and wrenched a shoulder. Urgent care cost ${fmt(b)}.`; }
-      adj({happy:2}); return 'Two days on the roof with a nail gun. It\'s tight again, and it cost half what a roofer charges.'; }}
+      adj({happy:2}); return 'Two days on the roof with a nail gun. It\'s tight again, and it cost half what a roofer charges.'; }},
+    prep
   ];
 }
 const roofCost = () => Math.round(cost(ri(1000, 4000)) * (1 - skillLv('handy') * 0.15));

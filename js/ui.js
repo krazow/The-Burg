@@ -940,7 +940,7 @@ ${S.edu < 3 ? firstTime('school') : ''}${S.edu < 3 ? firstTime('program') : ''}$
     <div class="kv"><span>Partner</span><span>${S.partner ? 'Together 💕' : 'Single'}</span></div>
     <div class="kv"><span>Dog</span><span>${S.dog ? 'One good dog 🐕' : 'None'}</span></div>
     ${S.cat ? '<div class="kv"><span>Cat</span><span>A barn cat 🐈</span></div>' : ''}${S.generator ? '<div class="kv"><span>Generator</span><span>Ready for outages ⚡</span></div>' : ''}
-    <div class="kv"><span>Kids</span><span>${S.kids.length ? S.kids.map(b => Math.floor((S.ageMonths-b)/12)).map(a => a < 18 ? `age ${a}` : 'grown').join(', ') : 'None'}</span></div>
+    <div class="kv"><span>Kids</span><span>${S.kids.length ? S.kids.map(kidAge).map(a => a < 18 ? `age ${a}` : 'grown').join(', ') : 'None'}</span></div>
     <div class="kv"><span>Prices since 2027</span><span>${S.col > 1.005 ? `+${Math.round((S.col-1)*100)}%` : 'Same'}</span></div>
     <div class="kv"><span>Town council</span><span>${S.council ? 'Council member' : '—'}</span></div>
   </div>`;
@@ -1038,7 +1038,7 @@ function moveHome(k){
     onYes: () => {
       if (old.own) { S.heLeft = 0; S.hePay = 0; }
       S.money += sale - need; S.equity = down; S.mortgage = x.own ? newMortgage(k) : null; S.mortRate = x.own ? buyRate() : null; S.home = k;
-      adj({happy:4}); outMoved(); log(`Moved into the ${x.name.toLowerCase()}.`);
+      adj({happy:4}); outMoved(); log(`Moved into the ${x.name.toLowerCase()}.`, undefined, x.own);
       save(); render();
     } });
 }
@@ -1076,7 +1076,8 @@ function buyCar(k){
 const LOG_FILTERS = [['all', 'All'], ['money', '💰 Money'], ['ev', '🎲 Events'], ['mile', '🏅 Milestones'], ['trip', '🚗 Trips']];
 let logFilter = 'all';
 function renderLog(){
-  const list = S.log.filter(e => logFilter === 'all' || (e.k || logKind(e.m)) === logFilter);
+  const inFilter = e => logFilter === 'all' || (logFilter === 'mile' ? isMile(e) : (e.k || logKind(e.m)) === logFilter);   // i5-a03: big moments show under Milestones too
+  const list = S.log.filter(inFilter);
   const label = LOG_FILTERS.find(f => f[0] === logFilter)[1].replace(/^\S+ /, '');
   $('#main').innerHTML = `<div class="chips" role="group" aria-label="Show in the Journal">${LOG_FILTERS.map(([k, l]) =>
       `<button class="chip ${logFilter === k ? 'on' : ''}" data-lf="${k}" aria-pressed="${logFilter === k}">${l}</button>`).join('')}</div>
@@ -1084,7 +1085,7 @@ function renderLog(){
     ${list.map(e => `<div class="logitem"><em>${e.d}</em>${e.m}</div>`).join('') || `<p class="muted">Nothing under ${label.toLowerCase()} yet.</p>`}</div>`;
   document.querySelectorAll('[data-lf]').forEach(b => b.onclick = () => {
     logFilter = b.dataset.lf; renderLog();
-    const n = S.log.filter(e => logFilter === 'all' || (e.k || logKind(e.m)) === logFilter).length;
+    const n = S.log.filter(e => logFilter === 'all' || (logFilter === 'mile' ? isMile(e) : (e.k || logKind(e.m)) === logFilter)).length;
     announce(`${LOG_FILTERS.find(f => f[0] === logFilter)[1].replace(/^\S+ /, '')}: ${n} ${n === 1 ? 'entry' : 'entries'}`);
     const f = document.querySelector(`[data-lf="${logFilter}"]`); if (f) f.focus({ preventScroll: true });
   });
