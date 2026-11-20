@@ -150,7 +150,7 @@ for (const { len, strat, g, opts, label } of JOBS_LIST) {
                 if (fx.every(Boolean)) (choiceFx[res.ev.title] = choiceFx[res.ev.title] || []).push(fx);
               } }
             const ch = res.ev.choices().filter(c => !c.if || c.if());
-            const m0 = S.money; (strat === 'careless' ? ch[Math.floor(Math.random() * ch.length)] : ch[0]).go(); wxTrack(res.ev, S.money - m0);   // i75-a30: the weather bill
+            resolveChoice(res.ev, strat === 'careless' ? ch[Math.floor(Math.random() * ch.length)] : ch[0]);   // i71-b03: as a tap does (the weather bill, the cooldown)
           }
           ending = res.ending;
           for (const k of ['happy', 'health', 'community']) if (!(S[k] >= 0 && S[k] <= 100)) bad.push(`${k}=${S[k]} in week ${S.turn}`);

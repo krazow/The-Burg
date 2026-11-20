@@ -250,7 +250,6 @@ function bizRecent(pid){
 
 /* ---- maps: the Main Street close-up, and Preston Avenue pins on the town map ---- */
 const MSW = 420, MSH = 330;
-const pinKeys = `onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.dispatchEvent(new MouseEvent('click',{bubbles:true}))}"`;
 function mainStreetSVG(){
   let s = `<svg class="mapsvg msmap" viewBox="0 0 ${MSW} ${MSH}" role="group" aria-label="Main Street close-up: tap a business">
     <rect width="${MSW}" height="${MSH}" style="fill:var(--map-block)"/>
@@ -260,7 +259,7 @@ function mainStreetSVG(){
     <text x="${MSW - 6}" y="${MSH - 4}" class="mlbl" text-anchor="end" font-size="7.5">Not to scale</text>`;
   for (const p of PLACES.filter(x => x.st === 'main')) {
     const shut = !!placeClosed(p) || only21(p), recent = (S.evPins || []).find(x => OUT_EVENT_BIZ[x.t] === p.id && S.turn - x.turn <= 4);
-    s += `<g class="mpin mspin" data-biz="${p.id}" tabindex="0" role="button" aria-label="${esc(p.name)}, ${esc(p.addr)}: ${only21(p) ? '21 and over' : shut ? 'closed this week' : 'open this week'}" onclick="BIZTAP('${p.id}')" ${pinKeys}>
+    s += `<g class="mpin mspin" data-biz="${p.id}" tabindex="0" role="button" aria-label="${esc(p.name)}, ${esc(p.addr)}: ${only21(p) ? '21 and over' : shut ? 'closed this week' : 'open this week'}" data-call="BIZTAP" data-arg="${p.id}">
       <circle cx="${p.x}" cy="${p.y}" r="42" fill="transparent"/><circle cx="${p.x}" cy="${p.y}" r="15" style="fill:${shut ? 'var(--map-pin-off)' : 'var(--map-pin)'};stroke:var(--map-ink)" stroke-width="1.4"${shut ? ' stroke-dasharray="3 2"' : ''}/>
       <text x="${p.x}" y="${p.y + 5.5}" font-size="15" text-anchor="middle">${p.ic}</text>
       <text x="${p.x}" y="${p.y + 27}" class="mtown" text-anchor="middle">${p.lb}${only21(p) ? ' 21+' : ''}</text></g>`;
@@ -271,17 +270,17 @@ function mainStreetSVG(){
 function mainStreetBlock(){
   return `<h3 class="triph">🔍 Main Street close-up</h3>${mainStreetSVG()}
     <div class="mapcap">Tap a business for its card: when it's open and what you can do there. Dashed pins are closed this week.</div>
-    <button class="btn ghost" onclick="outSheet()">🛍️ Out and about: every place in town</button>`;
+    <button class="btn ghost" data-call="outSheet">🛍️ Out and about: every place in town</button>`;
 }
 // Preston Avenue businesses as pins on the town map (along Highway 12 heading out toward Dayton)
 const outTownPins = () => PLACES.filter(p => p.st === 'preston').map(p => ({ k:p.id, lb:p.lb, ic:p.ic, x:p.x, y:p.y, name:p.name, biz:p.id, desc:`${p.desc} ${p.addr}.` }));
 function outTownDetail(p){
   const b = placeById(p.biz), f = p.focus && FOCUS[p.focus];
   const btn = !f ? '' : S.focus === p.focus ? `<span class="tag cur">This week's focus: ${f.name}</span>`
-    : `<button class="sm" onclick="MAPFOCUS('${p.focus}')">${f.ic} Spend this week here</button>`;
+    : `<button class="sm" data-call="MAPFOCUS" data-arg="${p.focus}">${f.ic} Spend this week here</button>`;
   return `<div class="card mapdet"><h3>${b.ic} ${esc(b.name)}</h3><p style="margin:0 0 4px;font-size:0.875rem">${p.work ? `You work here as ${esc(p.work.toLowerCase())}. ` : ''}${esc(b.desc)}</p>
     <p class="muted" style="margin:0 0 8px">📍 ${esc(b.addr)} · ${placeLine(b)}</p>
-    <button class="sm alt" onclick="BIZTAP('${b.id}')">🛍️ Visit or see the card</button> ${btn}${recentList('T', p.k)}</div>`;
+    <button class="sm alt" data-call="BIZTAP" data-arg="${b.id}">🛍️ Visit or see the card</button> ${btn}${recentList('T', p.k)}</div>`;
 }
 window.BIZTAP = id => bizSheet(id);
 
@@ -329,7 +328,7 @@ const OUT_EVENTS = [
     ]},
   // i26-b05: the same band plays an early all-ages set, so under-21s get music night too
   { ic:'🎸', title:'All-ages show at The Royal Brick', biz:'brick', w:2, when:() => age() < 21,
-    text:'A band from Walla Walla is playing an early all-ages set at The Royal Brick before the bar opens on Saturday.',
+    text:'A band from Walla Walla plays an early show at The Royal Brick on Saturday. It\'s for all ages, and it ends before the bar opens.',
     choices:() => [
       {label:`Go (-${fmtc(12)})`, go:() => { adj({money:-cost(12), happy:4, community:2}); return 'You stood up front, and the drummer tossed you a broken stick.'; }},
       {label:'Early night', go:() => 'You slept well, at least.'}
@@ -380,7 +379,7 @@ for (const [t, b] of Object.entries(OUT_EVENT_BIZ)) EVENT_PLACE[t] = ['T', place
 /* ---- life systems at real places (#53): the Life tab's Around town card ---- */
 function townLifeCard(){
   const a0 = age(), food = cost(FOOD_UTIL - (S.turn < S.stockUntil ? GROCERY_SHARE * STOCK_OFF : 0)) * (1 - skillLv('cook') * 0.04);
-  const btn = id => `<button class="sm alt" onclick="BIZTAP('${id}')">${placeById(id).ic} ${esc(placeById(id).name)}</button>`;
+  const btn = id => `<button class="sm alt" data-call="BIZTAP" data-arg="${id}">${placeById(id).ic} ${esc(placeById(id).name)}</button>`;
   return `<div class="card"><h3>🏘️ Around town</h3>
     <div class="kv"><span>🏦 Savings and loans</span><span>Standard Bearer Bank</span></div>
     <div class="kv"><span>🩺 Health care${healthMonthly() ? ` (${wk(cost(healthMonthly()))})` : a0 < 50 ? ' (Apple Health, $0)' : ''}</span><span>The Burg Clinic</span></div>

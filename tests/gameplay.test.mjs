@@ -105,6 +105,7 @@ await t.check('⏩ 4 weeks plays up to four weeks and stops early when something
 await t.check('the game saves to its slot, and Continue picks up the same week after a reload', async () => {
   const before = await S();
   assert(before.slot === 0, `first life should be in slot 1, was ${before.slot + 1}`);
+  await page.waitForFunction(() => !HIST_T && !HIST_SKIP);   // let the Back-button history settle (i64-a01) so it can't cancel the reload
   await page.reload({ waitUntil: 'load' });
   assert((await page.$$('[data-cont]')).length === 1, 'title should list one saved life');
   await page.click('[data-cont="0"]');
@@ -303,7 +304,7 @@ await t.check('Help on the title screen opens the guide, and its contents jump t
 
 await t.check('the gameplay tutorial walks through every step by tapping, then leaves saves and settings alone', async () => {
   await page.evaluate(() => { localStorage.clear(); setPref('mapView', false); newGame('Mine', 'two', 0); S.turn = 7; save(); tab = 'home'; render(); });
-  const before = await page.evaluate(() => JSON.stringify(slots().map(g => g && { ...g, savedAt: 0 })));
+  const before = await page.evaluate(() => JSON.stringify(slots().map(g => g && { ...g, savedAt: 0, saveN: 0 })));
   await page.click('#helpbtn');
   await page.click('#tutstart');
   let steps = 0, skipped = [], seen = new Set(), covered = [];
@@ -334,7 +335,7 @@ await t.check('the gameplay tutorial walks through every step by tapping, then l
   assert(total <= 42, `the tutorial is getting long: ${total} steps`);
   const s = await S();
   assert(s.name === 'Mine' && s.turn === 7 && !s.practice, 'the real life was not restored');
-  assert((await page.evaluate(() => JSON.stringify(slots().map(g => g && { ...g, savedAt: 0 })))) === before, 'the tutorial changed the saves');
+  assert((await page.evaluate(() => JSON.stringify(slots().map(g => g && { ...g, savedAt: 0, saveN: 0 })))) === before, 'the tutorial changed the saves');
   assert(!(await page.evaluate(() => prefs().mapView)), 'the tutorial left the map setting on');
   assert(!(await page.evaluate(() => LIFE_UNDO.length || MAPSEL)), 'the tutorial left an undo or a map pick behind');
 });
@@ -380,6 +381,214 @@ await t.check('a save from before slots moves into a slot', async () => {
   const s = await S();
   assert(s.name === 'Oldtimer' && s.turn === 9 && s.slot === 0, 'old save was not moved');
   assert(!(await page.evaluate(() => localStorage.getItem('theburg.save.v2'))), 'old save key should be removed');
+});
+
+// ---- Wave 1 batch A: save safety, endings and life records ----
+const dismissNew = async () => { const h = await page.$(`${open} h2`); if (h && /What's new/.test(await h.textContent())) await page.click(`${open} #ok`); };
+const fresh = (len = 'two', set = {}) => page.evaluate(([len, set]) => { localStorage.clear(); closeSheet(); newGame('Saver', len, 0); Object.assign(S, set); S.noEvents = true; save(); tab = 'home'; render(); }, [len, set]);
+
+await t.check('i22-a01/i71-b03: closing the app on an event card brings the same card back, and its cooldown starts only on a choice', async () => {
+  await fresh('two', { jobId: 'diner', jobMonths: 24 });
+  await page.evaluate(() => { S.noEvents = false; const real = rollEvent; rollEvent = () => { rollEvent = real; return evByTitle('Layoffs'); }; render(); });
+  await tapEnd();
+  for (let i = 0; i < 4 && !(await page.$(`${open} [data-i]`)); i++) { const ok = await page.$(`${open} #ok`); if (ok) await ok.click(); else await page.waitForTimeout(200); }   // a badge card can come first
+  assert((await page.textContent('#sheet h2')) === 'Layoffs', `Layoffs card not open: ${await page.textContent('#sheet')}`);
+  let s = await S();
+  assert(s.pendingEv === 'Layoffs' && s.evCd.Layoffs === undefined, `before the choice: ${s.pendingEv} ${s.evCd.Layoffs}`);
+  await page.reload({ waitUntil: 'load' }); await dismissNew();
+  await page.click('[data-cont="0"]');
+  await page.waitForSelector(`${open} [data-i]`);
+  assert((await page.textContent('#sheet h2')) === 'Layoffs', 'the same card should reopen on Continue');
+  s = await S();
+  assert(s.evCd.Layoffs === undefined, 'cooldown spent before a choice');
+  await page.evaluate(() => { S.log = Array.from({ length: 125 }, (_, i) => ({ d: 'x', m: 'filler ' + i, k: 'ev' })); });
+  await page.click(`${open} [data-i="0"]`);
+  s = await S();
+  assert(s.pendingEv == null && s.evCd.Layoffs === s.turn - 1 + 40 && s.log.length === 120 && /^Layoffs: /.test(s.log[0].m) && s.log[0].k === 'ev', JSON.stringify({ p: s.pendingEv, cd: s.evCd.Layoffs, t: s.turn, n: s.log.length, l: s.log[0] }));
+  await clearSheets();
+  const disk = await page.evaluate(() => readSlot(0));
+  assert(disk.pendingEv == null, 'the cleared event was saved');
+});
+
+await t.check('i71-b03: an event that resolves itself during a skip uses the same path (Journal kind, week strip, cooldown)', async () => {
+  await fresh('two');
+  const r = await page.evaluate(() => { S.run = { weeks: 0, money: S.money, happy: S.happy, health: S.health, community: S.community, happened: [] }; S.evAt = S.turn;
+    const e = { ic: '🧪', title: 'Test one-choice', choices: () => [{ label: 'ok', go: () => { S.money += 10; return 'It happened.'; } }] };
+    resolveChoice(e, e.choices()[0], true); return { log: S.log[0], h: S.run.happened[0], cd: S.evCd['Test one-choice'], t: S.turn, p: S.pendingEv }; });
+  assert(r.log.m === 'Test one-choice: It happened.' && r.log.k === 'ev' && r.h.auto === 1 && r.h.money === 10 && r.cd === r.t + 8 && r.p == null, JSON.stringify(r));
+});
+
+await t.check('i22-a02: a Lifetime death behind the notes sheet survives closing the app', async () => {
+  await fresh('life', { ageMonths: 110 * 12 - 0.1, jobId: null });
+  await tapEnd();
+  await page.waitForSelector(`${open} #ok`);
+  assert(/This week/.test(await page.textContent('#sheet h2')), 'notes sheet should be open');
+  assert((await page.evaluate(() => readSlot(0).endPending || null)) !== null, 'ending not saved behind the notes');
+  await page.reload({ waitUntil: 'load' }); await dismissNew();
+  await page.click('[data-cont="0"]');
+  await page.waitForSelector('#finalscore');
+  assert(/passed peacefully/.test(await page.textContent('#sheet')), 'end screen should show the same ending');
+  assert((await page.evaluate(() => slots()[0])) === null, 'slot should be cleared');
+  await page.evaluate(() => { closeSheet(); S = null; renderTitle(); });
+});
+
+await t.check('i60-a10: a save that fails says so, once, until a save works again', async () => {
+  await fresh('two', { jobId: 'diner' });
+  const r = await page.evaluate(() => {
+    const real = Storage.prototype.setItem, shown = []; const t0 = toast; toast = m => { shown.push(m); t0(m); };
+    Storage.prototype.setItem = function (k, v) { if (String(k).includes('slot.')) { const e = new Error('full'); e.name = 'QuotaExceededError'; throw e; } return real.call(this, k, v); };
+    const ok = []; for (let i = 0; i < 3; i++) { weekTick(false); ok.push(save()); }
+    Storage.prototype.setItem = real; const after = save(); weekTick(false);
+    Storage.prototype.setItem = function (k, v) { if (String(k).includes('slot.')) throw new Error('full'); return real.call(this, k, v); }; save();
+    Storage.prototype.setItem = real; toast = t0;
+    return { ok, after, warn: shown.filter(m => /storage is full/.test(m)).length };
+  });
+  assert(r.ok.every(x => x === false) && r.after === true && r.warn === 2, JSON.stringify(r));
+});
+
+await t.check('i43-b01: each life saves to its own key, and the old all-in-one key moves over once', async () => {
+  const r = await page.evaluate(() => {
+    localStorage.clear(); closeSheet(); newGame('One', 'two', 0); const a = JSON.parse(JSON.stringify(S)); newGame('Two', 'two', 1); const b = JSON.parse(JSON.stringify(S));
+    localStorage.clear(); localStorage.setItem(SLOTS_KEY, JSON.stringify([a, b, null, null, null]));
+    const names = slots().map(g => g && g.name), legacyGone = localStorage.getItem(SLOTS_KEY) === null, keys = Object.keys(localStorage).filter(k => /slot\./.test(k)).sort();
+    S = null; loadSlot(1); const real = Storage.prototype.setItem, wrote = [];
+    Storage.prototype.setItem = function (k, v) { wrote.push(k); return real.call(this, k, v); }; save(); Storage.prototype.setItem = real;
+    return { names, legacyGone, keys, wrote };
+  });
+  assert(r.names.join() === 'One,Two,,,' && r.legacyGone && r.keys.join() === 'theburg.slot.0,theburg.slot.1', JSON.stringify(r));
+  assert(r.wrote.join() === 'theburg.slot.1', `one save should write one key: ${r.wrote}`);
+});
+
+await t.check('i57-a15: a save that won\'t read is kept aside, and the title screen offers it as a download', async () => {
+  const r = await page.evaluate(() => {
+    localStorage.clear(); closeSheet(); S = null; newGame('Keep', 'two', 0); save();
+    localStorage.setItem('theburg.slot.1', '{"name":"Half a li'); localStorage.setItem(SLOTS_KEY, 'not json [');
+    const names = slots().map(g => g && g.name); save();
+    S = null; renderTitle();
+    return { names, broken: store.get(BROKEN_KEY), btn: !!document.querySelector('#brokendl'), still0: readSlot(0) && readSlot(0).name };
+  });
+  assert(r.names.join() === 'Keep,,,,' && r.broken['theburg.slot.1'] === '{"name":"Half a li' && r.broken[`theburg.slots.v1`] === 'not json [', JSON.stringify(r));
+  assert(r.btn && r.still0 === 'Keep', 'download button missing or the good life lost');
+});
+
+await t.check('i54-a14: two windows on one life: the older window picks up the newer week instead of writing over it', async () => {
+  await fresh('two', { jobId: 'diner' });
+  const p2 = await ctx.newPage(); await p2.goto(srv.url, { waitUntil: 'load' });
+  const h = await p2.$(`${open} #ok`); if (h) await h.click();
+  await p2.click('[data-cont="0"]');
+  await p2.evaluate(() => { S.noEvents = true; playWeeks(3); closeSheet(); });
+  const t2 = await p2.evaluate(() => S.turn);
+  await page.waitForFunction(n => S.turn === n, t2, { timeout: 3000 });     // the storage event brought it over
+  await page.evaluate(() => { S.turn = 0; S.saveN = 0; save(); });             // and a stale window never writes over it
+  const disk = await page.evaluate(() => readSlot(0).turn);
+  assert(disk === t2, `disk turn ${disk}, other window ${t2}`);
+  await p2.close();
+  await page.evaluate(() => closeSheet());
+});
+
+await t.check('i60-a08: leaving the app saves this week\'s changes', async () => {
+  await fresh('two', { jobId: 'diner' });
+  const r = await page.evaluate(() => {
+    S.focus = 'outdoors'; S.trip = { city: 'dayton', stops: [] };
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange')); delete document.visibilityState;
+    const a = readSlot(0); S.focus = 'community'; window.dispatchEvent(new Event('pagehide')); const b = readSlot(0);
+    return { a: a.focus, trip: a.trip && a.trip.city, b: b.focus };
+  });
+  assert(r.a === 'outdoors' && r.trip === 'dayton' && r.b === 'community', JSON.stringify(r));
+});
+
+await t.check('i64-a04/i57-a02: a restored backup with markup in a name or Journal line can\'t run code anywhere', async () => {
+  const bad = '<img src=x onerror="window.__pwn=1">';
+  const r = await page.evaluate(async bad => {
+    localStorage.clear(); closeSheet(); S = null; newGame('Base', 'life', 0); S.kids = [100]; S.log.unshift({ d: '<b>d</b>', m: bad + ' Journal', k: 'ev' });
+    const g = JSON.parse(JSON.stringify(S)); g.name = bad + 'Averyveryverylongname'; g.happy = 900; g.health = NaN; g.goals = ['nope', 'x'];
+    g.log = [...g.log, ...Array.from({ length: 200 }, () => ({ d: 'x', m: 'y' }))]; g.evPins = [{ t: bad, ic: '!', r: bad, m: 'T', k: 'home', turn: 0 }];
+    const code = JSON.stringify({ app: 'theburg', kind: 'backup', slots: [g] });
+    const b = await readBackup(code); restoreBackup(b, 'replace'); renderTitle(); loadSlot(0);
+    const s = S; const out = { name: s.name, happy: s.happy, health: s.health, goals: s.goals, log: s.log.length, logm: s.log[0].m };
+    for (const tb of ['home', 'jobs', 'life', 'log']) { tab = tb; render(); }
+    showMenu(); loadSheet(); backupSheet(); closeSheet();
+    // in-game text never trusted either: a raw line and a raw name straight into the state
+    S.log.unshift({ d: bad, m: bad }); S.name = bad.slice(0, 20); tab = 'log'; render(); tab = 'home'; render(); recapSheet(Date.now() - 864e5 * 3); closeSheet();
+    S.ageMonths = 80 * 12; finish(`${bad} passed`); return out;
+  }, bad);
+  await page.waitForTimeout(150);
+  assert(!(await page.evaluate(() => window.__pwn)), 'markup ran');
+  assert(!r.name.includes('<') && r.name.length <= 20 && r.happy === 100 && r.health === 78 && r.goals.length === 0 && r.log === 120 && !r.logm.includes('<'), JSON.stringify(r));
+  assert((await page.textContent('#sheet')).includes('<img src=x onerror="window.__pwn=1"> passed'), 'ending text should show as typed');
+  await page.evaluate(() => { closeSheet(); S = null; renderTitle(); });
+});
+
+await t.check('i69-a07/i69-a06: old saves keep a trucker\'s CDL and skip a surprise first property tax bill', async () => {
+  const r = await page.evaluate(() => {
+    const base = () => { const g = blankLife('Old', 'two', 0); delete g.ptaxDone; delete g.lifeId; return g; };
+    const a = migrate({ ...base(), jobId: 'trucker', certs: {} }), b = migrate({ ...base(), jobId: null, recall: { job: 'harvtruck', until: 99 }, certs: {} });
+    const c = migrate({ ...base(), home: 'fixer', date: new Date(2029, 3, 9).getTime() }), d = migrate({ ...base(), home: 'fixer', date: new Date(2029, 5, 9).getTime() });
+    const e = migrate({ ...base(), jobId: 'diner', certs: {} });
+    return { a: a.certs.cdl, b: b.certs.cdl, c: c.ptaxDone, d: d.ptaxDone, e: e.certs.cdl || 0 };
+  });
+  assert(r.a === 1 && r.b === 1 && r.c === '2029-3' && r.d == null && r.e === 0, JSON.stringify(r));
+});
+
+await t.check('i60-a13/i73-b25: a grandkid comes only after a full life, waits on the title screen, and carries the family line', async () => {
+  const r = await page.evaluate(() => {
+    const end = (age, opts) => { localStorage.clear(); closeSheet(); S = null; newGame('Gran Old', 'life', 0); S.noEvents = true; S.kids = [100]; S.ageMonths = age * 12; finish('done', opts); return !!document.querySelector('#legacy'); };
+    const young = end(25), debt = end(70, { debt: true }), old = end(70);
+    document.querySelector('#legacy').click(); document.querySelector('#no').click();
+    const card = document.querySelector('[data-heir]') ? document.querySelector('.heirwait').textContent : '';
+    document.querySelector('[data-heir]').click(); document.querySelector('#heirgo').click();
+    return { young, debt, old, card, name: S.name, line: S.line, left: heirs().length };
+  });
+  assert(!r.young && !r.debt && r.old, `legacy offered: ${JSON.stringify(r)}`);
+  assert(/Gran Old's grandkid is ready/.test(r.card) && r.name === 'Gran Old II' && r.left === 0, JSON.stringify(r));
+  assert(r.line.length === 1 && r.line[0].name === 'Gran Old' && r.line[0].epitaph === 'done' && Number.isFinite(r.line[0].score), JSON.stringify(r.line));
+  const d = await page.evaluate(() => { localStorage.clear(); closeSheet(); S = null; newGame('Dis Missed', 'life', 0); S.kids = [100]; S.ageMonths = 80 * 12; finish('done');
+    document.querySelector('#again').click(); document.querySelector('[data-heirno]').click(); document.querySelector('#yes').click(); return { left: heirs().length, card: !!document.querySelector('[data-heir]') }; });
+  assert(d.left === 0 && !d.card, 'dismiss should remove the grandkid');
+});
+
+await t.check('i73-b11: the weekly challenge has its own place, even with all 5 slots full, and is cleared when its week ends', async () => {
+  const r = await page.evaluate(() => {
+    localStorage.clear(); closeSheet(); S = null; for (let i = 0; i < 5; i++) { newGame('F' + i, 'half', i); save(); }
+    S = null; renderTitle(); startWeekly('Wk'); save();
+    const a = { slot: S.slot, names: slots().map(g => g.name).join(), weekly: readSlot(WEEKLY_SLOT).name };
+    S = null; renderTitle(); a.card = !!document.querySelector(`[data-cont="${WEEKLY_SLOT}"]`);
+    document.querySelector(`[data-cont="${WEEKLY_SLOT}"]`).click(); a.cont = S.name + '/' + S.slot; S = null;
+    const g = readSlot(WEEKLY_SLOT); g.weekly = '2000-W01'; writeSlot(WEEKLY_SLOT, g); pruneWeekly(); a.gone = readSlot(WEEKLY_SLOT) === null;
+    return a;
+  });
+  assert(r.slot === 'weekly' && r.names === 'F0,F1,F2,F3,F4' && r.weekly === 'Wk' && r.card && r.cont === 'Wk/weekly' && r.gone, JSON.stringify(r));
+});
+
+await t.check('i73-b01/b02: finished lives leave a stub, travel in backups, and show as your top 10 in records', async () => {
+  const r = await page.evaluate(async () => {
+    localStorage.clear(); closeSheet(); S = null;
+    for (let i = 0; i < 12; i++) { newGame('Life' + i, 'half', 0); S.noEvents = true; S.happySum = 0; S.happy = 30 + i * 5; finish('Six months in the Burg is in the books.'); closeSheet(); }
+    newGame('Keep', 'two', 0); save(); const list = ends(), bk = backupData();
+    localStorage.clear(); restoreBackup(await readBackup(JSON.stringify(bk)), 'add');
+    S = null; renderTitle(); document.querySelector('#records').click();
+    const rows = document.querySelectorAll('#sheet [data-end]').length, first = document.querySelector('#sheet [data-end="0"]').textContent;
+    document.querySelector('#sheet [data-end="0"]').click();
+    return { n: list.length, keys: Object.keys(list[0]).sort().join(), size: JSON.stringify(list[0]).length, inBackup: bk.ends.length, back: ends().length, rows, first, summary: document.querySelector('#sheet').textContent };
+  });
+  assert(r.n === 12 && r.inBackup === 12 && r.back === 12 && r.size < 1200, JSON.stringify(r));
+  assert(['cause', 'gen', 'home', 'job', 'kids', 'len', 'mode', 'name', 'score', 'seed', 'title'].every(k => r.keys.includes(k)), r.keys);
+  assert(r.rows === 10 && r.first === 'Life11' && /Life11's life in the Burg/.test(r.summary) && /in the books/.test(r.summary), JSON.stringify(r));
+  await page.evaluate(() => closeSheet());
+});
+
+await t.check('i57-a18: restoring says how many lives really landed', async () => {
+  const r = await page.evaluate(async () => {
+    localStorage.clear(); closeSheet(); S = null; newGame('R1', 'two', 0); save(); newGame('R2', 'two', 1); save();
+    const b = await readBackup(JSON.stringify(backupData())); localStorage.clear(); S = null; renderTitle();
+    const real = Storage.prototype.setItem; let msg = '';
+    Storage.prototype.setItem = function (k, v) { if (k === 'theburg.slot.1') throw new Error('full'); return real.call(this, k, v); };
+    const t0 = toast; toast = m => { msg = m; }; finishRestore(b, 'replace'); toast = t0; Storage.prototype.setItem = real;
+    const bad = msg; finishRestore(b, 'replace'); closeSheet();
+    return { bad, names: slots().map(g => g && g.name).join() };
+  });
+  assert(/Only 1 life of 2/.test(r.bad) && r.names === 'R1,R2,,,', JSON.stringify(r));
 });
 
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });

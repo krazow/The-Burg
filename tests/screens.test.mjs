@@ -155,6 +155,8 @@ for (const [label, w, h, nightXL] of SIZES) {
   for (const [screen, go] of screens) {
     await go();
     await page.waitForTimeout(250);
+    // a pop-up fades in: on a busy machine 250 ms can catch it part way, which reads as low contrast
+    await page.waitForFunction(() => ['#modal', '#sheet'].every(q => { const e = document.querySelector(q); return !e || e.classList.contains('hidden') || getComputedStyle(e).opacity === '1'; }), null, { timeout: 3000 }).catch(() => {});
     await page.screenshot({ path: `test-results/screens/${label}-${screen}.png` });
     const a = await page.evaluate(audit);
     const where = `${label} ${w}×${h} / ${screen}`;
@@ -244,7 +246,7 @@ await t.check("the tutorial's touch highlights work at every screen size, and no
     await page.waitForTimeout(250);
     assert((await page.evaluate(() => S.turn)) === turn + 1, 'Enter did not end the week');
     const said = await page.textContent('#sr');
-    assert(/Week done\. Cash (up|down)/.test(said), `screen-reader message: "${said}"`);
+    assert(/^Week \d+ done\. (You earned|You spent|Your cash)/.test(said), `screen-reader message: "${said}"`);   // i7-a02: one short sentence by default
   });
 
   await t.check('keyboard: a focused button shows a visible focus ring', async () => {
@@ -311,6 +313,156 @@ await t.check("the tutorial's touch highlights work at every screen size, and no
     assert((await page.$$('.fbtn[aria-pressed="true"]')).length === 1, 'chosen focus not marked as pressed');
   });
   await ctx.close();
+}
+
+// ---------- accessibility audit fixes (wave 1) ----------
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  await ctx.addInitScript(seedScript(91));
+  const page = await ctx.newPage();
+  await page.goto(srv.url, { waitUntil: 'load' });
+  await page.evaluate(() => { localStorage.clear(); setPref('tips', ['focus','strip','tabs']); newGame('Audit', 'two', 0); S.noEvents = true; S.jobId = 'farmhand'; tab = 'home'; render(); });
+  const settle = () => page.waitForTimeout(120);
+
+  await t.check('i43-a01 / i7-a02: the week strip says its numbers, and the live region says one short sentence (or every number in Full)', async () => {
+    const closeCards = async () => { for (let i = 0; i < 3 && await page.$('#modal:not(.hidden) #ok'); i++) { await page.click('#modal:not(.hidden) #ok'); await page.waitForTimeout(120); } };
+    await page.click('#end'); await page.waitForTimeout(250);
+    const r = await page.evaluate(() => ({ label: $('#strip').getAttribute('aria-label'), said: $('#sr').textContent, turn: S.turn, dm: Math.round(S.money - S.run.money) }));
+    assert(/^Last week: cash (up|down) \$[\d,]+, happiness (up \d+|down \d+|unchanged), health .*, community .*\. Details$/.test(r.label), `strip label "${r.label}"`);
+    assert(r.said.startsWith(`Week ${r.turn} done.`) && r.said.includes(r.dm > 0 ? `You earned $` : 'You spent') && !/now \$/.test(r.said), `short summary "${r.said}"`);
+    const short = await page.evaluate(() => { S.run = { weeks: 1, money: S.money - 612, happy: S.happy + 1, health: S.health - 2, community: S.community, happened: [] }; return weekSentence({ ev: {} }); });
+    assert(/^Week \d+ done\. You earned \$612\. Happiness down 1, health up 2\. One event waiting\.$/.test(short), short);
+    await closeCards(); await page.evaluate(() => { setPref('srWeek', 'full'); render(); }); await page.click('#end'); await page.waitForTimeout(250);
+    const full = await page.textContent('#sr');
+    assert(/^Week done\. Cash (up|down) .*, now \$/.test(full), `full summary "${full}"`);
+    await closeCards(); await page.evaluate(() => setPref('srWeek', 'short'));
+  });
+
+  await t.check('i74-b05 / i7-a03: Net worth says its amount; every stat says a word and its bar has notches', async () => {
+    const r = await page.evaluate(() => { S.happy = 82; S.health = 61; S.community = 20; render();
+      return { nw: $('[data-stat=net]').getAttribute('aria-label'), want: fmt(netWorth()), happy: $('[data-stat=happy]').getAttribute('aria-label'), shown: $('[data-stat=community]').textContent,
+        notched: document.querySelectorAll('#main .stats .bar.notched').length, words: [10, 35, 59, 60, 80].map(statWord) }; });
+    assert(r.nw === `Net worth ${r.want}: what counts`, r.nw);
+    assert(r.happy === 'Happiness 82, Great: what moves it' && /20 · Low/.test(r.shown), `${r.happy} / ${r.shown}`);
+    assert(r.notched === 3 && r.words.join() === 'Low,OK,OK,Good,Great', `${r.notched} notched bars, words ${r.words}`);
+  });
+
+  await t.check('i74-b15 / i43-a08: stat bars reach 3:1 on their track and control borders 3:1 on their page, day and night', async () => {
+    const bad = await page.evaluate(() => {
+      const lum = c => { const m = c.match(/[\d.]+/g).map(Number); const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126*f(m[0]) + 0.7152*f(m[1]) + 0.0722*f(m[2]); };
+      const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+      const probe = document.createElement('div'); document.body.append(probe);
+      const col = v => { probe.style.color = v; return getComputedStyle(probe).color; };
+      const out = [];
+      for (const night of [false, true]) {
+        document.documentElement.classList.toggle('night', night);
+        for (const c of ['--bar-good', '--bar-ok', '--bar-low', '--bar-sky']) { const r = ratio(col(`var(${c})`), col('var(--track)')); if (r < 3) out.push(`${night ? 'night' : 'day'} ${c} ${r.toFixed(2)}:1`); }
+        for (const bg of ['--cream', '--paper', '--card', '--pale']) { const r = ratio(col('var(--edge)'), col(`var(${bg})`)); if (r < 3) out.push(`${night ? 'night' : 'day'} --edge on ${bg} ${r.toFixed(2)}:1`); }
+      }
+      document.documentElement.classList.remove('night');
+      for (const q of ['.fbtn', '.sm.alt', '.chip', '.btn.ghost']) { const e = document.querySelector(q); if (e && getComputedStyle(e).borderTopColor !== col('var(--edge)')) out.push(`${q} border is not --edge`); }
+      probe.remove();
+      return out;
+    });
+    assert(!bad.length, bad.join('; '));
+  });
+
+  await t.check('i43-a02 / i43-a03: an event sheet reads its story, and the result sheet is named for the event', async () => {
+    await page.evaluate(() => showEvent(EVENTS.find(e => e.title === 'Celebration Days')));
+    await settle();
+    const r = await page.evaluate(() => { const sh = $('#sheet'), d = document.getElementById(sh.getAttribute('aria-describedby') || 'none'); return { d: d && d.textContent, want: EVENTS.find(e => e.title === 'Celebration Days').text }; });
+    assert(r.d && r.d === r.want, `described by "${r.d}"`);
+    await page.click('#sheet [data-i="0"]'); await settle();
+    const r2 = await page.evaluate(() => ({ name: $('#sheet').getAttribute('aria-label'), desc: !!$('#sheet').getAttribute('aria-describedby') }));
+    assert(r2.name === 'Celebration Days: how it went' && r2.desc, `result sheet named "${r2.name}"`);
+    await page.click('#sheet #ok'); await settle();
+    await page.evaluate(() => settingsSheet());
+    assert(!(await page.getAttribute('#sheet', 'aria-describedby')), 'a later sheet kept the event description');
+    await page.evaluate(() => closeSheet());
+  });
+
+  await t.check('i70-b17 / i74-b02: yes/no sheets that end or delete something put the safe answer at the bottom and focus it first', async () => {
+    const bad = [];
+    for (const [name, open] of [['delete', () => { writeSlot(1, { ...clone(S), name: 'Old', slot: 1 }); askDelete(1); }], ['end life', () => confirmRetire()],
+      ['replace', () => { for (let i = 0; i < SLOT_COUNT; i++) if (!slots()[i]) writeSlot(i, { ...clone(S), name: 'Full' + i, slot: i }); askReplace('New', 'two'); document.querySelector('#sheet [data-over="1"]').click(); }],
+      ['quit job', () => { tab = 'jobs'; render(); $('#quit').click(); }]]) {
+      await page.evaluate(open); await page.waitForTimeout(150);
+      const r = await page.evaluate(() => { const bs = [...document.querySelectorAll('#sheet button')]; return { last: bs[bs.length - 1].hasAttribute('data-safe'), focus: document.activeElement && document.activeElement.hasAttribute('data-safe'), text: bs[bs.length - 1].textContent }; });
+      if (!r.last || !r.focus) bad.push(`${name}: bottom "${r.text}" safe=${r.last}, focus on safe=${r.focus}`);
+      await page.evaluate(() => { closeSheet(); tab = 'home'; render(); });
+    }
+    assert(!bad.length, bad.join('; '));
+  });
+
+  await t.check('i74-b01: Tab reaches the backup code box in Restore', async () => {
+    await page.evaluate(() => restoreSheet()); await page.waitForTimeout(150);
+    let hit = false; for (let i = 0; i < 8 && !hit; i++) { await page.keyboard.press('Tab'); hit = await page.evaluate(() => document.activeElement && document.activeElement.id === 'rscode'); }
+    assert(hit, 'Tab never reached the backup code box');
+    await page.evaluate(() => closeSheet());
+  });
+
+  await t.check('i43-a04: a button reached with Tab is never left under the bottom bars', async () => {
+    await page.evaluate(() => { tab = 'home'; render(); window.scrollTo(0, 0); $('#end').focus(); });
+    const bad = [];
+    for (let i = 0; i < 60; i++) {
+      await page.keyboard.press('Shift+Tab');
+      const r = await page.evaluate(() => { const a = document.activeElement; if (!a || !$('#main').contains(a)) return null; const b = a.getBoundingClientRect();
+        const tops = ['#strip', '.endbar', '#app > nav'].map(q => $(q)).filter(Boolean).map(e => e.getBoundingClientRect().top);
+        return { name: (a.getAttribute('aria-label') || a.textContent).trim().slice(0, 30), under: b.bottom > Math.min(...tops) + 1, over: b.top < $('.top').getBoundingClientRect().bottom - 1 }; });
+      if (r && (r.under || r.over)) bad.push(`${r.name} ${r.under ? 'under the bars' : 'under the header'}`);
+    }
+    assert(!bad.length, bad.slice(0, 5).join('; '));
+  });
+
+  await t.check('i43-a05: during the tutorial Tab stays on the lit spot, Next and Skip', async () => {
+    await page.evaluate(() => startTutorial());
+    const bad = [];
+    for (let step = 0; step < 6; step++) {
+      await page.waitForFunction(() => TUT && !$('#coach').classList.contains('hidden'), null, { timeout: 4000 });
+      await page.waitForTimeout(100);
+      for (let i = 0; i < 6; i++) {
+        await page.keyboard.press('Tab');
+        const ok = await page.evaluate(() => { const a = document.activeElement, st = TSTEPS[TUT.i], el = st.tap && st.sel && document.querySelector(st.sel);
+          return !!a && (!!a.closest('#coach .cbubble') || !!(el && el.contains(a))); });
+        if (!ok) { bad.push(`step ${await page.evaluate(() => TUT.i + 1)}: Tab left the tutorial`); break; }
+      }
+      const tap = await page.evaluate(() => !!TSTEPS[TUT.i].tap);
+      if (tap) await page.evaluate(() => { const el = document.querySelector(TSTEPS[TUT.i].sel); el.click(); });
+      else await page.click('#cnext');
+      await page.waitForTimeout(450);
+    }
+    await page.evaluate(() => endTutorial(false));
+    assert(!bad.length, bad.join('; '));
+  });
+
+  await t.check('i59-a19 / i70-b01: the day theme says light-only, Text size follows the phone and reaches the header, tabs and End Week', async () => {
+    const r = await page.evaluate(() => {
+      setPref('theme', 'day'); setPref('textSize', 'normal'); applyPrefs(); tab = 'home'; render();
+      const px = q => parseFloat(getComputedStyle(document.querySelector(q)).fontSize);
+      const day = { meta: document.querySelector('meta[name=color-scheme]').content, cs: getComputedStyle(document.documentElement).colorScheme, root: getComputedStyle(document.documentElement).fontSize };
+      const a = ['.top h2', '.top .money', '#app > nav button', '#end', '#strip .wl'].map(px);
+      setPref('textSize', 'xl'); setPref('theme', 'night'); applyPrefs(); render();
+      const b = ['.top h2', '.top .money', '#app > nav button', '#end', '#strip .wl'].map(px);
+      const night = { meta: document.querySelector('meta[name=color-scheme]').content, cs: getComputedStyle(document.documentElement).colorScheme };
+      setPref('textSize', 'normal'); setPref('theme', 'day'); applyPrefs(); render();
+      return { day, night, a, b, src: [...document.styleSheets[0].cssRules].find(r => r.selectorText === 'html' && r.style.fontSize).style.fontSize };
+    });
+    assert(r.day.meta === 'only light' && /light/.test(r.day.cs) && !/dark/.test(r.day.cs), `day color-scheme ${JSON.stringify(r.day)}`);
+    assert(r.night.meta === 'dark' && r.night.cs === 'dark', `night color-scheme ${JSON.stringify(r.night)}`);
+    assert(r.src === '100%', `root font-size is ${r.src}, not the phone's own size`);
+    const grew = r.a.map((v, i) => r.b[i] / v);
+    assert(grew.every(x => x > 1.2), `Larger text grew header/tabs/End Week/strip by ${grew.map(x => x.toFixed(2)).join(', ')}`);
+  });
+  await ctx.close();
+
+  await t.check('i43-a20: on a very short screen the header scrolls away instead of sticking', async () => {
+    const c2 = await browser.newContext({ viewport: { width: 422, height: 195 }, serviceWorkers: 'block' });
+    const p2 = await c2.newPage();
+    await p2.goto(srv.url, { waitUntil: 'load' });
+    const pos = await p2.evaluate(() => { localStorage.clear(); newGame('Short', 'two', 0); S.noEvents = true; render(); return getComputedStyle($('.top')).position; });
+    await c2.close();
+    assert(pos === 'static', `header is ${pos}`);
+  });
 }
 
 const md = `## Screens and accessibility\n\n${SIZES.length} screen sizes × ${SCREEN_COUNT} screens, plus keyboard and screen-reader checks.\nScreenshots: \`test-results/screens/\`.\n`;
