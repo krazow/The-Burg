@@ -104,6 +104,7 @@ await t.check('⏩ 4 weeks plays up to four weeks and stops early when something
 await t.check('the game saves to its slot, and Continue picks up the same week after a reload', async () => {
   const before = await S();
   assert(before.slot === 0, `first life should be in slot 1, was ${before.slot + 1}`);
+  await page.waitForFunction(() => !HIST_T && !HIST_SKIP);   // let the Back-button history settle (i64-a01) so it can't cancel the reload
   await page.reload({ waitUntil: 'load' });
   assert((await page.$$('[data-cont]')).length === 1, 'title should list one saved life');
   await page.click('[data-cont="0"]');
