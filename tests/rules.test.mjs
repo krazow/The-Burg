@@ -1034,7 +1034,7 @@ await t.check('business events: at their places, on their days; the doctor and t
       run: [run.text, run.choices()[0].label, eventPlace(run)], inh: [inh.text, eventPlace(inh)], n: titles.length }; });
   assert(r.n >= 9, `only ${r.n} business events`);
   assert(r.places['Cookout at Mr. Q\'s'][1] === 'mrq' && r.places['The grill is open at Laughing Lad'][1] === 'lad' && r.places['Grenache Fest'][1] === 'mainst', JSON.stringify(r.places));
-  assert(r.jamEven && !r.jamOdd, 'the jam comes every other week');
+  assert(!r.jamEven && r.jamOdd, 'the jam comes every other week: rolled the week before a jam week (i22-a13)');
   assert(r.fest && !r.festYoung, 'Grenache Fest is 21 and over');
   assert(/Burg Clinic/.test(r.run[0]) && /doctor/.test(r.run[1]) && r.run[2][1] === 'mainst', JSON.stringify(r.run));
   assert(/Mother Hubbard/.test(r.inh[0]) && r.inh[1][1] === 'mainst', JSON.stringify(r.inh));
@@ -1974,6 +1974,63 @@ await t.check('i75: older saves load with the new fields filled in (unvested mat
   const r = await ev(() => { const old = JSON.parse(JSON.stringify(fresh('two', { jobId: 'farmhand', k401: 500, ui: 3 }))); delete old.k401match; delete old.uiPay;
     const m = migrate(old); S = m; S.jobId = null; const ui = week().lines['Unemployment benefits']; return { match: m.k401match, uiPay: m.uiPay, ui }; });
   assert(r.match === 0 && r.uiPay === null && near(r.ui, 1500 * W), JSON.stringify(r));
+});
+
+await t.check('wave 1 D2: event text and balance (i22-a09/a10/a13/a14/a16, i71-b01, i66-b01/b02/b07/b15/b16/b17)', async () => {
+  const r = await ev(() => {
+    const E = t => EVENTS.find(e => e.title === t), open_ = e => e.choices().filter(c => !c.if || c.if()), out = {};
+    const num = l => +((l.match(/\$([\d,]+)/) || [])[1] || '0').replace(/,/g, '');
+    // i66-b01 + i22-a09: the tip needs a better job open, and shows today's weekly pay
+    fresh('two', { jobId: 'farmhand', community: 60 }); const tip = E('A tip from a friend'); out.tipOn = tip.when();
+    const tc = tip.choices()[0]; out.tipLabel = tc.label; out.tipWk = tipJobs().map(x => wk(payNow(x, false)));
+    out.tipBetter = tipJobs().every(x => payNow(x, false) > payNow(job()));
+    S.raise = 100; out.tipOff = tip.when();
+    // i22-a10: raises tell the truth at the cap
+    fresh('two', { jobId: 'farmhand', jobMonths: 24, raise: 1.27 }); out.raise = E('A raise').choices()[0].go();
+    S.raise = RAISE_CAP; const rec = E('A recruiter calls').choices()[1]; out.loyalLabel = rec.label; out.loyal = rec.go();
+    fresh('two', { jobId: 'farmhand', raise: 1.29 }); out.loyal2 = E('A recruiter calls').choices()[1].label;
+    // i22-a14: the gas spike counts remote days
+    fresh('two', { jobId: 'loan', money: 5000 }); const m0 = S.money; E('Gas prices spike').choices()[0].go();
+    out.gas = [m0 - S.money, Math.round(commuteCost(commuteOneWay(), CARS[S.car], job()) * 0.25), Math.round(commuteCost(commuteOneWay()) * 0.25)];
+    // i22-a16: college help never pushes you past what you have
+    const kidAt18 = () => { S.kids = [S.ageMonths - 18 * 12 - 3]; };
+    fresh('two', { money: 2000 }); kidAt18(); const col = E('A kid heads off to college'); out.colWhen = col.when();
+    out.poor = open_(col).map(c => { S.money = 2000; c.go(); return [c.label, S.money]; });
+    fresh('two', { money: 20000 }); kidAt18(); out.rich = open_(col).map(c => c.label);
+    fresh('two', { money: -500 }); kidAt18(); out.broke = open_(col).map(c => c.label);
+    // i71-b01: chain-event labels show what you're charged
+    fresh('two', { home: 'fixer', money: 20000, skills: { handy: 30 } }); S.col = 1.7; out.chain = [];
+    for (const [t, i] of [['The porch is sagging', 0], ['The porch is sagging', 1], ['The kitchen is next', 0], ['The kitchen is next', 1], ["A friend's food truck", 0], ['A levee for the town', 1]]) {
+      const c = E(t).choices()[i], m = S.money; c.go(); out.chain.push([c.label, num(c.label), Math.round(m - S.money)]); }
+    // i66-b02: wine weekends April to October, weight 2
+    fresh('two'); S.ageMonths = 30 * 12; const wine = E('Wine country weekend'); out.wine = [wine.w, wine.when(2), wine.when(3), wine.when(9), wine.when(10)];
+    // i66-b07: the buddy fix works 60% of the time
+    fresh('two', { community: 50, money: 5000 }); const rnd = Math.random; const bud = E('Truck trouble').choices()[2];
+    Math.random = () => 0.5; let m = S.money; bud.go(); out.budOk = m - S.money;
+    Math.random = () => 0.9; m = S.money; out.budBad = [bud.go(), m - S.money]; Math.random = rnd;
+    // i66-b15: the cheap plan pays $240 a year; better coverage halves the emergency dentist
+    fresh('two', { jobId: 'rn', money: 5000 }); const hp = E('Health plan choice').choices(); out.cheap = hp[0].label; m = S.money; hp[0].go(); out.cheapGot = S.money - m;
+    const tooth = () => { const c = E('Toothache').choices()[0], m1 = S.money; c.go(); return m1 - S.money; };
+    out.toothFull = tooth(); hp[1].go(); out.toothHalf = tooth();
+    // i66-b16: a winter Get outside week with a season pass is a ski day
+    fresh('two', { focus: 'outdoors', health: 60, happy: 50 }); S.date = new Date(2027, 9, 10).getTime(); S.skiPass = skiSeason(); S.date = new Date(2028, 0, 10).getTime();
+    out.skiOn = skiWeek(); weekTick(false); out.skiWhy = S.last.why.some(w => /ski day/.test(w));
+    S.focus = 'rest'; out.skiRest = skiWeek(); S.focus = 'outdoors'; S.date = new Date(2028, 5, 10).getTime(); out.skiJune = skiWeek();
+    // i66-b17: run down under 45
+    fresh('two', { health: 44 }); out.run44 = E('Feeling run down').when(); S.health = 45; out.run45 = E('Feeling run down').when();
+    return out; });
+  assert(r.tipOn && r.tipBetter && !r.tipOff && /\/wk\)$/.test(r.tipLabel) && r.tipWk.some(w => r.tipLabel.includes(w)), `tip ${JSON.stringify([r.tipOn, r.tipOff, r.tipLabel])}`);
+  assert(/A 2\.4% raise/.test(r.raise) && /top of the pay scale/.test(r.raise), `raise at the cap: ${r.raise}`);
+  assert(/top of the pay scale/.test(r.loyalLabel) && !/2%/.test(r.loyal) && /\+0\.8% pay/.test(r.loyal2), JSON.stringify([r.loyalLabel, r.loyal, r.loyal2]));
+  assert(r.gas[0] === r.gas[1] && r.gas[1] < r.gas[2], `gas spike counts remote days ${r.gas}`);
+  assert(r.colWhen && r.poor.length === 2 && r.poor.every(([, m]) => m >= 0) && /books/.test(r.poor[0][0]) && /\$2,000/.test(r.poor[0][0]), `college with $2,000 ${JSON.stringify(r.poor)}`);
+  assert(r.rich.some(l => /tuition/.test(l)) && !r.rich.some(l => /books/.test(l)) && r.broke.length === 1, JSON.stringify([r.rich, r.broke]));
+  assert(r.chain.every(([, l, paid]) => l > 0 && l === paid), `chain labels match what you pay ${JSON.stringify(r.chain)}`);
+  assert(r.wine[0] === 2 && !r.wine[1] && r.wine[2] && r.wine[3] && !r.wine[4], `wine ${r.wine}`);
+  assert(near(r.budOk, 120) && /couldn't/.test(r.budBad[0]) && r.budBad[1] > 120, `buddy ${r.budOk} ${JSON.stringify(r.budBad)}`);
+  assert(/\$240 this year/.test(r.cheap) && near(r.cheapGot, 240) && near(r.toothHalf, r.toothFull / 2, 0.02), JSON.stringify([r.cheap, r.cheapGot, r.toothFull, r.toothHalf]));
+  assert(r.skiOn && r.skiWhy && !r.skiRest && !r.skiJune, JSON.stringify([r.skiOn, r.skiWhy, r.skiRest, r.skiJune]));
+  assert(r.run44 && !r.run45, 'run down under 45');
 });
 
 await t.check('i22-a12: a food-truck weekend keeps hustle experience from fading', async () => {

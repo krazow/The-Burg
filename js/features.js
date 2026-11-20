@@ -261,15 +261,15 @@ const STORY_EVENTS = [
   { ic:'🔨', title:'The porch is sagging', once:1, w:4, when:() => S.home === 'fixer' && !S.chains?.fixer,
     text:'The front porch of your fixer-upper groans every time you step on it. Time to do something.',
     choices:() => [
-      {label:'Fix it yourself (-$350)', go:() => { adj({money:-Math.round(cost(350) * (1 - skillLv('handy') * 0.15)), health:-2, happy:2}); practice('handy', 3); chainSet('fixer', 2, { diy:true }); return 'Two weekends, a borrowed saw and sore hands. It\'s solid now, and you learned a lot.'; }},
-      {label:'Hire Tim\'s Trim & Timber (-$1,400)', go:() => { adj({money:-Math.round(cost(1400))}); chainSet('fixer', 2, { diy:false }); return 'Tim\'s Trim & Timber had it done in two days.'; }},
+      {label:`Fix it yourself (-${fmt(handyCost(350))})`, go:() => { adj({money:-handyCost(350), health:-2, happy:2}); practice('handy', 3); chainSet('fixer', 2, { diy:true }); return 'Two weekends, a borrowed saw and sore hands. It\'s solid now, and you learned a lot.'; }},
+      {label:`Hire Tim's Trim & Timber (-${fmtc(1400)})`, go:() => { adj({money:-cr(1400)}); chainSet('fixer', 2, { diy:false }); return 'Tim\'s Trim & Timber had it done in two days.'; }},
       {label:'Leave it', go:() => { adj({happy:-2}); chainEnd('fixer'); return 'You step carefully around the soft board.'; }}
     ]},
   { ic:'🍳', title:'The kitchen is next', once:1, w:8, when:() => chainAt('fixer', 2) && S.home === 'fixer',
     text:() => chain('fixer').f.diy ? 'Fixing the porch gave you ideas. The 1970s kitchen is calling.' : 'The contractor mentions the kitchen could use the same treatment.',
     choices:() => [
-      {label:'Redo it yourself over a month (-$2,500)', go:() => { adj({money:-Math.round(cost(2500) * (1 - skillLv('handy') * 0.15)), health:-3, happy:3}); practice('handy', 4); chainSet('fixer', 3, { kitchen:'diy' }, [6, 10]); return 'Cabinets out, cabinets in. Dinner on a camp stove for a month.'; }},
-      {label:'Hire Sharp Point Builders (-$7,000)', go:() => { adj({money:-Math.round(cost(7000))}); chainSet('fixer', 3, { kitchen:'pro' }, [6, 10]); return 'The crew is on it. Takeout for a few weeks.'; }},
+      {label:`Redo it yourself over a month (-${fmt(handyCost(2500))})`, go:() => { adj({money:-handyCost(2500), health:-3, happy:3}); practice('handy', 4); chainSet('fixer', 3, { kitchen:'diy' }, [6, 10]); return 'Cabinets out, cabinets in. Dinner on a camp stove for a month.'; }},
+      {label:`Hire Sharp Point Builders (-${fmtc(7000)})`, go:() => { adj({money:-cr(7000)}); chainSet('fixer', 3, { kitchen:'pro' }, [6, 10]); return 'The crew is on it. Takeout for a few weeks.'; }},
       {label:'Not now', go:() => { chainEnd('fixer'); return 'The old kitchen still works. Mostly.'; }}
     ]},
   { ic:'🏠', title:'The house is coming together', once:1, w:8, when:() => chainAt('fixer', 3) && S.home === 'fixer',
@@ -281,7 +281,7 @@ const STORY_EVENTS = [
   { ic:'🚚', title:"A friend's food truck", once:1, w:3, when:() => S.community >= 40 && age() >= 21 && !S.chains?.truck,
     text:'An old friend wants to start a food truck: Walla Walla sweet onion burgers. They\'re looking for a partner.',
     choices:() => [
-      {label:'Invest $1,500', go:() => { adj({money:-Math.round(cost(1500))}); chainSet('truck', 2, { inv:true }); return 'You\'re a silent partner in a food truck. Wild.'; }},
+      {label:`Invest ${fmtc(1500)}`, go:() => { adj({money:-cr(1500)}); chainSet('truck', 2, { inv:true }); return 'You\'re a silent partner in a food truck. Wild.'; }},
       {label:'Help out on weekends', go:() => { adj({community:3, health:-1}); chainSet('truck', 2, { help:true }); return 'You spent two Saturdays painting the truck and testing burgers.'; }},
       {label:'Wish them luck', go:() => { chainEnd('truck'); return 'You promise to be their first customer.'; }}
     ]},
@@ -309,7 +309,7 @@ const STORY_EVENTS = [
     text:'After the flood, the city wants to build up the levee along the river, and it\'s asking for volunteers and donations.',
     choices:() => [
       {label:'Volunteer on weekends', go:() => { adj({community:3, health:-1}); chainSet('levee', 3, { vol:true }, [20, 30]); return 'Sandbags, shovels and a lot of coffee.'; }},
-      {label:'Donate $200', go:() => { adj({money:-Math.round(cost(200)), community:2}); chainSet('levee', 3, { don:true }, [20, 30]); return 'Your name is on the donor list at City Hall.'; }},
+      {label:`Donate ${fmtc(200)}`, go:() => { adj({money:-cr(200), community:2}); chainSet('levee', 3, { don:true }, [20, 30]); return 'Your name is on the donor list at City Hall.'; }},
       {label:'Pass', go:() => { chainEnd('levee'); return 'Somebody else will handle it.'; }}
     ]},
   { ic:'🎗️', title:'The levee is dedicated', once:1, w:8, when:() => chainAt('levee', 3),
@@ -1444,8 +1444,9 @@ function jobWeekEnd(notes){
   }
   if (S.strike && S.turn >= S.strike.until) {
     S.strike = null;
-    const big = chance(0.75); if (working()) bumpPay(big ? 1.06 : 1.02);
-    notes.push(big ? `✊ The strike is over and the union won a better contract: a 6% raise.` : '✊ The strike is over. The new contract is only a little better than the old offer: 2%.');
+    const big = chance(0.75), g = working() ? bumpPay(big ? 1.06 : 1.02) : 0;   // i22-a10: the real raise, after the cap
+    notes.push(g <= 0.0005 ? `✊ The strike is over and there's a new contract, but your pay was already at the top of the scale. ${capTxt}`
+      : big ? `✊ The strike is over and the union won a better contract: a ${pctTxt(g)} raise.` : `✊ The strike is over. The new contract is only a little better than the old offer: ${pctTxt(g)}.`);
   }
 }
 // the money side of all this, inside the week's paycheck (turn.js); returns the paycheck that week
@@ -1522,7 +1523,8 @@ const JOB_EVENTS = [
   { ic:'✊', title:'Contract vote', cat:'work', w:6, when:() => working() && job().union && !S.strike && (S.contractAt ?? -1) >= 0 && S.turn >= S.contractAt,
     text:() => `The union contract at your ${job().title.toLowerCase()} job is up. Management offers 2%. The union hall votes this week: take the deal, or strike for more?`,
     choices:() => [
-      {label:'Take the deal (+2%)', go:() => { bumpPay(1.02); S.contractAt = S.turn + 156; return `The deal passed. A 2% raise: you now make ${wk(payNow(job()))}.`; }},
+      {label:raiseRoom(1.02) > 0.0005 ? `Take the deal (+${pctTxt(raiseRoom(1.02))})` : 'Take the deal (you\'re at the top of the scale)', go:() => { const g = bumpPay(1.02); S.contractAt = S.turn + 156;
+        return g > 0.0005 ? `The deal passed. A ${pctTxt(g)} raise: you now make ${wk(payNow(job()))}.` : `The deal passed. ${capTxt}`; }},
       {label:'Vote to strike (strike pay for a few weeks, then likely a better raise)', go:() => { const n = ri(2, 5); S.strike = { until:S.turn + n }; S.contractAt = S.turn + 156; adj({community:2, happy:-2});
         return `The strike vote passed. You're on the picket line for about ${n} weeks on 40% strike pay.`; }}
     ]},
