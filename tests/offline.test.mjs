@@ -60,12 +60,16 @@ await t.check('a life started online can be continued and played offline', async
   } finally { await ctx.setOffline(false); }
 });
 
+// i64-a01: let the Back-button history settle before a reload, and retry once if a page-side navigation cut it off
+const settle = () => page.waitForFunction(() => typeof HIST_T === 'undefined' || (!HIST_T && !HIST_SKIP), null, { timeout: 3000 }).catch(() => {});
+const reloadSafe = async () => { await settle(); try { await page.reload({ waitUntil: 'load' }); } catch (_) { await page.waitForTimeout(300); await page.reload({ waitUntil: 'load' }); } };
+
 await t.check('i43-b02: a normal launch downloads nothing: every file comes from the cache', async () => {
   const net = [], fromNet = [];
   const onReq = r => { if (r.serviceWorker()) net.push(new URL(r.url()).pathname); };
   const onRes = r => { if (r.url().startsWith(srv.url) && !r.fromServiceWorker()) fromNet.push(new URL(r.url()).pathname); };
   ctx.on('request', onReq); page.on('response', onRes);
-  try { await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(500); }
+  try { await reloadSafe(); await page.waitForTimeout(500); }
   finally { ctx.off('request', onReq); page.off('response', onRes); }
   assert(!net.length, `the service worker went to the network for: ${net.join(', ')}`);
   assert(!fromNet.filter(p => p !== '/sw.js').length, `not from the cache: ${fromNet.join(', ')}`);
@@ -89,14 +93,14 @@ await t.check('a new version replaces the old one: new cache, old cache gone, sa
   const NEW = '9.9.9';
   fs.writeFileSync(path.join(dir, 'sw.js'), fs.readFileSync(path.join(dir, 'sw.js'), 'utf8').replace(`const VERSION = CACHE_PREFIX + '${oldVersion}'`, `const VERSION = CACHE_PREFIX + '${NEW}'`));
   fs.writeFileSync(path.join(dir, 'js/state.js'), fs.readFileSync(path.join(dir, 'js/state.js'), 'utf8').replace(/const APP_VERSION = '[^']*'/, `const APP_VERSION = '${NEW}'`));
-  await page.reload({ waitUntil: 'load' });                      // the old cached page loads; the browser finds the new worker
+  await reloadSafe();                      // the old cached page loads; the browser finds the new worker
   let names = [];
   for (let i = 0; i < 40; i++) { names = await cacheNames(); if (names.includes('theburg-' + NEW) && !names.includes('theburg-' + oldVersion)) break; await page.waitForTimeout(250); }
   assert(names.includes('theburg-' + NEW), `new cache missing: ${names}`);
   assert(!names.includes('theburg-' + oldVersion), `old cache not removed: ${names}`);
-  await page.reload({ waitUntil: 'load' });                      // now the new page comes from the new cache
+  await reloadSafe();                      // now the new page comes from the new cache
   let shown = '';
-  for (let i = 0; i < 3 && !shown.includes(NEW); i++) { shown = await page.evaluate(() => APP_VERSION); if (!shown.includes(NEW)) await page.reload({ waitUntil: 'load' }); }
+  for (let i = 0; i < 3 && !shown.includes(NEW); i++) { shown = await page.evaluate(() => APP_VERSION); if (!shown.includes(NEW)) await reloadSafe(); }
   assert(shown === NEW, `still running ${shown}`);
   assert((await page.textContent('.title')).includes('v' + NEW), 'title screen does not show the new version');
   const after = await page.evaluate(() => JSON.stringify(slots().map(g => g && { name: g.name, turn: g.turn })));

@@ -17,7 +17,7 @@ await t.check('every start × mode × length plays to the end with sane numbers'
         if (!S.jobId && w % 3 === 0) apply(JOBS.filter(j => j.edu <= S.edu)[w % 5].id);
         if (w % 9 === 0) { const town = ['dayton','wallawalla','pasco','kennewick','richland'][w % 5]; planTrip(town, townStops(town).filter(s => !stopBlocked(s)).slice(0, 2).map(s => s.id)); }
         if (w === 30 && S.money > 6500) startBiz('shop');
-        const res = weekTick(false); w++; if (res.ev) { const ch = res.ev.choices().filter(c => !c.if || c.if()); ch[w % ch.length].go(); } end = res.ending;
+        const res = weekTick(false); w++; if (res.ev) { const ch = res.ev.choices().filter(c => !c.if || c.if()); resolveChoice(res.ev, ch[w % ch.length]); } end = res.ending;
         for (const k of ['happy','health','community']) if (!(S[k] >= 0 && S[k] <= 100)) bad.push(`${bg}/${md}/${len} ${k}=${S[k]}`);
         for (const k of ['money','equity','carValue','k401']) if (!Number.isFinite(S[k])) bad.push(`${bg}/${md}/${len} ${k}=${S[k]}`);
         if (bad.length) return bad; }
@@ -31,7 +31,7 @@ await t.check('every challenge plays to the end and is judged', async () => {
   const r = await ev(() => { const out = {};
     for (const id of Object.keys(SCENARIOS)) { localStorage.clear(); const sc = SCENARIOS[id]; newGame('C', sc.len, 0, { bg: sc.bg, scenario: id }); let end = null, w = 0;
       while (!end && w < 300) { S.focus = ['work','community','study','rest'][w % 4]; if (!job() || S.focus === 'work' && !job()) S.focus = 'rest'; if (!S.jobId) apply('farmhand');
-        const res = weekTick(false); w++; if (res.ev) res.ev.choices().filter(c => !c.if || c.if())[0].go(); end = res.ending; }
+        const res = weekTick(false); w++; if (res.ev) resolveChoice(res.ev, res.ev.choices().filter(c => !c.if || c.if())[0]); end = res.ending; }
       finish(end || 'x'); out[id] = { ended: !!end, won: !!(S.scWon || sc.win()) }; closeSheet(); }
     return out; });
   assert(Object.values(r).every(x => x.ended), JSON.stringify(r));
@@ -40,7 +40,7 @@ await t.check('every challenge plays to the end and is judged', async () => {
 
 await t.check('legacy runs three generations in a row', async () => {
   const r = await ev(() => { localStorage.clear(); newGame('Ann Lee', 'life', 0); S.noEvents = true; const gens = [];
-    for (let g = 0; g < 3; g++) { S.kids = [S.ageMonths - 20 * 12]; S.money = 200000 + g * 50000; S.date += 30 * 365 * 864e5; S.col *= 2; S.will = true; finish('end');
+    for (let g = 0; g < 3; g++) { S.kids = [S.ageMonths - 20 * 12]; S.money = 200000 + g * 50000; S.date += 30 * 365 * 864e5; S.col *= 2; S.will = true; S.ageMonths = 78 * 12; finish('end');
       document.querySelector('#legacy').click(); document.querySelector('#heirgo').click(); gens.push({ name: S.name, gen: S.gen, money: Math.round(S.money), year: new Date(S.date).getFullYear() }); S.noEvents = true; for (let i = 0; i < 5; i++) weekTick(false); }
     return gens; });
   assert(r.length === 3 && r[2].gen === 4 && r.every(g => g.money > 0) && r[2].year > r[0].year, JSON.stringify(r));
@@ -106,6 +106,7 @@ await t.check('H1: damaged saves and thin backups never blank the game', async (
   for (const [name, slotsVal] of Object.entries(cases)) {
     const before = errors.length;
     await ev(([v, old]) => { localStorage.clear(); if (v !== null) localStorage.setItem(SLOTS_KEY, JSON.stringify(v)); if (old) localStorage.setItem(SAVE_KEY, '42'); }, [slotsVal, name.includes('old single')]);
+    await page.waitForFunction(() => !HIST_T && !HIST_SKIP);   // let the Back-button history settle (i64-a01) so it can't cancel the reload
     await page.reload({ waitUntil: 'load' });
     await ev(() => closeSheet());
     if (!(await page.$('#start'))) { bad.push(`${name}: no title screen`); continue; }

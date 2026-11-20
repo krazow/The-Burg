@@ -95,7 +95,7 @@ function regionSVG(){
   // pins
   for (const k of Object.keys(TOWNLL)) {
     const [x,y] = pins[k], sel = MAPSEL === k, isWork = k === work, c = CITIES[k];
-    s += `<g class="mpin" tabindex="0" role="button" aria-label="${c.name}" data-call="MAPTAP" data-arg="${k}">
+    s += `<g class="mpin" data-k="${k}" tabindex="0" role="button" aria-label="${c.name}" data-call="MAPTAP" data-arg="${k}">
       <circle cx="${x}" cy="${y}" r="35" fill="transparent"/><circle cx="${x}" cy="${y}" r="${sel?16:14}" style="fill:var(--map-pin);stroke:${sel?'#9b2f1f':isWork?'#5f8a55':'var(--map-ink)'}" stroke-width="${sel||isWork?3:1.6}"/>
       <text x="${x}" y="${y+5}" font-size="14" text-anchor="middle">${TOWNIC[k]}</text>
       <text x="${x}" y="${y+28}" class="mtown" text-anchor="middle">${c.name}</text></g>`;
@@ -105,7 +105,7 @@ function regionSVG(){
   }
   for (const l of LANDMARKS) {
     const [x,y] = pins[l.k], sel = MAPSEL === l.k;
-    s += `<g class="mpin" tabindex="0" role="button" aria-label="${l.name}" data-call="MAPTAP" data-arg="${l.k}"><circle cx="${x}" cy="${y}" r="35" fill="transparent"/><circle cx="${x}" cy="${y}" r="${sel?14:12}" style="fill:var(--map-pin2);stroke:${sel?'#9b2f1f':'#7a6a5c'}" stroke-width="${sel?3:1.2}" stroke-dasharray="${sel?'':'3 2'}"/><text x="${x}" y="${y+4.5}" font-size="12" text-anchor="middle">${l.ic}</text></g>` + evBadge('R', l.k, x + 13, y + 11);
+    s += `<g class="mpin" data-k="${l.k}" tabindex="0" role="button" aria-label="${l.name}" data-call="MAPTAP" data-arg="${l.k}"><circle cx="${x}" cy="${y}" r="35" fill="transparent"/><circle cx="${x}" cy="${y}" r="${sel?14:12}" style="fill:var(--map-pin2);stroke:${sel?'#9b2f1f':'#7a6a5c'}" stroke-width="${sel?3:1.2}" stroke-dasharray="${sel?'':'3 2'}"/><text x="${x}" y="${y+4.5}" font-size="12" text-anchor="middle">${l.ic}</text></g>` + evBadge('R', l.k, x + 13, y + 11);
   }
   return s + '</svg>';
 }
@@ -139,7 +139,9 @@ function townPlaces(){
   P.push(...outTownPins());                         // Preston Avenue businesses (js/outabout.js)
   // where you work in town (or the highway out of town) is the "work extra hours" spot
   const at = WORK_SPOT;
-  if (j && j.city === 'waitsburg') P.find(p => p.k === at[j.id]).work = j.title;
+  // i54-a09: a job on Main Street gets its own work pin, so Main Street stays the "Show up for town" spot
+  if (j && j.city === 'waitsburg' && at[j.id] === 'mainst') P.push({ k:'mswork', lb:'Work', ic:'💼', x:150, y:142, name:`Your job on Main Street`, work:j.title, desc:'Your shift on Main Street, a short walk from home.' });
+  else if (j && j.city === 'waitsburg') P.find(p => p.k === at[j.id]).work = j.title;
   else if (j) P.push({ k:'hwy', lb:'To work', ic:'💼', x:372, y:38, name:`Highway 12 to ${CITIES[j.city].name}`, focus:'work', desc:`Your commute to work as ${j.title.toLowerCase()}, ${CITIES[j.city].miles} miles each way.` });
   P.forEach(p => { if (p.work) { p.focus = 'work'; p.desc = `You work here as ${p.work.toLowerCase()}. ` + p.desc; } });
   return P;
@@ -163,7 +165,7 @@ function townSVG(){
     <text x="8" y="14" class="mlbl" font-weight="700">N ↑</text><text x="${TW-6}" y="${TH-6}" class="mlbl" text-anchor="end" font-size="7.5">Not to scale</text>`;
   for (const p of P) {
     const sel = MAPSEL === p.k, on = p.focus && S.focus === p.focus;
-    s += `<g class="mpin${p.focus?'':' info'}" tabindex="0" role="button" aria-label="${esc(p.name)}" data-call="MAPTAP" data-arg="${p.k}">
+    s += `<g class="mpin${p.focus?'':' info'}" data-k="${p.k}" tabindex="0" role="button" aria-label="${esc(p.name)}" data-call="MAPTAP" data-arg="${p.k}">
       <circle cx="${p.x}" cy="${p.y}" r="35" fill="transparent"/><circle cx="${p.x}" cy="${p.y}" r="${sel?18:15}" style="fill:${on?'var(--map-pin-on)':'var(--map-pin)'};stroke:${sel||on?'#9b2f1f':'var(--map-ink)'}" stroke-width="${sel||on?3:1.4}"${p.focus?'':' stroke-dasharray="3 2"'}/>
       <text x="${p.x}" y="${p.y+5.5}" font-size="16" text-anchor="middle">${p.ic}</text>
       <text x="${p.x}" y="${p.y+28}" class="mtown" text-anchor="middle">${p.lb}</text></g>`;
@@ -201,8 +203,10 @@ function mapBlock(defSide){
     <div class="mapcap">${side === 'T' ? 'Tap a place to spend your week there. Dashed circles are just for looking.' : 'Tap a town to see the drive, its jobs and places to go.'}${(S.evPins || []).some(p => p.m === side && S.turn - p.turn <= 4) ? ' A gold badge marks where something happened lately.' : ''}</div>
     ${MAPSEL ? (side === 'T' ? townDetail(MAPSEL) : regionDetail(MAPSEL)) : ''}`;
 }
-window.MAPTAP = k => { MAPSEL = MAPSEL === k ? null : k; render(); };
+// i54-a06: after a re-render, keep keyboard focus on the pin that was picked, so the next Tab reaches its card
+const pinFocus = k => { const p = k && document.querySelector(`.mapsvg .mpin[data-k="${k}"]`); if (p) p.focus({ preventScroll: true }); };
+window.MAPTAP = k => { MAPSEL = MAPSEL === k ? null : k; render(); pinFocus(k); };
 window.MAPTAB = s => { MAPSIDE = s; MAPSEL = null; render(); };
 window.MAPPREF = v => { setPref('mapView', !!v); MAPSIDE = null; MAPSEL = null; render(); };
 window.TRIPTO = k => tripSheet(k);
-window.MAPFOCUS = f => handFocus(f, true);
+window.MAPFOCUS = f => { const k = MAPSEL; handFocus(f, true); pinFocus(k); };

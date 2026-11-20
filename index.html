@@ -75,6 +75,7 @@ input[type=text]:focus{outline:none;border-color:var(--wheat-d)}
 .rec caption{text-align:left;font-size:0.8125rem;color:var(--muted);padding:2px 0 6px}
 .rec th,.rec td{border-bottom:1px solid var(--line);padding:8px 4px;text-align:center}.rec th[scope=row],.rec thead th:first-child{text-align:left}
 .rec thead th{font-size:0.75rem;color:var(--muted);font-weight:700}
+.linkbtn{background:none;border:0;padding:0 2px;min-height:44px;font:inherit;font-weight:700;color:var(--accent,#9b2f1f);text-decoration:underline;cursor:pointer;text-align:left}
 .outlook td{text-align:right}.outlook th[scope=row] small{color:var(--muted);font-weight:400}.outlook tr.neg td{color:var(--down);font-weight:700}
 .wnlist{padding-left:4px;list-style:none;margin:8px 0}.wnlist li{margin:8px 0;line-height:1.4;font-size:0.9375rem}
 
@@ -177,7 +178,7 @@ main{flex:1;padding:14px 14px calc(var(--safe-b) + 200px)}
 .helpbody{max-width:520px;margin:0 auto;padding:14px 14px calc(var(--safe-b) + 30px)}
 .tutcard{background:var(--tipbg);border-color:var(--tipline)}.tutcard p{margin:6px 0 0;font-size:0.9375rem}
 .guide h2{font-size:1.25rem;color:var(--accent);margin:24px 0 8px}.guide .gt{margin-top:8px}
-.guide section{scroll-margin-top:70px}.guide p{margin:8px 0;line-height:1.45}
+.guide section{scroll-margin-top:70px;content-visibility:auto;contain-intrinsic-size:auto 900px}.guide.full section{content-visibility:visible}.guide p{margin:8px 0;line-height:1.45}
 .toc{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .toc button{text-align:left;border:1.5px solid var(--line);background:var(--card);border-radius:10px;padding:9px 10px;font-size:0.875rem;min-height:44px}
 .guide table{width:100%;border-collapse:collapse;font-size:0.8438rem;margin:8px 0;background:var(--paper);border-radius:10px;overflow:hidden}
@@ -253,7 +254,8 @@ main{flex:1;padding:14px 14px calc(var(--safe-b) + 200px)}
 main{touch-action:pan-y pinch-zoom}
 .grab{display:flex;justify-content:center;align-items:center;height:30px;margin:-16px -18px 2px;touch-action:none;cursor:grab}
 .grab i{display:block;width:44px;height:5px;border-radius:3px;background:var(--dash)}
-.sheet{transition:transform .12s}
+.sheet{transition:transform .12s;overscroll-behavior:contain}
+html.sheetlock{overflow:hidden}
 main.slide-l{animation:slidel .18s ease-out}main.slide-r{animation:slider .18s ease-out}
 @keyframes slidel{from{transform:translateX(24px);opacity:.4}to{transform:none;opacity:1}}
 @keyframes slider{from{transform:translateX(-24px);opacity:.4}to{transform:none;opacity:1}}

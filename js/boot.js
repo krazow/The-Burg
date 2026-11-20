@@ -12,7 +12,7 @@ window.addEventListener('appinstalled', () => { INSTALL_EVT = null; setPref('ins
 // name a game function in data-call (and its argument in data-arg); pins drawn as SVG also answer Enter and Space.
 const CALLS = { MAPTAP: k => MAPTAP(k), MAPTAB: k => MAPTAB(k), MAPPREF: v => MAPPREF(v === '1'), TRIPTO: k => TRIPTO(k), MAPFOCUS: f => MAPFOCUS(f),
   BIZTAP: id => BIZTAP(id), outSheet: () => outSheet(),
-  helpgo: id => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: calmMotion() ? 'auto' : 'smooth' }); },
+  helpgo: id => helpJump(id),
   helptop: () => $('#helpview').scrollTo({ top: 0, behavior: calmMotion() ? 'auto' : 'smooth' }) };
 document.addEventListener('click', e => {
   const el = e.target && e.target.closest && e.target.closest('[data-call]');
@@ -24,6 +24,15 @@ document.addEventListener('keydown', e => {
   const el = e.target && e.target.closest && e.target.closest('[data-call]');
   if (!el || /^(BUTTON|A|INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;     // real buttons already click on Enter and Space
   e.preventDefault(); el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+});
+// i60-a08: leaving the app (switching apps, locking the phone, closing the tab) saves this week's changes first,
+// so a focus change, an application or a planned trip survives the phone closing the app
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') save(); });
+window.addEventListener('pagehide', () => save());
+// i54-a14: another window saved this life: pick up its week here instead of writing over it later
+window.addEventListener('storage', e => {
+  if (!S || S.over || S.practice || e.key !== slotKey(S.slot ?? 0)) return;
+  const g = newerOnDisk(); if (g) adoptNewer(g);
 });
 pruneWeekly();
 renderTitle();
