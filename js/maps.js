@@ -179,7 +179,7 @@ function townDetail(k){
   if (p.biz) return outTownDetail(p);
   const f = p.focus && FOCUS[p.focus];
   let btn = '';
-  if (f && !focusOpen(p.focus)) btn = `<button class="sm alt" onclick="teaserSheet('${UNLOCK_FOCUS[p.focus]}')">✨ Coming soon</button>`;   // i31: not open yet
+  if (f && !focusOpen(p.focus)) btn = `<button class="sm alt" data-call="teaserSheet" data-arg="${UNLOCK_FOCUS[p.focus]}">✨ Coming soon</button>`;   // i31: not open yet
   else if (f) {
     const dis = (f.needsJob && (!job() || S.retired)) || (f.study && !canStudy());
     const extra = f.study && S.edu < 3 && !S.certStudy ? ` · ${wk(tuitionNow())}` : f.cost ? ` · ${wk(cost(f.cost))}` : '';
