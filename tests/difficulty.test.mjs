@@ -124,7 +124,7 @@ await t.check('start screen: three difficulty cards (Normal picked) replace the 
 await t.check('every event has a tier after boot (untiered ones count as Normal), and the tiers came from the plan', async () => {
   const r = await ev(() => ({ all: [...EVENTS, ...DUE_EVENTS, ...PLAN_DUE].every(e => DIFF_ORDER[e.tier] != null),
     layoffs: EVENTS.find(e => e.title === 'Layoffs').tier, cel: EVENTS.find(e => e.title === 'Celebration Days').tier,
-    plan: PLAN_DUE[0].tier, listed: Object.keys(EVENT_TIER).every(t => EVENTS.some(e => e.title === t) || DUE_EVENTS.some(e => e.title === t)),
+    plan: PLAN_DUE[0].tier, listed: Object.keys(EVENT_TIER).every(t => EVENTS.some(e => e.title === t) || DUE_EVENTS.some(e => e.title === t) || PLAN_DUE.some(e => e.title === t)),   // the Little League steps are due events
     count: { easy: EVENTS.filter(e => e.tier === 'easy').length, hard: EVENTS.filter(e => e.tier === 'hard').length } }));
   assert(r.all && r.layoffs === 'hard' && r.cel === 'easy' && r.plan === 'normal' && r.listed, JSON.stringify(r));
   assert(r.count.easy > 50 && r.count.hard > 20, JSON.stringify(r.count));
