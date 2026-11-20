@@ -128,7 +128,8 @@ function renderTitle(){
   wireUpdate();
   // the start as picked right now (name, length, background, mode, aim), run now or after the practice life
   const startNow = () => { const name = ($('#nm').value.trim() || 'Dusty').slice(0,20), l = len, o = { bg, diff: dif, aim, rules, unlock: um };
-    return () => { const free = freeSlot(); if (free < 0) return askReplace(name, l, o); newGame(name, l, free, o); }; };
+    const go = () => { const free = freeSlot(); if (free < 0) return askReplace(name, l, o); newGame(name, l, free, o); };
+    go.diff = dif; return go; };   // to-do 2 D6: a practice life first plays at the difficulty picked
   $('#start').onclick = () => {
     const go = startNow();
     if (isBrandNew()) return newHereSheet(go);      // i23-a01: the very first start offers the practice life
@@ -347,38 +348,40 @@ const badgeLine = () => { const got = store.get(BADGE_KEY) || {}, n = Object.key
 const SEEN_KEY = KEY_PREFIX + 'seenVersion';
 const WHATS_NEW = {
   '0.2.0': [
-    ['🚗', 'Trips around the region', 'plan a trip to Dayton, Walla Walla or the Tri-Cities with up to 3 stops.'],
-    ['🏆', 'Life Score so far', 'see your score any time on Home, with a report card every 13 weeks.'],
-    ['🚙', 'Carpools, remote days and side-hustle gigs', 'make long commutes easier and earn on the side with the seasons.'],
-    ['🎬', 'Starting backgrounds', 'begin as a farm kid, a grad coming home, a Seattle transplant or a young parent.'],
+    ['🚗', 'Trips around the region', 'plan a trip to Dayton, Walla Walla or the Tri-Cities with up to 3 stops.', 'trips'],
+    ['🏆', 'Life Score so far', 'see your score any time on Home, with a report card every 13 weeks.', 'score.reportCards'],
+    ['🚙', 'Carpools, remote days and side-hustle gigs', 'make long commutes easier and earn on the side with the seasons.', 'jobs.commute'],
+    ['🎬', 'Starting backgrounds', 'begin as a farm kid, a grad coming home, a Seattle transplant or a young parent.', 'backgrounds'],
     ['🌤️', 'Relaxed and Hard modes', 'play at your own pace, or make it tougher.'],
-    ['🌸', 'Town goals', 'one goal a season that the whole town works on.'],
-    ['🎯', 'Badges and life goals', 'pin up to 3 goals for extra Life Score points.'],
-    ['📖', 'Stories', 'some events now unfold over several weeks.'],
-    ['🏁', 'Challenges', 'set-up stories with a goal, like saving the family farm.'],
-    ['🧰', 'Skills', 'get handier, cook better and know more people as you go.'],
-    ['🏪', 'Your own business', 'lease wheat ground, run a food truck or open a woodworking shop.'],
-    ['📅', 'Weekly challenge and score card', 'everyone gets the same start each week; share your score.'],
-    ['🌳', 'Legacy', 'when a Lifetime game ends, carry on as your grandkid.'],
-    ['🏘️', 'Out and about', 'visit 20 Waitsburg businesses from a new Main Street map, with new local jobs.'],
+    ['🌸', 'Town goals', 'one goal a season that the whole town works on.', 'town.seasonGoals'],
+    ['🎯', 'Badges and life goals', 'pin up to 3 goals for extra Life Score points.', 'goals.badges'],
+    ['📖', 'Stories', 'some events now unfold over several weeks.', 'events.story'],
+    ['🏁', 'Challenges', 'set-up stories with a goal, like saving the family farm.', 'challenges.scenarios'],
+    ['🧰', 'Skills', 'get handier, cook better and know more people as you go.', 'skills'],
+    ['🏪', 'Your own business', 'lease wheat ground, run a food truck or open a woodworking shop.', 'biz'],
+    ['📅', 'Weekly challenge and score card', 'everyone gets the same start each week; share your score.', 'challenges.weekly'],
+    ['🌳', 'Legacy', 'when a Lifetime game ends, carry on as your grandkid.', 'legacy.heirs'],
+    ['🏘️', 'Out and about', 'visit 20 Waitsburg businesses from a new Main Street map, with new local jobs.', 'out'],
     ['🛣️', 'Road and work events', '60 new events on the road, in other towns and at work.'],
-    ['📒', 'Your records and Journal filters', 'see your best scores by length and mode, and filter the Journal.']
+    ['📒', 'Your records and Journal filters', 'see your best scores by length and mode, and filter the Journal.', 'score.history']
   ],
   '0.2.1': [
     ['🛡️', 'Safer saves', 'a damaged save no longer blanks the game, and ending or replacing a life asks first.'],
     ['⚙️', 'Settings', 'sounds, vibration, bigger text and a night theme that follows your phone. Find them in the Menu.'],
     ['👆', 'Easier on a phone', 'swipe to change tabs, pull a pop-up down to close it, and choices sit near your thumb.'],
-    ['🧓', 'Retirement and planning', 'pensions, Social Security that follows your work, a will, and a 13-week money outlook.'],
-    ['🏡', 'Homes, farm and investing', 'insurance, property tax, moving home prices, wheat prices, cattle and index funds.'],
+    ['🧓', 'Retirement and planning', 'pensions, Social Security that follows your work, a will, and a 13-week money outlook.', 'retire.income'],
+    ['🏡', 'Homes, farm and investing', 'insurance, property tax, moving home prices, wheat prices, cattle and index funds.', 'home.market'],
     ['💵', 'Washington prices', 'pay, rent, taxes, tuition and childcare follow 2027 numbers, with state help for low earners.'],
-    ['🪜', 'Jobs with a ladder', 'promotions, certificates, apprenticeships, interviews, unions and 13 new jobs.'],
-    ['🌦️', 'Weather and hard years', 'each year has its own weather, from smoke summers to ice storms. Get ready and help your neighbors.'],
-    ['🩺', 'Health and aging', 'jobs wear on your body, with sick hours, family leave, dental and care for your dad.'],
+    ['🪜', 'Jobs with a ladder', 'promotions, certificates, apprenticeships, interviews, unions and 13 new jobs.', 'jobs.ladder'],
+    ['🌦️', 'Weather and hard years', 'each year has its own weather, from smoke summers to ice storms. Get ready and help your neighbors.', 'weather'],
+    ['🩺', 'Health and aging', 'jobs wear on your body, with sick hours, family leave, dental and care for your dad.', 'health.agingDrift'],
     ['🏘️', '30 Waitsburg events', 'the parade, the barn dance, snow days, Little League and more around town.'],
-    ['🏆', 'A fairer Life Score', 'it averages your report cards, weighs your weakest part, counts debt, and you can pick a life aim.'],
+    ['🏆', 'A fairer Life Score', 'it averages your report cards, weighs your weakest part, counts debt, and you can pick a life aim.', 'score.reportCards'],
     ['🧭', 'Smoother weeks', 'Auto until you choose, a focus plan, undo, tap-to-explain words and your life story at the end.']
   ]
 };
+// to-do 2 D6: a bullet tagged with a feature (its 4th item) shows only when that feature is on
+const whatsNewOn = v => (WHATS_NEW[v] || []).filter(([, , , f]) => !f || [].concat(f).every(k => on(k)));
 const baseVersion = () => APP_VERSION.replace(/-.*/, '');
 // shows the card once per version to players who played before; brand-new players and the tutorial skip it
 const verNum = v => String(v || '0').replace(/-.*/, '').split('.').reduce((a, x) => a * 1000 + (parseInt(x, 10) || 0), 0);
@@ -393,7 +396,7 @@ function whatsNew(){
   if (!played || !v || !$('#modal').classList.contains('hidden')) return false;
   sheet(`<h2>✨ What's new in ${v}</h2>
     <p class="muted">Welcome back! Here's what's new in the Burg:</p>
-    <ul class="wnlist">${WHATS_NEW[v].map(([ic, t, d]) => `<li><span aria-hidden="true">${ic}</span> <b>${t}:</b> ${d}</li>`).join('')}</ul>
+    <ul class="wnlist">${whatsNewOn(v).map(([ic, t, d]) => `<li><span aria-hidden="true">${ic}</span> <b>${t}:</b> ${d}</li>`).join('')}</ul>
     <p class="muted">The Help guide (❓) explains each one.</p>
     <button class="btn primary" id="ok">Got it</button>`);
   $('#ok').onclick = closeSheet;
@@ -852,7 +855,7 @@ function newGame(name, len, slot = 0, opts = {}){
   // i31-b20: open as you go (the default) or everything open (a start setting, remembered on this device)
   S.unlockMode = opts.practice ? 'all' : UNLOCK_MODES[opts.unlock] ? opts.unlock : prefs().unlockMode === 'all' ? 'all' : 'go';
   if (S.unlockMode === 'all') S.opened = Object.fromEntries(UNLOCKS.map(u => [u.id, { w:0, how:'all' }]));
-  else for (const u of UNLOCKS) if (u.when(S)) openSystem(u.id, { quiet:true, how:'start' });   // a start that already has it (a job, a diploma)
+  else for (const u of unlocksOn()) if (u.when(S)) openSystem(u.id, { quiet:true, how:'start' });   // a start that already has it (a job, a diploma)
   log(S.bg === 'fresh' ? `${name} turns 18 and rents a room above Main Street in Waitsburg. Time to find a job.`
     : S.bg === 'farm' ? `${name} turns 18 at the folks' place in the wheat hills. Welcome home. The harvest crew starts at six.`   // i37-b03
     : `${name} starts a new life in Waitsburg: ${BACKGROUNDS[S.bg].name.toLowerCase()}. ${BACKGROUNDS[S.bg].desc}`);
@@ -1097,27 +1100,32 @@ const statBtn = (k, label, v, cap = 100) => `<button class="stat statbtn" data-s
   <label><span>${label} <span class="info">ⓘ</span></span><span>${Math.round(v)}${cap < 100 ? `<small class="muted"> / ${Math.round(cap)}</small>` : ''} · ${statWord(v)}</span></label>
   <div class="bar notched"><i style="width:${v}%;background:${statColor(v)}"></i></div></button>`;
 // i2-a16: a first-month checklist for new players; finished steps are remembered on this device (prefs().cl), no rewards
+// to-do 2 D6: a row for a feature (feat) shows only when it's on; a row with off: shows only when that feature is off
+// (Easy has no 401(k), so it plans its focus instead), so every difficulty can finish the list
 const CHECKLIST = [
-  { id:'job', ic:'💼', t:'Get a job', done:() => !!S.jobId || S.retired, go:'jobs', b:'Jobs' },
-  { id:'week', ic:'📅', t:'Pick a focus, then tap End Week', done:() => S.turn >= 1, go:'focus', b:'Focus' },
-  { id:'strip', ic:'📊', t:'Tap the strip above End Week to see where your money went', done:() => !!(prefs().cl || {}).strip, go:'strip', b:'Show me' },
-  { id:'k401', ic:'🏦', t:'Save 5% in your 401(k) for the free 3% match', done:() => S.k401rate > 0, go:'life', b:'Life' },
-  { id:'goal', ic:'🎯', t:'Pin a life goal for bonus points', done:() => (S.goals || []).length > 0, go:'life', b:'Life' },
-  { id:'out', ic:'🛍️', t:'Visit a place in town, or plan a trip', done:() => !!S.trip || !!(S.out && S.out.visits) || Object.keys(S.towns || {}).length > 0, go:'out', b:'Go out' }
+  { id:'job', ic:'💼', t:'Get a job', s:'a job', done:() => !!S.jobId || S.retired, go:'jobs', b:'Jobs' },
+  { id:'week', ic:'📅', t:'Pick a focus, then tap End Week', s:'your first week', done:() => S.turn >= 1, go:'focus', b:'Focus' },
+  { id:'strip', ic:'📊', t:'Tap the strip above End Week to see where your money went', s:'the week strip', done:() => !!(prefs().cl || {}).strip, go:'strip', b:'Show me' },
+  { id:'k401', feat:'money.k401', ic:'🏦', t:'Save 5% in your 401(k) for the free 3% match', s:'the 401(k)', done:() => S.k401rate > 0, go:'life', b:'Life' },
+  { id:'plan', feat:'ui.plan', off:'money.k401', ic:'🗓', t:'Set up a focus plan, so your weeks take turns', s:'a focus plan', done:() => (S.plan || []).length > 0, go:'plan', b:'Plan' },
+  { id:'goal', feat:'goals.badges', ic:'🎯', t:'Pin a life goal for bonus points', s:'a life goal', done:() => (S.goals || []).length > 0, go:'life', b:'Life' },
+  { id:'out', feat:'out', ic:'🛍️', t:'Visit a place in town, or plan a trip', s:'a visit around town', done:() => !!S.trip || !!(S.out && S.out.visits) || Object.keys(S.towns || {}).length > 0, go:'out', b:'Go out' }
 ];
+const checklistOn = () => CHECKLIST.filter(c => (!c.feat || on(c.feat)) && (!c.off || !on(c.off)));
 function checklist(){
   if (!on('ui.checklist') || S.practice || S.turn >= 26 || prefs().clHide) return null;
   const cl = { ...(prefs().cl || {}) }; let changed = false;
-  for (const c of CHECKLIST) if (!cl[c.id] && c.done()) { cl[c.id] = 1; changed = true; }
+  const rows = checklistOn();
+  for (const c of rows) if (!cl[c.id] && c.done()) { cl[c.id] = 1; changed = true; }
   if (changed) setPref('cl', cl);
-  const n = CHECKLIST.filter(c => cl[c.id]).length;
-  return n >= CHECKLIST.length ? null : { cl, n };
+  const n = rows.filter(c => cl[c.id]).length;
+  return n >= rows.length ? null : { cl, n, rows };
 }
 function checklistCard(){
   const c = checklist(); if (!c) return '';
-  return `<div class="card checklist" id="checklist"><h3>🧭 Your first month <span class="tag">${c.n}/${CHECKLIST.length}</span></h3>
-    ${c.n ? `<p class="muted" style="margin:2px 0 0;font-size:0.8125rem">✅ ${CHECKLIST.filter(x => c.cl[x.id]).map(x => x.t.replace(/,.*| for .*| to see.*/, '')).join(' · ')}</p>` : ''}
-    <ul class="cl">${CHECKLIST.filter(x => !c.cl[x.id]).slice(0, 3).map(x => `<li><span><span aria-hidden="true">⬜</span><span class="sr-only">To do:</span> ${x.ic} ${x.t}</span><button class="sm alt" data-cl="${x.go}" aria-label="${x.b}: ${x.t}">${x.b}</button></li>`).join('')}</ul>
+  return `<div class="card checklist" id="checklist"><h3>🧭 Your first month <span class="tag">${c.n}/${c.rows.length}</span></h3>
+    ${c.n ? `<p class="muted" style="margin:2px 0 0;font-size:0.8125rem">✅ ${c.rows.filter(x => c.cl[x.id]).map(x => x.t.replace(/,.*| for .*| to see.*/, '')).join(' · ')}</p>` : ''}
+    <ul class="cl">${c.rows.filter(x => !c.cl[x.id]).slice(0, 3).map(x => `<li><span><span aria-hidden="true">⬜</span><span class="sr-only">To do:</span> ${x.ic} ${x.t}</span><button class="sm alt" data-cl="${x.go}" aria-label="${x.b}: ${x.t}">${x.b}</button></li>`).join('')}</ul>
     <button class="sm alt" id="clhide">Hide the checklist</button></div>`;
 }
 // where a checklist step or a next-step hint takes you (it never acts for you)
@@ -1125,6 +1133,7 @@ function goTo(where){
   if (where === 'strip') return S.run ? showRunDetails() : toast('End a week first, then tap the strip above End Week.');
   if (where === 'out') return outSheet();
   if (where === 'trip') return tripPicker();
+  if (where === 'plan') { openSystem('plan', { quiet:true, how:'used' }); return planSheet(); }
   if (where === 'focus') { tab = 'home'; render(); const f = document.querySelector('.fbtn:not([disabled]), .mapsvg'); if (f) { f.scrollIntoView({ block: 'center' }); if (f.focus) f.focus({ preventScroll: true }); } return; }
   tab = where; render(); window.scrollTo(0,0);
 }
@@ -1696,7 +1705,7 @@ function renderLife(){
   const insCard = `<div class="card"><h3>🛡️ Insurance & phone</h3>
     ${insParts().map(([l, v]) => `<div class="kv"><span>${l}</span><span>${fmtc(v)}/mo</span></div>`).join('')}
     <div class="kv"><span><b>Total</b></span><span><b>${wk(cost(insMonthly()))}</b></span></div>
-    ${on('money.insuranceChoices') ? '<button class="sm alt" id="inssheet">Change coverage</button>' : '<p class="muted" style="margin:4px 0 0">The standard plan through Wheatland Mutual.</p>'}
+    ${on('money.insuranceChoices') ? '<button class="sm alt" id="inssheet">Change coverage</button>' : `<p class="muted" style="margin:4px 0 0">The standard plan through Wheatland Mutual.${on('car.upkeep') ? '' : " Your vehicle's yearly tabs are in it too."}</p>`}
   </div>`;
   const rideCard = `<div class="card"><h3>🛻 Ride</h3>
     ${Object.entries(CARS).map(([k,c]) => {

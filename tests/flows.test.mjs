@@ -1895,7 +1895,7 @@ await t.check('i54-a09: a Main Street job keeps the Town pin on the map', async 
 });
 
 await t.check('i54-a10: a look-only tutorial step cannot be tapped', async () => {
-  await page.evaluate(() => { localStorage.clear(); S = null; startTutorial(); startJob('farmhand'); tab = 'home'; render(); TUT.i = TSTEPS.findIndex(s => s.sel === '#planbtn') - 1; tutNext(); });
+  await page.evaluate(() => { localStorage.clear(); S = null; startTutorial(); startJob('farmhand'); tab = 'home'; render(); TUT.i = tsteps().findIndex(s => s.sel === '#planbtn') - 1; tutNext(); });
   await page.waitForSelector('#coach:not(.hidden) #cnext');
   const b = await page.evaluate(() => { const r = document.querySelector('#planbtn').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
   await page.mouse.click(b[0], b[1]);

@@ -303,7 +303,7 @@ await t.check('Help on the title screen opens the guide, and its contents jump t
 });
 
 await t.check('the gameplay tutorial walks through every step by tapping, then leaves saves and settings alone', async () => {
-  await page.evaluate(() => { localStorage.clear(); setPref('mapView', false); newGame('Mine', 'two', 0); S.turn = 7; tab = 'home'; render(); save(); });   // i31: drawing opens what's due by week 7, then it's saved
+  await page.evaluate(() => { localStorage.clear(); setPref('mapView', false); newGame('Mine', 'two', 0, { diff: 'hard' }); S.turn = 7; tab = 'home'; render(); save(); });   // i31: drawing opens what's due by week 7, then it's saved
   const before = await page.evaluate(() => JSON.stringify(slots().map(g => g && { ...g, savedAt: 0, saveN: 0 })));
   await page.click('#helpbtn');
   await page.click('#tutstart');
@@ -312,7 +312,7 @@ await t.check('the gameplay tutorial walks through every step by tapping, then l
     await page.waitForTimeout(450);
     const st = await page.evaluate(() => {
       if (!TUT) return null;
-      const s = TSTEPS[TUT.i], el = s.sel && document.querySelector(s.sel), r = el && el.getBoundingClientRect();
+      const s = tsteps()[TUT.i], el = s.sel && document.querySelector(s.sel), r = el && el.getBoundingClientRect();
       const hit = r && document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
       return { i: TUT.i, sel: s.sel || null, tap: !!s.tap, skipped: [...TUT.skipped], shown: !document.querySelector('#coach').classList.contains('hidden'), reach: !!(hit && el.contains(hit)) };
     });
@@ -325,7 +325,7 @@ await t.check('the gameplay tutorial walks through every step by tapping, then l
     if (st.tap) { const box = await (await page.$(st.sel)).boundingBox(); await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2); }
     else await page.click('#cnext');
   }
-  const total = await page.evaluate(() => TSTEPS.length);
+  const total = await page.evaluate(() => LAST_TUT_N);
   assert(steps === total, `tutorial reached step ${steps} of ${total}`);
   assert(!skipped.length, `tutorial steps skipped because their target never appeared: ${skipped.join(', ')}`);
   assert(!covered.length, `tap targets hidden under the coach: ${covered.join(', ')}`);
