@@ -331,10 +331,12 @@ const STORY_EVENTS = [
 /* ============================================================
    🏁 CHALLENGE SCENARIOS (#74): set-up stories with a goal
    ============================================================ */
+const DEBTFREE_SAVE = 20000;   // the savings the Debt-free challenge asks for, in 2027 dollars
 const SCENARIOS = {
   debtfree: { ic:'💳', name:'Debt-free in 2 years', len:'two', bg:'fresh', endOnly:true,
-    desc:'You start $8,000 in debt. Finish two years with no debt and no loans.',
-    set:s => { s.money = -8000; }, win:() => S.money >= 0 && !(S.loanLeft > 0) && !(S.sloanLeft > 0) },
+    desc:'You start $8,000 in debt. Finish two years with no debt, no loans and $20,000 saved.',
+    // i35-b04: the sim showed resting every week on the farm hand job won it, so it now asks for savings too
+    set:s => { s.money = -8000; }, win:() => S.money >= cost(DEBTFREE_SAVE) && !(S.loanLeft > 0) && !(S.sloanLeft > 0) },
   farm: { ic:'🏡', name:'Save the family farm', len:'five', bg:'farm',
     desc:'The family farmhouse is up for sale. Buy it within five years.', win:() => S.home === 'farm' },
   single: { ic:'👶', name:'Single parent', len:'two', bg:'parent', endOnly:true,

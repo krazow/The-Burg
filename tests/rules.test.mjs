@@ -560,10 +560,10 @@ await t.check('a story chain moves step by step and ends', async () => {
 
 await t.check('challenges set up the life and are judged at the end (or as soon as they are met)', async () => {
   const r = await ev(() => { localStorage.removeItem(CHALLENGE_KEY);
-    newGame('C', 'two', 0, { bg: 'fresh', scenario: 'debtfree' }); S.noEvents = true; const debt = S.money; S.money = 500; const mid = SCENARIOS.debtfree.win();
+    newGame('C', 'two', 0, { bg: 'fresh', scenario: 'debtfree' }); S.noEvents = true; const debt = S.money; S.money = 500; const low = SCENARIOS.debtfree.win(); S.money = cost(DEBTFREE_SAVE); const mid = SCENARIOS.debtfree.win();
     newGame('L', 'five', 0, { bg: 'fresh', scenario: 'lab' }); S.noEvents = true; S.jobId = 'scientist'; const res = week();
-    return { debt, mid, note: res.notes.join(' '), won: S.scWon, stored: store.get(CHALLENGE_KEY) }; });
-  assert(r.debt === -8000 && r.mid, JSON.stringify(r));
+    return { debt, low, mid, note: res.notes.join(' '), won: S.scWon, stored: store.get(CHALLENGE_KEY) }; });
+  assert(r.debt === -8000 && r.mid && !r.low, JSON.stringify(r));   // i35-b04: no debt isn't enough, it takes savings too
   assert(/Challenge complete/.test(r.note) && r.won && r.stored.lab, JSON.stringify(r));
 });
 
