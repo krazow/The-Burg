@@ -60,6 +60,7 @@ function playWeeks(n, stop = null){
   while (!step());
   finishRun(res, why, n);
 }
+const BACKUP_NUDGE = '📤 Your ending is 4 weeks away. Back up now so the record is safe?';
 // i22-a02: an ending that waited (behind the notes, or when the app closed) plays out the same way on Continue
 function endLife(e){ return e.debt && canBankrupt() ? bankruptcySheet(e.r) : finish(e.r, e); }
 function finishRun(res, why, n){
@@ -91,8 +92,10 @@ function finishRun(res, why, n){
     sheet(`<h2>${S.run.weeks > 1 ? S.run.weeks + ' weeks later' : 'This week'}</h2>
       ${notes.map(t => `<p><b>${t}</b></p>`).join('')}
       <p>${runChips()}</p>
+      ${notes.includes(BACKUP_NUDGE) ? '<button class="btn ghost" id="nudgebk">📤 Back up now</button>' : ''}
       <button class="btn primary" id="ok">Continue</button>`);
     $('#ok').onclick = () => { closeSheet(); after(); };
+    if ($('#nudgebk')) $('#nudgebk').onclick = () => backupSheet(after);   // closing the backup sheet carries on with the week
   } else after();
 }
 // what the last End Week / skip did, counting events resolved since
@@ -449,6 +452,8 @@ function weekTick(auto){
   S.date += 7 * 864e5; S.ageMonths += m; S.turn++; S.jobMonths += m; S.applied = false;
   kidBirthdays(m);                                 // i46-a04: a kid turning 18 moves out, in the Journal
   if (age() > oldAge && age() % 10 === 0) notes.push(`🎂 Happy ${age()}th birthday!`);
+  // i63-b08: four weeks before a 2-year or 5-year life ends, one line suggests a backup (once per life)
+  if (!S.practice && !S.backupNudged && (S.len === 'two' || S.len === 'five') && S.turn >= L.turns - 4 && S.turn < L.turns) { S.backupNudged = true; notes.push(BACKUP_NUDGE); }
   if (S.turn % CARD_EVERY === 0 && !S.practice) {  // a quarterly report card in the Journal (doesn't stop skips); i20-b14: it counts toward the final score
     const c = addReportCard(), sc = lifeScore().score, d = S.scoreQ == null ? null : sc - S.scoreQ;
     log(`📋 Report card: ${c} this quarter. Life Score so far ${sc}${d == null ? '' : ` (${d >= 0 ? '+' : ''}${d} since the last one)`}.`);
