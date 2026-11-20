@@ -247,6 +247,7 @@ function billLines(off = 0){
   const a0 = yrsOf(S.ageMonths + off * m);
   { const h = healthMonthly(a0, off); if (h) out.push(['Health care', -c(h)*m]); }   // i75-b04: an employee share before 50
   if (S.ltc && S.ltc.ins && !S.care) out.push(['Long-term care insurance', -c(LTC_PREMIUM)*m]);
+  { const cp = certPay(off); if (cp) out.push(['Certificate course', -cp, `Your ${CERTS[S.certStudy.id].name} course, paid as you go: ${fmt(S.certStudy.per)} a week for ${CERTS[S.certStudy.id].weeks} weeks. ${fmt(certOwed())} left before this week.`]); }   // i72-b04
   if (S.care && careMonthly() > 0) out.push([CARE[S.care].bill, -c(careMonthly())*m]);
   return out;
 }
@@ -320,6 +321,7 @@ function weekTick(auto){
   LIFE_UNDO = [];                                  // i2-a25: a played week can't be undone
   jobWeekStart(notes);                             // i3: an interview's answer, notice, seasons and recalls
   const f = FOCUS[S.focus] || FOCUS.rest, j = S.retired ? null : job();
+  if (S.focus === 'work' && j) S.seenOT = true;   // i52-a03: the overtime note has been seen for a whole week
   if (syncCarpool()) log('Your carpool ended with the job change: you drive alone now.');
 
   // ---- money (constants are monthly; m converts to one week) ----
@@ -351,6 +353,7 @@ function weekTick(auto){
   weatherLines(lines, notes);                      // i75: smoke sick days, the roof on the waiting list, the neighbor's walk
   const trip = tripWeek(lines);                    // this week's trip around the region, if one is planned
   lines.push(...billLines());                      // i3-a28: the regular bills, shared with the money outlook
+  if (certOwed()) { S.certStudy.owe -= certPay(); if (S.certStudy.owe < 0.005) S.certStudy.owe = 0; }   // i72-b04: this week's course payment
   eventMoneyWeek(lines);                           // i58-b02: health-plan savings and light duty, week by week
   { const y = new Date(S.date).getFullYear(); if (curMonth() === 0 && S.tabsYear !== y) { lines.push(['Vehicle tabs (DMV)', -vehicleTabs()]); S.tabsYear = y; } }
   if (S.loanLeft > 0) {
@@ -366,7 +369,7 @@ function weekTick(auto){
   if (f.cost) lines.push([f.name, -cost(f.cost)*m]);
   healthWeek(lines, notes, j, gross);              // i74: sick hours, physical therapy, Dad's care
   planWeek(lines, notes);                          // i3-a30/a31/a33/a34: winters south, late-life care, probate and spare-room guests
-  // i3-a03: a certificate course takes the week's classes first (its fee was paid up front)
+  // i3-a03: a certificate course takes the week's classes first (its fee was paid up front, or week by week: i72-b04)
   if (f.study && !certWeek(trip && trip.away ? TRIP_TIME : 1, notes) && S.edu < 3) {
     const tu = tuitionNow() * m, gr = grantShare();
     const why = `Classes at ${SCHOOL[S.edu]}, charged in weeks you Take classes${gr > 0.005 ? `, with ${Math.round(gr * 100)}% paid by the Washington College Grant` : ''}.`;
@@ -453,6 +456,7 @@ function weekTick(auto){
     S.evAt = S.turn; S.pendingEv = ev.title;      // i22-a01: saved with the week, so closing the app can't skip it; the cooldown starts on a choice
     if (ev.big) wxHit();                           // i75-a23: a big weather hit counts toward the year's cap
     { const pl = eventPlace(ev); S.evPins = [{ t: ev.title, ic: ev.ic, m: pl[0], k: pl[1], turn: S.turn + 1, r: '' }, ...(S.evPins || [])].slice(0, 12); }
+    S.evSeen = S.turn < 52 ? { ...(S.evSeen || {}), [ev.title]: 1 } : {};   // i52-a10: only the first year needs it
     S.evLabel = dateLabel();
     S.yearEvents = (S.yearEvents || 0) + 1;
     // while skipping ahead, one-choice events resolve on their own; with the routine assist (i19-b15) routine events
