@@ -1784,7 +1784,7 @@ await t.check('i5-a04: Celebration Days comes every year in May', async () => {
     S.date = new Date(2027, 3, 26).getTime(); const april = fixedEvent(3);
     // over a 2-year life with events on, Celebration Days comes both Mays
     fresh('two'); S.noEvents = false; let celeb = 0;
-    for (let i = 0; i < 104; i++) { const res = weekTick(false); if (res.ev && res.ev.title === 'Celebration Days') celeb++; }
+    for (let i = 0; i < 104; i++) { const res = weekTick(false); if (res.ev) { if (res.ev.title === 'Celebration Days') celeb++; resolveChoice(res.ev, res.ev.choices().find(c => !c.if || c.if())); } }   // i22-a01: the cooldown starts when you pick
     return { early, last, done, april, celeb, fixed: EVENTS.filter(e => e.fixed).map(e => e.title) }; });
   assert(r.early > 120 && r.early < 280 && r.last === 'Celebration Days' && r.done === null, JSON.stringify(r));
   assert(r.fixed.join() === 'Celebration Days' && r.april === null && r.celeb === 2, JSON.stringify(r));
