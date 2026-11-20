@@ -113,7 +113,7 @@ function regionSVG(){
 function regionDetail(k){
   const lm = LANDMARKS.find(l => l.k === k);
   if (lm) return `<div class="card mapdet"><h3>${lm.ic} ${lm.name}</h3><p class="muted" style="margin:0">${lm.desc}</p>${recentList('R', k)}</div>`;
-  const c = CITIES[k], jobs = JOBS.filter(x => x.city === k);
+  const c = CITIES[k], jobs = JOBS.filter(x => x.city === k && jobOn(x));
   const drive = c.miles ? `${c.miles} mi each way · about ${Math.round(c.miles*1.1+3)} min · ~${wk(commuteCost(c.miles))} gas in your ${CARS[S.car].name.toLowerCase()}` : 'Home. No commute: you can walk to work.';
   return `<div class="card mapdet"><h3>${TOWNIC[k]} ${c.name}</h3>
     <p class="muted" style="margin:0 0 4px">${drive}</p><p style="margin:0 0 6px;font-size:0.875rem">${c.blurb}</p>

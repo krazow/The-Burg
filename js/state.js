@@ -26,6 +26,8 @@ const W = 12/52;                 // months in one week (all money constants belo
 const SS_PAY = 1900;
 const COL_RATE = 0.03, WAGE_RATE = 0.025;          // yearly growth of prices and of pay
 const cost = v => v * (S ? S.col : 1);              // today's price of something listed in 2027 dollars
+// difficulty: prices and pay only grow from Normal up (money.inflation); Easy stays at 2027 levels
+const growth = k => typeof on === 'function' && !on('money.inflation') ? 0 : rule(k);
 // i3: pay also carries your program (+10% at matching jobs), certificate perks, and for your own job its ladder rung,
 // apprenticeship step and clearance wait (payPerks lives in features.js)
 const payNow = (j, withRaise = true) => j.pay * (S ? S.wage : 1) * (S && typeof payPerks === 'function' ? payPerks(j, withRaise && S.jobId === j.id) : (withRaise && S && S.jobId === j.id ? S.raise : 1));
@@ -418,15 +420,16 @@ function migrate(s){
 const job = () => S.jobId ? jobById(S.jobId) : null;
 const commuteOneWay = () => (job() && !S.retired) ? CITIES[job().city].miles : 0;
 // #70: remote days (office jobs drive in 3 days a week) and carpools (half the gas, less wear) make long commutes livable
-const driveDays = (j = job()) => j && j.remote ? (5 - j.remote) / 5 : 1;
-const canCarpool = () => commuteOneWay() >= 20 && S.community >= 30;
-const carpooling = () => !!S.carpool && commuteOneWay() >= 20;
+// difficulty: carpools, the bus and remote work are Normal and up (jobs.commute)
+const driveDays = (j = job()) => j && j.remote && on('jobs.commute') ? (5 - j.remote) / 5 : 1;
+const canCarpool = () => commuteOneWay() >= 20 && S.community >= 30 && on('jobs.commute');
+const carpooling = () => !!S.carpool && commuteOneWay() >= 20 && on('jobs.commute');
 // a carpool belongs to the job you joined it for: a new job (or none) starts out driving alone (R12)
 function syncCarpool(){ if (S && S.carpool && S.carpoolJob !== S.jobId) { S.carpool = false; S.carpoolJob = null; return true; } return false; }
 // i3-a14: the county bus runs to Dayton and Walla Walla
-const busOK = (j = job()) => !!j && ['dayton', 'wallawalla'].includes(j.city);
+const busOK = (j = job()) => !!j && ['dayton', 'wallawalla'].includes(j.city) && on('jobs.commute');
 const onBus = () => !!(S && S.bus) && busOK() && !S.retired;
-const commuteGasFactor = (j = job()) => S && S.bus && j && S.jobId === j.id && busOK(j) ? 0.1 : driveDays(j) * (S && S.carpool && j && CITIES[j.city].miles >= 20 ? 0.5 : 1);
+const commuteGasFactor = (j = job()) => S && S.bus && j && S.jobId === j.id && busOK(j) ? 0.1 : driveDays(j) * (carpooling() && j && CITIES[j.city].miles >= 20 ? 0.5 : 1);
 const netWorth = () => {
   const loan = S.loanLeft > 0 ? S.loanLeft * (S.loanPay || CARS.truck.pay) * 0.85 : 0;
   const sloan = S.sloanLeft > 0 ? S.sloanLeft * S.sloanPay * 0.85 : 0;
