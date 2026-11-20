@@ -54,6 +54,7 @@ function playWeeks(n, stop = null){
   while (!step());
   finishRun(res, why, n);
 }
+const BACKUP_NUDGE = '📤 Your ending is 4 weeks away. Back up now so the record is safe?';
 // i22-a02: an ending that waited (behind the notes, or when the app closed) plays out the same way on Continue
 function endLife(e){ return e.debt && canBankrupt() ? bankruptcySheet(e.r) : finish(e.r, e); }
 function finishRun(res, why, n){
@@ -83,9 +84,11 @@ function finishRun(res, why, n){
       ${notes.map(t => `<p><b>${t}</b></p>`).join('')}
       <p>${runChips()}</p>
       ${fix.length ? `<p class="muted" style="margin-bottom:4px">Switch your focus in one tap:</p><div class="skiprow">${fix.map(k => `<button class="btn ghost" data-sugg="${k}">${FOCUS[k].ic} ${FOCUS_SHORT[k]}</button>`).join('')}</div>` : ''}
+      ${notes.includes(BACKUP_NUDGE) ? '<button class="btn ghost" id="nudgebk">📤 Back up now</button>' : ''}
       <button class="btn primary" id="ok">${fix.length ? `Keep ${FOCUS_SHORT[S.focus]}` : 'Continue'}</button>`);
     $('#ok').onclick = () => { closeSheet(); after(); };
     document.querySelectorAll('#sheet [data-sugg]').forEach(b => b.onclick = () => { S.focus = b.dataset.sugg; save(); closeSheet(); after(); toast(`This week: ${FOCUS[S.focus].name}`); });
+    if ($('#nudgebk')) $('#nudgebk').onclick = () => backupSheet(after);   // closing the backup sheet carries on with the week
   } else after();
 }
 // i48-b04/b05: the focus buttons a rut or a stat in the red gets (the same fixes as the Home cards), never the current focus
@@ -446,6 +449,8 @@ function weekTick(auto){
   S.date += 7 * 864e5; S.ageMonths += m; S.turn++; S.jobMonths += m; S.applied = false;
   kidBirthdays(m);                                 // i46-a04: a kid turning 18 moves out, in the Journal
   if (age() > oldAge && age() % 10 === 0) notes.push(`🎂 Happy ${age()}th birthday!`);
+  // i63-b08: four weeks before a 2-year or 5-year life ends, one line suggests a backup (once per life)
+  if (!S.practice && !S.backupNudged && (S.len === 'two' || S.len === 'five') && S.turn >= L.turns - 4 && S.turn < L.turns) { S.backupNudged = true; notes.push(BACKUP_NUDGE); }
   if (S.turn % CARD_EVERY === 0 && !S.practice) {  // a quarterly report card in the Journal (doesn't stop skips); i20-b14: it counts toward the final score
     const c = addReportCard(), sc = lifeScore().score, d = S.scoreQ == null ? null : sc - S.scoreQ;
     log(`📋 Report card: ${c} this quarter. Life Score so far ${sc}${d == null ? '' : ` (${d >= 0 ? '+' : ''}${d} since the last one)`}.`);

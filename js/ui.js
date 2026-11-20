@@ -44,6 +44,7 @@ function renderTitle(){
     ${scene(titleMonth())}
     <h1>The Burg</h1>
     <div class="sub">Make a life in Waitsburg, Washington.</div>
+    <div id="tnotes"></div>
     ${used ? `<label class="field">Your lives (${used}/${SLOT_COUNT})</label>
       <div class="slots">${all.map((g,i) => g ? slotCard(g, i, `<div class="slotbtns"><button class="sm" data-cont="${i}">Continue</button><button class="sm alt" data-del="${i}" aria-label="Delete ${esc(g.name)}'s life">🗑</button></div>`) : '').join('')}</div>
       <div class="muted" style="margin:18px 0 0">— or start a new life —</div>` : ''}
@@ -75,6 +76,7 @@ function renderTitle(){
     <button class="btn ghost" id="how">❓ Help & tutorial</button>
     ${hasBackupStuff() ? '<button class="btn ghost" id="tbackup">📤 Back up</button>' : ''}
     <button class="btn ghost" id="restore">📥 Restore from a backup</button>
+    <button class="btn ghost" id="newphone">📱 I'm the new phone</button>
     <button class="btn ghost" id="settings">⚙️ Settings</button>
     ${Object.keys(store.get(BADGE_KEY) || {}).length ? `<div class="muted" style="margin-top:10px;font-size:0.8125rem">🏅 Badges collected across your lives: ${BADGES.filter(b => (store.get(BADGE_KEY) || {})[b.id]).map(b => b.ic).join(' ')} (${Object.keys(store.get(BADGE_KEY) || {}).length}/${BADGES.length})</div>` : ''}
     <div class="muted" style="margin-top:14px;font-size:0.75rem">v${APP_VERSION}</div>
@@ -117,8 +119,61 @@ function renderTitle(){
   };
   $('#restore').onclick = restoreSheet;
   if ($('#tbackup')) $('#tbackup').onclick = () => backupSheet();
+  $('#newphone').onclick = newPhoneSheet;
   $('#settings').onclick = () => settingsSheet(false);
   if ($('#records')) $('#records').onclick = recordsSheet;
+  titleNotes();
+}
+/* ---------- title notes (i63-b04, i63-b05, i73-b12, i73-b13): when this browser may not keep your lives ---------- */
+// every key this game keeps (through length/key(), so the beta's storage wrapper is respected)
+function myKeys(){ const out = []; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(KEY_PREFIX)) out.push(k); } } catch (e) {} return out; }
+const BOOT_EMPTY = !myKeys().length;                 // read before boot writes anything: nothing of ours here at all
+const LAST_SEEN = prefs().lastSeen || 0, BOOT_AT = Date.now();   // the visit before this one (i73-b13)
+const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+// i63-b05: a tiny 'has played' flag in Cache Storage, a second place the browser keeps apart from localStorage
+const FLAG_CACHE = KEY_PREFIX + 'played';
+let FLAG_SET = false;
+async function playedFlag(set){
+  try {
+    if (typeof caches === 'undefined') return false;
+    const c = await caches.open(FLAG_CACHE);
+    if (set) { if (!FLAG_SET) { FLAG_SET = true; await c.put('played-flag', new Response('1')); } return true; }
+    return !!(await c.match('played-flag'));
+  } catch (e) { return false; }
+}
+// i73-b12: private windows: a small storage quota, or no persisted() while localStorage works. 2 signs = forgets, 1 = may forget
+let PRIVATE_SIGNS = null, PRIVATE_HOME_SEEN = false;
+async function privateSigns(){
+  if (PRIVATE_SIGNS != null) return PRIVATE_SIGNS;
+  let n = 0;
+  try { const k = KEY_PREFIX + 'probe'; localStorage.setItem(k, '1'); localStorage.removeItem(k); } catch (e) { return PRIVATE_SIGNS = 2; }
+  try { const e = navigator.storage && navigator.storage.estimate ? await navigator.storage.estimate() : null; if (e && e.quota && e.quota <= 120 * 1024 * 1024) n++; } catch (e) {}
+  if (!(navigator.storage && typeof navigator.storage.persisted === 'function')) n++;
+  return PRIVATE_SIGNS = n;
+}
+const privateText = n => n >= 2 ? 'This window forgets your lives when you close it.' : 'This window may forget your lives when you close it.';
+async function titleNotes(){
+  const lives = slots().some(Boolean), cards = [];
+  const [flag, priv] = await Promise.all([playedFlag(false), privateSigns()]);
+  const empty = !lives && BOOT_EMPTY;
+  if (flag && empty) cards.push(`<div class="card warn tnote" id="tn-cleared">🧹 <b>Your saved lives were cleared from this browser.</b> Have a backup? <button class="sm" data-tn="restore">📥 Restore it here</button></div>`);
+  else if (empty && isIOS() && isInstalled()) cards.push(`<div class="card tip tnote" id="tn-safari">📲 <b>Played in Safari before?</b> The home-screen app keeps its own lives. Open the game in Safari, tap Menu → 📤 Back up or restore → <b>Copy a backup code</b>, then come back here and paste it. <button class="sm" data-tn="restore">📥 Paste a backup code</button></div>`);
+  if (priv) cards.push(`<div class="card warn tnote" id="tn-private">🕶️ <b>${privateText(priv)}</b> Back up before you go, or open the game in a normal window.${lives ? ' <button class="sm" data-tn="backup">📤 Back up</button>' : ''}</div>`);
+  const p = prefs(), away = LAST_SEEN && Date.now() - LAST_SEEN > 4 * 864e5;
+  if (lives && isIOS() && !isInstalled() && (!p.iosWarnOk || (away && p.iosWarnOk < BOOT_AT))) cards.push(`<div class="card warn tnote" id="tn-ios">🧭 <b>Safari can delete your lives after 7 days without a visit.</b> Keep them by adding the Burg to your Home Screen: <b>1.</b> tap Share ⬆️, <b>2.</b> tap <b>Add to Home Screen</b>. <span class="slotbtns"><button class="sm" data-tn="backup">📤 Back up now</button><button class="sm alt" data-tn="iosok">Got it</button></span></div>`);
+  const box = $('#tnotes'); if (!box || !$('.title')) return;
+  box.innerHTML = cards.join('');
+  box.querySelectorAll('[data-tn]').forEach(b => b.onclick = () => {
+    const k = b.dataset.tn;
+    if (k === 'restore') restoreSheet();
+    else if (k === 'backup') backupSheet();
+    else if (k === 'iosok') { setPref('iosWarnOk', Date.now()); $('#tn-ios').remove(); announce('OK. Help has the Home Screen steps any time.'); }
+  });
+}
+// i73-b12: shown once on Home too, while playing in a window that may forget
+function privateCard(){
+  if (!PRIVATE_SIGNS || PRIVATE_HOME_SEEN || !S || S.practice) return '';
+  return `<div class="card warn" id="privcard">🕶️ <b>${privateText(PRIVATE_SIGNS)}</b> Back up before you close it (Menu → 📤 Back up or restore). <span class="slotbtns"><button class="sm" id="privbk">📤 Back up</button><button class="sm alt" id="privok">Got it</button></span></div>`;
 }
 /* ---------- 🏆 Your records (G7, R7): best scores by length × mode, challenges, and this week's weekly challenge ---------- */
 // only the current week's weekly-challenge best is kept; older weeks are dropped when the game loads
@@ -340,7 +395,9 @@ function saveCopySheet(){
 /* ---------- 📤 backups: move your lives between devices ---------- */
 // A backup is every saved life plus best scores. It leaves as a .json file or a "backup code" (text you can paste
 // into a message to yourself); codes are gzip-compressed when the browser can.
-function backupData(){ return { app: 'theburg', kind: 'backup', v: 1, version: APP_VERSION, exported: new Date().toISOString(), slots: slots(), best: store.get(BEST_KEY) || {}, badges: store.get(BADGE_KEY) || {}, challenges: store.get(CHALLENGE_KEY) || {}, ends: ends(), prefs: prefs() }; }   // i62-a10: settings and seen tips come along
+// i63-b02: v is the format; minReader is the oldest app format that can read it. A backup newer than BACKUP_V asks you to update.
+const BACKUP_V = 2;
+function backupData(){ return { app: 'theburg', kind: 'backup', v: BACKUP_V, minReader: 1, version: APP_VERSION, exported: new Date().toISOString(), slots: slots(), best: store.get(BEST_KEY) || {}, badges: store.get(BADGE_KEY) || {}, challenges: store.get(CHALLENGE_KEY) || {}, ends: ends(), prefs: prefs() }; }   // i62-a10: settings and seen tips come along
 // i62-a03/a07: what a backup (or this phone) holds besides lives
 function backupCounts(b){
   const o = x => x && typeof x === 'object' ? x : {};
@@ -366,13 +423,29 @@ function backupFileName(){
 }
 const b64 = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(s); };
 const unb64 = text => Uint8Array.from(atob(text.replace(/\s+/g, '')), c => c.charCodeAt(0));
+const CRC_T = [...Array(256)].map((_, n) => { for (let k = 0; k < 8; k++) n = n & 1 ? 0xEDB88320 ^ (n >>> 1) : n >>> 1; return n >>> 0; });
+const crc32 = bytes => { let c = 0xFFFFFFFF; for (const b of bytes) c = CRC_T[(c ^ b) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+// i63-b01: BURG2:<packed bytes in base64>.<how many bytes>.<CRC32>, so a cut-off or changed code is caught before unpacking.
+// The bytes are gzip when the browser can (they start 1f 8b), otherwise plain JSON.
 async function backupCode(obj){
   const json = JSON.stringify(obj);
-  if (window.CompressionStream) {
-    const gz = new Blob([json]).stream().pipeThrough(new CompressionStream('gzip'));
-    return 'BURG1:' + b64(new Uint8Array(await new Response(gz).arrayBuffer()));
-  }
-  return 'BURG0:' + b64(new TextEncoder().encode(json));
+  let bytes = new TextEncoder().encode(json);
+  if (window.CompressionStream) bytes = new Uint8Array(await new Response(new Blob([json]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
+  return `BURG2:${b64(bytes)}.${bytes.length}.${crc32(bytes).toString(16).padStart(8, '0')}`;
+}
+const gunzip = async bytes => {
+  if (!window.DecompressionStream) throw Object.assign(new Error('This browser can\'t open compressed codes. Use the backup file instead.'), { plain: true });
+  return new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+};
+const backupErr = (msg, extra = {}) => Object.assign(new Error(msg), extra);
+async function unpackBurg2(text){
+  const t = text.replace(/\s+/g, ''), m = t.match(/^BURG2:([A-Za-z0-9+/=]*)\.(\d+)\.([0-9a-fA-F]{8})$/);
+  if (!m) throw backupErr('The last part of this code is missing. Copy the whole code again, right to the end, and paste it here.', { part: 'end' });
+  let bytes = null;
+  try { bytes = unb64(m[1]); } catch (e) {}
+  if (!bytes || bytes.length < +m[2]) throw backupErr('A piece in the middle of this code is missing. Copy the whole code again and paste it here.', { part: 'middle' });
+  if (bytes.length !== +m[2] || crc32(bytes).toString(16).padStart(8, '0') !== m[3].toLowerCase()) throw backupErr('One piece of this code was changed (a letter retyped or swapped). Copy the code again from the original and paste it here.', { part: 'changed' });
+  return bytes[0] === 0x1f && bytes[1] === 0x8b ? gunzip(bytes) : new TextDecoder().decode(bytes);
 }
 // i62-a06: a code with words, quotes or line breaks around it still reads; i62-a01: a damaged one says so in plain words
 const BK_DAMAGED = 'This backup code is damaged: part of it is missing or was changed on the way. Copy the whole code again, right to the end, and paste it here.';
@@ -396,14 +469,15 @@ async function readBackupOne(text){
   let d;
   try {
     if (text.startsWith('{')) d = JSON.parse(text);
-    else if (text.startsWith('BURG1:')) {
-      if (!window.DecompressionStream) throw Object.assign(new Error('This browser can\'t open compressed codes. Use the backup file instead.'), { plain: true });
-      const raw = new Blob([unb64(text.slice(6))]).stream().pipeThrough(new DecompressionStream('gzip'));
-      d = JSON.parse(await new Response(raw).text());
-    } else if (text.startsWith('BURG0:')) d = JSON.parse(new TextDecoder().decode(unb64(text.slice(6))));
+    else if (text.startsWith('BURG2:')) d = JSON.parse(await unpackBurg2(text));
+    else if (text.startsWith('BURG1:')) d = JSON.parse(await gunzip(unb64(text.slice(6))));
+    else if (text.startsWith('BURG0:')) d = JSON.parse(new TextDecoder().decode(unb64(text.slice(6))));
+    else if (/^BURG\d+:/.test(text)) throw backupErr('This backup is from a newer Burg. Update the game first, then restore it.', { newer: true });
     else throw new Error('');
-  } catch (e) { throw new Error(e.plain ? e.message : /^BURG\d+:/.test(text) ? BK_DAMAGED : text.startsWith('{') ? BK_FILE_DAMAGED : BK_NOT); }
+  } catch (e) { throw e.part || e.newer ? e : new Error(e.plain ? e.message : /^BURG\d+:/.test(text) ? BK_DAMAGED : text.startsWith('{') ? BK_FILE_DAMAGED : BK_NOT); }
   if (!d || d.app !== 'theburg' || !Array.isArray(d.slots)) throw new Error('That doesn\'t look like a backup from The Burg.');
+  const need = Number.isFinite(d.minReader) ? d.minReader : Number.isFinite(d.v) ? d.v : 1;
+  if (need > BACKUP_V) throw backupErr('This backup is from a newer Burg. Update the game first, then restore it.', { newer: true });
   const ok = isLife;   // H1: anything else a thin backup is missing, migrate() fills in
   const lives = d.slots.slice(0, SLOT_COUNT).map(g => ok(g) ? migrate(g) : null);
   const obj = x => x && typeof x === 'object' && !Array.isArray(x) ? x : {};
@@ -416,6 +490,8 @@ async function readBackupOne(text){
     .map(e => Object.fromEntries(Object.entries(e).map(([k, v]) => [k, typeof v === 'string' ? noTags(v).slice(0, 200) : Number.isFinite(v) || v == null ? v ?? null : k === 'parts' && obj(v) ? Object.fromEntries(Object.entries(v).filter(([, x]) => Number.isFinite(x))) : null])));
   return { lives, ends: endsIn, prefs: prefsIn, best: obj(d.best), badges: obj(d.badges), challenges: obj(d.challenges), exported: when && !isNaN(when) ? when.toISOString() : null };
 }
+// i63-b22: lives in a backup that are an earlier week of a life already on this phone (same life id)
+const olderCopies = b => b.lives.filter(Boolean).map(g => [g, slots().find(x => x && x.lid && x.lid === g.lid && (x.turn || 0) > (g.turn || 0))]).filter(([, x]) => x);
 // put a backup's lives in: 'add' fills empty slots (returns how many didn't fit), 'replace' swaps all slots
 function restoreBackup(b, mode){
   const cur = slots(), best = store.get(BEST_KEY) || {};
@@ -426,6 +502,7 @@ function restoreBackup(b, mode){
   for (const k of Object.keys(b.badges || {})) if (BADGES.some(x => x.id === k)) badges[k] = 1;
   for (const k of Object.keys(b.challenges || {})) if (SCENARIOS[k]) wins[k] = 1;
   store.set(BADGE_KEY, badges); store.set(CHALLENGE_KEY, wins);
+  for (const [g] of olderCopies(b)) g.rewound = true;            // i63-b22: it still plays, but its ending sets no records
   { const have = ends(), seen = new Set(have.map(e => `${e.name}|${e.at}|${e.score}`));
     const add = (b.ends || []).filter(e => !seen.has(`${e.name}|${e.at}|${e.score}`));
     if (add.length) store.set(ENDS_KEY, keepEnds([...have, ...add].sort((x, y) => (y.at || 0) - (x.at || 0)))); }
@@ -445,6 +522,7 @@ function restoreBackup(b, mode){
   const landed = want.reduce((n, g, i) => n + (g && now[i] && now[i].name === g.name && now[i].savedAt === g.savedAt && (mode === 'replace' || !cur[i]) ? 1 : 0), 0);
   return { skipped, meant, landed, dupes, slots: want.map((g, i) => g && (mode === 'replace' || !cur[i]) ? i : -1).filter(i => i >= 0) };
 }
+// the backup sheet; onClose (i63-b08's nudge) runs when it's closed, so the week carries on
 function backupSheet(onClose = null){
   if (S && !S.over && !S.practice) save();
   const c = localCounts(), n = hasBackupStuff(c);   // i62-a03: records and badges are worth a backup too
@@ -454,8 +532,9 @@ function backupSheet(onClose = null){
     <button class="btn primary" id="bkfile" ${n ? '' : 'disabled'}>⬇️ Download a backup file</button>
     <button class="btn ghost" id="bkcode" ${n ? '' : 'disabled'}>📋 Copy a backup code</button>
     <div id="bkout"></div>
+    ${onClose ? '' : `<button class="btn ghost" id="bkmove" ${n ? '' : 'disabled'}>📱 Moving to a new phone</button>
     <h3 style="margin-top:14px">Restore</h3>
-    <button class="btn ghost" id="bkrestore">📥 Restore from a backup</button>
+    <button class="btn ghost" id="bkrestore">📥 Restore from a backup</button>`}
     <button class="btn ghost" id="no">Close</button>`);
   $('#bkfile').onclick = () => {
     const blob = new Blob([JSON.stringify(backupData(), null, 1)], { type: 'application/json' });
@@ -469,46 +548,78 @@ function backupSheet(onClose = null){
     let copied = false;
     try { await navigator.clipboard.writeText(code); copied = true; } catch (e) {}
     $('#bkout').innerHTML = `<p class="${copied ? '' : 'muted'}">${copied ? '✅ Copied! Paste it into a note or a message to yourself.' : 'Copy this code (select it all), then paste it into a note or a message to yourself:'}</p>
-      <textarea class="code" id="bkcodetext" readonly aria-label="Backup code" rows="4">${code}</textarea>`;
+      <textarea class="code" id="bkcodetext" readonly aria-label="Backup code" rows="4">${code}</textarea>
+      <p class="muted" style="font-size:0.8125rem">The code checks itself: if a piece goes missing or changes on the way, restoring it says so.</p>`;
     const ta = $('#bkcodetext'); ta.focus(); ta.select();
     announce(copied ? 'Backup code copied' : 'Backup code shown, select and copy it');
   };
-  $('#bkrestore').onclick = restoreSheet;
+  if ($('#bkmove')) $('#bkmove').onclick = movePhoneSheet;
+  if ($('#bkrestore')) $('#bkrestore').onclick = restoreSheet;
   $('#no').onclick = () => { closeSheet(); if (onClose) onClose(); };
+}
+// i63-b02: look for a newer version of the game, and reload into it if there is one
+async function checkUpdate(out){
+  const say = t => { if (out) out.textContent = t; announce(t); };
+  say('Checking for an update…');
+  try {
+    const reg = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
+    if (!reg) throw new Error('none');
+    await reg.update();
+    const w = reg.installing || reg.waiting;
+    if (!w) return say('No newer version yet. Try again later, or restore this backup on the phone that made it.');
+    say('Found an update. Getting it ready, then the game reopens: paste your backup again after that.');
+    await new Promise(r => { if (w.state === 'activated') return r(); w.addEventListener('statechange', () => { if (w.state === 'activated') r(); }); setTimeout(r, 20000); });
+    location.reload();
+  } catch (e) { say('Couldn\'t check right now. Connect to the internet and try again.'); }
 }
 function restoreSheet(){
   sheet(`<h2>📥 Restore from a backup</h2>
     <p class="muted">Paste a backup code, or choose a backup file.</p>
-    <textarea class="code" id="rscode" rows="4" aria-label="Paste a backup code" placeholder="BURG1:…"></textarea>
+    <textarea class="code" id="rscode" rows="4" aria-label="Paste a backup code" placeholder="BURG2:…"></textarea>
     <button class="btn ghost" id="rsfilebtn">📁 Choose a backup file</button><input type="file" id="rsfile" accept=".json,application/json,text/plain" hidden>
     <button class="btn primary" id="rscheck">Check this backup</button>
     <div id="rsout" role="status"></div>
     <button class="btn ghost" id="no">Cancel</button>`);
-  const check = async text => {
-    const out = $('#rsout');
-    try {
-      const b = await readBackup(text);
-      const lives = b.lives.filter(Boolean), free = slots().filter(g => !g).length, plan = restorePlan(b), fresh = plan.filter(x => x && x.dup == null).length;
-      out.innerHTML = `<p><b>This backup has ${countWords(backupCounts(b))}</b>${b.exported ? ` (saved ${new Date(b.exported).toLocaleDateString()})` : ''}${lives.length ? ':' : '.'}</p>
-        <div class="slots">${plan.map((x, i) => x ? slotCard(x.g, i, `<span class="tag${x.dup != null ? ' cur' : ''}">${x.dup != null ? 'Already on this phone' : x.slot != null ? `Goes to slot ${x.slot + 1}` : 'No free slot'}</span>`) : '').join('')}</div>
-        ${recordsLine(b)}
-        <button class="btn primary" id="rsadd" ${free || !fresh ? '' : 'disabled'}>${lives.length && fresh ? `Add to my empty slots (${free} free)` : lives.length ? 'Add the records and badges' : 'Add these records and badges'}</button>
-        <button class="btn ghost" id="rsrep">Replace all my lives with these</button>`;
-      $('#rsadd').onclick = () => finishRestore(b, 'add');
-      $('#rsrep').onclick = () => {
-        out.innerHTML = `<p><b>Replace all your lives?</b> Every life saved on this device now is deleted and replaced by the backup's. This can't be undone.</p>
-          <button class="btn primary" id="rsyes">Replace them</button><button class="btn ghost" id="rsback">Back</button>`;
-        $('#rsyes').onclick = () => finishRestore(b, 'replace');
-        $('#rsback').onclick = () => check(text);
-        $('#rsyes').focus();
-      };
-      $('#rsadd').focus();
-    } catch (e) { out.innerHTML = `<p class="warnline">⚠️ ${esc(e.message)}</p>`; }
-  };
-  $('#rscheck').onclick = () => check($('#rscode').value);
+  $('#rscheck').onclick = () => backupCheck($('#rscode').value, $('#rsout'));
   $('#rsfilebtn').onclick = () => $('#rsfile').click();
-  $('#rsfile').onchange = async e => { const f = e.target.files && e.target.files[0]; if (!f) return; const text = await f.text(); $('#rscode').value = ''; check(text); };
+  $('#rsfile').onchange = async e => { const f = e.target.files && e.target.files[0]; if (!f) return; const text = await f.text(); $('#rscode').value = ''; backupCheck(text, $('#rsout')); };
   $('#no').onclick = closeSheet;
+}
+// reads a pasted or chosen backup into `out`: what's in it, then Add or Replace (shared by restore and the new-phone guide)
+async function backupCheck(text, out){
+  try {
+    const b = await readBackup(text);
+    const lives = b.lives.filter(Boolean), free = slots().filter(g => !g).length, plan = restorePlan(b), fresh = plan.filter(x => x && x.dup == null).length;
+    out.innerHTML = `<p><b>This backup has ${countWords(backupCounts(b))}</b>${b.exported ? ` (saved ${new Date(b.exported).toLocaleDateString()})` : ''}${lives.length ? ':' : '.'}</p>
+      <div class="slots">${plan.map((x, i) => x ? slotCard(x.g, i, `<span class="tag${x.dup != null ? ' cur' : ''}">${x.dup != null ? 'Already on this phone' : x.slot != null ? `Goes to slot ${x.slot + 1}` : 'No free slot'}</span>`) : '').join('')}</div>
+      ${recordsLine(b)}
+      <button class="btn primary" id="rsadd" ${free || !fresh ? '' : 'disabled'}>${lives.length && fresh ? `Add to my empty slots (${free} free)` : 'Add the records and badges'}</button>
+      <button class="btn ghost" id="rsrep">Replace all my lives with these</button>`;
+    // i63-b22: an earlier week of a life already here asks first
+    const rewind = go => {
+      const old = olderCopies(b);
+      if (!old.length) return go();
+      out.innerHTML = `<p><b>⏪ ${old.length === 1 ? `This is an older copy of ${esc(old[0][0].name)}'s life` : 'Some of these are older copies of lives on this phone'}.</b></p>
+        ${old.map(([g, x]) => `<div class="kv"><span>${esc(g.name)}</span><span>backup week ${g.turn || 0} · this phone week ${x.turn || 0}</span></div>`).join('')}
+        <p>Restoring it rewinds the life. It still plays, but when it ends it won't set best scores or badges.</p>
+        <button class="btn primary" id="rsrw">Restore it, marked rewound</button><button class="btn ghost" id="rsback">Back</button>`;
+      $('#rsrw').onclick = go;
+      $('#rsback').onclick = () => backupCheck(text, out);
+      $('#rsrw').focus();
+    };
+    $('#rsadd').onclick = () => rewind(() => finishRestore(b, 'add'));
+    $('#rsrep').onclick = () => {
+      out.innerHTML = `<p><b>Replace all your lives?</b> Every life saved on this device now is deleted and replaced by the backup's. This can't be undone.</p>
+        <button class="btn primary" id="rsyes">Replace them</button><button class="btn ghost" id="rsback">Back</button>`;
+      $('#rsyes').onclick = () => rewind(() => finishRestore(b, 'replace'));
+      $('#rsback').onclick = () => backupCheck(text, out);
+      $('#rsyes').focus();
+    };
+    $('#rsadd').focus();
+  } catch (e) {
+    out.innerHTML = `<p class="warnline">⚠️ ${esc(e.message)}</p>${e.newer ? '<button class="btn primary" id="rsupd">🔄 Check for an update</button><p id="rsupdout" class="muted" role="status"></p>' : ''}`;
+    if (e.newer) $('#rsupd').onclick = () => checkUpdate($('#rsupdout'));
+  }
 }
 function finishRestore(b, mode){
   const { skipped, meant, landed, dupes, slots: at } = restoreBackup(b, mode);
@@ -533,6 +644,69 @@ function recordsLine(b){
   const c = backupCounts(b); if (!c.records && !c.badges) return '';
   const best = Object.entries(b.best || {}).filter(([k, v]) => bestLabel(k) && Number.isFinite(v)).sort((x, y) => y[1] - x[1]).slice(0, 3);
   return `<p class="muted">${best.length ? `🏆 ${best.map(([k, v]) => `${esc(bestLabel(k))}: ${v}`).join(' · ')}` : ''}${best.length && c.badges ? '<br>' : ''}${c.badges ? `🏅 ${BADGES.filter(x => (b.badges || {})[x.id]).slice(0, 12).map(x => x.ic).join(' ')} (${plural(c.badges, 'badge')})` : ''}</p>`;
+}
+/* ---------- 📱 moving to a new phone (i63-b15): a two-screen guide around the backup code and file ---------- */
+function movePhoneSheet(){
+  if (S && !S.over && !S.practice) save();
+  const n = slots().filter(Boolean).length;
+  if (!n) { sheet(`<h2>📱 Moving to a new phone</h2><p>There are no saved lives on this phone to move yet.</p><button class="btn primary" id="ok">OK</button>`); $('#ok').onclick = closeSheet; return; }
+  const step1 = () => {
+    sheet(`<h2>📱 Moving to a new phone</h2>
+      <p class="muted"><b>Step 1 of 2 · on this phone</b> (the old one)</p>
+      <p>Send ${n === 1 ? 'your life' : `all ${n} lives`} to yourself: copy the backup code into a text or an email to yourself, or save a backup file where the new phone can open it.</p>
+      <button class="btn primary" id="mvcode">📋 Copy the backup code</button>
+      <div id="mvout"></div>
+      <button class="btn ghost" id="mvfile">⬇️ Download a backup file</button>
+      <button class="btn primary" id="mvnext">Next: on the new phone →</button>
+      <button class="btn ghost" id="close">Close</button>`);
+    $('#mvcode').onclick = async () => {
+      const code = await backupCode(backupData());
+      let copied = false;
+      try { await navigator.clipboard.writeText(code); copied = true; } catch (e) {}
+      $('#mvout').innerHTML = `<p>${copied ? '✅ Copied! Send it to yourself (a text or an email), then paste it on the new phone.' : 'Select all of this code and copy it, then send it to yourself:'}</p>
+        <textarea class="code" id="mvcodetext" readonly aria-label="Backup code" rows="3">${code}</textarea>`;
+      if (!copied) { $('#mvcodetext').focus(); $('#mvcodetext').select(); }
+      announce(copied ? 'Backup code copied' : 'Backup code shown');
+    };
+    $('#mvfile').onclick = () => {
+      const blob = new Blob([JSON.stringify(backupData(), null, 1)], { type: 'application/json' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = backupFileName();
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      toast('Backup file downloaded'); announce('Backup file downloaded');
+    };
+    $('#mvnext').onclick = step2;
+    $('#close').onclick = closeSheet;
+  };
+  const step2 = () => {
+    sheet(`<h2>📱 Moving to a new phone</h2>
+      <p class="muted"><b>Step 2 of 2 · on the new phone</b></p>
+      <ol class="steps"><li>Open <b>krazow.github.io/The-Burg</b> on the new phone (or the app, if you installed it there).</li>
+      <li>On the title screen, tap <b>📱 I'm the new phone</b>.</li>
+      <li>Paste the code you sent yourself, or choose the backup file.</li>
+      <li>Check the lives it lists, then tap <b>Add to my empty slots</b>.</li></ol>
+      <p class="muted">Your lives stay on this phone too, until you delete them.</p>
+      <button class="btn ghost" id="back">← Back to step 1</button>
+      <button class="btn primary" id="ok">Done</button>`);
+    $('#back').onclick = step1;
+    $('#ok').onclick = closeSheet;
+  };
+  step1();
+}
+// the new phone's side: paste the old phone's code, or choose its backup file
+function newPhoneSheet(){
+  sheet(`<h2>📱 I'm the new phone</h2>
+    <p class="muted">On the old phone, open the game and tap Menu → <b>📱 Moving to a new phone</b>, and send yourself the backup code or file.</p>
+    <label class="field" for="rscode">Paste the code</label>
+    <textarea class="code" id="rscode" rows="3" placeholder="BURG2:…"></textarea>
+    <button class="btn primary" id="rscheck">Check this code</button>
+    <button class="btn ghost" id="rsfilebtn">📁 Or choose a backup file</button><input type="file" id="rsfile" accept=".json,application/json,text/plain" hidden>
+    <div id="rsout" role="status"></div>
+    <button class="btn ghost" id="no">Cancel</button>`);
+  $('#rscheck').onclick = () => backupCheck($('#rscode').value, $('#rsout'));
+  $('#rsfilebtn').onclick = () => $('#rsfile').click();
+  $('#rsfile').onchange = async e => { const f = e.target.files && e.target.files[0]; if (!f) return; const text = await f.text(); $('#rscode').value = ''; backupCheck(text, $('#rsout')); };
+  $('#no').onclick = closeSheet;
 }
 
 function loadSheet(){
@@ -560,6 +734,7 @@ function newGame(name, len, slot = 0, opts = {}){
   log(S.bg === 'fresh' ? `${name} turns 18 and rents a room above Main Street in Waitsburg. Time to find a job.`
     : `${name} starts a new life in Waitsburg: ${BACKGROUNDS[S.bg].name.toLowerCase()}. ${BACKGROUNDS[S.bg].desc}`);
   tab = S.jobId ? 'home' : 'jobs'; save(); render();
+  if (!opts.practice) playedFlag(true);            // i63-b05
   if (!opts.practice) toast('Welcome to the Burg! Start by finding a job.');
 }
 
@@ -733,6 +908,7 @@ function renderHome(){
   </div>${scoreButton()}</div>
   ${cl}${hint ? `<div class="card next"><div>👉 <b>Next step:</b> ${hint.t}</div><button class="sm" data-next="${hint.go}">${hint.b}</button></div>` : ''}
   ${installReady() ? `<div class="card tip installcard"><div>📲 <b>Enjoying the Burg?</b> Install it: it opens from your home screen like an app and plays offline.</div><div class="slotbtns"><button class="sm" id="install">Install</button><button class="sm alt" id="installno">Not now</button></div></div>` : ''}
+  ${privateCard()}
   ${!j && !S.retired ? `<div class="card warn">💼 No paycheck coming in. <button class="sm" data-go="jobs">Find a job</button></div>` : ''}
   ${S.happy < 30 ? sugg('happy', 'outdoors', `😟 Happiness is low (${Math.round(S.happy)}).`) : ''}
   ${S.health < 30 ? sugg('health', 'rest', `🤒 Health is low (${Math.round(S.health)}).`) : ''}
@@ -773,6 +949,7 @@ function renderHome(){
   document.querySelectorAll('[data-cl], [data-next]').forEach(b => b.onclick = () => goTo(b.dataset.cl || b.dataset.next));
   if ($('#clhide')) $('#clhide').onclick = () => { setPref('clHide', true); renderHome(); announce('Checklist hidden. It\'s in the Help guide under Finding your way.'); };
   if ($('#install')) $('#install').onclick = installNow;
+  if ($('#privok')) { $('#privok').onclick = () => { PRIVATE_HOME_SEEN = true; renderHome(); }; $('#privbk').onclick = () => { PRIVATE_HOME_SEEN = true; backupSheet(); }; }
   if ($('#installno')) $('#installno').onclick = () => { setPref('installNo', Date.now()); renderHome(); announce('OK. Help has the install steps any time.'); };
 }
 // i5-a05: perks you've picked up that run out, with the weeks left; a tap opens where you use them
@@ -1246,6 +1423,7 @@ function showMenu(){
     <button class="btn primary" id="save">💾 Save game</button>
     <button class="btn primary" id="load">📂 Load game</button>
     <button class="btn ghost" id="backup">📤 Back up or restore</button>
+    <button class="btn ghost" id="movephone">📱 Moving to a new phone</button>
     <p class="muted" style="margin-top:12px">${esc(S.name)}'s life is in ${slotName(S.slot)} and also saves itself after every week.</p>
     <button class="btn ghost" id="settings">⚙️ Settings</button>
     <button class="btn ghost" id="skipopts">⏩ Skip and Auto options</button>
@@ -1256,6 +1434,7 @@ function showMenu(){
   $('#save').onclick = saveCopySheet;
   $('#load').onclick = loadSheet;
   $('#backup').onclick = () => backupSheet();
+  $('#movephone').onclick = movePhoneSheet;
   $('#settings').onclick = () => settingsSheet(true);
   $('#skipopts').onclick = skipSheet;
   $('#help').onclick = showHelp;
