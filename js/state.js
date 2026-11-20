@@ -817,39 +817,41 @@ function seasonWeeksLeft(g){
 // so that save keeps it open. Opening is UI only: nothing pays more or less for opening early or late.
 // The tutorial, practice lives and 'Everything open' always show everything.
 const UNLOCKS = [
-  { id:'study', ic:'📚', label:'Take classes', tab:'home', sel:'.fbtn[data-f="study"]', focus:'study',
+  { id:'study', feat:'school', ic:'📚', label:'Take classes', tab:'home', sel:'.fbtn[data-f="study"]', focus:'study',
     moment:'A new focus: classes in Walla Walla or the Tri-Cities. A certificate or a diploma opens the 🔒 jobs.',
     when:s => s.edu > 0 || s.studyProg > 0 || !!s.certStudy, used:s => s.edu > 0 || s.studyProg > 0 || !!s.certStudy || s.focus === 'study',
     by:{ half:1, two:1, five:1, life:1 } },
-  { id:'out', ic:'🛍️', label:'Out and about', tab:'home', sel:'#outbtn',
+  { id:'out', feat:'out', ic:'🛍️', label:'Out and about', tab:'home', sel:'#outbtn',
     moment:'A walk down Main Street: a couple of quick visits a week to shops and the café, on top of your focus.',
     when:s => s.turn >= 1, used:s => !!(s.out && s.out.visits), by:{ half:1, two:2, five:2, life:2 } },
-  { id:'goals', ic:'🎯', label:'Life goals', tab:'life', sel:'#goalscard',
+  { id:'goals', feat:'goals.badges', ic:'🎯', label:'Life goals', tab:'life', sel:'#goalscard',
     moment:'Pin a few badges as life goals on the Life tab. Each one you reach adds points to your Life Score.',
     when:s => s.turn >= 1, used:s => (s.goals || []).length > 0, by:{ half:2, two:2, five:2, life:2 } },
-  { id:'k401', ic:'🏦', label:'401(k)', tab:'life', sel:'#k401card',
+  { id:'k401', feat:'money.k401', ic:'🏦', label:'401(k)', tab:'life', sel:'#k401card',
     moment:'Your job comes with a 401(k): save 5% of each paycheck and your employer adds 3% more.',
     when:s => !!s.jobId || !!s.retired, used:s => (s.k401rate || 0) > 0 || (s.k401 || 0) > 0, by:{ half:null, two:null, five:null, life:null } },
-  { id:'hustle', ic:'🔧', label:'Side hustle', tab:'home', sel:'.fbtn[data-f="hustle"]', focus:'hustle',
+  { id:'hustle', feat:'jobs.hustle', ic:'🔧', label:'Side hustle', tab:'home', sel:'.fbtn[data-f="hustle"]', focus:'hustle',
     moment:'A neighbor needs a hand: weekend gigs that follow the seasons, and pay more as you get good at them.',
     when:s => s.turn >= 2 && !!s.jobId, used:s => (s.hustleWeeks || 0) > 0 || s.focus === 'hustle', by:{ half:2, two:3, five:3, life:3 } },
-  { id:'plan', ic:'🗓', label:'Focus plan', tab:'home', sel:'#planbtn',
+  { id:'plan', feat:'ui.plan', ic:'🗓', label:'Focus plan', tab:'home', sel:'#planbtn',
     moment:'Set up to 4 focuses that take turns, one a week, so you don\'t have to change it by hand.',
     when:s => s.turn >= 3, used:s => (s.plan || []).length > 0, by:{ half:3, two:4, five:4, life:4 } },
   { id:'score', ic:'🏆', label:'Life Score so far', tab:'home', sel:'#scorenow',
     moment:'How your life would score if it ended today. It shows from day one, with the stats (i5-a02).',
     when:() => true, used:() => true, by:{ half:0, two:0, five:0, life:0 } },
-  { id:'trip', ic:'🚗', label:'Trips', tab:'home', sel:'#tripchip',
+  { id:'trip', feat:'trips', ic:'🚗', label:'Trips', tab:'home', sel:'#tripchip',
     moment:'Town doesn\'t have everything: once a week, drive to Dayton, Walla Walla or the Tri-Cities for groceries, an oil change or a night out.',
     when:s => s.turn >= 3 && s.turn - (s.svc || 0) >= 6, used:s => !!s.trip || Object.keys(s.towns || {}).length > 0, by:{ half:4, two:8, five:8, life:8 } },
-  { id:'skills', ic:'🧰', label:'Skills', tab:'life', sel:'#skillscard',
+  { id:'skills', feat:'skills', ic:'🧰', label:'Skills', tab:'life', sel:'#skillscard',
     moment:'You\'re getting better at things: skills grow as you practice, and each level saves money or opens a choice.',
     when:s => Object.values(s.skills || {}).some(v => v > 0), used:s => Object.values(s.skills || {}).some(v => v > 0), by:{ half:null, two:26, five:26, life:26 } },
-  { id:'biz', ic:'🏪', label:'Your own business', tab:'life', sel:'#bizcard',
+  { id:'biz', feat:'biz', ic:'🏪', label:'Your own business', tab:'life', sel:'#bizcard',
     moment:'With some savings you could start a business: a food truck, a woodshop or leased wheat ground. Small, risky, and it can grow.',
     when:s => s.money >= 30000 * (s.col || 1) || (s.turn >= 52 && s.money >= 8000 * (s.col || 1)), used:s => !!s.biz, by:{ half:null, two:78, five:52, life:52 } }
 ];
 const UNLOCK = Object.fromEntries(UNLOCKS.map(u => [u.id, u]));
+// to-do 2 D6: the systems this life has (a system whose feature is off never opens, and Help doesn't list it)
+const unlocksOn = (s = S) => UNLOCKS.filter(u => !u.feat || typeof on !== 'function' || on(u.feat, s));
 const UNLOCK_FOCUS = Object.fromEntries(UNLOCKS.filter(u => u.focus).map(u => [u.focus, u.id]));
 const UNLOCK_MODES = { go:{ ic:'🌱', name:'Open as I go', desc:'Week 1 is just four focuses and End Week. Classes, side hustles, trips, plans and more open as they come up, each with a short card and a Show me.' },
   all:{ ic:'🔓', name:'Everything open', desc:'Every system is there from day one, with no unlock cards. For players who know the Burg.' } };
@@ -865,6 +867,7 @@ const focusOpen = k => !UNLOCK_FOCUS[k] || isOpen(UNLOCK_FOCUS[k]);
 // Quiet opens get no card; nothing else changes, so opening early gives nothing extra.
 function openSystem(id, o = {}){
   if (!S || !UNLOCK[id] || S.practice) return false;
+  if (!unlocksOn().includes(UNLOCK[id])) return false;   // to-do 2 D6: a switched-off system never opens
   S.opened = S.opened || {};
   if (S.opened[id]) return false;
   S.opened[id] = { w: S.turn, how: o.how || 'moment' };
@@ -876,7 +879,7 @@ function openSystem(id, o = {}){
 function unlockCheck(weekEnd){
   if (!S || S.practice || S.over || S.unlockMode === 'all') return false;
   let any = false;
-  for (const u of UNLOCKS) {
+  for (const u of unlocksOn()) {
     if (S.opened && S.opened[u.id]) continue;
     const by = unlockBy(u);
     if (u.when(S)) any = openSystem(u.id) || any;
