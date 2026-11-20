@@ -779,8 +779,8 @@ function bankruptcySheet(reason){
     <div class="card warn"><b>Bankruptcy:</b> the debt is wiped${keep.length ? `, but you lose ${keep.join(', ')}` : ''}. Your 401(k) and your home are protected. For 7 years no bank will lend to you, and the better-paying jobs are harder to land. It takes ${BK_PENALTY} points off your Life Score, and you can only do it once.</div>
     <button class="btn primary" id="bkfile">File for bankruptcy and stay</button>
     <button class="btn ghost" id="bkleave">Pack up and leave town</button>`);
-  $('#bkfile').onclick = () => { fileBankruptcy(); closeSheet(); save(); render(); announce('You filed for bankruptcy. The debt is gone, and you start over at $0.'); toast('⚖️ A fresh start, with a long memory'); };
-  $('#bkleave').onclick = () => { closeSheet(); finish(reason); };
+  $('#bkfile').onclick = () => { fileBankruptcy(); S.endPending = null; closeSheet(); save(); render(); announce('You filed for bankruptcy. The debt is gone, and you start over at $0.'); toast('⚖️ A fresh start, with a long memory'); };
+  $('#bkleave').onclick = () => { closeSheet(); finish(reason, { debt: true }); };
 }
 // events that have to come up this week (the harvest choice, a market drop), ahead of the random roll
 function dueEvent(title){ S.due = [...(S.due || []).filter(t => t !== title), title]; }
@@ -814,11 +814,10 @@ function eventDice(){
   Math.random = () => { const [n, v] = diceStep(a); a = n; return v; };
   return { done(){ Math.random = prev; } };
 }
+// i73-b11: the weekly challenge has its own place, so it never needs one of the 5 slots (a new start replaces this week's)
 function startWeekly(name){
-  const free = slots().indexOf(null), wkid = isoWeek();
-  const go = slot => { newGame(name, 'half', slot, { bg:'fresh', mode:'normal', weekly: wkid }); };
-  if (free < 0) return toast('All 5 slots are full: delete a life first.');
-  go(free);
+  if (S && !S.over && S.slot !== WEEKLY_SLOT) save();
+  newGame(name, 'half', WEEKLY_SLOT, { bg:'fresh', mode:'normal', weekly: isoWeek() });
 }
 function scoreCard(){
   const { score, title } = lifeScore(), c = document.createElement('canvas'); c.width = 1080; c.height = 1350;
@@ -885,12 +884,16 @@ function legacySheet(parent){
     <button class="btn primary" id="heirgo">Start the next generation</button>
     <button class="btn ghost" id="no">Not now (back to the title screen)</button>`);
   $('#heirgo').onclick = () => { const nm = ($('#heirnm').value.trim() || sugg).slice(0, 20); closeSheet(); startLegacy(parent, nm); };
-  $('#no').onclick = () => { closeSheet(); S = null; useDice(); renderTitle(); };
+  $('#no').onclick = () => { closeSheet(); S = null; useDice(); renderTitle(); };   // i60-a13: the grandkid keeps waiting on the title screen
 }
 function startLegacy(parent, name = heirName(parent.name)){
   const inh = inheritance(parent);                 // i3-a33: the will decides how (and when) the family's money arrives
   name = String(name).slice(0, 20);
-  newGame(name, 'life', parent.slot ?? 0, { bg:'fresh', mode:parent.mode, aim:parent.aim });
+  const all = slots(), slot = all[parent.slot ?? 0] == null ? parent.slot ?? 0 : all.indexOf(null);
+  if (slot < 0) { S = null; useDice(); renderTitle(); return toast(`All ${SLOT_COUNT} slots are full: delete a life first, and your grandkid is still waiting.`); }
+  if (parent.id) setHeirs(heirs().filter(p => p.id !== parent.id));
+  newGame(name, 'life', slot, { bg:'fresh', mode:parent.mode, aim:parent.aim });
+  S.line = Array.isArray(parent.line) ? parent.line.slice(-40) : [];   // i73-b25
   S.gen = (parent.gen || 1) + 1; S.community = clamp(Math.round(parent.community / 2) + 15);
   S.date = parent.date; S.col = parent.col; S.wage = parent.wage; S.tabsYear = new Date(S.date).getFullYear();
   S.carValue = cost(2500);                         // i30-b01: the old pickup is worth a starter truck in today's dollars
@@ -1157,6 +1160,15 @@ function lifeScore(o = {}){
     snap: Math.round(snap.base), cardAvg: cardAvg == null ? null : Math.round(cardAvg), cards: n, weighted: snap.weighted, weakest: snap.weakest,
     w: snap.w, aim: snap.aim, aimShares: aimShares(), parts: snap.parts };
 }
+// i60-a13: a grandkid carries on only after a full Lifetime: 60 or older, not run out of town by debt
+const heirOK = (opts = {}) => LENGTHS[S.len].turns === Infinity && (S.kids || []).length > 0 && !S.practice && !opts.debt && age() >= 60;
+// i73-b01: what's kept of a finished life (about 1 KB)
+function endStub(reason, sc){
+  const y1 = new Date(S.date).getFullYear(), y0 = new Date(S.date - (S.turn || 0) * 7 * 864e5).getFullYear(), j = S.retired ? null : job();
+  return { name:S.name, from:y0, to:y1, at:Date.now(), len:S.len, mode:mode(), bg:S.bg, score:sc.score, title:sc.title, parts:sc.parts, cause:String(reason).slice(0, 200),
+    age:age(), job: S.retired ? 'Retired' : j ? jobTitle(j) : 'No job', home:HOMES[S.home].name, kids:(S.kids || []).length, gen:S.gen || 1,
+    seed:S.weekly || null, scenario:S.scenario || null, nw:Math.round(netWorth()) };
+}
 // i63-a10: what debt costs now, and what getting back to $0 by the end would win back
 function debtCost(sc = lifeScore()){
   if (!(sc.real < 0 || sc.drag > 0)) return null;
@@ -1182,18 +1194,27 @@ function comebackLine(){
   return low <= -DEEP_DEBT && S.money >= 0 && scoredReal() >= 0 ? `Came back from ${fmt(Math.round(-low / 100) * 100)} in debt.` : '';
 }
 const aimLabel = () => { const a = AIMS[S.aim] || AIMS.all; return `${a.ic} ${a.name}`; };
-function finish(reason){
-  const scr = lifeScore(), { score, title } = scr, back = comebackLine();
+function finish(reason, opts = {}){
+  const scr = lifeScore(), { score, title, parts } = scr, back = comebackLine();
   const sc = SCENARIOS[S.scenario], scWin = sc ? (S.scWon || sc.win()) : false;
   if (sc && scWin) markChallenge(S.scenario);
   const best = store.get(BEST_KEY) || {};
   const bk = sc ? `sc-${S.scenario}` : S.weekly ? `wk-${S.weekly}` : bestKey(S.len, mode());
   const isBest = !best[bk] || score > best[bk];
   if (isBest && !S.practice) { best[bk] = score; store.set(BEST_KEY, best); const nt = store.get(BEST_NOTE_KEY) || {}; if (back) nt[bk] = back; else delete nt[bk]; store.set(BEST_NOTE_KEY, nt); }
-  if (!S.practice) writeSlot(S.slot ?? 0, null);
+  const heir = heirOK(opts), stub = endStub(reason, { score, title, parts });
+  // i73-b25: the family line so far, carried into the grandkid's save
+  const line = [...(S.line || []), { name:S.name, years:`${stub.from}–${stub.to}`, job:stub.job, home:stub.home, score, title, epitaph:stub.cause }].slice(-40);
+  const parent = { id:S.lifeId, name:S.name, nw:netWorth(), community:S.community, slot:S.slot === WEEKLY_SLOT ? 0 : S.slot, mode:mode(), aim:S.aim, gen:S.gen || 1, date:S.date, col:S.col, wage:S.wage,
+    will:hasWill(), home:S.home, equity:S.equity, mortgage:S.mortgage, line };
+  if (!S.practice) {
+    addEnd(stub);
+    if (heir) setHeirs([parent, ...heirs().filter(p => p.id !== parent.id)]);   // i60-a13: waits on the title screen until started or dismissed
+    writeSlot(S.slot ?? 0, null);
+  }
   S.over = true;
   sheet(`<h2 style="text-align:center">${esc(S.name)}'s life in the Burg</h2>
-    <p class="muted" style="text-align:center">${reason}</p>
+    <p class="muted" style="text-align:center">${esc(reason)}</p>
     ${S.practice ? '' : storyHTML()}
     ${S.bg !== 'fresh' || mode() !== 'normal' ? `<p class="muted" style="text-align:center">${BACKGROUNDS[S.bg].ic} ${BACKGROUNDS[S.bg].name} · ${MODES[mode()].ic} ${MODES[mode()].name}</p>` : ''}
     <div class="score" id="finalscore" tabindex="-1" aria-label="Life Score ${score}">${score}</div>
@@ -1213,12 +1234,10 @@ function finish(reason){
     ${S.gen > 1 ? `<div class="kv"><span>🌳 Generation</span><span>${S.gen}</span></div>` : ''}
     ${S.scholar ? `<div class="kv"><span>🎓 ${esc(scholarName())}</span><span>${S.scholar.n} graduate${S.scholar.n === 1 ? '' : 's'} helped</span></div>` : ''}
     ${pensionVested() ? `<div class="kv"><span>🏛️ Public pension</span><span>${Math.floor(S.pensionYears)} years</span></div>` : ''}
-    ${LENGTHS[S.len].turns === Infinity && (S.kids || []).length && !S.practice ? `<div class="kv"><span>📜 Will</span><span>${hasWill() ? 'On file' : 'None: probate will take a share'}</span></div>` : ''}
+    ${heir ? `<div class="kv"><span>📜 Will</span><span>${hasWill() ? 'On file' : 'None: probate will take a share'}</span></div>` : ''}
     ${!S.practice ? '<button class="btn ghost" id="share">📤 Share score card</button>' : ''}
-    ${LENGTHS[S.len].turns === Infinity && (S.kids || []).length && !S.practice ? `<button class="btn primary" id="legacy">🌳 Continue as your grandkid</button>` : ''}
-    <button class="btn ${LENGTHS[S.len].turns === Infinity && (S.kids || []).length && !S.practice ? 'ghost' : 'primary'}" id="again">Play again</button>`);
-  const parent = { name:S.name, nw:netWorth(), community:S.community, slot:S.slot, mode:mode(), aim:S.aim, gen:S.gen || 1, date:S.date, col:S.col, wage:S.wage,
-    will:hasWill(), home:S.home, equity:S.equity, mortgage:S.mortgage };
+    ${heir ? `<button class="btn primary" id="legacy">🌳 Continue as your grandkid</button>` : ''}
+    <button class="btn ${heir ? 'ghost' : 'primary'}" id="again">Play again</button>`);
   if ($('#share')) $('#share').onclick = shareCard;
   if ($('#skipstory')) $('#skipstory').onclick = () => { $('#story').remove(); const f = $('#finalscore'); f.scrollIntoView({ block: 'start' }); f.focus({ preventScroll: true }); };
   if ($('#legacy')) $('#legacy').onclick = () => legacySheet(parent);
@@ -1623,7 +1642,7 @@ function planWeek(lines, notes){
   }
   if (S.probate && S.turn >= S.probate.at) {
     lines.push(['Inheritance (probate closed)', S.probate.amt]);
-    notes.push(`⚖️ Probate is finally done: ${fmt(S.probate.amt)} from ${S.probate.from}'s estate is yours.`);
+    notes.push(`⚖️ Probate is finally done: ${fmt(S.probate.amt)} from ${esc(S.probate.from)}'s estate is yours.`);
     log(`Probate closed on ${S.probate.from}'s estate: ${fmt(S.probate.amt)}.`, 'money'); S.probate = null;
   }
 }
