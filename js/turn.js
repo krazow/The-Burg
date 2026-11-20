@@ -73,6 +73,7 @@ function finishRun(res, why, n){
       else if (moneyTalkDue()) moneyTalk();
     };
     // i2-a10: badges and skill levels get one celebration card after the week, then the week goes on
+    if (S.newBadges && S.newBadges.length && !on('ui.milestones')) S.newBadges = [];   // to-do 2 D2: no milestone cards
     if (S.newBadges && S.newBadges.length) { const won = S.newBadges; S.newBadges = []; save(); sfx('badge'); buzz('badge'); celebrate(won, next); }
     else { if (!res.ev) { if (n === 1) sfx('week'); buzz('week'); } next(); }   // i2-a04/a05: one small tick per press
     const r = S.run, dm = S.money - r.money, ch = (n, v) => Math.abs(v) < 0.5 ? `${n} unchanged` : `${n} ${v > 0 ? 'up' : 'down'} ${Math.abs(Math.round(v))}`;
@@ -153,7 +154,7 @@ function showRunDetails(){
       <div class="kv"><span><b>Paychecks and bills</b></span><span><b>${S.last.net>=0?'+':''}${fmt(S.last.net)}</b></span></div>` : ''}
     ${r.happened.length ? `<h3 style="margin-top:12px">What happened</h3>${happenedRows(r.happened)}` : ''}
     <div class="kv"><span><b>Total change in cash</b></span><span><b>${dm>=0?'+':''}${fmt(dm)}</b></span></div>${kidMoment()}${tattlerLine()}
-    ${S.last && S.last.why && S.last.why.length ? `<h3 style="margin-top:12px">Why your stats moved${r.weeks > 1 ? ' last week' : ''}</h3>${S.last.why.map(w => `<div class="logitem">${w}</div>`).join('')}` : ''}
+    ${S.last && S.last.why && S.last.why.length && on('ui.explain') ? `<h3 style="margin-top:12px">Why your stats moved${r.weeks > 1 ? ' last week' : ''}</h3>${S.last.why.map(w => `<div class="logitem">${w}</div>`).join('')}` : ''}
     ${S.practice || !on('money.outlook') ? '' : '<button class="btn ghost" id="outlook">📅 Money outlook: next 13 weeks</button>'}
     <button class="btn primary" id="ok">Close</button>`);
   setPref('cl', { ...(prefs().cl || {}), strip: 1 });   // i2-a16: the checklist's "look at your week" step
@@ -218,6 +219,7 @@ function focusPreview(fk){
   return { fx, cash, money: cash.reduce((a, [, v]) => a + v, 0), eff, n, rut, away };
 }
 function previewLine(fk){
+  if (!on('ui.explain')) return '';
   const p = focusPreview(fk), ic = { happy:'😊', health:'❤️', community:'🤝' };
   const st = Object.entries(p.fx).filter(([, v]) => Math.abs(v) >= 0.05).map(([k, v]) => `${ic[k]} ${v > 0 ? '+' : '−'}${Math.abs(v).toFixed(1)}`);
   const cash = p.cash.map(([l, v]) => `💵 ${v >= 0 ? '+' : '−'}${fmt(Math.abs(v)).replace('-', '')} ${l}`);
@@ -343,7 +345,7 @@ function weekTick(auto){
   else if (j && onLeave()) gross = leavePay(j, lines);   // i74-a14: paid family leave
   else if (j) gross = jobPay(j, payNow(j) * m * (f.payMult||1) * plantOT(j) * wxPayF(j) * smokePayMult(), lines, f);   // i75-a29 a short pack season; i75-a07 the smoke rule's shorter days; i3: strikes, furloughs, clearances, union dues
   if (!S.retired) gross += furloughBackPay(lines);
-  if (j) workYear(j, m);                           // i3-a24/a25: years worked count toward Social Security and a public pension
+  if (j && on('retire.income')) workYear(j, m);   // to-do 2 D2: no Social Security or pension record without retirement income                           // i3-a24/a25: years worked count toward Social Security and a public pension
   if (j && !S.retired && S.k401rate && on('money.k401')) {           // pre-tax contribution, with a 3% employer match at 5% or more
     k401 = gross * K401[S.k401rate]; const match = gross * K401_MATCH;
     lines.push(['401(k) contribution', -k401, `You save ${K401[S.k401rate]*100}% of your pay before taxes, and your employer adds ${K401_MATCH * 100}% more. Your savings are always yours; the match is yours after ${K401_VEST_MONTHS / 12} years at the job.`]);
@@ -368,7 +370,7 @@ function weekTick(auto){
   lines.push(...billLines());                      // i3-a28: the regular bills, shared with the money outlook
   if (certOwed()) { S.certStudy.owe -= certPay(); if (S.certStudy.owe < 0.005) S.certStudy.owe = 0; }   // i72-b04: this week's course payment
   eventMoneyWeek(lines);                           // i58-b02: health-plan savings and light duty, week by week
-  { const y = new Date(S.date).getFullYear(); if (curMonth() === 0 && S.tabsYear !== y) { lines.push(['Vehicle tabs (DMV)', -vehicleTabs()]); S.tabsYear = y; } }
+  { const y = new Date(S.date).getFullYear(); if (curMonth() === 0 && S.tabsYear !== y && on('car.upkeep')) { lines.push(['Vehicle tabs (DMV)', -vehicleTabs()]); S.tabsYear = y; } }
   if (S.loanLeft > 0) {
     const n = Math.min(m, S.loanLeft); lines.push(['Truck payment', -(S.loanPay || CARS.truck.pay)*n, `Five years of payments on the new pickup: about ${Math.max(0, Math.ceil((S.loanLeft - n) / W))} weeks to go.`]); S.loanLeft -= n;
     if (S.loanLeft < 1e-6) { S.loanLeft = 0; notes.push('🛻 The truck is paid off!'); S.paidOff = true; log('Made the last truck payment.'); }
@@ -399,8 +401,9 @@ function weekTick(auto){
   S.last = { lines: lines.filter(([,v]) => Math.round(v)).map(l => l[2] ? l : [l[0], l[1], lineWhy(l[0], f, j)]), net };
   debtWeek(notes);                                 // i3-a26: long debt goes to collections
   // i3-a21: the valley's home prices move with this year's market (2.5% a year on average); owners gain principal + appreciation
-  S.homeIdx = (S.homeIdx || 1) * Math.pow(1 + (S.homeGrow ?? 0.025), 1/52);
-  if (home.own) S.equity = S.equity * Math.pow(1 + (S.homeGrow ?? 0.025), 1/52) + home.equityPer * m;
+  { const hg = on('home.market') ? S.homeGrow ?? 0.025 : 0;   // to-do 2: in Easy homes keep their listed price
+    S.homeIdx = (S.homeIdx || 1) * Math.pow(1 + hg, 1/52);
+    if (home.own) S.equity = S.equity * Math.pow(1 + hg, 1/52) + home.equityPer * m; }
   S.carValue = Math.max(cost(500), S.carValue * Math.pow(0.99, m));   // i30-b02: the floor rises with prices
   S.k401 *= Math.pow(1.06, 1/52); if (S.k401match) S.k401match = Math.min(S.k401, S.k401match * Math.pow(1.06, 1/52));
   S.col *= Math.pow(1 + growth('col'), 1/52); S.wage *= Math.pow(1 + growth('wage'), 1/52);
@@ -418,11 +421,11 @@ function weekTick(auto){
   if (S.partner || S.dog || S.cat || kidsAtHome()) why.push(`🏡 ${[S.partner ? 'your partner' : '', S.dog ? 'your dog' : '', S.cat ? 'your cat' : '', kidsAtHome() ? 'kids at home' : ''].filter(Boolean).join(', ').replace(/^./, c => c.toUpperCase())}: ▲ happiness${comfortF() < 1 ? `, ${comfortF() <= 0 ? 'but not past the high 80s' : 'less as you near the high 80s'}` : ''}.`);
   if (S.health < 35 && (S.focus === 'work' || S.focus === 'hustle')) why.push('😮‍💨 Pushing through low health with extra work: ▼▼ health.');
   if (S.focus !== 'study' && S.streakF === S.focus && S.streakN + 1 > RUT_WEEKS) why.push(`🔁 In a rut (${S.streakN + 1} weeks of the same thing): ▼ happiness.`);
-  why.push(`⚖️ Stats drift toward the middle: high ones slip, low ones recover a little${a >= 50 ? ', and health drifts lower with age' : ''}.`);
+  why.push(`⚖️ Stats drift toward the middle: high ones slip, low ones recover a little${a >= 50 && on('health.agingDrift') ? ', and health drifts lower with age' : ''}.`);
   if (S.bgRest != null && S.turn < BG_REST_WEEKS) why.push('🏙️ New in town: community slips back toward 10 until your first year is up, unless you show up.');   // i37-b06
   if (maxHealth(a) < 100 && S.health >= maxHealth(a) - 1) why.push(`❤️ At ${a}, health tops out at ${Math.round(maxHealth(a))}.`);   // i30-b03
   let dh = -0.5 + (happyRest() - S.happy) * 0.06;   // i35-b05: Hard rests lower
-  let dH = ((a < 30 ? 85 : a < 50 ? 78 : a < 65 ? 68 : a < 80 ? 55 : 42) - S.health) * 0.025;
+  let dH = ((a < 30 ? 85 : a < 50 || !on('health.agingDrift') ? 78 : a < 65 ? 68 : a < 80 ? 55 : 42) - S.health) * 0.025;   // to-do 2: Easy has no aging drift
   const cRest = commRest();                        // i35-b05 Hard 20; i37-b06 a newcomer's first year 10
   let dc = (cRest - S.community) * (S.community > 60 ? 0.1 : 0.05) * (S.community > cRest ? 1 - skillLv('people') * 0.15 : 1);   // people skill: community fades slower; i38-a08: harder above 60
   if (S.retired) dh += 1;
@@ -494,20 +497,20 @@ function weekTick(auto){
   if (age() > oldAge && age() % 10 === 0) notes.push(`🎂 Happy ${age()}th birthday!`);
   unlockCheck(true);                               // i31-b22: systems whose moment came, or whose deadline for this game length passed, open
   // i63-b08: four weeks before a 2-year or 5-year life ends, one line suggests a backup (once per life)
-  if (!S.practice && !S.backupNudged && (S.len === 'two' || S.len === 'five') && S.turn >= L.turns - 4 && S.turn < L.turns) { S.backupNudged = true; notes.push(BACKUP_NUDGE); }
-  if (S.turn % CARD_EVERY === 0 && !S.practice) {  // a quarterly report card in the Journal (doesn't stop skips); i20-b14: it counts toward the final score
+  if (!S.practice && !S.backupNudged && on('ui.nudges') && (S.len === 'two' || S.len === 'five') && S.turn >= L.turns - 4 && S.turn < L.turns) { S.backupNudged = true; notes.push(BACKUP_NUDGE); }
+  if (S.turn % CARD_EVERY === 0 && !S.practice && on('score.reportCards')) {  // a quarterly report card in the Journal (doesn't stop skips); i20-b14: it counts toward the final score
     const c = addReportCard(), sc = lifeScore().score, d = S.scoreQ == null ? null : sc - S.scoreQ;
     log(`📋 Report card: ${c} this quarter. Life Score so far ${sc}${d == null ? '' : ` (${d >= 0 ? '+' : ''}${d} since the last one)`}.`);
     S.scoreQ = sc;
   }
   if (S.focus === 'work' && !job()) S.focus = 'rest';
   if (S.focus === 'study' && !canStudy()) S.focus = 'rest';           // i3-a03: a certificate finished after the last diploma
-  if (S.plan && S.plan.length) { S.planI = ((S.planI || 0) + 1) % S.plan.length; S.focus = planFocus(); }   // i2-a12: next week's turn in the rotation
+  if (S.plan && S.plan.length && on('ui.plan')) { S.planI = ((S.planI || 0) + 1) % S.plan.length; S.focus = planFocus(); }   // i2-a12: next week's turn in the rotation
   let review = null;
   const newYear = new Date(S.date).getFullYear();
   if (newYear > oldYear) {
     const snap = { nw: netWorth(), happy: S.happy, health: S.health, community: S.community };
-    if (S.yearStart && LENGTHS[S.len].turns > 26) review = { year: oldYear, start: S.yearStart, end: snap, events: S.yearEvents || 0, wx: wxYearEnd(oldYear),
+    if (S.yearStart && LENGTHS[S.len].turns > 26 && on('ui.milestones')) review = { year: oldYear, start: S.yearStart, end: snap, events: S.yearEvents || 0, wx: wxYearEnd(oldYear),
       milestones: reviewMilestones(oldYear) };   // i5-a03
     if (S.yearStart) S.years = [...(S.years || []), { year: oldYear, age: age(), start: S.yearStart, end: snap, m: yearMilestones(oldYear) }].slice(-120);   // i2-a29: for the life story
     S.yearStart = snap; S.yearEvents = 0;
@@ -522,8 +525,8 @@ function weekTick(auto){
   let ending = null, death = false;
   if (S.health <= 0) {
     if (L.turns === Infinity && age() >= 50) { ending = `${S.name}'s health finally gave out at age ${age()}.`; death = true; }
-    else { const ride = ambRide(), bill = Math.round(cost(6500)) + ride; lateLine('🏥 Hospital bill', -bill, ride ? `The hospital stay in Walla Walla, ${fmt(ride)} of it for the ambulance ride.` : 'The hospital stay in Walla Walla; your ambulance district membership covered the ride.'); S.health = 30; adj({happy:-10});   // i74-a04: the ambulance ride, unless you're a member
-      notes.push(`🏥 You ended up in the hospital. The bill was ${fmt(bill)}${ride ? `, ${fmt(ride)} of it for the ambulance ride` : ', and your ambulance district membership covered the ride'}.`); log('Spent a week in the hospital in Walla Walla.'); }
+    else { const ride = ambRide(), bill = Math.round(cost(6500)) + ride; lateLine('🏥 Hospital bill', -bill, ride ? `The hospital stay in Walla Walla, ${fmt(ride)} of it for the ambulance ride.` : ambOn() ? 'The hospital stay in Walla Walla; your ambulance district membership covered the ride.' : 'The hospital stay in Walla Walla, ambulance ride and all.'); S.health = 30; adj({happy:-10});   // i74-a04: the ambulance ride, unless you're a member
+      notes.push(`🏥 You ended up in the hospital. The bill was ${fmt(bill)}${ride ? `, ${fmt(ride)} of it for the ambulance ride` : ambOn() ? ', and your ambulance district membership covered the ride' : ''}.`); log('Spent a week in the hospital in Walla Walla.'); }
   }
   if (!ending && L.turns === Infinity && age() >= 60) {
     const p = Math.pow((age()-60)/35, 3) * 0.22 * (1.6 - S.health/100) * (W/3);
