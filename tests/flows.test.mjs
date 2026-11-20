@@ -284,7 +284,7 @@ await t.check('backup: Menu downloads a backup file of every life', async () => 
   await page.evaluate(() => { S.turn = 12; save(); });
   await page.click('[data-tab=menu]'); await page.click('#backup');
   const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#bkfile')]);
-  assert(/^the-burg-backup-\d{4}-\d{2}-\d{2}\.json$/.test(dl.suggestedFilename()), dl.suggestedFilename());
+  assert(/^the-burg-backup-\d{4}-\d{2}-\d{2}-\d{4}-flow\.json$/.test(dl.suggestedFilename()), dl.suggestedFilename());   // i62-a11
   const path = await dl.path();
   const data = JSON.parse((await import('node:fs')).readFileSync(path, 'utf8'));
   assert(data.app === 'theburg' && data.slots[0].name === 'Flow' && data.slots[0].turn === 12, 'backup file content wrong');
@@ -307,6 +307,8 @@ await t.check('backup: a copied code restores the lives on a "new device" from t
   await page.waitForSelector('#rsadd');
   assert((await page.textContent('#rsout')).includes('Flow'), 'preview does not list the life');
   await page.click('#rsadd');
+  await page.waitForSelector(`${open} [data-rsopen="0"]`);   // i62-a08: the restored life opens from the sheet
+  await page.click(`${open} #ok`);
   await page.waitForSelector('[data-cont="0"]');
   await page.click('[data-cont="0"]');
   assert((await S()).name === 'Flow' && (await S()).turn === 12, 'restored life is wrong');
@@ -324,6 +326,7 @@ await t.check('backup: restoring from a file can replace all lives, after a warn
   await page.click('#rsrep'); await page.click('#rsyes');
   const names = await page.evaluate(() => slots().map(g => g && g.name));
   assert(names.join() === 'Flow,,,,', `after replace: ${names}`);
+  await page.click(`${open} #ok`);
 });
 
 await t.check('backup: junk is rejected with a plain message', async () => {
@@ -1477,6 +1480,37 @@ await t.check('i8-a01: a waiting grandkid never starts before the grandparent\'s
   const r = await setup(() => { localStorage.clear(); newGame('Young', 'life', 0); const p = { name: 'Young', community: 50, slot: 0, mode: 'normal', gen: 1, date: new Date(2034, 5, 1).getTime(), ageMonths: 25 * 12, col: 1.1, wage: 1, will: false, home: 'room' };
     startLegacy(p, 'Kid'); const y = new Date(S.date).getFullYear(); return { y, born: 2034 - 25 }; });
   assert(r.y === r.born + 60, JSON.stringify(r));
+});
+
+await t.check('i62-a23: two phones: finish a life, reload, back up records from the title screen, restore in a clean browser', async () => {
+  await life({ jobId: 'farmhand' });
+  await setup(() => { S.badges = { job: 1 }; store.set(BADGE_KEY, { job: 1, dog: 1 }); setPref('tips', ['focus', 'strip', 'tabs', 'carpool']); finish('Two years in the Burg is in the books.'); });
+  assert(await page.$(`${open} #endbackup`), 'no backup button on the end screen');   // i62-a24
+  await page.click(`${open} #endbackup`);
+  assert(/0 lives, 1 record, 2 badges/.test(await page.textContent(`${open} h3`)), await page.textContent(`${open} h3`));
+  await page.click(`${open} #no`);
+  assert(await page.$('.title'), 'closing the backup should go on to the title screen');
+  await page.waitForFunction(() => !HIST_T && !HIST_SKIP); await page.waitForTimeout(50);   // let the Back-button history settle
+  await page.reload({ waitUntil: 'load' });
+  await page.evaluate(() => closeSheet());
+  await page.click('#tbackup');
+  await page.click(`${open} #bkcode`); await page.waitForSelector('#bkcodetext');
+  const code = await page.inputValue('#bkcodetext');
+  await page.click(`${open} #no`);
+  const ctx2 = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  const p2 = await ctx2.newPage();
+  await p2.goto(srv.url, { waitUntil: 'load' });
+  assert(!(await p2.$('#tbackup')), 'a clean phone has nothing to back up');
+  await p2.click('#restore');
+  await p2.fill('#rscode', `My backup:\n${code}\nfrom the old phone`);
+  await p2.click('#rscheck'); await p2.waitForSelector('#rsadd');
+  const shown = await p2.textContent('#rsout');
+  assert(/0 lives, 1 record, 2 badges/.test(shown) && /2 Years: \d+/.test(shown), shown);   // i62-a07
+  await p2.click('#rsadd');
+  await p2.waitForSelector('#modal:not(.hidden) #ok');
+  const r = await p2.evaluate(() => ({ best: Object.keys(store.get(BEST_KEY) || {}), badges: Object.keys(store.get(BADGE_KEY) || {}), tips: prefs().tips || [], title: $('#sheet h2').textContent }));
+  await ctx2.close();
+  assert(r.best.includes('two') && r.badges.length === 2 && r.tips.includes('carpool') && /Backup restored/.test(r.title), JSON.stringify(r));   // i62-a08, i62-a10
 });
 
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });

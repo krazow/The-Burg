@@ -1238,9 +1238,11 @@ function finish(reason, opts = {}){
     ${pensionVested() ? `<div class="kv"><span>🏛️ Public pension</span><span>${Math.floor(S.pensionYears)} years</span></div>` : ''}
     ${heir ? `<div class="kv"><span>📜 Will</span><span>${hasWill() ? 'On file' : 'None: probate will take a share'}</span></div>` : ''}
     ${!S.practice ? '<button class="btn ghost" id="share">📤 Share score card</button>' : ''}
+    ${!S.practice ? '<button class="btn ghost" id="endbackup">💾 Back up your records</button>' : ''}
     ${heir ? `<button class="btn primary" id="legacy">🌳 Continue as your grandkid</button>` : ''}
     <button class="btn ${heir ? 'ghost' : 'primary'}" id="again">Play again</button>`);
   if ($('#share')) $('#share').onclick = shareCard;
+  if ($('#endbackup')) $('#endbackup').onclick = () => backupSheet(() => { S = null; useDice(); renderTitle(); });   // i62-a24: closing it goes on to the title screen
   if ($('#skipstory')) $('#skipstory').onclick = () => { $('#story').remove(); const f = $('#finalscore'); f.scrollIntoView({ block: 'start' }); f.focus({ preventScroll: true }); };
   if ($('#legacy')) $('#legacy').onclick = () => legacySheet(parent);
   $('#again').onclick = () => { closeSheet(); S = null; useDice(); renderTitle(); };

@@ -239,7 +239,7 @@ function guideHTML(){
       <li><b>Menu → 💾 Save game:</b> Save writes your current life right now. Save here or Replace on another slot makes a copy as a checkpoint you can go back to.</li>
       <li><b>Menu → 📂 Load game:</b> switches to any saved life. The one you're playing is saved first.</li></ul>
       <p>Finishing a life frees its slot. Saves live on this device and in this browser.</p>
-      <p><b>Menu → 📤 Back up or restore:</b> download a backup file or copy a backup code, then on another device use <b>📥 Restore from a backup</b> (on the title screen or in the same menu). You can add the backup's lives to empty slots or replace all your lives.</p>`],
+      <p><b>Menu → 📤 Back up or restore:</b> download a backup file or copy a backup code, then on another device use <b>📥 Restore from a backup</b> (on the title screen or in the same menu). You can add the backup's lives to empty slots or replace all your lives. A backup also keeps your best scores, badges and settings, so you can back up from the title screen or the end screen even with no life going. A life that's already on this phone isn't added twice, and a code pasted with other words around it still works.</p>`],
     ['score', '🏆 The Life Score', `
       <p><b>Life Score so far:</b> Home shows the score you'd get if the game ended today. Tap it for the breakdown and a tip for your weakest part. A report card goes in your Journal every 13 weeks. In the <b>📜 Journal</b>, the chips at the top show just Money, Events, Milestones (badges, skills, report cards, town goals, stories) or Trips.</p>
       <p>At the end, your life gets a score out of 100 from four parts:</p>
