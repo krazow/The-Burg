@@ -505,7 +505,7 @@ function raiseNote(g){
 const shopCost = () => Math.round(cost(ri(300, S.car === 'beater' ? 1400 : 900)) * (1 - skillLv('mechanic') * 0.15));
 // i66-b01: openings you could take that pay more than your job does now
 const tipJobs = () => { const now = job() && !S.retired ? payNow(job()) : 0;
-  return JOBS.filter(x => x.edu <= S.edu && !extraLock(x) && jobInSeason(x) && x.id !== S.jobId && payNow(x, false) > now); };
+  return JOBS.filter(x => x.edu <= S.edu && jobOn(x) && !extraLock(x) && jobInSeason(x) && x.id !== S.jobId && payNow(x, false) > now); };
 const handyCost = v => Math.round(cost(v) * (1 - skillLv('handy') * 0.15));   // i71-b01: a do-it-yourself price, after your handy discount
 // the town this week's drive goes to: a trip's town, else your commute, else Walla Walla
 function roadTown(){

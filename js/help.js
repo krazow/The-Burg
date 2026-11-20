@@ -448,6 +448,7 @@ function startTutorial(after){
   LIFE_UNDO = [];
   setPref('mapView', false); jobCity = 'all'; jobOK = false;
   newGame('Practice', 'half', 0, { practice: true });
+  S.diff = 'hard';                                 // difficulty: the tour shows every feature (on Normal's numbers) until each step gets its own tier
   if (!$('#coach')) document.body.insertAdjacentHTML('beforeend', '<div id="coach" class="hidden"></div>');
   tutNext();
 }
