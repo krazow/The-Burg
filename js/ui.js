@@ -441,7 +441,7 @@ function restoreSheet(){
   $('#rsfile').onchange = async e => { const f = e.target.files && e.target.files[0]; if (!f) return; const text = await f.text(); $('#rscode').value = ''; backupCheck(text, $('#rsout')); };
   $('#no').onclick = closeSheet;
 }
-// reads a pasted, scanned or chosen backup into `out`: what's in it, then Add or Replace (shared by restore and the new-phone guide)
+// reads a pasted or chosen backup into `out`: what's in it, then Add or Replace (shared by restore and the new-phone guide)
 async function backupCheck(text, out){
   try {
     const b = await readBackup(text);
@@ -484,39 +484,22 @@ function finishRestore(b, mode){
   const msg = skipped ? `Restored. ${skipped} ${skipped === 1 ? 'life' : 'lives'} didn't fit: free up a slot and restore again.` : 'Backup restored';
   toast(msg); announce(msg);
 }
-/* ---------- 📱 moving to a new phone (i63-b15, i63-b12): the old phone shows the backup as QR frames, the new one scans ---------- */
-let MOVE = null;                                   // the looping QR frames: { frames, i, timer, paused }
-function stopMove(){ if (MOVE) clearTimeout(MOVE.timer); MOVE = null; }
-async function movePhoneSheet(){
+/* ---------- 📱 moving to a new phone (i63-b15): a two-screen guide around the backup code and file ---------- */
+function movePhoneSheet(){
   if (S && !S.over && !S.practice) save();
-  stopMove();
   const n = slots().filter(Boolean).length;
   if (!n) { sheet(`<h2>📱 Moving to a new phone</h2><p>There are no saved lives on this phone to move yet.</p><button class="btn primary" id="ok">OK</button>`); $('#ok').onclick = closeSheet; return; }
-  const code = await backupCode(backupData()), parts = qrParts(code);
   const step1 = () => {
     sheet(`<h2>📱 Moving to a new phone</h2>
       <p class="muted"><b>Step 1 of 2 · on this phone</b> (the old one)</p>
-      <p>On the new phone, open The Burg and tap <b>📱 I'm the new phone</b>, then point its camera here. ${parts.length > 1 ? `All ${n} ${n === 1 ? 'life' : 'lives'} take ${parts.length} codes, shown in a loop: hold the new phone still until its bar fills.` : `${n === 1 ? 'Your life fits' : `All ${n} lives fit`} in one code.`}</p>
-      <div class="qrbox" id="mvqr"></div>
-      ${parts.length > 1 ? `<p class="qrpart" id="mvpart" aria-hidden="true"></p><button class="btn ghost" id="mvpause" aria-pressed="false">⏸ Pause</button>` : ''}
-      <button class="btn ghost" id="mvcode">📋 Copy the code instead</button>
+      <p>Send ${n === 1 ? 'your life' : `all ${n} lives`} to yourself: copy the backup code into a text or an email to yourself, or save a backup file where the new phone can open it.</p>
+      <button class="btn primary" id="mvcode">📋 Copy the backup code</button>
       <div id="mvout"></div>
+      <button class="btn ghost" id="mvfile">⬇️ Download a backup file</button>
       <button class="btn primary" id="mvnext">Next: on the new phone →</button>
       <button class="btn ghost" id="close">Close</button>`);
-    MOVE = { i: 0, timer: 0, paused: false };
-    const show = () => {
-      if (!MOVE || !$('#mvqr')) return stopMove();
-      $('#mvqr').innerHTML = qrSVG(parts[MOVE.i], parts.length > 1 ? `Backup code, part ${MOVE.i + 1} of ${parts.length}` : 'Backup code');
-      if ($('#mvpart')) $('#mvpart').textContent = `Part ${MOVE.i + 1} of ${parts.length}`;
-      if (parts.length > 1 && !MOVE.paused) { MOVE.i = (MOVE.i + 1) % parts.length; MOVE.timer = setTimeout(show, calmMotion() ? 600 : 350); }
-    };
-    show();
-    if ($('#mvpause')) $('#mvpause').onclick = () => {
-      MOVE.paused = !MOVE.paused; clearTimeout(MOVE.timer);
-      $('#mvpause').textContent = MOVE.paused ? '▶️ Play' : '⏸ Pause'; $('#mvpause').setAttribute('aria-pressed', MOVE.paused);
-      if (!MOVE.paused) show();
-    };
     $('#mvcode').onclick = async () => {
+      const code = await backupCode(backupData());
       let copied = false;
       try { await navigator.clipboard.writeText(code); copied = true; } catch (e) {}
       $('#mvout').innerHTML = `<p>${copied ? '✅ Copied! Send it to yourself (a text or an email), then paste it on the new phone.' : 'Select all of this code and copy it, then send it to yourself:'}</p>
@@ -524,57 +507,45 @@ async function movePhoneSheet(){
       if (!copied) { $('#mvcodetext').focus(); $('#mvcodetext').select(); }
       announce(copied ? 'Backup code copied' : 'Backup code shown');
     };
+    $('#mvfile').onclick = () => {
+      const blob = new Blob([JSON.stringify(backupData(), null, 1)], { type: 'application/json' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = `the-burg-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      toast('Backup file downloaded'); announce('Backup file downloaded');
+    };
     $('#mvnext').onclick = step2;
-    $('#close').onclick = () => { stopMove(); closeSheet(); };
+    $('#close').onclick = closeSheet;
   };
   const step2 = () => {
-    stopMove();
     sheet(`<h2>📱 Moving to a new phone</h2>
       <p class="muted"><b>Step 2 of 2 · on the new phone</b></p>
       <ol class="steps"><li>Open <b>krazow.github.io/The-Burg</b> on the new phone (or the app, if you installed it there).</li>
       <li>On the title screen, tap <b>📱 I'm the new phone</b>.</li>
-      <li>Tap <b>Scan</b> and point the camera at the code on this phone, or paste the code you sent yourself.</li>
+      <li>Paste the code you sent yourself, or choose the backup file.</li>
       <li>Check the lives it lists, then tap <b>Add to my empty slots</b>.</li></ol>
       <p class="muted">Your lives stay on this phone too, until you delete them.</p>
-      <button class="btn ghost" id="back">← Back to the code</button>
+      <button class="btn ghost" id="back">← Back to step 1</button>
       <button class="btn primary" id="ok">Done</button>`);
     $('#back').onclick = step1;
     $('#ok').onclick = closeSheet;
   };
   step1();
 }
-// the new phone's side: scan the old phone's code (camera), or paste it
+// the new phone's side: paste the old phone's code, or choose its backup file
 function newPhoneSheet(){
-  const cam = canScan();
   sheet(`<h2>📱 I'm the new phone</h2>
-    <p class="muted">On the old phone, open the game and tap Menu → 📤 Back up or restore → <b>📱 Moving to a new phone</b>.</p>
-    ${cam ? `<button class="btn primary" id="npscan">📷 Scan the old phone's code</button>
-      <div id="npcam" class="hidden"><video id="npvid" class="qrcam" muted playsinline aria-label="Camera view"></video>
-      <progress id="npprog" max="1" value="0" aria-label="Codes collected"></progress><p id="npstat" role="status">Point the camera at the code on the old phone.</p></div>`
-      : '<p class="muted">This browser can\'t scan codes with the camera. Copy the code on the old phone, send it to yourself, and paste it here.</p>'}
-    <label class="field" for="rscode">Or paste the code</label>
+    <p class="muted">On the old phone, open the game and tap Menu → <b>📱 Moving to a new phone</b>, and send yourself the backup code or file.</p>
+    <label class="field" for="rscode">Paste the code</label>
     <textarea class="code" id="rscode" rows="3" placeholder="BURG2:…"></textarea>
-    <button class="btn ${cam ? 'ghost' : 'primary'}" id="rscheck">Check this code</button>
+    <button class="btn primary" id="rscheck">Check this code</button>
+    <button class="btn ghost" id="rsfilebtn">📁 Or choose a backup file</button><input type="file" id="rsfile" accept=".json,application/json,text/plain" hidden>
     <div id="rsout" role="status"></div>
     <button class="btn ghost" id="no">Cancel</button>`);
-  $('#rscheck').onclick = () => { stopScan(); backupCheck($('#rscode').value, $('#rsout')); };
-  $('#no').onclick = () => { stopScan(); closeSheet(); };
-  if (!cam) return;
-  $('#npscan').onclick = async () => {
-    $('#npcam').classList.remove('hidden'); $('#npscan').disabled = true;
-    try {
-      await startScan($('#npvid'), (have, of) => {
-        $('#npprog').max = of; $('#npprog').value = have;
-        $('#npstat').textContent = of > 1 ? `Got ${have} of ${of} codes. Keep holding still…` : 'Got it.';
-      }, code => {
-        $('#npstat').textContent = 'Got the whole backup.'; $('#npcam').classList.add('hidden'); $('#npscan').disabled = false;
-        backupCheck(code, $('#rsout'));
-      });
-    } catch (e) {
-      $('#npstat').textContent = 'The camera didn\'t open. Allow the camera for this site, or paste the code instead.';
-      $('#npscan').disabled = false;
-    }
-  };
+  $('#rscheck').onclick = () => backupCheck($('#rscode').value, $('#rsout'));
+  $('#rsfilebtn').onclick = () => $('#rsfile').click();
+  $('#rsfile').onchange = async e => { const f = e.target.files && e.target.files[0]; if (!f) return; const text = await f.text(); $('#rscode').value = ''; backupCheck(text, $('#rsout')); };
+  $('#no').onclick = closeSheet;
 }
 
 function loadSheet(){
@@ -1299,8 +1270,6 @@ function closeSheet(){
   const wasOpen = !$('#modal').classList.contains('hidden');
   if (wasOpen && typeof PLAY_AT !== 'undefined') PLAY_AT = -1e9;   // a sheet in between means the next End Week tap is on purpose
   $('#modal').classList.add('hidden');
-  if (typeof stopScan === 'function') stopScan();     // i63-b12: the camera and the QR loop stop with their sheet
-  if (typeof stopMove === 'function') stopMove();
   if (wasOpen) setTimeout(() => { const el = lastFocus && document.getElementById(lastFocus); if (el && !TUT) el.focus({ preventScroll: true }); }, 30);
 }
 // the button that closes the open sheet the safe way (Escape and a swipe down both use it); sheets that ask

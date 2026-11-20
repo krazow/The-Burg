@@ -236,7 +236,7 @@ function guideHTML(){
       <p><b>Menu → 📤 Back up or restore:</b> download a backup file or copy a backup code, then on another device use <b>📥 Restore from a backup</b> (on the title screen or in the same menu). You can add the backup's lives to empty slots or replace all your lives.</p>
       <ul><li><b>Codes check themselves.</b> If a backup code gets cut off or a letter changes on the way, restoring it says which: the last part is missing, a piece in the middle is missing, or one piece was changed. Copy it again from the original.</li>
       <li><b>A backup from a newer version</b> asks you to update first, with a <b>Check for an update</b> button.</li>
-      <li><b>📱 Moving to a new phone</b> (in the Menu and under Back up or restore): the old phone shows your lives as a QR code (several codes in a loop, "part 3 of 8", when there's a lot). On the new phone tap <b>📱 I'm the new phone</b> on the title screen and scan them in any order, or paste the code you sent yourself.</li>
+      <li><b>📱 Moving to a new phone</b> (in the Menu and under Back up or restore): a two-step guide. On the old phone, copy the backup code into a text or email to yourself (or download a backup file). On the new phone, tap <b>📱 I'm the new phone</b> on the title screen and paste the code or choose the file.</li>
       <li><b>Older copies are "rewound".</b> Restoring an earlier week of a life that's already on this phone asks first. A rewound life still plays, but its ending doesn't set best scores or badges.</li>
       <li><b>Near the end:</b> four weeks before a 2-year or 5-year life ends, the week's report offers <b>📤 Back up now</b>, once.</li></ul>`],
     ['score', '🏆 The Life Score', `

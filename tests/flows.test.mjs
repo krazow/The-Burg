@@ -1283,64 +1283,36 @@ await t.check('i63-b08: the week 4 weeks before the end offers a backup; closing
   assert(!(await page.$(`${open} #nudgebk`)), 'the nudge came twice');
 });
 
-await t.check('i63-b15/b12: Moving to a new phone shows the lives as looping QR codes, then the new phone\'s steps', async () => {
+await t.check('i63-b15: Moving to a new phone is a two-step guide: send yourself the code, then paste it on the new phone', async () => {
   await life({ jobId: 'farmhand' });
-  await page.evaluate(() => { for (let i = 0; i < 40; i++) log('A long, long journal line to make the backup bigger: ' + i + ' ' + Math.random().toString(36)); S.turn = 30; save(); for (let i = 1; i < 4; i++) { const c = clone(S); c.slot = i; c.name = 'Copy' + i; c.lid = 'x' + i; writeSlot(i, c); } });
+  await page.evaluate(() => { S.turn = 30; save(); const c = clone(S); c.slot = 1; c.name = 'Copy1'; c.lid = 'x1'; writeSlot(1, c); });
   await page.click('[data-tab=menu]'); await page.click('#movephone');
-  await page.waitForSelector(`${open} #mvqr svg.qr`);
-  const first = await page.textContent('#mvpart');
-  assert(/^Part \d+ of (\d+)$/.test(first) && +first.match(/of (\d+)/)[1] > 1, `part label: ${first}`);
-  await page.waitForFunction(f => document.querySelector('#mvpart').textContent !== f, first, { timeout: 3000 });
-  await page.click('#mvpause');
-  const paused = await page.textContent('#mvpart'); await page.waitForTimeout(800);
-  assert(await page.textContent('#mvpart') === paused, 'Pause did not stop the loop');
-  assert((await page.getAttribute('#mvqr svg', 'aria-label')).includes('part'), 'the QR has no label');
+  await page.waitForSelector(`${open} #mvcode`);
+  assert((await page.textContent('#sheet')).includes('Step 1 of 2'), 'step 1 missing');
+  await page.click('#mvcode');
+  await page.waitForSelector('#mvcodetext');
+  const code = await page.inputValue('#mvcodetext');
+  assert(code.startsWith('BURG2:'), `code ${code.slice(0, 10)}`);
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#mvfile')]);
+  assert(/\.json$/.test(dl.suggestedFilename()), dl.suggestedFilename());
   await page.click('#mvnext');
   await page.waitForSelector(`${open} ol.steps`);
   assert((await page.textContent('#sheet')).includes("I'm the new phone"), 'step 2 should name the title button');
-  await page.click('#back'); await page.waitForSelector('#mvqr svg');
+  await page.click('#back'); await page.waitForSelector('#mvcode');
   await page.click(`${open} #close`);
-  assert(await page.evaluate(() => MOVE === null), 'the QR loop kept running after closing');
-});
-
-await t.check('i63-b15/b12: the new phone scans the frames in any order (progress bar) and restores the lives', async () => {
-  const c2 = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
-  // a stand-in camera: BarcodeDetector hands back the old phone's frames, shuffled, one per look
-  await c2.addInitScript(() => {
-    window.__frames = [];
-    window.BarcodeDetector = class { constructor(){} async detect(){ const f = window.__frames.shift(); return f ? [{ rawValue: f }] : []; } };
-    navigator.mediaDevices.getUserMedia = async () => { const c = document.createElement('canvas'); c.width = 8; c.height = 8; return c.captureStream(); };
-  });
-  const p2 = await c2.newPage(); p2.on('pageerror', e => errors.push(String(e)));
-  try {
-    const code = await page.evaluate(() => backupCode(backupData()));
-    const frames = await page.evaluate(c => qrParts(c), code);
-    await p2.goto(srv.url, { waitUntil: 'load' });
-    await p2.click('#newphone');
-    await p2.waitForSelector('#modal:not(.hidden) #npscan');
-    const shuffled = frames.map((f, i) => [f, (i * 7919) % 13]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
-    await p2.evaluate(f => { window.__frames = [f[0], f[0], ...f.slice(1)]; }, shuffled);
-    await p2.click('#npscan');
-    await p2.waitForSelector('#rsadd', { timeout: 10000 });
-    assert(await p2.evaluate(() => { const p = document.querySelector('#npprog'); return p.value === p.max && p.max > 1; }), 'progress bar not full');
-    assert(await p2.evaluate(() => SCAN === null), 'the camera stayed on');
-    await p2.click('#rsadd');
-    const names = await p2.evaluate(() => slots().map(g => g && g.name).join());
-    assert(names === 'Flow,Copy1,Copy2,Copy3,', `new phone has ${names}`);
-  } finally { await c2.close(); }
-});
-
-await t.check('i63-b15: without a camera scanner the new phone pastes the code; a cut-off code names the missing part', async () => {
-  await page.evaluate(() => { S = null; renderTitle(); });
-  const code = await page.evaluate(() => backupCode(backupData()));
+  // the new phone
+  await page.evaluate(() => { localStorage.clear(); S = null; renderTitle(); });
   await page.click('#newphone');
   await page.waitForSelector(`${open} #rscode`);
-  assert(!(await page.$('#npscan')) && (await page.textContent('#sheet')).includes("can't scan"), 'should explain there is no scanner');
+  assert(!(await page.$('#npscan, video')), 'no camera on the new-phone sheet');
   await page.fill('#rscode', code.slice(0, -25));
   await page.click('#rscheck');
   await page.waitForSelector('#rsout .warnline');
   assert((await page.textContent('#rsout')).includes('last part'), await page.textContent('#rsout'));
-  await page.click(`${open} #no`);
+  await page.fill('#rscode', code); await page.click('#rscheck');
+  await page.waitForSelector('#rsadd'); await page.click('#rsadd');
+  const names = await page.evaluate(() => slots().map(g => g && g.name).join());
+  assert(names === 'Flow,Copy1,,,', `new phone has ${names}`);
 });
 
 await t.check('i63-b02: a backup from a newer Burg offers Check for an update', async () => {

@@ -2062,24 +2062,6 @@ await t.check('i73-b18: the shared score card comes with a short text (and the w
   assert(r.c.includes('in a lifetime in The Burg'), r.c);
 });
 
-await t.check('i63-b12: QR codes: every size fits, a big backup splits into labelled parts that join back in any order', async () => {
-  const r = await ev(async () => {
-    const sizes = [1, 100, 320, 900, 2900].map(n => qrMake('x'.repeat(n), 'L')).map(q => [q.version, q.size]);
-    let tooLong = false; try { qrMake('x'.repeat(3000), 'L'); } catch (e) { tooLong = true; }
-    const code = 'BURG2:' + 'abcdefgh'.repeat(400) + '.2400.0badc0de', parts = qrParts(code);
-    const col = qrCollector(), order = parts.map((_, i) => i).reverse(); let res;
-    col.add('BURGP:1/3:other');                                    // a different backup's frame is dropped when the count changes
-    for (const i of [order[0], order[0], ...order.slice(1)]) res = col.add(parts[i]);
-    const single = qrCollector().add('BURG2:short.5.00000000');
-    return { sizes, tooLong, n: parts.length, label: parts[2].slice(0, 11), longest: Math.max(...parts.map(p => p.length)), joined: res.done && res.code === code, single: single.done && single.code };
-  });
-  assert(r.sizes.map(s => s[1]).join() === '21,37,61,101,177', `sizes ${JSON.stringify(r.sizes)}`);
-  assert(r.tooLong, 'an oversized code should refuse');
-  assert(r.n === 11 && r.label === 'BURGP:3/11:' && r.longest < 340, `parts ${r.n} ${r.label} ${r.longest}`);
-  assert(r.joined, 'frames did not join back');
-  assert(r.single === 'BURG2:short.5.00000000', 'a one-frame code');
-});
-
 await t.check('i22-a12: a food-truck weekend keeps hustle experience from fading', async () => {
   const r = await ev(() => {
     const run = truck => { fresh('two', { focus: 'hustle', hustleWeeks: 20, hustleLast: 0, turn: 100, money: 50000 }); S.date = new Date(2028, 4, 10).getTime();
