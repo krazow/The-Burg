@@ -46,6 +46,7 @@ function renderTitle(){
     ${used ? `<label class="field">Your lives (${used}/${SLOT_COUNT})</label>
       <div class="slots">${all.map((g,i) => g ? slotCard(g, i, `<div class="slotbtns"><button class="sm" data-cont="${i}">Continue</button><button class="sm alt" data-del="${i}" aria-label="Delete ${esc(g.name)}'s life">🗑</button></div>`) : '').join('')}</div>
       <div class="muted" style="margin:18px 0 0">— or start a new life —</div>` : ''}
+    ${titleExtras()}
     <label class="field" for="nm">Your citizen's name</label>
     <input type="text" id="nm" maxlength="20" placeholder="e.g. Dusty" autocomplete="off">
     <label class="field">Game length</label>
@@ -88,7 +89,8 @@ function renderTitle(){
   document.querySelectorAll('.len').forEach(b => b.onclick = () => {
     len = b.dataset.len; document.querySelectorAll('.len').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
   });
-  document.querySelectorAll('[data-cont]').forEach(b => b.onclick = () => loadSlot(+b.dataset.cont));
+  document.querySelectorAll('[data-cont]').forEach(b => b.onclick = () => loadSlot(b.dataset.cont === WEEKLY_SLOT ? WEEKLY_SLOT : +b.dataset.cont));
+  wireTitleExtras();
   document.querySelectorAll('[data-del]').forEach(b => b.onclick = () => askDelete(+b.dataset.del));
   $('#start').onclick = () => {
     const name = ($('#nm').value.trim() || 'Dusty').slice(0,20);
@@ -99,7 +101,9 @@ function renderTitle(){
   $('#how').onclick = showHelp;
   $('#chal').onclick = challengesSheet;
   $('#weekly').onclick = () => {
-    sheet(`<h2>📅 Weekly challenge ${isoWeek()}</h2><p>A 6-month life where everyone gets the same events and dice this week. Play it, then share your score card and compare with friends.</p><button class="btn primary" id="y">Start</button><button class="btn ghost" id="n">Not now</button>`);
+    const cur = readSlot(WEEKLY_SLOT);
+    sheet(`<h2>📅 Weekly challenge ${isoWeek()}</h2><p>A 6-month life where everyone gets the same events and dice this week. Play it, then share your score card and compare with friends.</p><p class="muted">It has its own place, so it doesn't use one of your ${SLOT_COUNT} slots.${cur ? ` Starting again replaces ${esc(cur.name)}'s challenge in progress.` : ''}</p>${cur ? '<button class="btn primary" id="wcont">Continue this week\'s challenge</button>' : ''}<button class="btn ${cur ? 'ghost' : 'primary'}" id="y">${cur ? 'Start over' : 'Start'}</button><button class="btn ghost" id="n">Not now</button>`);
+    if ($('#wcont')) $('#wcont').onclick = () => loadSlot(WEEKLY_SLOT);
     $('#y').onclick = () => { const name = (($('#nm') && $('#nm').value.trim()) || 'Dusty').slice(0,20); closeSheet(); startWeekly(name); };
     $('#n').onclick = closeSheet;
   };
@@ -110,13 +114,14 @@ function renderTitle(){
 /* ---------- 🏆 Your records (G7, R7): best scores by length × mode, challenges, and this week's weekly challenge ---------- */
 // only the current week's weekly-challenge best is kept; older weeks are dropped when the game loads
 function pruneWeekly(){
+  { const w = readSlot(WEEKLY_SLOT); if (w && w.weekly !== isoWeek()) writeSlot(WEEKLY_SLOT, null); }   // i73-b11: the challenge week is over
   const best = store.get(BEST_KEY); if (!best) return;
   const cur = `wk-${isoWeek()}`, stale = Object.keys(best).filter(k => k.startsWith('wk-') && k !== cur);
   if (stale.length) { stale.forEach(k => delete best[k]); store.set(BEST_KEY, best); }
 }
 function hasRecords(){
   const best = store.get(BEST_KEY) || {};
-  return Object.keys(best).some(k => bestLabel(k)) || Object.keys(store.get(CHALLENGE_KEY) || {}).length > 0;
+  return Object.keys(best).some(k => bestLabel(k)) || Object.keys(store.get(CHALLENGE_KEY) || {}).length > 0 || ends().length > 0;
 }
 function recordsSheet(){
   const best = store.get(BEST_KEY) || {}, won = store.get(CHALLENGE_KEY) || {}, mds = ['relaxed', 'normal', 'hard'];
@@ -131,8 +136,56 @@ function recordsSheet(){
     ${Object.entries(SCENARIOS).map(([k, sc]) => `<div class="kv"><span>${sc.ic} ${sc.name}${won[k] ? ' ✅' : ''}</span><span>${best['sc-' + k] != null ? `best <b>${best['sc-' + k]}</b>` : '<span class="muted">not played</span>'}</span></div>`).join('')}
     <h3 style="margin-top:14px">📅 This week's challenge (${isoWeek()})</h3>
     <div class="kv"><span>Your best this week</span><span>${wk != null ? `<b>${wk}</b>` : '<span class="muted">not played yet</span>'}</span></div>
+    ${topLives()}
     <button class="btn primary" id="ok">Close</button>`);
   $('#ok').onclick = closeSheet;
+  document.querySelectorAll('[data-end]').forEach(b => b.onclick = () => endSummary(top10()[+b.dataset.end]));
+}
+// i73-b02: the ten best finished lives on this device, from the stubs finish() leaves
+const top10 = () => ends().map((e, i) => [e, i]).sort((a, b) => b[0].score - a[0].score || a[1] - b[1]).slice(0, 10).map(x => x[0]);
+function topLives(){
+  const t = top10(); if (!t.length) return '';
+  return `<h3 style="margin-top:14px">🏅 Your top ${t.length === 10 ? 10 : t.length} ${t.length === 1 ? 'life' : 'lives'}</h3>
+    <table class="rec"><caption>Your best finished lives. Tap one to see how it ended.</caption>
+      <thead><tr><th scope="col">Name</th><th scope="col">Length</th><th scope="col">Score</th><th scope="col">Year</th></tr></thead>
+      <tbody>${t.map((e, i) => `<tr><th scope="row"><button class="linkbtn" data-end="${i}" aria-label="${esc(e.name)}, score ${e.score}: see how it ended">${esc(e.name)}</button></th><td>${LENGTHS[e.len] ? LENGTHS[e.len].label : ''}${MODES[e.mode] && e.mode !== 'normal' ? ` ${MODES[e.mode].ic}` : ''}</td><td><b>${e.score}</b> <span class="s">${esc(e.title || '')}</span></td><td>${Number.isFinite(e.to) ? e.to : ''}</td></tr>`).join('')}</tbody></table>`;
+}
+function endSummary(e){
+  if (!e) return;
+  const p = e.parts || {}, row = (l, v) => `<div class="kv"><span>${l}</span><span>${v}</span></div>`;
+  sheet(`<h2 style="text-align:center">${esc(e.name)}'s life in the Burg</h2>
+    <p class="muted" style="text-align:center">${esc(e.cause || '')}</p>
+    <div class="score">${e.score}</div><p style="text-align:center;margin-top:0"><b>${esc(e.title || '')}</b></p>
+    ${row('Played', `${LENGTHS[e.len] ? LENGTHS[e.len].label : ''}${MODES[e.mode] ? ` · ${MODES[e.mode].ic} ${MODES[e.mode].name}` : ''}${BACKGROUNDS[e.bg] ? ` · ${BACKGROUNDS[e.bg].ic} ${BACKGROUNDS[e.bg].name}` : ''}`)}
+    ${row('Years', `${e.from ?? ''}–${e.to ?? ''}${Number.isFinite(e.age) ? `, to age ${e.age}` : ''}`)}
+    ${['happy', 'health', 'community', 'wealth'].filter(k => Number.isFinite(p[k])).map(k => row({ happy:'Happiness', health:'Health', community:'Community', wealth:'Net worth' }[k], `<b>${p[k]}</b>/100`)).join('')}
+    ${row('Work', esc(e.job || ''))}${row('Home', esc(e.home || ''))}
+    ${e.kids ? row('Kids raised', e.kids) : ''}${e.gen > 1 ? row('🌳 Generation', e.gen) : ''}${e.seed ? row('📅 Weekly challenge', esc(e.seed)) : ''}
+    <button class="btn ghost" id="back">Back to your records</button><button class="btn primary" id="ok">Close</button>`);
+  $('#back').onclick = recordsSheet; $('#ok').onclick = closeSheet;
+}
+// title-screen extras: this week's challenge in progress, a grandkid waiting (i60-a13), a damaged save (i57-a15)
+function titleExtras(){
+  const w = readSlot(WEEKLY_SLOT), hs = heirs();
+  return `${w ? `<label class="field">📅 This week's challenge</label><div class="slots"><div class="slot"><div class="slotinfo"><b>${esc(w.name)}</b> <span class="tag">📅 ${esc(w.weekly || '')}</span><div class="s">${slotLine(w)}</div><div class="s">${savedAgo(w.savedAt)}</div></div><div class="slotbtns"><button class="sm" data-cont="${WEEKLY_SLOT}">Continue</button></div></div></div>` : ''}
+    ${hs.map((p, i) => `<div class="card tip heirwait">🌳 <b>${esc(p.name)}'s grandkid is ready</b> to carry on in Waitsburg.<div class="slotbtns" style="margin-top:8px"><button class="sm" data-heir="${i}">Start</button><button class="sm alt" data-heirno="${i}" aria-label="Dismiss ${esc(p.name)}'s grandkid">Dismiss</button></div></div>`).join('')}
+    ${hasBroken() ? `<div class="card warn">⚠️ <b>A saved life couldn't be read</b> and was kept aside, so nothing overwrote it.<button class="btn ghost" id="brokendl">⬇️ Download the damaged save</button></div>` : ''}`;
+}
+function wireTitleExtras(){
+  document.querySelectorAll('[data-heir]').forEach(b => b.onclick = () => { const p = heirs()[+b.dataset.heir]; if (p) legacySheet(p); });
+  document.querySelectorAll('[data-heirno]').forEach(b => b.onclick = () => {
+    const p = heirs()[+b.dataset.heirno]; if (!p) return;
+    sheet(`<h2>Dismiss ${esc(p.name)}'s grandkid?</h2><p>The family line won't carry on from ${esc(p.name)}. This can't be undone.</p>
+      <button class="btn primary" id="yes">Dismiss</button><button class="btn ghost" id="no">Keep waiting</button>`);
+    $('#yes').onclick = () => { setHeirs(heirs().filter(x => x !== p && x.id !== p.id)); closeSheet(); renderTitle(); toast('Dismissed'); };
+    $('#no').onclick = closeSheet;
+  });
+  if ($('#brokendl')) $('#brokendl').onclick = () => {
+    const blob = new Blob([JSON.stringify(store.get(BROKEN_KEY), null, 1)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `the-burg-damaged-save-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    toast('Damaged save downloaded');
+  };
 }
 /* ---------- ✨ What's new (G6): a one-time card after an update, once per version ---------- */
 const SEEN_KEY = KEY_PREFIX + 'seenVersion';
@@ -177,11 +230,22 @@ function whatsNew(){
   return true;
 }
 function loadSlot(i){
-  const g = slots()[i]; if (!g) return;
+  const g = readSlot(i); if (!g) return;
   if (S && !S.over && S.slot !== i) save();
   LIFE_UNDO = []; S = migrate(clone(g)); S.slot = i; tab = 'home'; MAPSIDE = null; MAPSEL = null; useDice();
   closeSheet(); render(); window.scrollTo(0,0);
+  if (resumePending()) return;
   if (g.savedAt && Date.now() - g.savedAt >= RECAP_AFTER && S.recapAt !== g.savedAt && !S.practice) recapSheet(g.savedAt);
+}
+// i22-a01 / i22-a02: an ending or an event card that was waiting when the app closed comes back on Continue
+const findEvent = t => [...EVENTS, ...DUE_EVENTS, ...PLAN_DUE].find(e => e.title === t) || null;
+function resumePending(){
+  if (!S || S.over) return false;
+  if (S.endPending) { endLife(S.endPending); return true; }
+  if (!S.pendingEv) return false;
+  const ev = findEvent(S.pendingEv);
+  if (!ev || !ev.choices().some(c => !c.if || c.if())) { S.pendingEv = null; return false; }
+  showEvent(ev); return true;
 }
 /* ---------- i2-a14: "Previously in the Burg" when you come back after a while (once per save) ---------- */
 const RECAP_AFTER = 8 * 3600e3;          // 8 hours away
@@ -192,7 +256,7 @@ function recapSheet(at){
   const j = job(), f = FOCUS[S.focus];
   sheet(`<h2>📺 Previously in the Burg</h2>
     <p class="muted">${esc(S.name)}, age ${age()} · ${dateLabel()} · last played ${days >= 2 ? `${days} days ago` : days === 1 ? 'yesterday' : 'earlier today'}.</p>
-    ${recent.length ? `<h3>Lately</h3>${recent.map(e => `<div class="logitem"><em>${e.d}</em> ${e.m}</div>`).join('')}` : ''}
+    ${recent.length ? `<h3>Lately</h3>${recent.map(e => `<div class="logitem"><em>${esc(e.d)}</em> ${esc(e.m)}</div>`).join('')}` : ''}
     <h3 style="margin-top:10px">Where things stand</h3>
     <div class="kv"><span>Work</span><span>${S.retired ? 'Retired' : j ? esc(j.title) : 'No job yet'}</span></div>
     <div class="kv"><span>Cash</span><span>${fmt(S.money)}</span></div>
@@ -238,7 +302,7 @@ function saveCopySheet(){
     const i = +b.dataset.copy, old = slots()[i];
     if (i === S.slot) { save(); closeSheet(); toast(`Saved to slot ${i+1}`); return; }
     const go = () => {
-      const c = clone(S); c.slot = i; c.savedAt = Date.now(); c.copyNote = `Copy · ${dateLabel().replace('Week of ','')}`;
+      const c = clone(S); c.slot = i; c.savedAt = Date.now(); c.lifeId = newLifeId(); c.saveN = 0; c.copyNote = `Copy · ${dateLabel().replace('Week of ','')}`;
       writeSlot(i, c); closeSheet(); toast(`Copy saved to slot ${i+1}`);
     };
     if (!old) return go();
@@ -252,7 +316,7 @@ function saveCopySheet(){
 /* ---------- 📤 backups: move your lives between devices ---------- */
 // A backup is every saved life plus best scores. It leaves as a .json file or a "backup code" (text you can paste
 // into a message to yourself); codes are gzip-compressed when the browser can.
-function backupData(){ return { app: 'theburg', kind: 'backup', v: 1, version: APP_VERSION, exported: new Date().toISOString(), slots: slots(), best: store.get(BEST_KEY) || {}, badges: store.get(BADGE_KEY) || {}, challenges: store.get(CHALLENGE_KEY) || {} }; }
+function backupData(){ return { app: 'theburg', kind: 'backup', v: 1, version: APP_VERSION, exported: new Date().toISOString(), slots: slots(), best: store.get(BEST_KEY) || {}, badges: store.get(BADGE_KEY) || {}, challenges: store.get(CHALLENGE_KEY) || {}, ends: ends() }; }
 const b64 = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000)); return btoa(s); };
 const unb64 = text => Uint8Array.from(atob(text.replace(/\s+/g, '')), c => c.charCodeAt(0));
 async function backupCode(obj){
@@ -281,7 +345,10 @@ async function readBackup(text){
   if (!lives.some(Boolean)) throw new Error('That backup has no saved lives in it.');
   const obj = x => x && typeof x === 'object' && !Array.isArray(x) ? x : {};
   const when = typeof d.exported === 'string' || Number.isFinite(d.exported) ? new Date(d.exported) : null;   // H1: a date is shown only if it parses
-  return { lives, best: obj(d.best), badges: obj(d.badges), challenges: obj(d.challenges), exported: when && !isNaN(when) ? when.toISOString() : null };
+  // i73-b01: finished-life stubs come along as plain values only
+  const endsIn = (Array.isArray(d.ends) ? d.ends : []).filter(e => e && typeof e === 'object' && typeof e.name === 'string' && Number.isFinite(e.score)).slice(0, ENDS_MAX)
+    .map(e => Object.fromEntries(Object.entries(e).map(([k, v]) => [k, typeof v === 'string' ? noTags(v).slice(0, 200) : Number.isFinite(v) || v == null ? v ?? null : k === 'parts' && obj(v) ? Object.fromEntries(Object.entries(v).filter(([, x]) => Number.isFinite(x))) : null])));
+  return { lives, ends: endsIn, best: obj(d.best), badges: obj(d.badges), challenges: obj(d.challenges), exported: when && !isNaN(when) ? when.toISOString() : null };
 }
 // put a backup's lives in: 'add' fills empty slots (returns how many didn't fit), 'replace' swaps all slots
 function restoreBackup(b, mode){
@@ -293,13 +360,20 @@ function restoreBackup(b, mode){
   for (const k of Object.keys(b.badges || {})) if (BADGES.some(x => x.id === k)) badges[k] = 1;
   for (const k of Object.keys(b.challenges || {})) if (SCENARIOS[k]) wins[k] = 1;
   store.set(BADGE_KEY, badges); store.set(CHALLENGE_KEY, wins);
-  let skipped = 0;
-  if (mode === 'replace') store.set(SLOTS_KEY, b.lives.map((g, i) => g ? { ...g, slot: i } : null).concat(Array(SLOT_COUNT).fill(null)).slice(0, SLOT_COUNT));
+  { const have = ends(), seen = new Set(have.map(e => `${e.name}|${e.at}|${e.score}`));
+    const add = (b.ends || []).filter(e => !seen.has(`${e.name}|${e.at}|${e.score}`));
+    if (add.length) store.set(ENDS_KEY, keepEnds([...have, ...add].sort((x, y) => (y.at || 0) - (x.at || 0)))); }
+  let skipped = 0, want;
+  if (mode === 'replace') want = b.lives.map((g, i) => g ? { ...g, slot: i } : null).concat(Array(SLOT_COUNT).fill(null)).slice(0, SLOT_COUNT);
   else {
-    for (const g of b.lives.filter(Boolean)) { const i = cur.indexOf(null); if (i < 0) { skipped++; continue; } cur[i] = { ...g, slot: i }; }
-    store.set(SLOTS_KEY, cur);
+    want = cur.slice();
+    for (const g of b.lives.filter(Boolean)) { const i = want.indexOf(null); if (i < 0) { skipped++; continue; } want[i] = { ...g, slot: i }; }
   }
-  return skipped;
+  writeSlots(want);
+  // i57-a18: read the slots back: how many of the lives meant to land really did
+  const now = slots(), meant = want.filter((g, i) => g && (mode === 'replace' || !cur[i])).length;
+  const landed = want.reduce((n, g, i) => n + (g && now[i] && now[i].name === g.name && now[i].savedAt === g.savedAt && (mode === 'replace' || !cur[i]) ? 1 : 0), 0);
+  return { skipped, meant, landed };
 }
 function backupSheet(){
   if (S && !S.over && !S.practice) save();
@@ -366,11 +440,14 @@ function restoreSheet(){
   $('#no').onclick = closeSheet;
 }
 function finishRestore(b, mode){
-  const skipped = restoreBackup(b, mode);
+  const { skipped, meant, landed } = restoreBackup(b, mode);
   closeSheet();
   if (mode === 'replace' || !S) { S = null; renderTitle(); }
   else render();
-  const msg = skipped ? `Restored. ${skipped} ${skipped === 1 ? 'life' : 'lives'} didn't fit: free up a slot and restore again.` : 'Backup restored';
+  const lives = n => `${n} ${n === 1 ? 'life' : 'lives'}`;
+  const msg = landed < meant ? `⚠️ Only ${lives(landed)} of ${meant} could be saved: your phone's storage may be full. Keep the backup.`
+    : skipped ? `Restored ${lives(landed)}. ${lives(skipped)} didn't fit: free up a slot and restore again.` : `Backup restored: ${lives(landed)}`;
+  if (landed < meant) sheet(`<h2>Restore didn't finish</h2><p>${msg}</p><button class="btn primary" id="ok">OK</button>`), $('#ok').onclick = closeSheet;
   toast(msg); announce(msg);
 }
 
@@ -568,7 +645,7 @@ function renderHome(){
     <button class="sumchip" data-go="life">🎓 ${EDU[S.edu].replace(' diploma','')}</button>
     <button class="sumchip${S.trip ? ' on' : ''}" id="tripchip">${tripChip()}</button>
   </div>
-  ${S.log.length ? `<div class="card wideonly"><h3>📜 Lately</h3>${S.log.slice(0, 6).map(e => `<div class="logitem"><em>${e.d}</em>${e.m}</div>`).join('')}<button class="sm alt" data-go="log" style="margin-top:8px">Open the Journal</button></div>` : ''}
+  ${S.log.length ? `<div class="card wideonly"><h3>📜 Lately</h3>${S.log.slice(0, 6).map(e => `<div class="logitem"><em>${esc(e.d)}</em>${esc(e.m)}</div>`).join('')}<button class="sm alt" data-go="log" style="margin-top:8px">Open the Journal</button></div>` : ''}
   </aside></div>`;
   $('#tripchip').onclick = () => S.trip ? tripSheet(S.trip.city) : tripPicker();
   $('#outbtn').onclick = outSheet;
@@ -912,7 +989,7 @@ ${S.edu < 3 ? firstTime('school') : ''}${eduCard()}
    a week is played (weekTick), when something else changes the life, and after any change that rolled the dice. */
 let LIFE_UNDO = [], undoPre = null;
 const UNDO_MAX = 5;
-const undoKey = () => JSON.stringify({ ...S, savedAt: 0, focus: 0, plan: 0, planI: 0 });
+const undoKey = () => JSON.stringify({ ...S, savedAt: 0, saveN: 0, focus: 0, plan: 0, planI: 0 });
 function undoTop(){
   const u = LIFE_UNDO[LIFE_UNDO.length - 1];
   return u && S && u.life === S.slot && u.after === undoKey() ? u : null;   // stale once anything else changed the life
@@ -920,7 +997,7 @@ function undoTop(){
 function lifeUndo(){
   const u = undoTop(); if (!u) return;
   const cur = S;
-  S = JSON.parse(u.snap); S.focus = cur.focus; S.plan = cur.plan; S.planI = cur.planI;
+  S = JSON.parse(u.snap); S.focus = cur.focus; S.plan = cur.plan; S.planI = cur.planI; S.saveN = cur.saveN;   // i54-a14: still this window's latest save
   LIFE_UNDO.pop(); save(); render();
   toast(`Undone: ${u.label}`); announce(`Undone: ${u.label}`);
   setTimeout(() => { const b = $('#undo'); if (b) b.focus({ preventScroll: true }); }, 40);
@@ -1005,7 +1082,7 @@ function renderLog(){
   $('#main').innerHTML = `<div class="chips" role="group" aria-label="Show in the Journal">${LOG_FILTERS.map(([k, l]) =>
       `<button class="chip ${logFilter === k ? 'on' : ''}" data-lf="${k}" aria-pressed="${logFilter === k}">${l}</button>`).join('')}</div>
     <div class="card"><h3>📜 ${esc(S.name)}'s journal</h3>
-    ${list.map(e => `<div class="logitem"><em>${e.d}</em>${e.m}</div>`).join('') || `<p class="muted">Nothing under ${label.toLowerCase()} yet.</p>`}</div>`;
+    ${list.map(e => `<div class="logitem"><em>${esc(e.d)}</em>${esc(e.m)}</div>`).join('') || `<p class="muted">Nothing under ${label.toLowerCase()} yet.</p>`}</div>`;
   document.querySelectorAll('[data-lf]').forEach(b => b.onclick = () => {
     logFilter = b.dataset.lf; renderLog();
     const n = S.log.filter(e => logFilter === 'all' || (e.k || logKind(e.m)) === logFilter).length;
@@ -1019,7 +1096,7 @@ function showMenu(){
     <button class="btn primary" id="save">💾 Save game</button>
     <button class="btn primary" id="load">📂 Load game</button>
     <button class="btn ghost" id="backup">📤 Back up or restore</button>
-    <p class="muted" style="margin-top:12px">${esc(S.name)}'s life is in slot ${S.slot+1} and also saves itself after every week.</p>
+    <p class="muted" style="margin-top:12px">${esc(S.name)}'s life is in ${slotName(S.slot)} and also saves itself after every week.</p>
     <button class="btn ghost" id="settings">⚙️ Settings</button>
     <button class="btn ghost" id="skipopts">⏩ Skip and Auto options</button>
     <button class="btn ghost" id="help">❓ Help & tutorial</button>

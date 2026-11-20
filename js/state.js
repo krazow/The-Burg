@@ -8,7 +8,7 @@ const KEY_PREFIX = (typeof location !== 'undefined' && String(location.pathname)
 const SAVE_KEY = KEY_PREFIX + 'save.v2', BEST_KEY = KEY_PREFIX + 'best.v2';
 const store = {
   get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } },
-  set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} },
+  set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch(e){ return false; } },   // i60-a10: false when the write failed (storage full or blocked)
   del(k){ try { localStorage.removeItem(k); } catch(e){} }
 };
 const $ = s => document.querySelector(s);
@@ -279,12 +279,16 @@ function blankLife(name, len, slot = 0){
     earnYears:0, earnSum:0, pensionYears:0, pensionPay:0, ltc:null, care:null, snowbird:null, scholar:null, will:false, probate:null, roomHost:false, hostLast:-99,
     skills:{}, biz:null, weekly:null, rng:null, rngEv:null, gen:1, goalAt:{}, carpoolJob:null, hustleLast:0, highWater:null, recentF:[], out:outDefault(), years:[],
     plan:[], planI:0,                              // i2-a12: a weekly focus rotation (empty = no plan)
+    line:[], lifeId:newLifeId(), saveN:0, pendingEv:null, endPending:null,   // i73-b25 the family line; i54-a14 save stamp; i22-a01/a02
     // jobs and school (round 3): ladder rung, months in this job, program and major, certificates, seasonal recall,
     // a pending interview, your reference, notice, sign-on bonus, union contract, strike, furlough, clearance, fiber, bus
     rung:0, tenure:0, program:null, major:null, certs:{}, certStudy:null, recall:null, interview:null, ref:null, notice:null, bonus:null,
     contractAt:-1, strike:null, furlough:null, clearAt:-1, fiber:false, bus:false, appWeeks:0, seasonGrace:null,
     ...EVENT_STATE(), ...MONEY_STATE(), ...HEALTH_STATE(), ...WX_STATE() };   // i74: sick hours, injuries, shots, Dad's care; i75: weather
 }
+// never from Math.random, so a seeded life's dice (and the weekly challenge) roll the same
+let LIFE_IDS = 0;
+const newLifeId = () => Date.now().toString(36) + (typeof crypto !== 'undefined' && crypto.getRandomValues ? crypto.getRandomValues(new Uint32Array(1))[0].toString(36) : (++LIFE_IDS).toString(36));
 // H1: put back anything a damaged save is missing or has a bad value for, so rendering never throws
 function repairLife(s){
   const okNum = v => typeof v === 'number' && Number.isFinite(v), isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -306,12 +310,34 @@ function repairLife(s){
     else if (Array.isArray(v) && !Array.isArray(s[k])) s[k] = v;
     else if (isObj(v) && !isObj(s[k])) s[k] = v;
   }
-  if (Array.isArray(s.log)) s.log = s.log.filter(isObj);
-  if (Array.isArray(s.kids)) s.kids = s.kids.filter(okNum);
-  if (Array.isArray(s.goals)) s.goals = s.goals.filter(x => typeof x === 'string');
+  // i57-a02 / i64-a04: every field checked before a life reaches a slot: stats in range, text short and tag-free,
+  // lists capped, ids that exist. Journal lines and names are plain text (the screens escape them too).
+  s.name = noTags(s.name).slice(0, 20) || 'Someone';
+  for (const k of ['happy', 'health', 'community']) if (okNum(s[k])) s[k] = clamp(s[k]);
+  if (okNum(s.ageMonths)) s.ageMonths = clamp(s.ageMonths, 18 * 12, 110 * 12);
+  if (okNum(s.turn)) s.turn = Math.max(0, Math.floor(s.turn));
+  if (okNum(s.edu)) s.edu = clamp(Math.floor(s.edu), 0, 3);
+  if (okNum(s.rung)) s.rung = clamp(Math.floor(s.rung), 0, 2);
+  const KINDS = ['money', 'ev', 'mile', 'trip'];
+  if (Array.isArray(s.log)) s.log = s.log.filter(isObj).slice(0, 120).map(e => ({ d: noTags(e.d).slice(0, 40), m: noTags(e.m).slice(0, 600), k: KINDS.includes(e.k) ? e.k : undefined }));
+  if (Array.isArray(s.kids)) s.kids = s.kids.filter(okNum).slice(0, 12);
+  if (Array.isArray(s.goals)) s.goals = s.goals.filter(x => typeof x === 'string' && (typeof BADGES === 'undefined' || BADGES.some(b => b.id === x))).slice(0, 3);
   if (Array.isArray(s.plan)) s.plan = s.plan.filter(k => FOCUS[k]).slice(0, PLAN_MAX);
+  if (Array.isArray(s.evPins)) s.evPins = s.evPins.filter(isObj).slice(0, 12).map(p => ({ ...p, t: noTags(p.t).slice(0, 80), r: noTags(p.r).slice(0, 400), ic: noTags(p.ic).slice(0, 8) }));
+  if (Array.isArray(s.years)) s.years = s.years.filter(isObj).slice(-120).map(y => ({ ...y, m: Array.isArray(y.m) ? y.m.slice(0, 3).map(t => noTags(t).slice(0, 600)) : [] }));
+  if (Array.isArray(s.line)) s.line = s.line.filter(isObj).slice(-40).map(p => Object.fromEntries(Object.entries(p).map(([k, v]) => [k, typeof v === 'string' ? noTags(v).slice(0, 200) : okNum(v) ? v : null])));
+  if (isObj(s.certs)) s.certs = Object.fromEntries(Object.keys(s.certs).filter(k => CERTS[k]).map(k => [k, 1]));
+  if (s.program != null && !PROGRAMS[s.program]) s.program = null;
+  if (s.major != null && !PROGRAMS[s.major]) s.major = null;
+  if (s.recall != null && !(isObj(s.recall) && jobById(s.recall.job))) s.recall = null;
+  if (s.copyNote != null) s.copyNote = noTags(s.copyNote).slice(0, 40);
+  if (isObj(s.probate) && s.probate.from != null) s.probate.from = noTags(s.probate.from).slice(0, 20);
+  for (const k of ['pendingEv', 'evLabel']) if (s[k] != null) s[k] = noTags(s[k]).slice(0, 80);
+  if (s.endPending != null && !(isObj(s.endPending) && typeof s.endPending.r === 'string')) s.endPending = null;
+  if (s.endPending) s.endPending = { r: noTags(s.endPending.r).slice(0, 200), debt: !!s.endPending.debt, death: !!s.endPending.death };
   return s;
 }
+const noTags = v => String(v == null ? '' : v).replace(/<[^>]*>?/g, '');
 function migrate(s){
   repairLife(s);
   const d = { slot:0, evPins:[], streakF:null, streakN:0, run:null, yearEvents:0, yearStart:null, evCd:{}, evDone:{}, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, k401match:0, uiPay:null, mortgage:null, loanPay:0 };   // i75: an older 401(k) counts as vested; old benefits pay the floor
@@ -323,6 +349,12 @@ function migrate(s){
     const jb = s.jobId ? JOBS.find(j => j.id === s.jobId) : null;      // i3-a06: no surprise layoff on load; the season runs its course first
     s.seasonGrace = jb && jb.season && !s.retired && !jb.season.includes(new Date(s.date || Date.now()).getMonth()) ? jb.id : null;
   }
+  // i69-a07: 0.2.0 truckers already had certs ({}) but no CDL, so their own job was locked: anyone driving truck (or
+  // waiting on a recall to it) holds one
+  if (['trucker', 'harvtruck'].some(id => s.jobId === id || (s.recall && s.recall.job === id))) s.certs = { ...(s.certs || {}), cdl:1 };
+  // i69-a06: a homeowner's save from before property tax, opened in April or October, starts with this half's bill paid
+  if (s.ptaxDone === undefined && HOMES[s.home] && HOMES[s.home].own) { const d = new Date(s.date); if ([3, 9].includes(d.getMonth())) s.ptaxDone = `${d.getFullYear()}-${d.getMonth()}`; }
+  if (!s.lifeId) s.lifeId = `old-${s.savedAt || 0}-${(s.name || '').length}`;   // i54-a14: two windows opening the same old save agree on its id
   if (s.goals && !s.goalAt) s.goalAt = Object.fromEntries(s.goals.map(id => [id, 0]));
   const r = { goalAt:{}, skills:{}, biz:null, weekly:null, rng:null, rngEv:null, carpoolJob:s.jobId ?? null, hustleLast:s.turn || 0, highWater:null, recentF:[], gen:1, badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false, bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0, carpool:false, hustleWeeks:0, scoreQ:null, trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, dentist:s.turn || 0, stopLast:{}, out:null, tabsYear:new Date(s.date || Date.now()).getFullYear() };
   for (const k in r) if (s[k] === undefined) s[k] = r[k];
@@ -391,20 +423,106 @@ function logKind(m){
 }
 function log(msg, k){ S.log.unshift({d: dateLabel(), m: msg, k: k || logKind(msg)}); if (S.log.length > 120) S.log.length = 120; }
 /* ---------- save slots: up to 5 lives, each auto-saving to its own slot ---------- */
+// i43-b01: each life has its own key (slot.0 … slot.4), so a save writes one life instead of all five. SLOTS_KEY is the
+// old all-in-one key: if it's there (an older version wrote it) its lives move into the slot keys, and it's removed
+// only once every slot was written.
 const SLOTS_KEY = KEY_PREFIX + 'slots.v1', SLOT_COUNT = 5;
+const WEEKLY_SLOT = 'weekly';                                    // i73-b11: the weekly challenge's own place, not one of the 5
+const slotKey = i => KEY_PREFIX + (i === WEEKLY_SLOT ? 'weekly.v1' : 'slot.' + i);
+const slotName = i => i === WEEKLY_SLOT ? 'the weekly challenge' : `slot ${i + 1}`;
+const BROKEN_KEY = KEY_PREFIX + 'slots.broken';                 // i57-a15: a save that won't read is kept aside, never overwritten
+const rawGet = k => { try { return localStorage.getItem(k); } catch(e){ return null; } };
+function keepBroken(k, raw){
+  const b = store.get(BROKEN_KEY), o = b && typeof b === 'object' && !Array.isArray(b) ? b : {};
+  if (o[k] === raw) return;
+  o[k] = raw; o.at = Date.now(); store.set(BROKEN_KEY, o);
+}
+const hasBroken = () => { const b = store.get(BROKEN_KEY); return !!b && typeof b === 'object' && Object.keys(b).some(k => k !== 'at'); };
+// one slot's life, or null; text there that isn't a life is copied to BROKEN_KEY first
+function readLife(k){
+  const raw = rawGet(k); if (raw == null) return null;
+  let g; try { g = JSON.parse(raw); } catch(e){ g = undefined; }
+  if (g === null) return null;
+  if (!isLife(g)) { keepBroken(k, raw); return null; }
+  return g;
+}
+// moves the old all-in-one key into the slot keys; returns its lives when that couldn't finish (storage full)
+function importLegacy(){
+  const raw = rawGet(SLOTS_KEY); if (raw == null) return null;
+  let a; try { a = JSON.parse(raw); } catch(e){ a = undefined; }
+  if (!Array.isArray(a)) { if (a !== null) keepBroken(SLOTS_KEY, raw); store.del(SLOTS_KEY); return null; }
+  const lives = Array.from({ length: SLOT_COUNT }, (_, i) => isLife(a[i]) ? a[i] : null);
+  a.slice(0, SLOT_COUNT).forEach((g, i) => { if (g != null && !isLife(g)) keepBroken(`${SLOTS_KEY}#${i}`, JSON.stringify(g)); });
+  let ok = true;
+  lives.forEach((g, i) => { if (g) ok = store.set(slotKey(i), g) && ok; else store.del(slotKey(i)); });
+  if (!ok) return lives;
+  store.del(SLOTS_KEY); return null;
+}
 function slots(){
-  const a = store.get(SLOTS_KEY), out = Array.isArray(a) ? a.slice(0, SLOT_COUNT).map(g => isLife(g) ? g : null) : [];   // H1: drop damaged slots
-  while (out.length < SLOT_COUNT) out.push(null);
+  const legacy = importLegacy();
+  const out = legacy || Array.from({ length: SLOT_COUNT }, (_, i) => readLife(slotKey(i)));   // H1: damaged slots read as empty
   const old = store.get(SAVE_KEY);                 // the single save from before slots: move it into a free slot
   if (isLife(old) && !old.over) {
     const i = out.indexOf(null);
-    if (i >= 0) { old.slot = i; out[i] = old; store.set(SLOTS_KEY, out); store.del(SAVE_KEY); }
+    if (i >= 0) { old.slot = i; out[i] = old; if (store.set(slotKey(i), old)) store.del(SAVE_KEY); }
   } else if (old) store.del(SAVE_KEY);
   return out;
 }
+const readSlot = i => i === WEEKLY_SLOT ? readLife(slotKey(i)) : slots()[i] || null;
 const isLife = g => !!g && typeof g === 'object' && !Array.isArray(g) && typeof g.name === 'string';
-function writeSlot(i, game){ const a = slots(); a[i] = game; store.set(SLOTS_KEY, a); }
-function save(){ if (S && !S.over && !S.practice) { S.savedAt = Date.now(); writeSlot(S.slot ?? 0, S); } }
+// writes one life (null deletes it); false when the write failed
+function writeSlot(i, game){
+  if (i !== WEEKLY_SLOT && rawGet(SLOTS_KEY) != null) importLegacy();
+  if (!game) { store.del(slotKey(i)); return true; }
+  return store.set(slotKey(i), game);
+}
+// all five at once (restoring a backup); true only if every life landed
+function writeSlots(a){ let ok = true; for (let i = 0; i < SLOT_COUNT; i++) ok = writeSlot(i, a[i] || null) && ok; return ok; }
+// i54-a14: two windows on one life. Each save counts up S.saveN, so a window that loaded an older week sees that
+// another window saved since, and picks up that week instead of writing over it
+function newerOnDisk(i = S && S.slot){
+  if (!S || i == null || !S.lifeId) return null;
+  const raw = rawGet(slotKey(i)); if (!raw) return null;
+  const id = /"lifeId":"([^"]*)"/.exec(raw), n = /"saveN":(\d+)/.exec(raw);
+  if (!id || id[1] !== S.lifeId || !n || +n[1] <= (S.saveN || 0)) return null;
+  try { const g = JSON.parse(raw); return isLife(g) ? g : null; } catch(e){ return null; }
+}
+function adoptNewer(g){
+  if (typeof ROLL !== 'undefined' && ROLL) { clearTimeout(ROLL.t); ROLL = null; }
+  const i = S.slot; S = migrate(g); S.slot = i; useDice();
+  closeSheet(); render();
+  toast('This life was played in another window: picked up its latest week.');
+  resumePending();
+}
+let SAVE_FAILED = false;
+function save(){
+  if (!S || S.over || S.practice) return true;
+  const i = S.slot ?? 0, newer = newerOnDisk(i);
+  if (newer) { adoptNewer(newer); return false; }
+  const prev = [S.savedAt, S.saveN];
+  S.savedAt = Date.now(); S.saveN = (S.saveN || 0) + 1;
+  if (writeSlot(i, S)) { SAVE_FAILED = false; return true; }
+  [S.savedAt, S.saveN] = prev;
+  if (!SAVE_FAILED) {                             // i60-a10: one warning, then quiet until a save works again
+    SAVE_FAILED = true; const m = "Your phone's storage is full: this week wasn't saved";
+    toast(m); if (typeof announce === 'function') announce(m);
+  }
+  return false;
+}
+/* ---------- i73-b01: a finished life leaves a small stub, so it outlasts "Play again" ---------- */
+const ENDS_KEY = KEY_PREFIX + 'ends.v1', ENDS_MAX = 100;
+const ends = () => { const a = store.get(ENDS_KEY); return Array.isArray(a) ? a.filter(e => e && typeof e === 'object' && typeof e.name === 'string' && Number.isFinite(e.score)) : []; };
+// newest first; past ENDS_MAX the oldest go, but never the ten best
+function keepEnds(list){
+  const top = new Set(list.slice().sort((a, b) => b.score - a.score).slice(0, 10)), out = list.slice();
+  for (let i = out.length - 1; out.length > ENDS_MAX && i >= 0; i--) if (!top.has(out[i])) out.splice(i, 1);
+  return out;
+}
+const addEnd = stub => store.set(ENDS_KEY, keepEnds([stub, ...ends()]));
+/* ---------- i60-a13: a grandkid waits on the title screen until started or dismissed ---------- */
+const HEIR_KEY = KEY_PREFIX + 'heirs.v1';
+const heirs = () => { const a = store.get(HEIR_KEY); return Array.isArray(a) ? a.filter(p => p && typeof p === 'object' && typeof p.name === 'string') : []; };
+const setHeirs = a => store.set(HEIR_KEY, a.slice(0, 10));
 const clone = o => JSON.parse(JSON.stringify(o));
 function savedAgo(t){
   if (!t) return '';

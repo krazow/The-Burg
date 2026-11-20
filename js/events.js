@@ -26,6 +26,20 @@ function pickEvent(month, cat = 'town'){
   for (const e of ok) { r -= wt(e); if (r <= 0) return e; }
   return null;
 }
+// i71-b03: one way to settle an event, for a tapped choice and for one resolved on its own during a skip: the choice,
+// the weather bill, the Journal, the week strip and the map pin, and only now the event's cooldown (i22-a01)
+function resolveChoice(ev, choice, auto = false){
+  const m0 = S.money, result = choice.go() || '', dm = S.money - m0;
+  wxTrack(ev, dm);                          // i75-a30: the weather bill
+  if (result) { log(`${ev.title}: ${result}`); if (S.evLabel) S.log[0].d = S.evLabel; }   // dated the week it happened
+  if (S.run) S.run.happened.push({ ic: ev.ic, title: ev.title, money: dm, wx: !!ev.wx, ...(auto ? { auto: 1 } : {}) });
+  if (S.evPins && S.evPins[0] && S.evPins[0].t === ev.title) S.evPins[0].r = result;
+  const at = S.evAt ?? S.turn;
+  S.evCd[ev.title] = at + (ev.yr ? 40 : 8);
+  if (ev.once) S.evDone[ev.title] = 1;
+  S.pendingEv = null; S.evAt = null;
+  return { result, dm };
+}
 function showEvent(ev, then = null){
   const before = {happy:S.happy, health:S.health, community:S.community};
   const choices = ev.choices().filter(c => !c.if || c.if());
@@ -35,13 +49,7 @@ function showEvent(ev, then = null){
   $('#sheet').classList.add('ev');            // i2-a24: the choices sit at the bottom of the pop-up, in thumb reach
   sfx('event'); buzz('event');
   document.querySelectorAll('#sheet [data-i]').forEach(b => b.onclick = () => {
-    const mBefore = S.money;
-    const result = choices[+b.dataset.i].go() || '';
-    const dm = S.money - mBefore;
-    wxTrack(ev, dm);                          // i75-a30: the weather bill
-    if (result) S.log.unshift({d: S.evLabel || dateLabel(), m: `${ev.title}: ${result}`});
-    if (S.run) S.run.happened.push({ ic: ev.ic, title: ev.title, money: dm, wx: !!ev.wx });
-    if (S.evPins && S.evPins[0] && S.evPins[0].t === ev.title) S.evPins[0].r = result;
+    const { result, dm } = resolveChoice(ev, choices[+b.dataset.i]);
     save();
     const st = ['happy', 'health', 'community'].reduce((a, k) => a + S[k] - before[k], 0);
     sfx(dm < 0 || st < -1 ? 'bad' : dm > 0 || st > 1 ? 'good' : 'tap');

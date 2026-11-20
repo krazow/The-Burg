@@ -1149,7 +1149,7 @@ await t.check('i3-a33/a28: the Life tab writes a will, opens the 13-week money o
   assert(/next 13 weeks/.test(txt) && /On track|dips below zero/.test(txt) && (await page.$$('#sheet tbody tr')).length === 13, txt.slice(0, 200));
   await page.keyboard.press('Escape');
   assert(!(await page.$(open)), 'Escape closes the outlook');
-  await setup(() => { S.kids = [S.ageMonths - 240]; S.money = 300000; finish('done'); });
+  await setup(() => { S.ageMonths = 72 * 12; S.kids = [S.ageMonths - 240]; S.money = 300000; finish('done'); });
   await page.click('#legacy');
   assert((await page.textContent('#sheet')).includes('left a will'), 'legacy sheet should say a will was left');
   await page.click(`${open} #heirgo`);
