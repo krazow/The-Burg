@@ -285,7 +285,7 @@ function blankLife(name, len, slot = 0){
     dog:false, partner:false, council:false,
     focus:'rest', applied:false, happySum:0, healthSum:0, monthsPlayed:0,
     log:[], over:false, cause:null, streakF:null, streakN:0, run:null, yearEvents:0,
-    trip:null, svc:0, tires:null, stockUntil:-1, dentist:0, stopLast:{}, tabsYear:2027, carpool:false, hustleWeeks:0, scoreQ:null,
+    trip:null, svc:0, tires:null, stockUntil:-1, redLow:{}, moneyTalk:false, dentist:0, stopLast:{}, tabsYear:2027, carpool:false, hustleWeeks:0, scoreQ:null,
     bg:'fresh', mode:'normal', diff:'normal', classic:false, flagsEdited:false, sloanLeft:0,   // to-do 2 D1: difficulty
     sloanPay:0, sgoal:null, seasonWins:0,
     badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false,
@@ -382,7 +382,7 @@ function migrate(s){
   if (s.ptaxDone === undefined && HOMES[s.home] && HOMES[s.home].own) { const d = new Date(s.date); if ([3, 9].includes(d.getMonth())) s.ptaxDone = `${d.getFullYear()}-${d.getMonth()}`; }
   if (!s.lifeId) s.lifeId = `old-${s.savedAt || 0}-${(s.name || '').length}`;   // i54-a14: two windows opening the same old save agree on its id
   if (s.goals && !s.goalAt) s.goalAt = Object.fromEntries(s.goals.map(id => [id, 0]));
-  const r = { goalAt:{}, skills:{}, biz:null, weekly:null, rng:null, rngEv:null, carpoolJob:s.jobId ?? null, hustleLast:s.turn || 0, highWater:null, recentF:[], gen:1, badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false, bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0, carpool:false, hustleWeeks:0, scoreQ:null, trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, dentist:s.turn || 0, stopLast:{}, out:null, tabsYear:new Date(s.date || Date.now()).getFullYear() };
+  const r = { goalAt:{}, skills:{}, biz:null, weekly:null, rng:null, rngEv:null, carpoolJob:s.jobId ?? null, hustleLast:s.turn || 0, highWater:null, recentF:[], gen:1, badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false, bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0, carpool:false, hustleWeeks:0, scoreQ:null, trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, redLow:{}, moneyTalk:false, dentist:s.turn || 0, stopLast:{}, out:null, tabsYear:new Date(s.date || Date.now()).getFullYear() };
   for (const k in r) if (s[k] === undefined) s[k] = r[k];
   // wave 1 score: an older life's averages and rates start from what it has now; earlier report cards are filled in at the next one
   const t0 = s.turn || 0, sc = { ...SCORE_STATE(), commSum:(s.community || 0) * (s.monthsPlayed || 0), tallyFrom:t0, debtLow:Math.min(0, (s.money || 0) / (s.col || 1)),
@@ -598,6 +598,7 @@ const SETTINGS = {
   sound:    { def:'off',    opts:[['off','🔇 Off'], ['soft','🔈 Soft'], ['normal','🔊 Normal']] },
   vibrate:  { def:'on',     opts:[['on','On'], ['off','Off']] },
   swipe:    { def:'on',     opts:[['on','On'], ['off','Off']] },
+  skipAsk:  { def:'on',     opts:[['on','On'], ['off','Off']] },   // i48-b06: the focus check before a long skip
   motion:   { def:'on',     opts:[['on','On'], ['off','Off']] },    // i2-a08/a10: moving bars, counting cash and confetti
   srWeek:   { def:'short',  opts:[['short','Short'], ['full','Full']] }   // i7-a02: what a screen reader hears after End Week
 };

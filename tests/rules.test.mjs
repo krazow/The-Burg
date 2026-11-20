@@ -294,6 +294,41 @@ await t.check('backups round-trip: compressed code, plain code and file JSON all
   assert(r.best === 66, 'best scores missing');
 });
 
+await t.check('i62-a01/a06/a22: damaged backup codes get plain messages, and codes in pasted text still restore', async () => {
+  const r = await ev(async () => {
+    localStorage.clear(); fresh('two', { jobId: 'rn' }); S.turn = 12; save();
+    const data = backupData(), gz = await backupCode(data), plain = 'BURG0:' + b64(new TextEncoder().encode(JSON.stringify(data))), file = JSON.stringify(data);
+    const msg = async t => { try { const b = await readBackup(t); return 'ok:' + b.lives.filter(Boolean).map(g => g.name).join(); } catch (e) { return 'err:' + e.message; } };
+    const wrap = (c, n) => c.match(new RegExp(`.{1,${n}}`, 'g')).join('\n');
+    return {
+      cut: await msg(gz.slice(0, -30)), plus: await msg(plain.replace(/\+/g, ' ')), mid: await msg(gz.slice(0, 40) + gz.slice(80)), junkTail: await msg(gz.slice(0, -4) + '!!!!'),
+      fileCut: await msg(file.slice(0, -40)), plain0Cut: await msg(plain.slice(0, -10)), notOurs: await msg('hello there'), other: await msg('{"app":"other","slots":[]}'),
+      inText: await msg(`Here's my backup: "${gz}" thanks!`), wrapped: await msg(wrap(gz, 60)), quoted: await msg(`'${plain}'`), plusOk: await msg(gz.includes('+') ? gz.replace(/\+/g, ' ') : gz)
+    };
+  });
+  const bad = Object.entries(r).filter(([k, v]) => ['inText', 'wrapped', 'quoted', 'plusOk', 'plus'].includes(k) ? v !== 'ok:Rules' : !/^err:/.test(v) || /fetch|JSON|token|atob|decod|Unexpected|undefined/i.test(v));
+  assert(!bad.length, JSON.stringify(bad));
+  assert(/missing|damaged/.test(r.cut) && /damaged/.test(r.plain0Cut) && /damaged/.test(r.fileCut) && /doesn't look like/.test(r.notOurs), JSON.stringify(r));
+});
+
+await t.check('i62-a02/a03/a10: re-restoring never makes twins, a records-only backup restores, and tips are merged', async () => {
+  const r = await ev(async () => {
+    localStorage.clear(); fresh('two', {}); S.turn = 8; save(); setPref('tips', ['focus']); setPref('theme', 'night');
+    const bk = await readBackup(JSON.stringify(backupData()));
+    const a = restoreBackup(bk, 'add'), b = restoreBackup(bk, 'add'), names = slots().map(g => g && g.name).join();
+    const plan = restorePlan(bk).filter(Boolean).map(x => x.dup);
+    localStorage.clear(); store.set(BEST_KEY, { two: 61 }); store.set(BADGE_KEY, { job: 1, dog: 1 });
+    const counts = countWords(localCounts());
+    const rec = await readBackup(JSON.stringify(backupData()));
+    localStorage.clear(); setPref('tips', ['strip']); setPref('theme', 'day');
+    restoreBackup({ ...rec, prefs: { tips: ['focus'], theme: 'night', mapView: true } }, 'add');
+    return { a: a.dupes, b: b.dupes, names, plan, counts, best: store.get(BEST_KEY).two, badges: Object.keys(store.get(BADGE_KEY)).length, p: prefs() };
+  });
+  assert(r.a === 1 && r.b === 1 && r.names === 'Rules,,,,' && r.plan.join() === '0', JSON.stringify(r));
+  assert(r.counts === '0 lives, 1 record, 2 badges' && r.best === 61 && r.badges === 2, JSON.stringify(r));
+  assert(r.p.tips.join() === 'strip,focus' && r.p.theme === 'day' && r.p.mapView === true, JSON.stringify(r.p));
+});
+
 await t.check('restoring adds to empty slots or replaces all, keeps the best scores, and rejects junk', async () => {
   const r = await ev(async () => {
     localStorage.clear(); newGame('A', 'two', 0); save(); newGame('B', 'two', 1); save(); store.set(BEST_KEY, { two: 50, five: 70 });

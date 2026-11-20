@@ -585,10 +585,10 @@ await t.check('i57-a18: restoring says how many lives really landed', async () =
     const real = Storage.prototype.setItem; let msg = '';
     Storage.prototype.setItem = function (k, v) { if (k === 'theburg.slot.1') throw new Error('full'); return real.call(this, k, v); };
     const t0 = toast; toast = m => { msg = m; }; finishRestore(b, 'replace'); toast = t0; Storage.prototype.setItem = real;
-    const bad = msg; finishRestore(b, 'replace'); closeSheet();
-    return { bad, names: slots().map(g => g && g.name).join() };
+    const bad = msg; finishRestore(b, 'replace'); const ok = document.querySelector('#sheet').textContent; closeSheet();
+    return { bad, ok, names: slots().map(g => g && g.name).join() };
   });
-  assert(/Only 1 life of 2/.test(r.bad) && r.names === 'R1,R2,,,', JSON.stringify(r));
+  assert(/Only 1 life of 2/.test(r.bad) && r.names === 'R1,R2,,,' && /Backup restored: 2 lives/.test(r.ok), JSON.stringify(r));
 });
 
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });
