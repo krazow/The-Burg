@@ -54,6 +54,10 @@ follows Washington's 2027 prices, and each year brings its own weather. Your bod
   on the town map. A barn cat and a generator you can buy.
 - **🎓 A longer practice tutorial** that shows the new features, and Help sections for Settings, Finding your way,
   your body over a life, and weather and hard years.
+- **👶 Toddler moments:** while a kid is 2 to 5, a sick-day pickup, a daycare spot, potty training, story time and a
+  first haircut. Most weeks with kids at home, the week's summary adds a short line about them.
+- Things to do under 21 at the tasting room and the wine bar, and an all-ages music night.
+- Get ready for a windstorm: trim the limb and tie things down to halve the damage.
 
 ### Changed
 - **Money follows Washington's 2027 prices:** every job pays at least the state minimum wage, nurses, aides, techs and
@@ -68,6 +72,16 @@ follows Washington's 2027 prices, and each year brings its own weather. Your bod
 - Businesses pay a fairer return: the woodshop and food truck pay less, the cattle herd costs more, and the wheat
   ground has a farming bill each April.
 - Trucking needs a CDL, and the Bluewood lift is a winter job.
+- Every kid gets a college send-off, once, in the week they turn 18, and it says whether it's your oldest, middle or
+  youngest. The year in review and the Journal's milestones count the big moments: a new job, a partner, a dog, a
+  baby, a house, a kid moving out.
+- Big town days like Celebration Days happen every year in their month.
+- Windstorms come October to March, at most once a year. Sandbagging the Touchet also starts the levee story.
+- The cheaper health plan pays its savings ($20 a month) week by week while you keep the job, and light duty pays by
+  the week too.
+- Traffic school is only offered once every few years.
+- Your business tells you each April what it needs from you and each October what it earned, and shows "This season:
+  $0" when it's earning nothing.
 - The town scene and map change with the seasons, and the coach bubble in the tutorial never covers what you tap.
 
 ### Fixed
@@ -93,6 +107,8 @@ follows Washington's 2027 prices, and each year brings its own weather. Your bod
   Relaxed no longer mentions having to leave town.
 - The collections fee and the hospital bill now show as lines in the week, so the lines add up to the change in cash.
 - The stress of a promotion counts every week, even weeks with no event or when you're away.
+- Your age now turns over on your birthday instead of running a year behind.
+- A grandkid's starting pickup and an old car's lowest value now rise with prices.
 - A friend's job tip shows the pay the way the job board does, and only comes when a better-paying job is open.
 - Raises, reviews, contract deals and union steps show the raise you actually get, and say when you're at the top of
   the pay scale.
@@ -102,7 +118,7 @@ follows Washington's 2027 prices, and each year brings its own weather. Your bod
 - The fixer-upper, food truck and levee buttons show today's prices.
 - Wine country weekends come April to October, and less often.
 - A buddy's engine fix works most of the time; when it doesn't, the shop costs a bit less.
-- The cheaper health plan saves $240 a year, and better coverage also halves the emergency dentist.
+- Better health coverage also halves the emergency dentist.
 - With a Bluewood pass, each Get outside week from December to March is a ski day.
 - "Feeling run down" comes when health is under 45.
 
