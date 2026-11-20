@@ -789,5 +789,15 @@ function seasonLine(){
   const g = seasonGoal(); if (!g || S.practice) return '';
   const st = S.sgoal && S.sgoal.id === seasonId(g) ? S.sgoal : { prog:0, done:false };
   const end = MONTHS[g.months[g.months.length - 1]];
-  return `<div class="sgoal">${g.ic} <b>Town goal:</b> ${g.name} · ${st.done ? '✅ done!' : `${st.prog}/${g.need} weeks of ${g.what} (until the end of ${end})`}</div>`;
+  // i23-a05: what's left, how long there is, and what it pays
+  const more = g.need - st.prog, left = seasonWeeksLeft(g);
+  const reward = Object.entries(g.fx).map(([k, v]) => `▲${v} ${{ happy:'happiness', health:'health', community:'community' }[k]}`).join(' ');
+  return `<div class="sgoal">${g.ic} <b>Town goal:</b> ${g.name} · ${st.done ? '✅ done!' : `${st.prog}/${g.need} weeks of ${g.what} (until the end of ${end})
+    <br><small>${more} more needed · ${left} week${left === 1 ? '' : 's'} left${more > left ? ' (out of reach this time)' : ''} · reward ${reward}</small>`}</div>`;
+}
+// weeks still to play in this season, this one included
+function seasonWeeksLeft(g){
+  const d0 = new Date(S.date).getTime(); let n = 0;
+  while (n < 20 && g.months.includes(new Date(d0 + n * 7 * 864e5).getMonth())) n++;
+  return n;
 }
