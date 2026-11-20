@@ -117,7 +117,7 @@ function regionDetail(k){
   const drive = c.miles ? `${c.miles} mi each way · about ${Math.round(c.miles*1.1+3)} min · ~${wk(commuteCost(c.miles))} gas in your ${CARS[S.car].name.toLowerCase()}` : 'Home. No commute: you can walk to work.';
   return `<div class="card mapdet"><h3>${TOWNIC[k]} ${c.name}</h3>
     <p class="muted" style="margin:0 0 4px">${drive}</p><p style="margin:0 0 6px;font-size:0.875rem">${c.blurb}</p>
-    ${k !== 'waitsburg' ? `<button class="sm" data-call="TRIPTO" data-arg="${k}">🚗 ${S.trip && S.trip.city === k ? 'Change my trip' : 'Plan a trip'} here (${townStops(k).filter(s => !stopBlocked(s)).length} places to go)</button>` : ''}
+    ${k !== 'waitsburg' && on('trips') ? `<button class="sm" data-call="TRIPTO" data-arg="${k}">🚗 ${S.trip && S.trip.city === k ? 'Change my trip' : 'Plan a trip'} here (${townStops(k).filter(s => !stopBlocked(s)).length} places to go)</button>` : ''}
     ${recentList('R', k)}${jobs.map(jobRow).join('')}</div>`;
 }
 
@@ -190,9 +190,12 @@ function townDetail(k){
 }
 
 /* ---- the map block, the toggle, and taps ---- */
+// to-do 2: the maps can be switched off; then the list view is all there is
+const mapView = () => !!prefs().mapView && on('maps');
 function mapToggle(){
-  const on = !!prefs().mapView;
-  return `<div class="maptog" role="group" aria-label="Show as"><button class="${on?'':'on'}" data-call="MAPPREF" data-arg="0">📋 List</button><button class="${on?'on':''}" data-call="MAPPREF" data-arg="1">🗺️ Map</button></div>`;
+  if (!on('maps')) return '';
+  const mv = !!prefs().mapView;
+  return `<div class="maptog" role="group" aria-label="Show as"><button class="${mv?'':'on'}" data-call="MAPPREF" data-arg="0">📋 List</button><button class="${mv?'on':''}" data-call="MAPPREF" data-arg="1">🗺️ Map</button></div>`;
 }
 function mapBlock(defSide){
   const side = MAPSIDE || defSide;
