@@ -1489,7 +1489,9 @@ function showStatInfo(k){
 
 // weekly take-home: pay after ~15% taxes, minus commuting gas in your current vehicle
 const takeHome = x => payNow(x, S.jobId === x.id) * W * (1 - taxRate(payNow(x, S.jobId === x.id))) -   // i75-b03: taxed by bracket
-  commuteCost(CITIES[x.city].miles, CARS[S.car], x) * W;
+  commuteCost(CITIES[x.city].miles, CARS[S.car], x) * W - commuteCare(CITIES[x.city].miles) * W;   // i46-a05: and a long commute's childcare
+// i42-a06: a far job you could share the drive to (you don't carpool there yet)
+const carpoolHint = x => CITIES[x.city].miles >= 20 && S.community >= 30 && on('jobs.commute') && !(carpooling() && S.carpoolJob === x.id) && !(S.bus && S.jobId === x.id && busOK(x));
 // i52-a01: in a first life, before the first hire, tag the two best jobs within 25 miles (take-home less a happiness cost for the drive)
 let GOOD_JOBS = [];
 function goodFirstJobs(){
@@ -1508,10 +1510,10 @@ function jobRow(x){
     : back ? `<button class="sm" data-recall="${x.id}">Go back</button>`
     : !jobInSeason(x) ? `<button class="sm" disabled aria-label="Hires again in ${MONTHS[x.season[0]]}">Hires ${MONTHS[x.season[0]].slice(0,3)}</button>`
     : `<button class="sm" data-apply="${x.id}" ${S.applied?'disabled':''}>Apply</button>`;
-  const tags = [GOOD_JOBS.includes(x.id) ? '<b class="goodjob">⭐ Good first job</b>' : '', remoteDays(x) === 5 ? '🏠 fully remote' : remoteDays(x) ? `🏠 ${x.remote} remote days` : '', seasonal(x) ? `🗓️ ${seasonWords(x)}` : '', unionJob(x) ? '🪪 union' : '',
+  const tags = [GOOD_JOBS.includes(x.id) ? '<b class="goodjob">⭐ Good first job</b>' : '', remoteDays(x) === 5 ? '🏠 fully remote' : remoteDays(x) ? `🏠 ${x.remote} remote days` : '', seasonal(x) ? `🗓️ ${seasonWords(x)}` : '', unionJob(x) ? '🪪 union' : '', carpoolHint(x) ? '🚙 carpool possible' : '',
     x.apprentice && !cur ? `🧰 apprentice, ${x.apprentice.weeks / 52} yrs to full pay` : '', CLEARANCE.includes(x.id) && !cur && on('jobs.perks') ? '🔐 clearance' : '', majorFits(x) ? '🎓 your major' : '', accTag(x)].filter(Boolean);
   return `<div class="kv job${lock ? ' lockedrow' : ''}" data-job="${x.id}"><div><div class="t">${cur ? esc(jobTitle(x)) : x.title}</div>
-    <div class="s">${x.where ? esc(x.where) + ', ' : ''}${c.name}${c.miles ? ` · ${c.miles} mi` : ' · no commute'} · pay ${wk(payNow(x, cur))}${c.miles ? `, gas ${wk(commuteCost(c.miles, CARS[S.car], x))}` : ''}${tags.length ? ` · ${tags.join(' · ')}` : ''}</div></div>
+    <div class="s">${x.where ? esc(x.where) + ', ' : ''}${c.name}${c.miles ? ` · ${c.miles} mi` : ' · no commute'} · pay ${wk(payNow(x, cur))}${c.miles ? `, gas ${wk(commuteCost(c.miles, CARS[S.car], x))}` : ''}${commuteCare(c.miles) >= 0.5 ? `, childcare ${wk(commuteCare(c.miles))}` : ''}${tags.length ? ` · ${tags.join(' · ')}` : ''}</div></div>
     <div style="text-align:right"><div class="pay">${fmt(th)}/wk</div>
     <div class="s">${cur ? 'take-home' : base && Math.abs(diff) >= 1 ? `<span class="${diff>0?'upt':'downt'}">${diff>0?'▲':'▼'} ${fmt(Math.abs(diff))}</span>` : 'take-home'}</div>${btn}</div></div>`;
 }

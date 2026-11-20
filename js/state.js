@@ -98,9 +98,15 @@ const KID_COST = 950, KID_CARE = 400, KID_CARE_COMMUTE = 200, WCCC_LINE = 5000, 
 const householdPay = () => { const j = !S.retired && S.jobId ? JOBS.find(x => x.id === S.jobId) : null;
   return (j ? payNow(j) / (S.wage || 1) : 0) + (S.partner && S.ageMonths < 65 * 12 ? 1400 : 0); };   // monthly, in 2027 dollars
 const childcareHelp = () => householdPay() < WCCC_LINE;
-const kidMonthly = () => { const care = KID_CARE + (commuteOneWay() >= 20 ? KID_CARE_COMMUTE : 0);
+// i46-a01: commute childcare is only for kids under 13; kidMonthly(years, miles) is one kid's cost (a baby by default)
+const KID_CARE_AGE = 13;
+const kidMonthly = (yrs = 0, miles = commuteOneWay()) => { const care = KID_CARE + (miles >= 20 && yrs < KID_CARE_AGE ? KID_CARE_COMMUTE : 0);
   return KID_COST - KID_CARE + (childcareHelp() ? Math.min(care, WCCC_CAP) : care); };
-const kidCost = () => cost(kidMonthly());
+const kidCost = (yrs = 0, miles) => cost(kidMonthly(yrs, miles));
+// every kid at home together, a month (miles: a job's one-way commute)
+const kidsCost = (miles = commuteOneWay()) => kidsAtHome() ? S.kids.filter(b => kidAge(b) < 18).reduce((a, b) => a + kidCost(kidAge(b), miles), 0) : 0;
+// i46-a05: the extra childcare a job this far away adds, a month
+const commuteCare = miles => kidsCost(miles) - kidsCost(0);
 const HALF_START_DIP = 5;                 // B2: a 6-month life starts with a little less happiness and health
 const studyDone = () => Math.floor(S.studyProg);   // weeks of classes done (a trip week counts 3/4, R11)
 const kidJoy = () => ['rest', 'community'].includes(S.focus) ? 0.6 : 0.1;
@@ -318,6 +324,7 @@ function blankLife(name, len, slot = 0){
     badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false,
     earnYears:0, earnSum:0, pensionYears:0, pensionPay:0, ltc:null, care:null, snowbird:null, scholar:null, will:false, probate:null, roomHost:false, hostLast:-99,
     skills:{}, biz:null, weekly:null, rng:null, rngEv:null, gen:1, goalAt:{}, carpoolJob:null, hustleLast:0, highWater:null, recentF:[], out:outDefault(), years:[],
+    stopRun:{}, tripTurns:[],                      // i42-a03 stop repeats in a row; i58-b03 recent trip weeks (road-weary)
     plan:[], planI:0,                              // i2-a12: a weekly focus rotation (empty = no plan)
     ...START_STATE(),                              // i17 / i7 / i6: pronouns, your look, a disability start, aid and the first weeks (js/starts.js)
     hist:[], spend4:[], ansRules:{},               // i15-b01 weekly history, i15-b05 last 4 weeks by kind, i49-a11 answer rules
@@ -423,6 +430,8 @@ function migrate(s){
   const r = { goalAt:{}, skills:{}, biz:null, weekly:null, rng:null, rngEv:null, carpoolJob:s.jobId ?? null, hustleLast:s.turn || 0, highWater:null, recentF:[], gen:1, badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false, bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0, carpool:false, hustleWeeks:0, scoreQ:null, trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, redLow:{}, moneyTalk:false, dentist:s.turn || 0, stopLast:{}, out:null, tabsYear:new Date(s.date || Date.now()).getFullYear(),
     startLater:null, jobSeed:Math.floor(hash01(String(s.lid || s.lifeId || s.name)) * 1e9), scWarned:false };   // i37-b05, i8-a06, i8-a05
   for (const k in r) if (s[k] === undefined) s[k] = r[k];
+  if (s.stopRun === undefined) s.stopRun = {};   // i42-a03
+  if (s.tripTurns === undefined) s.tripTurns = [];   // i58-b03
   // wave 1 score: an older life's averages and rates start from what it has now; earlier report cards are filled in at the next one
   const t0 = s.turn || 0, sc = { ...SCORE_STATE(), commSum:(s.community || 0) * (s.monthsPlayed || 0), tallyFrom:t0, debtLow:Math.min(0, (s.money || 0) / (s.col || 1)),
     aimWeeks:{ all:t0 }, aimAt:-52, cardSeed:t0 >= 13 };
@@ -467,7 +476,7 @@ function syncCarpool(){ if (S && S.carpool && S.carpoolJob !== S.jobId) { S.carp
 // i3-a14: the county bus runs to Dayton and Walla Walla
 const busOK = (j = job()) => !!j && ['dayton', 'wallawalla'].includes(j.city) && on('jobs.commute');
 const onBus = () => !!(S && S.bus) && busOK() && !S.retired;
-const commuteGasFactor = (j = job()) => S && S.bus && j && S.jobId === j.id && busOK(j) ? 0.1 : driveDays(j) * (carpooling() && j && CITIES[j.city].miles >= 20 ? 0.5 : 1);
+const commuteGasFactor = (j = job()) => S && S.bus && j && S.jobId === j.id && busOK(j) ? 0.1 : driveDays(j) * (carpooling() && j && j.id === S.carpoolJob && CITIES[j.city].miles >= 20 ? 0.5 : 1);   // i42-a06: only the job you carpool to
 const netWorth = () => {
   const loan = S.loanLeft > 0 ? S.loanLeft * (S.loanPay || CARS.truck.pay) * 0.85 : 0;
   const sloan = S.sloanLeft > 0 ? S.sloanLeft * S.sloanPay * 0.85 : 0;
