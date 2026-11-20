@@ -53,8 +53,9 @@ function renderTitle(){
     <input type="text" id="nm" maxlength="20" placeholder="e.g. Dusty" autocomplete="off">
     <label class="field">Game length</label>
     <div class="lengths">${Object.entries(LENGTHS).map(([k,L]) =>
-      `<button class="len ${k===len?'on':''}" data-len="${k}" aria-pressed="${k===len}"><b>${L.label}</b><span>${L.sub}</span></button>`).join('')}</div>
+      `<button class="len ${k===len?'on':''}" data-len="${k}" aria-pressed="${k===len}"><b>${L.label}</b><span>${L.sub}</span><small>⏱ ${L.mins}</small></button>`).join('')}</div>
     <button class="btn primary bigstart" id="start">Start a new life</button>
+    ${used ? '' : '<button class="btn ghost" id="newbie">🌱 Never played one of these?</button>'}
     <button class="moreopts" id="moreopts" aria-expanded="${more}" aria-controls="morepanel"><span><b>More options</b><span class="s" id="moresum"></span></span><span class="caret" aria-hidden="true">${more ? '▴' : '▾'}</span></button>
     <div id="morepanel" class="morepanel${more ? '' : ' hidden'}">
       <label class="field">How your life begins</label>
@@ -103,12 +104,17 @@ function renderTitle(){
   document.querySelectorAll('[data-cont]').forEach(b => b.onclick = () => loadSlot(b.dataset.cont === WEEKLY_SLOT ? WEEKLY_SLOT : +b.dataset.cont));
   wireTitleExtras();
   document.querySelectorAll('[data-del]').forEach(b => b.onclick = () => askDelete(+b.dataset.del));
+  // the start as picked right now (name, length, background, mode, aim), run now or after the practice life
+  const startNow = () => { const name = ($('#nm').value.trim() || 'Dusty').slice(0,20), l = len, o = { bg, mode: md, aim, rules };
+    return () => { const free = slots().indexOf(null); if (free < 0) return askReplace(name, l, o); newGame(name, l, free, o); }; };
   $('#start').onclick = () => {
-    const name = ($('#nm').value.trim() || 'Dusty').slice(0,20);
-    const free = slots().indexOf(null);
-    if (free < 0) return askReplace(name, len, { bg, mode: md, aim, rules });
-    newGame(name, len, free, { bg, mode: md, aim, rules });
+    const go = startNow();
+    if (isBrandNew()) return newHereSheet(go);      // i23-a01: the very first start offers the practice life
+    go();
   };
+  if ($('#newbie')) $('#newbie').onclick = () => newbieSheet({   // i7-a06
+    len: k => { const b = document.querySelector(`.len[data-len="${k}"]`); if (b) b.click(); },
+    mode: k => { const b = document.querySelector(`[data-mode="${k}"]`); if (b) b.click(); }, startNow });
   $('#how').onclick = showHelp;
   $('#chal').onclick = challengesSheet;   // i50-a05: the weekly challenge and your records live in the Challenges sheet
   $('#restore').onclick = restoreSheet;
@@ -174,6 +180,43 @@ async function titleNotes(){
 function privateCard(){
   if (!PRIVATE_SIGNS || PRIVATE_HOME_SEEN || !S || S.practice) return '';
   return `<div class="card warn" id="privcard">🕶️ <b>${privateText(PRIVATE_SIGNS)}</b> Back up before you close it (Menu → 📤 Back up or restore). <span class="slotbtns"><button class="sm" id="privbk">📤 Back up</button><button class="sm alt" id="privok">Got it</button></span></div>`;
+}
+/* ---------- i23-a01 / i7-a06: a first start offers the practice life; new players can answer three questions ---------- */
+const isBrandNew = () => !slots().some(Boolean) && !hasRecords() && !prefs().newHere;
+function newHereSheet(go){
+  setPref('newHere', 1);                            // shown once on this device
+  sheet(`<h2>👋 New here?</h2><p>A short <b>practice life</b> (about 4 minutes) shows you the ropes: jobs, your weekly focus, the week strip and how the Life Score adds up. A pulsing ring shows what to tap. Nothing in it is saved, and your real life starts right after.</p>
+    <button class="btn primary" id="yes">🎓 Practice life first</button><button class="btn ghost" id="jumpin">Jump right in</button>`);
+  $('#yes').onclick = () => { closeSheet(); startTutorial(go); };
+  $('#jumpin').onclick = () => { closeSheet(); go(); };
+}
+const NEWBIE_Q = [
+  ['len', 'How long do you want to play?', [['half', 'A few minutes'], ['two', 'About 10 minutes'], ['five', 'Longer, over a few sittings']]],
+  ['text', 'How do you like to read?', [['normal', 'Normal text'], ['l', 'Bigger text']]],
+  ['easy', 'Want it easy?', [['normal', 'No, the game as designed'], ['relaxed', 'Yes, go easy on me']]]
+];
+function newbieSheet(set){
+  const pick = { len: 'half', text: setting('textSize') === 'normal' ? 'normal' : 'l', easy: 'normal' };
+  const draw = () => {
+    sheet(`<h2>🌱 New to games like this?</h2><p>Three quick questions, and we'll set up a good first life. You can change any of it later.</p>
+      <div class="newq">${NEWBIE_Q.map(([k, q, opts]) => `<h3 id="nq-${k}">${q}</h3><div class="maptog wrap" role="group" aria-labelledby="nq-${k}">${opts.map(([v, l]) =>
+        `<button data-nq="${k}" data-v="${v}" class="${pick[k] === v ? 'on' : ''}" aria-pressed="${pick[k] === v}">${l}</button>`).join('')}</div>`).join('')}</div>
+      <p class="muted">${LENGTHS[pick.len].label}: ${LENGTHS[pick.len].mins}. ${pick.easy === 'relaxed' ? `${MODES.relaxed.ic} Relaxed: ${MODES.relaxed.desc}` : `${MODES.normal.ic} Normal: ${MODES.normal.desc}`}</p>
+      <button class="btn primary" id="yes">Set it up</button><button class="btn ghost" id="no">Back</button>`);
+    document.querySelectorAll('#sheet [data-nq]').forEach(b => b.onclick = () => { pick[b.dataset.nq] = b.dataset.v; const k = b.dataset.nq, v = b.dataset.v; draw();
+      const n = document.querySelector(`#sheet [data-nq="${k}"][data-v="${v}"]`); if (n) n.focus({ preventScroll: true }); });
+    $('#no').onclick = closeSheet;
+    $('#yes').onclick = () => {
+      set.len(pick.len); set.mode(pick.easy); setPref('textSize', pick.text); applyPrefs(); setPref('newHere', 1);
+      const go = set.startNow(), sum = `${LENGTHS[pick.len].label}, ${MODES[pick.easy].name}${pick.text === 'l' ? ', bigger text' : ''}`;
+      sheet(`<h2>✅ All set</h2><p>${sum}. Want a short <b>practice life</b> first? It takes about 4 minutes, a pulsing ring shows what to tap, and your real life starts right after.</p>
+        <button class="btn primary" id="yes">🎓 Practice life first</button><button class="btn ghost" id="jumpin">Start my life</button><button class="btn ghost" id="no">Back to the title</button>`);
+      $('#yes').onclick = () => { closeSheet(); startTutorial(go); };
+      $('#jumpin').onclick = () => { closeSheet(); go(); };
+      $('#no').onclick = closeSheet;
+    };
+  };
+  draw();
 }
 /* ---------- 🏆 Your records (G7, R7): best scores by length × mode, challenges, and this week's weekly challenge ---------- */
 // only the current week's weekly-challenge best is kept; older weeks are dropped when the game loads
@@ -891,9 +934,26 @@ function overtimeTip(){
 }
 // what the selected focus does this week (Take classes names the certificate or diploma it works toward)
 function focusDesc(f){
-  if (f.study && S.certStudy) { const c = CERTS[S.certStudy.id]; return `work toward your ${c.name} certificate (${Math.floor(S.certStudy.prog)}/${c.weeks} weeks, already paid for).`; }
+  if (f.study && S.certStudy) { const c = CERTS[S.certStudy.id]; return `work toward your ${c.name} certificate (${Math.floor(S.certStudy.prog)}/${c.weeks} weeks, ${certOwed() ? `paid as you go, ${fmt(certOwed())} left` : 'already paid for'}).`; }
   if (f.study && S.edu < 3) return `work toward a ${EDU[S.edu+1].toLowerCase()}${S.program ? ` in ${PROGRAMS[S.program].name.toLowerCase()}` : ''} (${studyDone()}/${STUDY_NEED[S.edu]} weeks). ${tuitionWords()}.`;
   return f.desc + (f.cost ? ` ${wk(cost(f.cost))}.` : '');
+}
+// i72-b02/b03: no job yet: how long your cash lasts at your bills, and a Side hustle to bridge the gap
+function noPayCard(){
+  const wkB = weekBills(), n = cashWeeks(), low = S.money < wkB * 2, g = currentGig(), pay = Math.round(hustlePay(g, 0.5));
+  const debt = fmt(1000 * (mode() === 'relaxed' ? 0.01 : 0.015) * W);
+  const line = S.money <= 0 ? `<p class="cashline low">💸 You're out of cash: bills of about ${fmt(wkB)} a week go on debt, at about ${debt} interest a week for each ${fmt(1000)}.</p>`
+    : `<p class="cashline${low ? ' low' : ''}">💵 Your cash lasts about <b>${n} week${n === 1 ? '' : 's'}</b> at your bills (${fmt(wkB)} a week: rent, food, insurance, gas).${low ? ` After that it's debt, at about ${debt} interest a week for each ${fmt(1000)}.` : ''}</p>`;
+  const hustle = S.focus === 'hustle' ? `<p class="muted" style="margin:4px 0 0">🔧 Your focus is already Side hustle: ${g.name}, about ${fmt(pay)} a week.</p>`
+    : `<button class="sm alt" data-sugg="hustle">🔧 Side hustle meanwhile (about ${fmt(pay)} a week)</button>`;
+  // i72-b01: the first Home tip, before there's a job (the "pick a focus" tip assumes one)
+  const tip = `<p class="cashline">👉 One job application a week${S.applied ? ', and this week\'s is sent' : ''}. While you wait, pick a focus below and tap End Week.</p>`;
+  return `<div class="card warn nopay">💼 No paycheck coming in. ${line}${tip}<div class="slotbtns"><button class="sm" data-go="jobs">Find a job</button>${hustle}</div></div>`;
+}
+// i52-a03: the first time Work extra is picked, say it's overtime on top of a job (shown until that week is played)
+function otNote(){
+  if (S.seenOT || S.focus !== 'work' || S.practice || !job() || S.retired) return '';
+  return `<p class="otnote" role="note">⏱️ <b>Work extra is overtime</b>, on top of your regular job: your job already pays every week without it. Overtime adds ${Math.round((FOCUS.work.payMult - 1) * 100)}% pay but wears down happiness and health, so use it now and then.</p>`;
 }
 function renderHome(){
   const j = job(), f = FOCUS[S.focus];
@@ -910,10 +970,11 @@ function renderHome(){
   ${cl}${hint ? `<div class="card next"><div>👉 <b>Next step:</b> ${hint.t}</div><button class="sm" data-next="${hint.go}">${hint.b}</button></div>` : ''}
   ${installReady() ? `<div class="card tip installcard"><div>📲 <b>Enjoying the Burg?</b> Install it: it opens from your home screen like an app and plays offline.</div><div class="slotbtns"><button class="sm" id="install">Install</button><button class="sm alt" id="installno">Not now</button></div></div>` : ''}
   ${privateCard()}
-  ${!j && !S.retired ? `<div class="card warn">💼 No paycheck coming in. <button class="sm" data-go="jobs">Find a job</button></div>` : ''}
+  ${!j && !S.retired ? noPayCard() : ''}
   ${S.happy < 30 ? sugg('happy', 'outdoors', `😟 Happiness is low (${Math.round(S.happy)}).`) : ''}
   ${S.health < 30 ? sugg('health', 'rest', `🤒 Health is low (${Math.round(S.health)}).`) : ''}
   ${overtimeTip() ? `<div class="card warn">${overtimeTip()}</div>` : ''}
+  ${S.money < 0 && !inCollections() ? firstTime('collect') : ''}
   ${S.money < debtWarnAt() ? `<div class="card warn" id="debtwarn">⚠️ Your debt is getting dangerous.${debtLimit() == null ? ` In Relaxed it never ends your life (a debt counselor stops it at ${fmt(RELAXED_FLOOR)}), but the interest keeps eating your cash.` : ` Below ${fmt(debtLimit())} you'll have to leave town${canBankrupt() ? ' or file for bankruptcy' : ''}.`}</div>` : onPlan() ? `<div class="card">📞 <b>On a payment plan.</b> Your debt is still in collections (worse odds on job applications and loans until you're back above $0), but the calls stop while your cash keeps going up.</div>` : inCollections() ? `<div class="card warn">📞 Your debt is in collections: daily calls (−happiness) and worse odds on job applications and loans until you're back above $0. Raise your cash ${PLAN_WEEKS} weeks in a row to get on a payment plan.</div>` : ''}
   <div class="card"><div class="focushead"><h3>This week's focus</h3><button class="sm alt" id="planbtn" aria-pressed="${!!(S.plan && S.plan.length)}" aria-label="Focus plan: ${S.plan && S.plan.length ? 'on' : 'off'}">🗓 Plan${S.plan && S.plan.length ? ' ✓' : ''}</button></div>${scenarioLine() || seasonLine()}${mapToggle()}
     ${prefs().mapView ? mapBlock('T') : `<div class="fgrid">${Object.entries(FOCUS).map(([k,x]) => {
@@ -921,7 +982,7 @@ function renderHome(){
       const eff = dis ? 1 : focusEffect(k, S.streakF === k ? S.streakN + 1 : 1);   // i2-a02: a fading focus says how strong it still is
       return `<button class="fbtn ${S.focus===k?'on':''}" data-f="${k}" ${dis?'disabled':''} aria-pressed="${S.focus===k}"${eff < 1 ? ` aria-label="${FOCUS_SHORT[k]}, works at ${Math.round(eff * 100)}%"` : ''}><span class="ic">${x.ic}</span><b>${FOCUS_SHORT[k]}</b>${eff < 1 ? `<small class="fade">${Math.round(eff * 100)}%</small>` : ''}</button>`;
     }).join('')}</div>
-    <div class="fdesc"><b>${f.ic} ${f.name}:</b> ${focusDesc(f)}${previewLine(S.focus)}</div>`}
+    <div class="fdesc"><b>${f.ic} ${f.name}:</b> ${focusDesc(f)}${previewLine(S.focus)}</div>${otNote()}`}
     ${prefs().mapView ? previewLine(S.focus) : ''}
     ${planLine()}
     ${outButton()}
@@ -1040,6 +1101,13 @@ function showStatInfo(k){
 // weekly take-home: pay after ~15% taxes, minus commuting gas in your current vehicle
 const takeHome = x => payNow(x, S.jobId === x.id) * W * (1 - taxRate(payNow(x, S.jobId === x.id))) -   // i75-b03: taxed by bracket
   commuteCost(CITIES[x.city].miles, CARS[S.car], x) * W;
+// i52-a01: in a first life, before the first hire, tag the two best jobs within 25 miles (take-home less a happiness cost for the drive)
+let GOOD_JOBS = [];
+function goodFirstJobs(){
+  if (!S || S.practice || S.jobId || S.retired || prefs().hired || hasRecords()) return [];
+  return JOBS.filter(x => CITIES[x.city].miles <= 25 && x.edu <= S.edu && !extraLock(x) && jobInSeason(x))
+    .map(x => [x.id, takeHome(x) - CITIES[x.city].miles * 10 - (x.stress + x.wear) * 40]).sort((a, b) => b[1] - a[1]).slice(0, 2).map(a => a[0]);
+}
 function jobRow(x){
   const c = CITIES[x.city], cur = S.jobId === x.id && !S.retired, th = takeHome(x);
   const base = job() && !S.retired ? takeHome(job()) : 0, diff = th - base;
@@ -1049,7 +1117,7 @@ function jobRow(x){
     : back ? `<button class="sm" data-recall="${x.id}">Go back</button>`
     : !jobInSeason(x) ? `<button class="sm" disabled aria-label="Hires again in ${MONTHS[x.season[0]]}">Hires ${MONTHS[x.season[0]].slice(0,3)}</button>`
     : `<button class="sm" data-apply="${x.id}" ${S.applied?'disabled':''}>Apply</button>`;
-  const tags = [x.remote === 5 ? '🏠 fully remote' : x.remote ? `🏠 ${x.remote} remote days` : '', x.season ? `🗓️ ${seasonWords(x)}` : '', x.union ? '🪪 union' : '',
+  const tags = [GOOD_JOBS.includes(x.id) ? '<b class="goodjob">⭐ Good first job</b>' : '', x.remote === 5 ? '🏠 fully remote' : x.remote ? `🏠 ${x.remote} remote days` : '', x.season ? `🗓️ ${seasonWords(x)}` : '', x.union ? '🪪 union' : '',
     x.apprentice && !cur ? `🧰 apprentice, ${x.apprentice.weeks / 52} yrs to full pay` : '', CLEARANCE.includes(x.id) && !cur ? '🔐 clearance' : '', majorFits(x) ? '🎓 your major' : ''].filter(Boolean);
   return `<div class="kv job${lock ? ' lockedrow' : ''}" data-job="${x.id}"><div><div class="t">${cur ? esc(jobTitle(x)) : x.title}</div>
     <div class="s">${x.where ? esc(x.where) + ', ' : ''}${c.name}${c.miles ? ` · ${c.miles} mi` : ' · no commute'} · pay ${wk(payNow(x, cur))}${c.miles ? `, gas ${wk(commuteCost(c.miles, CARS[S.car], x))}` : ''}${tags.length ? ` · ${tags.join(' · ')}` : ''}</div></div>
@@ -1102,7 +1170,7 @@ function myJobCard(){
     S.notice != null ? `👋 You gave notice: your last day is in ${Math.max(0, S.notice - S.turn)} week${S.notice - S.turn === 1 ? '' : 's'}.` : ''].filter(Boolean);
   const bus = busOK(j) ? `<p class="muted" style="margin:6px 0">🚌 ${S.bus ? 'You ride the county bus' : 'County bus'} to ${CITIES[j.city].name}: ${wk(cost(BUS_PASS))} pass, 90% less commute gas and half the truck wear, but longer days (▼ a little happiness).</p>
     <button class="sm${S.bus ? ' alt' : ''}" id="bus" aria-pressed="${!!S.bus}">${S.bus ? '🚙 Drive instead' : '🚌 Ride the bus'}</button>` : '';
-  return `<div class="card"><h3>💼 ${esc(jobTitle(j))}</h3>${wait}
+  return `${j.union ? firstTime('union') : ''}${firstTime('ladder')}<div class="card"><h3>💼 ${esc(jobTitle(j))}</h3>${wait}
     <p class="muted" style="margin:0 0 4px">${esc(j.where ? j.where + ', ' : '')}${CITIES[j.city].name} · ${wk(payNow(j))} · ${Math.floor(S.tenure || 0)} months on the job</p>
     <ol class="ladder" aria-label="Job ladder">${steps}</ol>
     ${next ? `<p class="muted" style="margin:4px 0">Next step up: ${esc(next.title)}. ${rungNeeds(next) ? `Needs ${rungNeeds(next)}.` : 'You qualify: watch for a promotion offer.'}</p>` : '<p class="muted" style="margin:4px 0">You\'re at the top of this ladder.</p>'}
@@ -1122,7 +1190,7 @@ function boardHTML(list){
     return `<h4 class="boardh">${label} <span class="tag">${g.length}</span></h4>${g.map(jobRow).join('')}`; }).join('');
 }
 function renderJobs(){
-  syncCarpool();
+  syncCarpool(); GOOD_JOBS = goodFirstJobs();
   const j = job();
   const cur = S.jobId && !S.retired ? S.jobId : null;
   const list = JOBS.filter(x => (jobCity === 'all' || x.city === jobCity) && (!jobOK || (x.edu <= S.edu && !extraLock(x))))
@@ -1135,7 +1203,7 @@ function renderJobs(){
   ${jobCity!=='all' ? `<div class="card muted">${CITIES[jobCity].blurb}</div>` : ''}
   <div class="card">
     <h3>Job board <span class="tag">${S.applied ? 'Applied this week' : '1 application per week'}</span></h3>
-    <p class="muted" style="margin:0 0 4px;font-size:0.8125rem">${term('takehome')} is pay after taxes and gas${job() && !S.retired ? ', with ▲▼ against your current job' : ''}.</p>
+    <p class="muted" style="margin:0 0 4px;font-size:0.8125rem">${term('takehome')} is pay after taxes and gas${job() && !S.retired ? ', with ▲▼ against your current job' : ''}.${GOOD_JOBS.length ? ' ⭐ Good first jobs are close to home: the top of the list can mean an hour on the road each way, and long drives wear down happiness.' : ''}</p>
     ${boardHTML(list)}
   </div>`}
   ${j && !S.retired && commuteOneWay() >= 20 && !onBus() ? `${firstTime('carpool')}<div class="card"><h3>🚙 Carpool</h3>
@@ -1211,7 +1279,7 @@ function eduCard(){
 }
 function renderLife(){
   const h = HOMES[S.home], u = undoTop();
-  const homeCard = `<div class="card"><h3>🏡 Home in Waitsburg</h3>
+  const homeCard = `${h.own ? firstTime('ptax') : ''}<div class="card"><h3>🏡 Home in Waitsburg</h3>
     ${Object.entries(HOMES).map(([k,x]) => {
       const cur = S.home === k;
       let btn = cur ? '<span class="tag cur">Home</span>' : x.own ? `<button class="sm buy2" data-home="${k}" aria-label="Buy the ${esc(x.name.toLowerCase())}: ${fmt(homeDown(k))} down">Buy<small>${fmt(homeDown(k))} down</small></button>` : `<button class="sm alt buy2" data-home="${k}">Move</button>`;   // i20-a14
@@ -1246,7 +1314,7 @@ function renderLife(){
   const pr = S.practice;
   $('#main').innerHTML = `${u ? `<div class="card undo" role="status"><span>↩ ${esc(u.label)}</span><button class="sm" id="undo" aria-label="Undo: ${esc(u.label)}">Undo</button></div>` : ''}
   ${homeCard}${rideCard}${k401Card}${planningCard()}${pr ? '' : investCard()}${insCard}
-  ${pr ? '' : goalsCard()}${pr ? '' : aimCard()}${S.edu < 3 ? firstTime('school') : ''}${eduCard()}${healthCard()}${pr ? '' : skillsCard()}${pr ? '' : bizCard()}${pr ? '' : weatherCard()}
+  ${pr ? '' : goalsCard()}${pr ? '' : aimCard()}${S.edu < 3 ? firstTime('school') : ''}${S.edu < 3 ? firstTime('program') : ''}${eduCard()}${healthCard()}${pr ? '' : skillsCard()}${pr ? '' : bizCard()}${pr ? '' : weatherCard()}
   <div class="card"><h3>❤️ Household</h3>
     <div class="kv"><span>Partner</span><span>${S.partner ? 'Together 💕' : 'Single'}</span></div>
     <div class="kv"><span>Dog</span><span>${S.dog ? 'One good dog 🐕' : 'None'}</span></div>
@@ -1263,10 +1331,15 @@ function renderLife(){
   if ($('#renew')) $('#renew').onclick = () => { const err = renewLease(); if (err) return toast(err); save(); render(); toast('🌾 Lease renewed for 5 years'); };
   if ($('#bizsell')) $('#bizsell').onclick = () => { sheet(`<h2>Sell your business?</h2><p>You'd get about ${fmt(bizValue())}.</p><button class="btn primary" id="y">Sell</button><button class="btn ghost" id="n" data-safe>Keep it</button>`); $('#y').onclick = () => { closeSheet(); sellBiz(); }; $('#n').onclick = closeSheet; };
   document.querySelectorAll('[data-prog]').forEach(b => b.onclick = () => { S.program = b.dataset.prog || null; save(); render(); toast(S.program ? `${PROGRAMS[S.program].ic} Studying ${PROGRAMS[S.program].name.toLowerCase()}` : 'General studies'); });
-  document.querySelectorAll('[data-cert]').forEach(b => b.onclick = () => { const c = CERTS[b.dataset.cert];
-    sheet(`<h2>${c.ic} ${c.name}</h2><p>${c.what}</p><p>${c.weeks} weeks of 📚 Take classes, and ${fmtc(c.fee)} up front. Your diploma classes wait until it's done.</p>
-      <button class="btn primary" id="yes">Sign up (${fmtc(c.fee)})</button><button class="btn ghost" id="no">Not now</button>`);
-    $('#yes').onclick = () => { startCert(b.dataset.cert); closeSheet(); save(); render(); toast(`📜 Signed up: ${c.name}. Pick Take classes to study.`); };
+  // i72-b04: pay as you go comes first, so one tap doesn't put a new player in debt
+  document.querySelectorAll('[data-cert]').forEach(b => b.onclick = () => { const c = CERTS[b.dataset.cert], fee = Math.round(cost(c.fee)), per = fee / c.weeks;
+    const bills = -billLines().reduce((a, l) => a + l[1], 0), low = S.money - per - bills < 0, lowAll = S.money - fee < 0;
+    sheet(`<h2>${c.ic} ${c.name}</h2>${firstTime('cert')}<p>${c.what}</p><p>${c.weeks} weeks of 📚 Take classes for ${fmt(fee)} in all. Your diploma classes wait until it's done.</p>
+      ${low ? `<div class="card warn">⚠️ Even ${fmt(per)} a week would take you below $0 with this week's bills (about ${fmt(bills)}). Debt costs 1.5% a month.</div>` : ''}
+      <button class="btn primary" id="yes">Pay as you go: ${fmt(per)} a week for ${c.weeks} weeks</button>
+      <button class="btn ghost" id="all">Pay it all now (${fmt(fee)})${lowAll && !low ? ': that leaves you below $0' : ''}</button><button class="btn ghost" id="no">Not now</button>`);
+    const go = payGo => { startCert(b.dataset.cert, payGo); closeSheet(); save(); render(); toast(`📜 Signed up: ${c.name}. Pick Take classes to study.`); };
+    $('#yes').onclick = () => go(true); $('#all').onclick = () => go(false);
     $('#no').onclick = closeSheet; });
   document.querySelectorAll('[data-home]').forEach(b => b.onclick = () => moveHome(b.dataset.home));
   document.querySelectorAll('[data-car]').forEach(b => b.onclick = () => buyCar(b.dataset.car));
@@ -1283,7 +1356,10 @@ function renderLife(){
   if ($('#cropins')) $('#cropins').onclick = () => { S.biz.ins = !S.biz.ins; save(); render(); const b = $('#cropins'); if (b) b.focus({ preventScroll: true }); announce(S.biz.ins ? `Crop insurance on: ${fmt(cost(CROP_INS))} each April.` : 'Crop insurance off.'); };
   document.querySelectorAll('[data-inv]').forEach(b => b.onclick = () => {
     const v = b.dataset.inv === 'all' ? -(S.stocks || 0) : +b.dataset.inv;
-    if (invest(v)) { save(); render(); toast(v > 0 ? `📈 Put ${fmt(v)} in index funds` : `📈 Took ${fmt(-v)} out`); announce(`Index funds now ${fmt(S.stocks)}. Cash ${fmt(S.money)}.`); }
+    const go = () => { if (invest(v)) { save(); render(); toast(v > 0 ? `📈 Put ${fmt(v)} in index funds` : `📈 Took ${fmt(-v)} out`); announce(`Index funds now ${fmt(S.stocks)}. Cash ${fmt(S.money)}.`); } };
+    const worry = investWorry(v);                  // i72-b05: a month of bills stays in cash unless you say so
+    if (!worry) return go();
+    confirmSheet({ title: '📈 Invest that much?', intro: worry, yes: 'Invest anyway', no: 'Keep the cash', onYes: go });
   });
   if ($('#wine')) $('#wine').onclick = () => { if (buyWine()) { save(); render(); toast(`🍷 You're in on the ${wineYear()} vintage`); } };
 }

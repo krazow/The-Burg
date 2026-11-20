@@ -394,7 +394,7 @@ await t.check('Life Score so far opens its breakdown from Home; a commuter can j
 });
 
 await t.check('the title screen starts a life with a background and a mode', async () => {
-  await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); render(); });
+  await page.evaluate(() => { localStorage.clear(); setPref('newHere', 1); S = null; closeSheet(); render(); });
   await page.fill('#nm', 'Kid');
   await page.click('#moreopts');
   await page.click('[data-bg="farm"]'); await page.click('[data-mode="hard"]');
@@ -406,7 +406,7 @@ await t.check('the title screen starts a life with a background and a mode', asy
 });
 
 await t.check('i19-b02..b05: Change the rules on the start sheet: grouped knobs with Normal values, a live preview and a record badge', async () => {
-  await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); renderTitle(); });
+  await page.evaluate(() => { localStorage.clear(); setPref('newHere', 1); S = null; closeSheet(); renderTitle(); });
   await page.click('#moreopts');
   assert(/Normal rules/.test(await page.textContent('#rulesum')), await page.textContent('#rulesum'));
   await page.click('#rulesbtn');
@@ -506,7 +506,7 @@ await t.check('title screen: Start comes before a closed "More options" panel, w
 });
 
 await t.check('i20-b01, i20-b06: pick a life aim at setup, see it on the Life tab, and change it only once a year', async () => {
-  await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); setPref('moreOpts', true); renderTitle(); });
+  await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); setPref('moreOpts', true); setPref('newHere', 1); renderTitle(); });
   await page.click('[data-aim="roots"]');
   assert((await page.getAttribute('[data-aim="roots"]', 'aria-pressed')) === 'true' && /Roots/.test(await page.textContent('#moresum')) && /Show up for town/.test(await page.textContent('#aimdesc')), 'aim chip');
   await page.fill('#nm', 'Aimee'); await page.click('#start');
@@ -762,7 +762,7 @@ await t.check('i3-a02/a03: the Life tab picks a program and signs up for a certi
   assert((await S()).program === 'nursing', 'program not set');
   assert((await page.textContent('#main')).includes('registered nurse'), 'matching jobs not listed');
   await page.click('[data-cert="phlebotomy"]');
-  await page.click(`${open} #yes`);
+  await page.click(`${open} #all`);                              // i72-b04: Pay it all now (pay as you go is the first choice)
   const s = await S();
   assert(s.certStudy && s.certStudy.id === 'phlebotomy' && s.money === 2300, JSON.stringify({ c: s.certStudy, m: s.money }));
   assert(await page.$eval('[data-cert="welding"]', b => b.disabled), 'one course at a time');
@@ -1550,7 +1550,7 @@ await t.check('i73-b12: a private window (small quota, no persisted) gets a calm
   try {
     assert((await p1.textContent('#tn-private')).includes('This window forgets your lives'), await p1.textContent('#tn-private'));
     assert((await p2.textContent('#tn-private')).includes('may forget'), await p2.textContent('#tn-private'));
-    await p1.fill('#nm', 'Priv'); await p1.click('#start'); await p1.evaluate(() => { tab = 'home'; render(); });
+    await p1.fill('#nm', 'Priv'); await p1.click('#start'); await p1.click('#modal:not(.hidden) #jumpin'); await p1.evaluate(() => { tab = 'home'; render(); });
     await p1.waitForSelector('#privcard');
     await p1.click('#privok');
     await p1.evaluate(() => render());
