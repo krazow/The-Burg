@@ -299,14 +299,14 @@ await t.check('restoring adds to empty slots or replaces all, keeps the best sco
     localStorage.clear(); newGame('A', 'two', 0); save(); newGame('B', 'two', 1); save(); store.set(BEST_KEY, { two: 50, five: 70 });
     const bk = await readBackup(JSON.stringify(backupData()));
     store.set(SLOTS_KEY, [null, null, null, null, null]); newGame('Here', 'half', 0); save(); store.set(BEST_KEY, { two: 60 });
-    const skippedAdd = restoreBackup(bk, 'add'); const added = slots().map(g => g && g.name);
+    const skippedAdd = restoreBackup(bk, 'add').skipped; const added = slots().map(g => g && g.name);
     const best = store.get(BEST_KEY);
     restoreBackup(bk, 'replace'); const replaced = slots().map(g => g && g.name);
     const errs = [];
     for (const junk of ['hello', '{"app":"other","slots":[]}', '{"app":"theburg","slots":[{"name":5}]}', 'BURG1:@@@']) { try { await readBackup(junk); errs.push('accepted ' + junk); } catch (e) { errs.push(e.message ? 'ok' : 'no message'); } }
     // full slots: nothing fits
     for (let i = 0; i < 5; i++) { newGame('F' + i, 'half', i); save(); }
-    const skippedFull = restoreBackup(bk, 'add');
+    const skippedFull = restoreBackup(bk, 'add').skipped;
     return { skippedAdd, added, best, replaced, errs, skippedFull, slotsOk: slots().every((g, i) => g.slot === i) };
   });
   assert(r.skippedAdd === 0 && r.added.join() === 'Here,A,B,,', `add: ${r.added}`);
@@ -653,7 +653,7 @@ await t.check('i75-b25: raises top out at 30% above inflation', async () => {
 
 await t.check('the weekly challenge plays the same for everyone, even across saves', async () => {
   const r = await ev(() => { const run = () => { localStorage.clear(); newGame('W', 'half', 0, { weekly: '2026-W47' }); S.jobId = 'farmhand';
-      const out = []; for (let i = 0; i < 26; i++) { const res = weekTick(false); if (res.ev) { res.ev.choices()[0].go(); out.push(res.ev.title); } } return out.join('|') + '#' + Math.round(S.money); };
+      const out = []; for (let i = 0; i < 26; i++) { const res = weekTick(false); if (res.ev) { resolveChoice(res.ev, res.ev.choices()[0]); out.push(res.ev.title); } } return out.join('|') + '#' + Math.round(S.money); };
     const a = run(), b = run();
     localStorage.clear(); newGame('W', 'half', 0, { weekly: '2026-W47' }); S.jobId = 'farmhand'; for (let i = 0; i < 10; i++) weekTick(false); save();
     loadSlot(0); for (let i = 0; i < 5; i++) weekTick(false); const c = Math.round(S.money);
@@ -667,7 +667,7 @@ await t.check('the weekly challenge plays the same for everyone, even across sav
 
 await t.check('legacy: a Lifetime game with kids continues as the grandkid, named in a sheet', async () => {
   const r = await ev(() => { localStorage.clear(); newGame('Pat Doe', 'life', 0); S.noEvents = true; S.kids = [300]; S.money = 400000; S.community = 70;
-    S.date = new Date(2080, 3, 1).getTime(); S.col = 2; S.will = true; finish('done'); const btn = document.querySelector('#legacy').textContent; document.querySelector('#legacy').click();
+    S.date = new Date(2080, 3, 1).getTime(); S.col = 2; S.will = true; S.ageMonths = 80 * 12; finish('done'); const btn = document.querySelector('#legacy').textContent; document.querySelector('#legacy').click();
     const sugg = document.querySelector('#heirnm').value; document.querySelector('#heirgo').click();
     return { btn, sugg, name: S.name, gen: S.gen, money: S.money, community: S.community, age: age(), year: new Date(S.date).getFullYear(), col: S.col, log: S.log.map(e => e.m).join(' ') }; });
   assert(/grandkid/.test(r.btn) && r.sugg === 'Pat Doe II' && r.name === 'Pat Doe II' && r.gen === 2 && r.age === 18, JSON.stringify(r));
@@ -714,9 +714,9 @@ await t.check('R5: heirs get Roman numerals within 20 characters, and the name c
     f: heirName('Bartholomew Smithers'), g: heirName('Max V'), h: heirName('Ivy') }));
   assert(r.a === 'Ann Lee II' && r.b === 'Ann Lee III' && r.c === 'Ann Lee IV' && r.d === 'Ann Lee X' && r.e === 'Pat III', JSON.stringify(r));
   assert(r.f.length <= 20 && / II$/.test(r.f) && r.g === 'Max VI' && r.h === 'Ivy II', JSON.stringify(r));
-  const r2 = await ev(() => { localStorage.clear(); newGame('Ann Lee', 'life', 0); S.noEvents = true; S.kids = [300]; S.money = 1000; finish('done');
+  const r2 = await ev(() => { localStorage.clear(); newGame('Ann Lee', 'life', 0); S.noEvents = true; S.kids = [300]; S.money = 1000; S.ageMonths = 75 * 12; finish('done');
     document.querySelector('#legacy').click(); document.querySelector('#heirnm').value = 'Rosie'; document.querySelector('#heirgo').click(); const a = S.name;
-    S.kids = [S.ageMonths - 240]; finish('done'); document.querySelector('#legacy').click(); return { a, b: document.querySelector('#heirnm').value, title: document.querySelector('#sheet h2').textContent }; });
+    S.ageMonths = 75 * 12; S.kids = [S.ageMonths - 240]; finish('done'); document.querySelector('#legacy').click(); return { a, b: document.querySelector('#heirnm').value, title: document.querySelector('#sheet h2').textContent }; });
   assert(r2.a === 'Rosie' && r2.b === 'Rosie II' && /grandkid/.test(r2.title), JSON.stringify(r2));
   await ev(() => closeSheet());
 });
@@ -724,7 +724,7 @@ await t.check('R5: heirs get Roman numerals within 20 characters, and the name c
 await t.check('R8: in the weekly challenge, events come in the same weeks whatever you choose', async () => {
   const r = await ev(() => { const run = (pickLast, focus) => { localStorage.clear(); newGame('W', 'half', 0, { weekly: '2026-W47' }); S.jobId = 'farmhand'; S.focus = focus;
       const out = []; for (let i = 0; i < 26; i++) {   // no trips: a trip week adds the chance of a road event, by design
-        const res = weekTick(false); if (res.ev) { const ch = res.ev.choices().filter(c => !c.if || c.if()); ch[pickLast ? ch.length - 1 : 0].go(); out.push(`${S.turn}:${res.ev.title}`); } }
+        const res = weekTick(false); if (res.ev) { const ch = res.ev.choices().filter(c => !c.if || c.if()); resolveChoice(res.ev, ch[pickLast ? ch.length - 1 : 0]); out.push(`${S.turn}:${res.ev.title}`); } }
       return { weeks: out.map(x => x.split(':')[0]).join(), titles: out, rng: S.rng, rngEv: S.rngEv }; };
     const a = run(false, 'rest'), b = run(true, 'hustle');
     let same = 0; while (same < a.titles.length && a.titles[same] === b.titles[same]) same++;
@@ -1796,7 +1796,7 @@ await t.check('i5-a04: Celebration Days comes every year in May', async () => {
     S.date = new Date(2027, 3, 26).getTime(); const april = fixedEvent(3);
     // over a 2-year life with events on, Celebration Days comes both Mays
     fresh('two'); S.noEvents = false; let celeb = 0;
-    for (let i = 0; i < 104; i++) { const res = weekTick(false); if (res.ev && res.ev.title === 'Celebration Days') celeb++; }
+    for (let i = 0; i < 104; i++) { const res = weekTick(false); if (res.ev) { if (res.ev.title === 'Celebration Days') celeb++; resolveChoice(res.ev, res.ev.choices().find(c => !c.if || c.if())); } }   // i22-a01: the cooldown starts when you pick
     return { early, last, done, april, celeb, fixed: EVENTS.filter(e => e.fixed).map(e => e.title) }; });
   assert(r.early > 120 && r.early < 280 && r.last === 'Celebration Days' && r.done === null, JSON.stringify(r));
   assert(r.fixed.join() === 'Celebration Days' && r.april === null && r.celeb === 2, JSON.stringify(r));
