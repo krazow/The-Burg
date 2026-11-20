@@ -115,7 +115,7 @@ for (const { len, strat, g, opts, label, tier, seedAs, bot, diff, bg, scenario, 
         const bad = [], events = {}, choiceFx = {};
         const best = () => JOBS.filter(x => x.edu <= S.edu).sort((a, b) =>
           (b.pay - commuteCost(CITIES[b.city].miles) * (strat === 'homebody' ? 4 : 1)) - (a.pay - commuteCost(CITIES[a.city].miles) * (strat === 'homebody' ? 4 : 1)))[0];
-        let ending = null, weeks = 0, nw65 = null, climbed = false, scWeek = null;
+        let ending = null, weeks = 0, nw65 = null, climbed = false, lastTrip = -99, scWeek = null;
         // i75-b30: where the money came from, in 2027 dollars
         const src = { pay: 0, overtime: 0, hustle: 0, business: 0, retirement: 0, k401: 0, market: 0, equity: 0 }, bizIc = Object.values(BIZ).map(b => b.ic);
         while (!ending && weeks < 6000) {
@@ -169,8 +169,11 @@ for (const { len, strat, g, opts, label, tier, seedAs, bot, diff, bg, scenario, 
           if (strat === 'planner' && S.biz && S.biz.type === 'wheat') S.biz.ins = true;          // i75-a31: the planner gets ready for weather (crop insurance; prep choices come first in weather cards)
           if (!S.biz && strat === 'homebody' && S.money > cost(12000)) startBiz('shop');       // a homebody opens a woodshop ($6,000, i75-b15)
           // trips around the region: the planner shops and keeps up car care monthly; the tripper goes out every week
-          if (strat === 'planner' && swap !== 'noTrip' && (weeks % 4 === 0 || swap === 'weeklyTrip') && S.money > 300) {
-            const ids = ['stock']; if (S.turn - S.svc > 22) ids.push('oil'); else if (S.turn - S.dentist > 45) ids.push('dentist'); else ids.push('movies');
+          if (strat === 'planner' && swap !== 'noTrip' && (swap === 'weeklyTrip' || (weeks - lastTrip >= 4 && S.focus !== 'work')) && S.money > 300) {   // i42-a01: about monthly, never in an overtime week
+            lastTrip = weeks;
+            const ids = ['stock']; if (S.turn - S.svc > 22) ids.push('oil'); else if (S.turn - S.dentist > 45) ids.push('dentist');
+            else { const f = weeks % 8 < 4 ? 'movies' : 'college'; ids.push(stopBlocked(STOPS.find(x => x.id === f)) ? 'bistro' : f); }
+            if (S.happy < 75 && !ids.includes('bistro')) ids.push('bistro');   // i42-a03: a good player varies the fun stop, so it isn't a repeat
             planTrip('wallawalla', ids);
           }
           if (strat === 'tripper') {
@@ -397,6 +400,12 @@ if (!FILTERED) {
   });
   await t.check(`doing nothing scores ${CEILING.idle} or below (median ${idle})`, async () => {
     if (idle > CEILING.idle) throw new Error(`idle median ${idle} is above ${CEILING.idle}`);
+  });
+  // i58-b03: a one-trick life (a trip every week, or never leaving town) must not beat balanced play by 3 or more
+  const allMed = st => med(results.filter(r => r.label === 'normal' && r.strat === st).map(r => r.score));
+  const plannerAll = allMed('planner');
+  for (const st of ['tripper', 'homebody']) await t.check(`i58-b03: the ${st} bot doesn't beat the planner by 3+ (${allMed(st)} vs ${plannerAll})`, async () => {
+    if (allMed(st) >= plannerAll + 3) throw new Error(`${st} median ${allMed(st)} beats the planner's ${plannerAll} by 3 or more`);
   });
 }
 // to-do 2 D8: every difficulty keeps its balance (these fail any run that played the difficulties, tuning runs included)

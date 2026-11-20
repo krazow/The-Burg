@@ -880,6 +880,7 @@ function newGame(name, len, slot = 0, opts = {}){
   if (rule('startSet') != null) S.money = rule('startSet'); S.money += rule('startAdd');
   S.startAge = age();
   S.weekly = opts.weekly || null; S.rng = opts.weekly ? weekSeed(opts.weekly) : null; S.rngEv = opts.weekly ? weekSeed(`${opts.weekly}:events`) : null; useDice();
+  S.jobSeed = opts.weekly ? 0 : Math.floor(Math.random() * 1e9) + 1;   // i8-a06: this life's job openings (a weekly challenge's come from its week)
   if (len === 'half') { S.happy -= HALF_START_DIP; S.health -= HALF_START_DIP; }   // B2: 26 weeks is short, so a 6-month life starts a little worn
   if (SCENARIOS[opts.scenario]) { S.scenario = opts.scenario; if (SCENARIOS[S.scenario].set) SCENARIOS[S.scenario].set(S); }
   S.yearStart = { nw: netWorth(), happy: S.happy, health: S.health, community: S.community };
@@ -889,12 +890,13 @@ function newGame(name, len, slot = 0, opts = {}){
   if (S.unlockMode === 'all') S.opened = Object.fromEntries(UNLOCKS.map(u => [u.id, { w:0, how:'all' }]));
   else for (const u of unlocksOn()) if (u.when(S)) openSystem(u.id, { quiet:true, how:'start' });   // a start that already has it (a job, a diploma)
   log(S.bg === 'fresh' ? `${name} turns 18 and rents a room above Main Street in Waitsburg. Time to find a job.`
+    : S.bg === 'farm' ? `${name} turns 18 at the folks' place in the wheat hills. Welcome home. The harvest crew starts at six.`   // i37-b03
     : `${name} starts a new life in Waitsburg: ${BACKGROUNDS[S.bg].name.toLowerCase()}. ${BACKGROUNDS[S.bg].desc}`);
   // i17-a02: a new life opens on Home, where three doors (a job, a program, a place) replace the old "find a job" toast
   tab = S.jobId || !opts.practice ? 'home' : 'jobs'; save(); render();
   if (!opts.practice) askPersist();
   if (!opts.practice) playedFlag(true);            // i63-b05
-  if (!opts.practice) toast('Welcome to the Burg!');
+  if (!opts.practice) toast(S.jobId ? 'Welcome home. The harvest crew starts at six.' : 'Welcome to the Burg!');   // i37-b03: the Farm kid already has work
 }
 
 /* ---------- 🎛️ Change the rules (i19-b02..b05, b19) ---------- */
@@ -1218,6 +1220,7 @@ function renderHome(){
   ${S.practice ? '' : upNextLine()}
   ${privateCard()}
   ${!j && !S.retired ? noPayCard() : ''}
+  ${retireOpen() ? `<div class="card tip" id="retirecard">🌅 <b>Retirement is open.</b> Social Security would pay ${wk(ssPay())}. <button class="sm" data-call="retireSheet">See what changes</button></div>` : ''}
   ${S.happy < 30 ? sugg('happy', 'outdoors', `😟 Happiness is low (${Math.round(S.happy)}).`) : ''}
   ${S.health < 30 ? sugg('health', 'rest', `🤒 Health is low (${Math.round(S.health)}).`) : ''}
   ${overtimeTip() ? `<div class="card warn">${overtimeTip()}</div>` : ''}
@@ -1486,7 +1489,9 @@ function showStatInfo(k){
 
 // weekly take-home: pay after ~15% taxes, minus commuting gas in your current vehicle
 const takeHome = x => payNow(x, S.jobId === x.id) * W * (1 - taxRate(payNow(x, S.jobId === x.id))) -   // i75-b03: taxed by bracket
-  commuteCost(CITIES[x.city].miles, CARS[S.car], x) * W;
+  commuteCost(CITIES[x.city].miles, CARS[S.car], x) * W - commuteCare(CITIES[x.city].miles) * W;   // i46-a05: and a long commute's childcare
+// i42-a06: a far job you could share the drive to (you don't carpool there yet)
+const carpoolHint = x => CITIES[x.city].miles >= 20 && S.community >= 30 && on('jobs.commute') && !(carpooling() && S.carpoolJob === x.id) && !(S.bus && S.jobId === x.id && busOK(x));
 // i52-a01: in a first life, before the first hire, tag the two best jobs within 25 miles (take-home less a happiness cost for the drive)
 let GOOD_JOBS = [];
 function goodFirstJobs(){
@@ -1499,14 +1504,16 @@ function jobRow(x){
   const base = job() && !S.retired ? takeHome(job()) : 0, diff = th - base;
   const lock = S.edu < x.edu ? ['','Cert','Assoc.','Degree'][x.edu] : extraLock(x), back = S.recall && S.recall.job === x.id && jobInSeason(x);
   const btn = cur ? `<span class="tag cur">Current</span>`
+    : S.retired ? ''                                 // i8-a03: retired: no applications
+    : S.startLater && S.startLater.id === x.id ? `<span class="tag cur">Starts ${startDay(S.startLater.at).replace(/^(\w{3})\w*/, '$1')}</span>`   // i37-b05
     : lock ? `<button class="sm locked" data-locked="${x.id}" aria-label="Locked: needs ${esc(lock)}. How to unlock">🔒 ${esc(lock.replace(' program', ''))}</button>`
     : back ? `<button class="sm" data-recall="${x.id}">Go back</button>`
     : !jobInSeason(x) ? `<button class="sm" disabled aria-label="Hires again in ${MONTHS[x.season[0]]}">Hires ${MONTHS[x.season[0]].slice(0,3)}</button>`
     : `<button class="sm" data-apply="${x.id}" ${S.applied?'disabled':''}>Apply</button>`;
-  const tags = [GOOD_JOBS.includes(x.id) ? '<b class="goodjob">⭐ Good first job</b>' : '', remoteDays(x) === 5 ? '🏠 fully remote' : remoteDays(x) ? `🏠 ${x.remote} remote days` : '', seasonal(x) ? `🗓️ ${seasonWords(x)}` : '', unionJob(x) ? '🪪 union' : '',
+  const tags = [GOOD_JOBS.includes(x.id) ? '<b class="goodjob">⭐ Good first job</b>' : '', remoteDays(x) === 5 ? '🏠 fully remote' : remoteDays(x) ? `🏠 ${x.remote} remote days` : '', seasonal(x) ? `🗓️ ${seasonWords(x)}` : '', unionJob(x) ? '🪪 union' : '', carpoolHint(x) ? '🚙 carpool possible' : '',
     x.apprentice && !cur ? `🧰 apprentice, ${x.apprentice.weeks / 52} yrs to full pay` : '', CLEARANCE.includes(x.id) && !cur && on('jobs.perks') ? '🔐 clearance' : '', majorFits(x) ? '🎓 your major' : '', accTag(x)].filter(Boolean);
   return `<div class="kv job${lock ? ' lockedrow' : ''}" data-job="${x.id}"><div><div class="t">${cur ? esc(jobTitle(x)) : x.title}</div>
-    <div class="s">${x.where ? esc(x.where) + ', ' : ''}${c.name}${c.miles ? ` · ${c.miles} mi` : ' · no commute'} · pay ${wk(payNow(x, cur))}${c.miles ? `, gas ${wk(commuteCost(c.miles, CARS[S.car], x))}` : ''}${tags.length ? ` · ${tags.join(' · ')}` : ''}</div></div>
+    <div class="s">${x.where ? esc(x.where) + ', ' : ''}${c.name}${c.miles ? ` · ${c.miles} mi` : ' · no commute'} · pay ${wk(payNow(x, cur))}${c.miles ? `, gas ${wk(commuteCost(c.miles, CARS[S.car], x))}` : ''}${commuteCare(c.miles) >= 0.5 ? `, childcare ${wk(commuteCare(c.miles))}` : ''}${tags.length ? ` · ${tags.join(' · ')}` : ''}</div></div>
     <div style="text-align:right"><div class="pay">${fmt(th)}/wk</div>
     <div class="s">${cur ? 'take-home' : base && Math.abs(diff) >= 1 ? `<span class="${diff>0?'upt':'downt'}">${diff>0?'▲':'▼'} ${fmt(Math.abs(diff))}</span>` : 'take-home'}</div>${btn}</div></div>`;
 }
@@ -1567,7 +1574,8 @@ function myJobCard(){
   const wait = S.interview && jobById(S.interview.id) ? `<p class="muted" style="margin:0 0 6px">📞 Waiting to hear back about the ${esc(jobById(S.interview.id).title.toLowerCase())} job (by the end of the week).</p>` : '';
   const refLine = r ? `<p class="muted" style="margin:6px 0 0">📄 ${r === 'good' ? 'Your last boss will give you a good reference (better odds when you apply).' : 'A bad reference follows you from your last job (worse odds) until ' + MONTHS[new Date(S.date + (S.ref.until - S.turn) * 7 * 864e5).getMonth()] + '.'}</p>` : '';
   const rec = S.recall && jobById(S.recall.job) ? `<p class="muted" style="margin:6px 0 0">📞 The ${esc(jobById(S.recall.job).title.toLowerCase())} job calls you back ${jobInSeason(jobById(S.recall.job)) ? 'now: tap Go back on the list' : `in ${MONTHS[jobById(S.recall.job).season[0]]}`}.</p>` : '';
-  if (!j) return wait || refLine || rec ? `<div class="card"><h3>💼 Job hunt</h3>${wait}${rec}${refLine}</div>` : '';
+  const later = S.startLater && jobById(S.startLater.id) ? `<p class="muted" style="margin:0 0 6px" id="startlater">🗓️ You start as ${esc(jobById(S.startLater.id).title.toLowerCase())} on ${startDay(S.startLater.at)}${j ? '. Until then, keep working here' : ''}.</p>` : '';   // i37-b05
+  if (!j) return wait || refLine || rec || later ? `<div class="card"><h3>💼 Job hunt</h3>${later}${wait}${rec}${refLine}</div>` : '';
   const L = ladderOf(j), rung = Math.min(S.rung || 0, 2), next = L[rung + 1];
   const steps = L.map((x, i) => `<li${i === rung ? ' aria-current="step"' : ''}>${i < rung ? '✅' : i === rung ? '➡️' : '⬜'} ${i === rung ? `<b>${esc(x.title)}</b>` : esc(x.title)}${i ? ` <small class="muted">+${Math.round((x.payMult - 1) * 100)}% pay</small>` : ''}</li>`).join('');
   const a = j.apprentice, app = apprenticing(j) ? `<div class="kv"><span>🧰 Apprenticeship: year ${Math.floor((S.appWeeks || 0) / 52) + 1} of ${a.weeks / 52}</span><span>${Math.round(appMult(j, true) * 100)}% pay</span></div>
@@ -1582,7 +1590,7 @@ function myJobCard(){
   const bus = busOK(j) ? `<p class="muted" style="margin:6px 0">🚌 ${S.bus ? 'You ride the county bus' : 'County bus'} to ${CITIES[j.city].name}: ${wk(cost(BUS_PASS))} pass, 90% less commute gas and half the truck wear, but longer days (▼ a little happiness).</p>
     <button class="sm${S.bus ? ' alt' : ''}" id="bus" aria-pressed="${!!S.bus}">${S.bus ? '🚙 Drive instead' : '🚌 Ride the bus'}</button>` : '';
   const lad = on('jobs.ladder');                   // difficulty: no ladder in Easy, just the job
-  return `${unionJob(j) ? firstTime('union') : ''}${lad ? firstTime('ladder') : ''}<div class="card"><h3>💼 ${esc(jobTitle(j))}</h3>${wait}
+  return `${unionJob(j) ? firstTime('union') : ''}${lad ? firstTime('ladder') : ''}<div class="card"><h3>💼 ${esc(jobTitle(j))}</h3>${later}${wait}
     <p class="muted" style="margin:0 0 4px">${esc(j.where ? j.where + ', ' : '')}${CITIES[j.city].name} · ${wk(payNow(j))} · ${Math.floor(S.tenure || 0)} months on the job</p>
     ${lad ? `<ol class="ladder" aria-label="Job ladder">${steps}</ol>` : ''}
     ${!lad ? '' : next ? `<p class="muted" style="margin:4px 0">Next step up: ${esc(next.title)}. ${rungNeeds(next) ? `Needs ${rungNeeds(next)}.` : 'You qualify: watch for a promotion offer.'}</p>` : '<p class="muted" style="margin:4px 0">You\'re at the top of this ladder.</p>'}
@@ -1606,7 +1614,7 @@ function renderJobs(){
   const j = job();
   const cur = S.jobId && !S.retired ? S.jobId : null;
   const near = jobNear ? new Set(nearJobs().map(x => x.id)) : null;
-  const list = JOBS.filter(x => jobOn(x) && (jobCity === 'all' || x.city === jobCity) && (!jobOK || (x.edu <= S.edu && !extraLock(x))) && (!near || near.has(x.id) || x.id === cur))
+  const shown = JOBS.filter(x => jobOn(x) && (jobCity === 'all' || x.city === jobCity) && (!jobOK || (x.edu <= S.edu && !extraLock(x))) && (!near || near.has(x.id) || x.id === cur)), list = shown.filter(x => jobOpen(x) || S.edu < x.edu || extraLock(x) || !jobInSeason(x))   // i8-a06: locked and out-of-season jobs stay listed with how to get them
     .sort((a, b) => (b.id === cur) - (a.id === cur) || (a.edu > S.edu || !!extraLock(a)) - (b.edu > S.edu || !!extraLock(b)) || (a.edu > S.edu ? a.edu - b.edu : 0) || takeHome(b) - takeHome(a));
   const mapOn = mapView();
   $('#main').innerHTML = `${myJobCard()}${mapToggle()}
@@ -1617,14 +1625,16 @@ function renderJobs(){
   <div class="card">
     <h3>Job board <span class="tag">${S.applied ? 'Applied this week' : '1 application per week'}</span> <button class="sm alt" id="cmpjobs" aria-haspopup="dialog">⚖️ Compare</button></h3>
     <p class="muted" style="margin:0 0 4px;font-size:0.8125rem">${term('takehome')} is pay after taxes and gas${job() && !S.retired ? ', with ▲▼ against your current job' : ''}.${GOOD_JOBS.length ? ' ⭐ Good first jobs are close to home: the top of the list can mean an hour on the road each way, and long drives wear down happiness.' : ''}</p>
+    ${S.retired ? '<p class="muted" id="retiredjobs">🌅 You\'re retired, so you don\'t apply for jobs any more. The board is here to look at.</p>' : ''}
     ${boardHTML(list)}
+    ${shown.length > list.length ? `<p class="muted" id="closedjobs">🚪 ${shown.length - list.length} more job${shown.length - list.length === 1 ? ' isn\'t' : 's aren\'t'} hiring this week. Openings change every week${JOB_BUSY_MONTHS.includes(curMonth()) ? ', and more are open in harvest and ski season' : ''}.</p>` : ''}
   </div>`}
   ${j && !S.retired && commuteOneWay() >= 20 && !onBus() && on('jobs.commute') ? `${firstTime('carpool')}<div class="card"><h3>🚙 Carpool</h3>
     ${S.carpool ? `<p class="muted" style="margin:0 0 6px">You ride with neighbors to ${CITIES[j.city].name}: half the gas, the drive wears on you less, and you stay in the loop (▲ community).</p><button class="sm alt" id="carpool">Drive alone</button>`
       : canCarpool() ? `<p class="muted" style="margin:0 0 6px">Split the drive to ${CITIES[j.city].name} with neighbors: half the gas, less wear from the commute, and a little community.</p><button class="sm" id="carpool">Join a carpool</button>`
       : `<p class="muted" style="margin:0">Know more people in town (community 30+) and you can join a carpool: half the gas and an easier commute.</p>`}</div>` : ''}
   ${j && !S.retired && S.notice == null ? `<button class="btn ghost" id="quit">Quit my job</button>` : ''}
-  ${LENGTHS[S.len].turns===Infinity && age()>=62 && !S.retired && on('retire.income') ? `<button class="btn primary" id="retire">Retire (Social Security ${wk(ssPay())}${pensionVested()?` + pension ${wk(pensionPay())}`:''}${S.k401>0?` + 401(k) ${wk(S.k401*drawRate()/12)}`:''})</button>` : ''}`;
+  ${retireOpen() && on('retire.income') ? `<button class="btn primary" id="retire">Retire (Social Security ${wk(ssPay())}${pensionVested()?` + pension ${wk(pensionPay())}`:''}${S.k401>0?` + 401(k) ${wk(S.k401*drawRate()/12)}`:''})</button>` : ''}`;
   document.querySelectorAll('.chip[data-c]').forEach(b => b.onclick = () => { jobCity = b.dataset.c; render(); });
   if ($('#jobok')) $('#jobok').onclick = () => { jobOK = !jobOK; render(); };
   if ($('#cmpjobs')) $('#cmpjobs').onclick = () => compareSheet();
@@ -1649,18 +1659,46 @@ function renderJobs(){
     $('#n').onclick = closeSheet;
   };
   if ($('#bus')) $('#bus').onclick = () => { S.bus = !S.bus; if (S.bus) { S.carpool = false; S.carpoolJob = null; } save(); render(); toast(S.bus ? '🚌 You ride the county bus now' : 'Driving again'); };
-  document.querySelectorAll('[data-recall]').forEach(b => b.onclick = () => { const x = jobById(b.dataset.recall); startJob(x.id, S.recall); log(`Went back to the ${x.title.toLowerCase()} job for the season.`); save(); render(); toast(`Back at work: ${x.title}`); });
-  if ($('#retire')) $('#retire').onclick = () => {
-    leaveJob('retire'); S.retired = true; if (S.focus==='work') S.focus='rest';
-    adj({happy:10}); log(`Retired at ${age()}. Time for coffee on Main Street every morning.`);
-    save(); render(); toast('Happy retirement!');
-  };
+  document.querySelectorAll('[data-recall]').forEach(b => b.onclick = () => { const x = jobById(b.dataset.recall); if (S.retired) return; startJob(x.id, S.recall); log(`Went back to the ${x.title.toLowerCase()} job for the season.`); save(); render(); toast(`Back at work: ${x.title}`); });
+  if ($('#retire')) $('#retire').onclick = retireSheet;
+}
+// i8-a04: retiring asks first, with the week's money before and after, then marks the day
+const retireOpen = () => LENGTHS[S.len].turns === Infinity && age() >= 62 && !S.retired && !S.practice;
+function retireWeek(){   // a retiree's weekly income, as retireeIncome() pays it (without drawing anything)
+  const m = W, ss = ssPay() * m, pen = pensionVested() ? pensionPay() * m : 0, w = S.k401 > 0 ? S.k401 * drawRate() * m / 12 : 0;
+  const tax = Math.max(0, ss + pen - cost(RETIRE_TAX_FREE) * m) * RETIRE_TAX + w * RETIRE_TAX;
+  return { ss, pen, w, tax, net: ss + pen + w - tax };
+}
+function retireSheet(){
+  if (!retireOpen()) return;
+  const j = job(), now = j ? takeHome(j) : 0, r = retireWeek(), h = HOMES[S.home];
+  const pay = outright() ? 'none: the house is paid for' : `${h.own ? 'mortgage' : 'rent'} ${wk(h.own ? S.mortgage : cost(h.cost))}${h.own ? ', the same as now' : ', rising with prices'}`;
+  confirmSheet({ title: '🌅 Retire now?', yes: 'Retire', no: 'Not yet',
+    intro: `You can't un-retire: once you stop, you don't go back to work.`,
+    lines: [`💵 Each week now: ${j ? `${fmt(now)} take-home as ${esc(jobTitle(j).toLowerCase())}` : 'no paycheck'}`,
+      `🌅 Each week retired: ${fmt(r.net)} (Social Security ${fmt(r.ss)}${r.pen ? `, pension ${fmt(r.pen)}` : ''}${r.w ? `, 401(k) ${fmt(r.w)}` : ''}${r.tax > 0.5 ? `, less ${fmt(r.tax)} in taxes` : ''})`,
+      ...(S.partner && age() < 65 ? [`💑 Your partner's pay keeps coming until 65: ${wk(1400 * S.wage)}`] : []),
+      `🏠 Home payment: ${pay}`,
+      `😊 Happiness +10 now, then a little every week`,
+      ...(S.k401 > 0 ? [`🏦 Your 401(k) pays out ${(drawRate() * 100).toFixed(1)}% a year`] : [])],
+    onYes: () => {
+      const was = j ? jobTitle(j) : null;
+      leaveJob('retire'); S.retired = true; S.startLater = null; S.interview = null; if (S.focus === 'work') S.focus = 'rest';
+      adj({happy:10}); log(`Retired at ${age()}${was ? ` after the years as ${was.toLowerCase()}` : ''}. Time for coffee on Main Street every morning.`, undefined, 1);
+      save(); render();
+      sheet(`<div class="big">🌅</div><h2 style="text-align:center">Happy retirement!</h2>
+        <p style="text-align:center">${was ? `Your last shift as ${esc(was.toLowerCase())} ends with cake in the break room.` : 'No alarm clock tomorrow.'} At ${age()}, the mornings are yours: coffee on Main Street, the river and the grandkids' ballgames.</p>
+        <p class="muted" style="text-align:center">From now on: ${fmt(r.net)} a week from Social Security${r.pen ? ', your pension' : ''}${r.w ? ' and your 401(k)' : ''}.</p>
+        <button class="btn primary" id="ok">Let's go</button>`);
+      $('#ok').onclick = () => { closeSheet(); tab = 'home'; render(); };
+      toast('Happy retirement!');
+    } });
 }
 function commuteCost(miles, car = CARS[S.car], j = null){ return miles * 2 * WORKDAYS * cost(GAS) / car.mpg * (j ? commuteGasFactor(j) : 1); }
 
 // i3-a07: an application leads to an interview (features.js); a recruiter's sure thing or a practice life skips it
 function apply(id){
-  const x = jobById(id); if (!x || !jobOn(x) || S.applied || extraLock(x) || !jobInSeason(x)) return;
+  const x = jobById(id); if (!x || !jobOn(x) || S.applied || S.retired || extraLock(x) || !jobInSeason(x) || !jobOpen(x) || (S.startLater && S.startLater.id === id)) return;   // i8-a03, i8-a06, i37-b05
   S.applied = true;
   const p = hireOdds(x), sure = (S.hireBy ?? -1) >= S.turn;   // a recruiter set up the interview (event)
   S.applyBoost = 0; S.hireBy = -1;                 // both count for the next application only
@@ -1697,10 +1735,10 @@ function eduCard(){
 function renderLife(){
   const h = HOMES[S.home], u = undoTop();
   const homeCard = `${h.own && on('home.propertyTax') ? firstTime('ptax') : ''}<div class="card"><h3>🏡 Home in Waitsburg</h3>
-    ${Object.entries(HOMES).filter(([k, x]) => !x.family || S.home === k).map(([k,x]) => {   // i17-a04: once you move out of the family home, it's gone
+    ${Object.entries(HOMES).filter(([k, x]) => (!x.folks && !x.family) || S.home === k).map(([k,x]) => {   // i37-b04 / i17-a04: the folks' place and the family home aren't places to move to
       const cur = S.home === k;
       let btn = cur ? '<span class="tag cur">Home</span>' : x.own ? `<button class="sm buy2" data-home="${k}" aria-label="Buy the ${esc(x.name.toLowerCase())}: ${fmt(homeDown(k))} down">Buy<small>${fmt(homeDown(k))} down</small></button>` : `<button class="sm alt buy2" data-home="${k}">Move</button>`;   // i20-a14
-      return `<div class="kv job"><div><div class="t">${x.name}</div><div class="s">${x.own?'Mortgage':'Rent'} ${wk(cur && x.own && S.mortgage ? S.mortgage : x.own ? newMortgage(k) : cost(x.cost))}${x.own?` · builds equity · worth ${fmt(homeValue(k))}`:''}</div></div>${btn}</div>`;
+      return `<div class="kv job"><div><div class="t">${x.name}</div><div class="s">${cur && outright() ? 'Paid for, no mortgage' : `${x.own?'Mortgage':'Rent'} ${wk(cur && x.own && S.mortgage ? S.mortgage : x.own ? newMortgage(k) : cost(x.cost))}`}${x.own?` · builds equity · worth ${fmt(homeValue(k))}`:''}</div></div>${btn}</div>`;
     }).join('')}
     ${h.own ? `<p class="muted">${term('equity')}: <b>${fmt(S.equity)}</b>. Moving sells your house (6% agent fees).</p>` : ''}
     ${homeMoneyHTML()}
@@ -1829,8 +1867,14 @@ function moveHome(k){
   if (S.money + sale < need) return toast(`You need ${fmt(need - sale)} on hand (down payment + moving).`);
   const nowPay = old.own && S.mortgage ? S.mortgage : cost(old.cost), newPay = x.own ? newMortgage(k) : cost(x.cost), dPay = (newPay - nowPay) * W;
   const dNw = -cost(300) - (old.own ? S.equity * SELL_FEE : 0);
-  confirmSheet({ title: `${x.own ? 'Buy' : 'Move to'} ${x.name}?`, yes: 'Do it',
-    intro: `${x.own ? `Down payment ${fmt(down)}, then ${wk(newMortgage(k))} mortgage at ${buyRate().toFixed(2)}% (locked in) from Standard Bearer Bank, with the closing papers at Mother Hubbard's Legal Cupboard.` : `Rent is ${wk(cost(x.cost))}.`} Moving costs ${fmt(cost(300))}.${ramp ? ` A ramp and a wider bathroom door add ${fmt(ramp)} (the county's home repair program pays the rest).` : ''}${old.own ? ` You'll sell your current place and pocket ${fmt(sale)} after the 6% agent fees${he ? ` and paying off the ${fmt(he)} home equity loan` : ''}.` : ''}`,
+  // i30-b06: selling one home can pay for a smaller one in full: no mortgage, and the rest of the sale goes to your cash
+  const price = x.own ? homePrice(k) : 0, cash = old.own && x.own && sale >= price + cost(300) + ramp;
+  confirmSheet({ alt: cash ? { label: `Buy it outright for ${fmt(price)}`, onYes: () => {
+      S.heLeft = 0; S.hePay = 0;
+      S.money += sale - price - cost(300) - ramp; S.equity = homeValue(k); S.mortgage = 0; S.mortRate = null; S.home = k;
+      adj({happy:4}); outMoved(); log(`Sold the old place and bought the ${x.name.toLowerCase()} outright for ${fmt(price)}: no mortgage.`, undefined, 1);
+      save(); render(); } } : null, title: `${x.own ? 'Buy' : 'Move to'} ${x.name}?`, yes: 'Do it',
+    intro: `${cash ? `Your sale covers the whole price (${fmt(price)}), so you can buy it outright: no mortgage, and ${fmt(sale - price - cost(300) - ramp)} left over goes to your cash. Or: ` : ''}${x.own ? `Down payment ${fmt(down)}, then ${wk(newMortgage(k))} mortgage at ${buyRate().toFixed(2)}% (locked in) from Standard Bearer Bank, with the closing papers at Mother Hubbard's Legal Cupboard.` : `Rent is ${wk(cost(x.cost))}.`} Moving costs ${fmt(cost(300))}.${ramp ? ` A ramp and a wider bathroom door add ${fmt(ramp)} (the county's home repair program pays the rest).` : ''}${old.own ? ` You'll sell your current place and pocket ${fmt(sale)} after the 6% agent fees${he ? ` and paying off the ${fmt(he)} home equity loan` : ''}.` : ''}`,
     after: `<p class="muted">${md.ic} The housing market is <b>${md.name.toLowerCase()}</b>: ${md.desc}.</p>`,
     lines: [`💵 Cash: ${fmt(S.money)} → ${fmt(S.money + sale - need)}`,
       `🏠 ${old.own ? 'Mortgage' : 'Rent'} ${wk(nowPay)} → ${x.own ? 'mortgage' : 'rent'} ${wk(newPay)} (${dPay >= 0 ? '+' : '−'}${fmt(Math.abs(dPay))} a week)`,
@@ -1845,10 +1889,11 @@ function moveHome(k){
     } });
 }
 // i2-a32: big choices list what will change before you say yes; Never mind (or Escape) is always the safe way out
-function confirmSheet({ title, intro = '', after = '', lines = [], yes = 'Do it', no = 'Cancel', onYes }){
+function confirmSheet({ title, intro = '', after = '', lines = [], yes = 'Do it', no = 'Cancel', onYes, alt = null }){
   sheet(`<h2>${title}</h2>${intro ? `<p>${intro}</p>` : ''}${after}
     ${lines.length ? `<h3>What will change</h3><ul class="changes">${lines.map(l => `<li>${l}</li>`).join('')}</ul>` : ''}
-    <button class="btn primary" id="y">${yes}</button><button class="btn ghost" id="n">${no}</button>`);
+    ${alt ? `<button class="btn primary" id="yalt">${alt.label}</button>` : ''}<button class="btn ${alt ? 'ghost' : 'primary'}" id="y">${yes}</button><button class="btn ghost" id="n">${no}</button>`);
+  if (alt) $('#yalt').onclick = () => { closeSheet(); alt.onYes(); };
   $('#y').onclick = () => { closeSheet(); onYes(); };
   $('#n').onclick = closeSheet;
 }
@@ -2209,5 +2254,9 @@ document.addEventListener('focusin', e => {
   const tops = ['#strip', '.endbar', '#app > nav'].map(q => document.querySelector(q)).filter(Boolean).map(x => x.getBoundingClientRect().top).filter(t => t > 0);
   if (!tops.length) return;
   const lim = Math.min(...tops) - 8, b = a.getBoundingClientRect();
-  if (b.bottom > lim) window.scrollBy(0, b.bottom - lim);
+  if (b.bottom <= lim) return;
+  window.scrollBy(0, b.bottom - lim);
+  // at the very bottom of the page there may be no room left to scroll: make room under Home, then scroll again
+  const left = a.getBoundingClientRect().bottom - lim, m = $('#main');
+  if (left > 0 && m) { m.style.paddingBottom = `${parseFloat(getComputedStyle(m).paddingBottom) + left + 8}px`; window.scrollBy(0, left + 8); }
 });

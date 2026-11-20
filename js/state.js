@@ -98,9 +98,15 @@ const KID_COST = 950, KID_CARE = 400, KID_CARE_COMMUTE = 200, WCCC_LINE = 5000, 
 const householdPay = () => { const j = !S.retired && S.jobId ? JOBS.find(x => x.id === S.jobId) : null;
   return (j ? payNow(j) / (S.wage || 1) : 0) + (S.partner && S.ageMonths < 65 * 12 ? 1400 : 0); };   // monthly, in 2027 dollars
 const childcareHelp = () => householdPay() < WCCC_LINE;
-const kidMonthly = () => { const care = KID_CARE + (commuteOneWay() >= 20 ? KID_CARE_COMMUTE : 0);
+// i46-a01: commute childcare is only for kids under 13; kidMonthly(years, miles) is one kid's cost (a baby by default)
+const KID_CARE_AGE = 13;
+const kidMonthly = (yrs = 0, miles = commuteOneWay()) => { const care = KID_CARE + (miles >= 20 && yrs < KID_CARE_AGE ? KID_CARE_COMMUTE : 0);
   return KID_COST - KID_CARE + (childcareHelp() ? Math.min(care, WCCC_CAP) : care); };
-const kidCost = () => cost(kidMonthly());
+const kidCost = (yrs = 0, miles) => cost(kidMonthly(yrs, miles));
+// every kid at home together, a month (miles: a job's one-way commute)
+const kidsCost = (miles = commuteOneWay()) => kidsAtHome() ? S.kids.filter(b => kidAge(b) < 18).reduce((a, b) => a + kidCost(kidAge(b), miles), 0) : 0;
+// i46-a05: the extra childcare a job this far away adds, a month
+const commuteCare = miles => kidsCost(miles) - kidsCost(0);
 const HALF_START_DIP = 5;                 // B2: a 6-month life starts with a little less happiness and health
 const studyDone = () => Math.floor(S.studyProg);   // weeks of classes done (a trip week counts 3/4, R11)
 const kidJoy = () => ['rest', 'community'].includes(S.focus) ? 0.6 : 0.1;
@@ -120,7 +126,8 @@ const LENGTHS = {
   // i49-a01: mins is a real-time guess from timed phone play (390×844, ⏩ where it helps)
   // target: net worth for full points on Normal and Hard; easy: on Easy (to-do 2 D7, fitted to Easy sim runs: no investing,
   // no price growth, no business, no report cards). Easy has no Lifetime.
-  half: { label:'6 Months', sub:'26 weeks',  turns:26,       target:16000,   easy:14000,  mins:'about 4 min' },
+  // wave 1 (b-idle): in 26 weeks a full-time paycheck alone brings in about half the target, so net worth counts only above that (free)
+  half: { label:'6 Months', sub:'26 weeks',  turns:26,       target:16000,   easy:14000,  free:0.5, mins:'about 4 min' },
   two:  { label:'2 Years',  sub:'104 weeks', turns:104,      target:90000,   easy:80000,  mins:'about 11 min (7 with ⏩)' },
   five: { label:'5 Years',  sub:'260 weeks', turns:260,      target:400000,  easy:475000, mins:'about 25 min' },   // B1: raised so careless long games don't coast on pay growth
   life: { label:'Lifetime', sub:'18 to the end', turns:Infinity, target:4000000, mins:'about 4 hours, over many sittings' }
@@ -140,28 +147,28 @@ const CITIES = {
 // stress = happiness drain per month, wear = health drain per month
 const JOBS = [
   {id:'farmhand', city:'waitsburg', title:'Wheat farm hand',            pay:3100, edu:0, stress:.2, wear:1.0, outdoor:1},
-  {id:'diner',    city:'waitsburg', title:'Main Street diner cook',     pay:3050, edu:0, stress:.5, wear:.5},
+  {id:'diner',    city:'waitsburg', title:'Main Street diner cook',     pay:3075, edu:0, stress:.5, wear:.35},
   {id:'para',     city:'waitsburg', title:'School paraeducator',        pay:3300, edu:1, stress:.4, wear:.1, pension:true},
   {id:'elevator', city:'waitsburg', title:'Grain elevator operator',    pay:3800, edu:1, stress:.4, wear:.7, outdoor:1},
   {id:'insure',   city:'waitsburg', title:'Farm insurance agent',       pay:4900, edu:2, stress:.6, wear:0, remote:2},
-  {id:'hardware', city:'dayton',    title:'Hardware store clerk',       pay:3150, edu:0, stress:.3, wear:.3},
+  {id:'hardware', city:'dayton',    title:'Hardware store clerk',       pay:3150, edu:0, stress:.2, wear:.3},
   {id:'lift',     city:'dayton',    title:'Bluewood ski lift operator', pay:3080, edu:0, stress:.1, wear:.5},
   {id:'clerk',    city:'dayton',    title:'County courthouse clerk',    pay:3500, edu:1, stress:.5, wear:0, remote:2, pension:true},
   {id:'cna',      city:'dayton',    title:'Hospital nursing assistant', pay:3800, edu:1, stress:.8, wear:.5},
-  {id:'cellar',   city:'wallawalla',title:'Winery cellar hand',         pay:3350, edu:0, stress:.3, wear:.7},
-  {id:'onion',    city:'wallawalla',title:'Sweet onion packing shed',   pay:3200, edu:0, stress:.4, wear:.9},
+  {id:'cellar',   city:'wallawalla',title:'Winery cellar hand',         pay:3600, edu:0, stress:.3, wear:.7},
+  {id:'onion',    city:'wallawalla',title:'Sweet onion packing shed',   pay:3650, edu:0, stress:.4, wear:.9},
   {id:'co',       city:'wallawalla',title:'Corrections officer',        pay:5000, edu:1, stress:1.3,wear:.7, pension:true},
   {id:'rn',       city:'wallawalla',title:'Registered nurse',           pay:8600, edu:2, stress:1.0,wear:.5, pension:true},
   {id:'prof',     city:'wallawalla',title:'College professor',          pay:6700, edu:3, stress:.5, wear:0, remote:2},
-  {id:'retail',   city:'kennewick', title:'Mall retail associate',      pay:3150, edu:0, stress:.6, wear:.2},
-  {id:'mech',     city:'kennewick', title:'Auto mechanic',              pay:4800, edu:1, stress:.5, wear:.8},
+  {id:'retail',   city:'kennewick', title:'Mall retail associate',      pay:3150, edu:0, stress:.6, wear:0},
+  {id:'mech',     city:'kennewick', title:'Auto mechanic',              pay:4800, edu:1, stress:.25, wear:.8},
   {id:'imaging',  city:'kennewick', title:'Hospital imaging tech',      pay:6400, edu:2, stress:.6, wear:.2},
   {id:'loan',     city:'kennewick', title:'Bank loan officer',          pay:6900, edu:3, stress:.8, wear:0, remote:3},
   {id:'hanford',  city:'richland',  title:'Hanford cleanup technician', pay:6500, edu:1, stress:.8, wear:1.1},
   {id:'labadmin', city:'richland',  title:'Research lab administrator', pay:5400, edu:2, stress:.5, wear:0, remote:3},
   {id:'scientist',city:'richland',  title:'National lab scientist',     pay:9200, edu:3, stress:.8, wear:0, remote:2},
-  {id:'foodplant',city:'pasco',     title:'Food processing line worker',pay:3600, edu:0, stress:.6, wear:.9},
-  {id:'airport',  city:'pasco',     title:'Airport ground crew',        pay:3700, edu:0, stress:.5, wear:.7, outdoor:1},
+  {id:'foodplant',city:'pasco',     title:'Food processing line worker',pay:4150, edu:0, stress:.6, wear:.9},
+  {id:'airport',  city:'pasco',     title:'Airport ground crew',        pay:4100, edu:0, stress:.5, wear:.7, outdoor:1},
   {id:'trucker',  city:'pasco',     title:'Truck driver (CDL)',         pay:5500, edu:1, stress:.9, wear:.8},
   {id:'rail',     city:'pasco',     title:'Rail yard conductor',        pay:6100, edu:1, stress:.8, wear:.8, union:true, outdoor:1},
   // i3-a05: more valley jobs. Pay sits inside each school level's range, so none is a new best job (a rules test checks)
@@ -206,6 +213,13 @@ const LADDER_TITLES = {
   apprentice:['Carpenter','Site foreman'], medasst:['Lead medical assistant','Clinic office manager'], agtech:['Senior ag technician','Agronomist']
 };
 const jobById = id => JOBS.find(j => j.id === id);
+// i37-b05: a job paying this much or more (2027 dollars a month) starts LATE_START_WEEKS after you're hired
+const LATE_START_PAY = 6000, LATE_START_WEEKS = 6;
+// i8-a06: about 60% of jobs are hiring in a given week, more in harvest and ski season, fewer on Hard.
+// Your own job, a call-back, a job you're waiting to start and the always-hiring mall are always listed.
+const JOB_OPEN = 0.6, JOB_OPEN_BUSY = 0.75, JOB_OPEN_HARD = 0.5, JOB_BUSY_MONTHS = [6, 7, 11, 0, 1];
+// a number from 0 to 1 from a string, the same every time (no Math.random, so the game's dice stay put)
+function hash01(str){ let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } h ^= h >>> 13; h = Math.imul(h, 0x5bd1e995); h ^= h >>> 15; return (h >>> 0) / 4294967296; }
 
 const EDU = ['High school diploma','Trade certificate','Associate degree',"Bachelor's degree"];
 const STUDY_NEED = [16, 40, 72];         // weeks of classes to reach the next level
@@ -247,6 +261,9 @@ const CERT_PERK = { pesticide:{ jobs:['farmhand','elevator','agtech'], mult:1.06
 const CLEAR_WEEKS = 12, CLEAR_PAY = 0.8, FIBER_COST = 900, BUS_PASS = 50, UNION_DUES = 0.015;
 
 const HOMES = {
+  // i37-b04: the Farm kid starts at home: cheap rent (help with groceries and the power bill), a longer drive into town for errands,
+  // and from 21 a small weekly pull on happiness for still living with your folks. It isn't on the list of places to move to.
+  folks: {name:'Your folks\' place in the wheat hills', cost:400, happy:0, folks:true, errand:160},
   room:  {name:'Rented room above Main Street', cost:650,  happy:0},
   house: {name:'Rented house on a quiet street', cost:1250, happy:1.5},
   fixer: {name:'Fixer-upper by the Touchet',     cost:950,  happy:1.5, own:true, down:9000,  equityPer:260, value:160000},
@@ -254,6 +271,7 @@ const HOMES = {
   // i17-a04: the 'Staying with family' start's home. Only listed while you live there: once you move out, it's gone
   family:{name:"Your family's house in town",    cost:200,  happy:-1,  family:true}
 };
+const FOLKS_FROM = 21, FOLKS_TUG = 0.5;    // i37-b04: from 21, living with your folks pulls happiness down 0.5 a week
 const CARS = {
   beater:{name:'1998 pickup',            mpg:15, price:0,     breakdown:.12},
   sedan: {name:'Used sedan',             mpg:32, price:9000,  breakdown:.04, value:9000},
@@ -306,11 +324,13 @@ function blankLife(name, len, slot = 0){
     badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false,
     earnYears:0, earnSum:0, pensionYears:0, pensionPay:0, ltc:null, care:null, snowbird:null, scholar:null, will:false, probate:null, roomHost:false, hostLast:-99,
     skills:{}, biz:null, weekly:null, rng:null, rngEv:null, gen:1, goalAt:{}, carpoolJob:null, hustleLast:0, highWater:null, recentF:[], out:outDefault(), years:[],
+    stopRun:{}, tripTurns:[],                      // i42-a03 stop repeats in a row; i58-b03 recent trip weeks (road-weary)
     plan:[], planI:0,                              // i2-a12: a weekly focus rotation (empty = no plan)
     ...START_STATE(),                              // i17 / i7 / i6: pronouns, your look, a disability start, aid and the first weeks (js/starts.js)
     hist:[], spend4:[], ansRules:{},               // i15-b01 weekly history, i15-b05 last 4 weeks by kind, i49-a11 answer rules
     opened:{}, unlockQ:[], unlockMode:'go',        // i31: systems open as you go ({id: {w: week, how}}), unlock cards waiting, or everything open
     hireJoy:null, bgRest:null,                     // i38-a01: the week of the last hiring cheer; i37-b06: a background's community resting point
+    startLater:null, jobSeed:0, scWarned:false,      // i37-b05 a job that starts later; i8-a06 the openings' dice; i8-a05 the challenge warning
     evSeen:{}, seenOT:false,                       // i52-a10: events seen this life (no repeats in the first year); i52-a03: the overtime note
     rules:{}, tier0:'standard',                    // i19-b01/b03: knobs changed from Normal, and the record tier the life started on
     line:[], lifeId:newLifeId(), saveN:0, pendingEv:null, endPending:null,   // i73-b25 the family line; i54-a14 save stamp; i22-a01/a02
@@ -407,8 +427,11 @@ function migrate(s){
   if (s.ptaxDone === undefined && HOMES[s.home] && HOMES[s.home].own) { const d = new Date(s.date); if ([3, 9].includes(d.getMonth())) s.ptaxDone = `${d.getFullYear()}-${d.getMonth()}`; }
   if (!s.lifeId) s.lifeId = `old-${s.savedAt || 0}-${(s.name || '').length}`;   // i54-a14: two windows opening the same old save agree on its id
   if (s.goals && !s.goalAt) s.goalAt = Object.fromEntries(s.goals.map(id => [id, 0]));
-  const r = { goalAt:{}, skills:{}, biz:null, weekly:null, rng:null, rngEv:null, carpoolJob:s.jobId ?? null, hustleLast:s.turn || 0, highWater:null, recentF:[], gen:1, badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false, bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0, carpool:false, hustleWeeks:0, scoreQ:null, trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, redLow:{}, moneyTalk:false, dentist:s.turn || 0, stopLast:{}, out:null, tabsYear:new Date(s.date || Date.now()).getFullYear() };
+  const r = { goalAt:{}, skills:{}, biz:null, weekly:null, rng:null, rngEv:null, carpoolJob:s.jobId ?? null, hustleLast:s.turn || 0, highWater:null, recentF:[], gen:1, badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false, bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0, carpool:false, hustleWeeks:0, scoreQ:null, trip:null, svc:s.turn || 0, tires:null, stockUntil:-1, redLow:{}, moneyTalk:false, dentist:s.turn || 0, stopLast:{}, out:null, tabsYear:new Date(s.date || Date.now()).getFullYear(),
+    startLater:null, jobSeed:Math.floor(hash01(String(s.lid || s.lifeId || s.name)) * 1e9), scWarned:false };   // i37-b05, i8-a06, i8-a05
   for (const k in r) if (s[k] === undefined) s[k] = r[k];
+  if (s.stopRun === undefined) s.stopRun = {};   // i42-a03
+  if (s.tripTurns === undefined) s.tripTurns = [];   // i58-b03
   // wave 1 score: an older life's averages and rates start from what it has now; earlier report cards are filled in at the next one
   const t0 = s.turn || 0, sc = { ...SCORE_STATE(), commSum:(s.community || 0) * (s.monthsPlayed || 0), tallyFrom:t0, debtLow:Math.min(0, (s.money || 0) / (s.col || 1)),
     aimWeeks:{ all:t0 }, aimAt:-52, cardSeed:t0 >= 13 };
@@ -422,7 +445,7 @@ function migrate(s){
   if (s.will === undefined) s.will = !!(s.out && s.out.will);
   if (!s.out || typeof s.out !== 'object') s.out = outDefault();   // Out and about (#50)
   healthMigrate(s);                                                 // i74: health, body and aging (no sick hours banked, no dental or ambulance plan)
-  if (HOMES[s.home] && HOMES[s.home].own && !s.mortgage) s.mortgage = HOMES[s.home].cost;
+  if (HOMES[s.home] && HOMES[s.home].own && s.mortgage == null) s.mortgage = HOMES[s.home].cost;   // i30-b06: 0 is a home bought outright
   // weekly-challenge lives from before separate event dice get their own event dice (R8)
   if (s.rng != null && s.rngEv == null && s.weekly) s.rngEv = weekSeed(`${s.weekly}:events`);
   // businesses from before depreciation and lease renewals (R13): full value, and a wheat lease gets at least a season's notice
@@ -453,7 +476,7 @@ function syncCarpool(){ if (S && S.carpool && S.carpoolJob !== S.jobId) { S.carp
 // i3-a14: the county bus runs to Dayton and Walla Walla
 const busOK = (j = job()) => !!j && ['dayton', 'wallawalla'].includes(j.city) && on('jobs.commute');
 const onBus = () => !!(S && S.bus) && busOK() && !S.retired;
-const commuteGasFactor = (j = job()) => S && S.bus && j && S.jobId === j.id && busOK(j) ? 0.1 : driveDays(j) * (carpooling() && j && CITIES[j.city].miles >= 20 ? 0.5 : 1);
+const commuteGasFactor = (j = job()) => S && S.bus && j && S.jobId === j.id && busOK(j) ? 0.1 : driveDays(j) * (carpooling() && j && j.id === S.carpoolJob && CITIES[j.city].miles >= 20 ? 0.5 : 1);   // i42-a06: only the job you carpool to
 const netWorth = () => {
   const loan = S.loanLeft > 0 ? S.loanLeft * (S.loanPay || CARS.truck.pay) * 0.85 : 0;
   const sloan = S.sloanLeft > 0 ? S.sloanLeft * S.sloanPay * 0.85 : 0;
@@ -742,15 +765,16 @@ function flushToasts(){
 /* ============================================================
    🎬 HOW A LIFE BEGINS (#69) and 🎚️ MODES (#73)
    ============================================================ */
+// i37-b02: hints follow the 2-year good-play medians after wave 1 (Farm 70, Fresh 66, Parent 64, Grad 58, Transplant 57)
 const BACKGROUNDS = {
   fresh:      { ic:'🌾', name:'Fresh start', hint:'Standard', desc:'18, a rented room above Main Street, $1,500 and the 1998 pickup. The classic start.' },
-  farm:       { ic:'🚜', name:'Farm kid', hint:'Standard', desc:'Raised in the wheat hills. You start working on the family farm and everybody knows you, but you have only $300.',
-    set:s => { s.money = 300; s.community = 42; s.health = 84; s.jobId = 'farmhand'; } },
-  grad:       { ic:'🎓', name:'Grad coming home', hint:'Head start, with debt', desc:'21, back from college with a trade certificate, 20 weeks of classes short of an associate degree, and $36,000 in student loans (about $380 a month for 10 years).',
+  farm:       { ic:'🚜', name:'Farm kid', hint:'A little easier', desc:'Raised in the wheat hills. You still live at your folks\' place and work on the family farm. Everybody knows you, but you have only $300.',
+    set:s => { s.money = 300; s.community = 42; s.health = 84; s.jobId = 'farmhand'; s.home = 'folks'; } },
+  grad:       { ic:'🎓', name:'Grad coming home', hint:'Harder: big student loans', desc:'21, back from college with a trade certificate, 20 weeks of classes short of an associate degree, and $36,000 in student loans (about $380 a month for 10 years).',
     set:s => { s.ageMonths = 21*12; s.edu = 1; s.studyProg = 20; s.money = 500; s.community = 20; s.happy = 56; s.sloanLeft = 120; s.sloanPay = 380; } },
-  transplant: { ic:'🏙️', name:'Seattle transplant', hint:'Money, but lonely', desc:'Moved over the mountains with $6,000 saved and a used sedan. Nobody in town knows you yet, and you miss the city.',
+  transplant: { ic:'🏙️', name:'Seattle transplant', hint:'Hardest: money, but lonely', desc:'Moved over the mountains with $6,000 saved and a used sedan. Nobody in town knows you yet, and you miss the city.',
     set:s => { s.money = 6000; s.community = 5; s.happy = 50; s.car = 'sedan'; s.carValue = 9000; s.ageMonths = 24*12; s.bgRest = 10; } },   // i37-b06: lonely for the first year
-  parent:     { ic:'👶', name:'Young parent', hint:'Tight money, full heart', desc:'20, with a two-year-old. Money is tight and every week counts, but the town looks out for you.',
+  parent:     { ic:'👶', name:'Young parent', hint:'A little harder', desc:'20, with a two-year-old. Money is tight and every week counts, but the town looks out for you.',
     set:s => { s.ageMonths = 20*12; s.kids = [s.ageMonths - 24]; s.money = 800; s.community = 36; s.happy = 64; } },
   // i17-a04: back in your old room at home. Cheap rent and chores; after a year it gets cramped unless you're in school or saving to move
   home:       { ic:'🏠', name:'Staying with family', hint:'Cheap rent, less room', desc:'18, in your old room at your family\'s house in town. Rent is $200 and you help with chores. After a year it feels small, unless you\'re in school or saving to move out.',

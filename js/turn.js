@@ -222,12 +222,12 @@ const truckSeason = () => !!(S.biz && S.biz.type === 'truck' && [3,4,5,6,7,8,9].
 function focusPreview(fk){
   const f = FOCUS[fk], j = S.retired ? null : job();
   const n = S.streakF === fk ? S.streakN + 1 : 1, eff = focusEffect(fk, n);
-  const away = !!(S.trip && CITIES[S.trip.city] && !tripIsCommute(S.trip.city));
-  const fx = focusFx(fk, eff, away), cash = [];
+  const tf = tripTimeF(), away = tf < 1;
+  const fx = focusFx(fk, eff, away ? (tf === TRIP_TIME ? true : tf) : false), cash = [];
   const rut = fk !== 'study' && n > RUT_WEEKS;
   if (rut) fx.happy = (fx.happy || 0) - rutHit();
-  if (f.payMult && j) cash.push(['overtime after taxes', payNow(j) * W * (f.payMult - 1) * (1 - K401[S.k401rate || 0]) * (1 - taxRate(payNow(j) * f.payMult))]);
-  if (f.hustle) { if (truckSeason()) cash.push(['a food-truck weekend', truckPay()]); else { const g = currentGig(); cash.push([g.name, hustlePay(g, 0.5)]); } }
+  if (f.payMult && j) cash.push(['overtime after taxes', payNow(j) * W * (f.payMult - 1) * tf * (1 - K401[S.k401rate || 0]) * (1 - taxRate(payNow(j) * f.payMult))]);   // i42-a01
+  if (f.hustle) { if (truckSeason()) cash.push(['a food-truck weekend', truckPay()]); else { const g = currentGig(); cash.push([g.name, hustlePay(g, 0.5) * tf]); } }
   if (f.cost) cash.push([f.name.toLowerCase(), -cost(f.cost) * W]);
   if (f.study && !S.certStudy && S.edu < 3 && tuitionNow() > 0.005) cash.push([S.money < 0 ? 'tuition (on your student loan)' : 'tuition', S.money < 0 ? 0 : -tuitionNow() * W]);
   return { fx, cash, money: cash.reduce((a, [, v]) => a + v, 0), eff, n, rut, away };
@@ -237,7 +237,7 @@ function previewLine(fk){
   const p = focusPreview(fk), ic = { happy:'😊', health:'❤️', community:'🤝' };
   const st = Object.entries(p.fx).filter(([, v]) => Math.abs(v) >= 0.05).map(([k, v]) => `${ic[k]} ${v > 0 ? '+' : '−'}${Math.abs(v).toFixed(1)}`);
   const cash = p.cash.map(([l, v]) => `💵 ${v >= 0 ? '+' : '−'}${fmt(Math.abs(v)).replace('-', '')} ${l}`);
-  return `<div class="preview" id="fprev"><b>Next week:</b> ${[...st, ...cash].join(' · ') || 'no change'}${p.eff < 1 ? ` · <b>works at ${Math.round(p.eff * 100)}%</b> (${p.n} weeks in a row)` : ''}${p.rut ? ` · in a rut (−${rutHit()} 😊)` : ''}${p.away ? ` · your trip takes part of the week (${TRIP_TIME * 100}%)` : ''}
+  return `<div class="preview" id="fprev"><b>Next week:</b> ${[...st, ...cash].join(' · ') || 'no change'}${p.eff < 1 ? ` · <b>works at ${Math.round(p.eff * 100)}%</b> (${p.n} weeks in a row)` : ''}${p.rut ? ` · in a rut (−${rutHit()} 😊)` : ''}${p.away ? ` · your trip takes part of the week (${Math.round(tripTimeF() * 100)}%)` : ''}
     <span class="s">On top of your job, home and bills. An estimate, before events.</span></div>`;
 }
 // i49-a03: the notes that rode along on a skip, at the top of a sheet that came anyway
@@ -257,14 +257,14 @@ function showReview(rv, pre = []){
 // i3-a28: the bills that come every week, the same in weekTick and the 13-week money outlook (off = weeks from now)
 function billLines(off = 0){
   const m = W, home = HOMES[S.home], car = CARS[S.car], out = [], c = v => cost(v) * Math.pow(1 + growth('col'), off / 52);
-  const rentV = -(home.own && S.mortgage ? S.mortgage : c(home.cost))*m;
-  out.push([home.own ? 'Mortgage' : 'Rent', rentV]);
+  const rentV = -(home.own && S.mortgage != null ? S.mortgage : c(home.cost))*m;
+  if (!outright()) out.push([home.own ? 'Mortgage' : 'Rent', rentV]);   // i30-b06: a home bought outright has no payment
   const stocked = S.turn + off < S.stockUntil;
   const foodV = -c(FOOD_UTIL - (stocked ? GROCERY_SHARE * STOCK_OFF : 0))*(1 - skillLv('cook') * 0.04)*m, insV = -c(insMonthly())*m;   // i3-a19: what you picked on the insurance sheet ($220 by default)
   out.push([stocked ? 'Food & utilities (stocked up)' : 'Food & utilities', foodV]);
   out.push(['Insurance & phone', insV]);
   if (mode() === 'hard') out.push(['Higher living costs (Hard, +10%)', (rentV + foodV + insV) * HARD_LIVING]);   // R15: 10% of rent, food and insurance
-  const miles = (commuteOneWay()*2*WORKDAYS*commuteGasFactor() + ERRAND_MILES) * m;
+  const miles = (commuteOneWay()*2*WORKDAYS*commuteGasFactor() + ERRAND_MILES + (home.errand || 0)) * m;   // i37-b04: errands from the farm are a longer drive
   out.push([commuteOneWay() ? 'Gas (commute + errands)' : 'Gas (errands)', -miles*c(GAS)/car.mpg]);
   if (onBus()) out.push(['County bus pass', -c(BUS_PASS)*m]);          // i3-a14
   { const j = S.retired ? null : job();                                 // i3-a10: union dues, not while on strike or gone
@@ -273,7 +273,7 @@ function billLines(off = 0){
   if (S.cat) out.push(['Cat food', -c(CAT_MONTHLY)*m]);              // W14: the barn cat
   if (S.partner) out.push(['Date nights', -c(120)*m]);
   const kidsHome = kidsAtHome();
-  if (kidsHome) out.push([kidsHome > 1 ? `Kids (${kidsHome})` : 'Kid', -kidCost()*kidsHome*m]);
+  if (kidsHome) out.push([kidsHome > 1 ? `Kids (${kidsHome})` : 'Kid', -kidsCost()*m]);   // i46-a01: by age
   const a0 = yrsOf(S.ageMonths + off * m);
   { const h = healthMonthly(a0, off); if (h) out.push(['Health care', -c(h)*m]); }   // i75-b04: an employee share before 50
   if (S.ltc && S.ltc.ins && !S.care) out.push(['Long-term care insurance', -c(LTC_PREMIUM)*m]);
@@ -334,7 +334,7 @@ function lineWhy(l, f, j){
   if (l === 'Dog food & vet') return 'Food and the vet for your dog.';
   if (l === 'Date nights') return `Time out with ${partnerWord()}.`;
   if (/^Partner's paycheck/.test(l)) return `${partnerWord(true)} works part-time until 65.`;
-  if (/^Kids? ?/.test(l) && /^Kid/.test(l)) return `About ${fmtc(KID_COST)} a month for each kid at home, ${fmtc(KID_CARE)} of it childcare${commuteOneWay() >= 20 ? `, plus ${fmtc(KID_CARE_COMMUTE)} more childcare because you commute 20+ miles` : ''}${childcareHelp() ? `. Your income qualifies for Working Connections childcare, so you pay only ${fmtc(WCCC_CAP)} of the childcare` : ''}.`;
+  if (/^Kids? ?/.test(l) && /^Kid/.test(l)) return `About ${fmtc(KID_COST)} a month for each kid at home, ${fmtc(KID_CARE)} of it childcare${commuteOneWay() >= 20 ? `, plus ${fmtc(KID_CARE_COMMUTE)} more childcare for each kid under ${KID_CARE_AGE} because you commute 20+ miles` : ''}${childcareHelp() ? `. Your income qualifies for Working Connections childcare, so you pay only ${fmtc(WCCC_CAP)} of the childcare` : ''}.`;
   if (l === 'Health care') return age() >= 65 ? 'Health care costs more from 65.' : age() >= 50 ? 'Health care costs more from 50.' : `Your share of the health plan at work. With no job, or pay under ${fmtc(APPLE_HEALTH_PAY)} a month, Apple Health covers you for $0.`;
   if (l === 'Long-term care insurance') return 'A monthly premium so care late in life is covered.';
   if (l === (FOCUS[S.focus] || {}).name) return `Your focus this week, ${l}, costs a little.`;
@@ -357,9 +357,10 @@ function weekTick(auto){
 
   // ---- money (constants are monthly; m converts to one week) ----
   let gross = 0, k401 = 0;
+  const tripF = tripTimeF(), otMult = f.payMult ? 1 + (f.payMult - 1) * tripF : 1;   // i42-a01: a trip week pays 75% of the overtime and gig pay
   if (S.retired) gross = retireeIncome(lines, m);   // i75-b13/b14: draws that rise with age, and retiree taxes
   else if (j && onLeave()) gross = leavePay(j, lines);   // i74-a14: paid family leave
-  else if (j) gross = jobPay(j, payNow(j) * m * (f.payMult||1) * plantOT(j) * wxPayF(j) * smokePayMult(), lines, f);   // i75-a29 a short pack season; i75-a07 the smoke rule's shorter days; i3: strikes, furloughs, clearances, union dues
+  else if (j) gross = jobPay(j, payNow(j) * m * otMult * plantOT(j) * wxPayF(j) * smokePayMult(), lines, f);   // i75-a29 a short pack season; i75-a07 the smoke rule's shorter days; i3: strikes, furloughs, clearances, union dues
   if (!S.retired) gross += furloughBackPay(lines);
   if (j && on('retire.income')) workYear(j, m);   // to-do 2 D2: no Social Security or pension record without retirement income                           // i3-a24/a25: years worked count toward Social Security and a public pension
   if (j && !S.retired && S.k401rate && on('money.k401')) {           // pre-tax contribution, with a 3% employer match at 5% or more
@@ -369,12 +370,12 @@ function weekTick(auto){
     if ((S.tenure || 0) < K401_VEST_MONTHS) S.k401match = (S.k401match || 0) + match;   // i75-b12: not yours until it vests
   }
   if ((S.k401match || 0) > 0 && j && (S.tenure || 0) >= K401_VEST_MONTHS) { S.k401match = 0; log(`Your 401(k) match vested: after ${K401_VEST_MONTHS / 12} years at the job it's all yours.`, 'money'); }
-  if (gross && !S.retired) { const r = taxRate(j ? payNow(j) * (f.payMult || 1) * plantOT(j) : gross / m);   // i75-b03: by bracket
+  if (gross && !S.retired) { const r = taxRate(j ? payNow(j) * otMult * plantOT(j) : gross / m);   // i75-b03: by bracket
     lines.push(['Taxes', -(gross - k401) * r, `About ${Math.round(r * 100)}% of your pay${k401 ? ' after your 401(k) savings' : ''}: federal income tax, Social Security and Medicare. Washington has no income tax.`]); }
   if (!S.retired && !j && S.ui > 0) { const n = Math.min(m, S.ui); lines.push(['Unemployment benefits', uiMonthly()*n, `${Math.round(UI_SHARE * 100)}% of your last job's pay, for up to 6 months after a layoff.`]); S.ui -= n; }
   let gig = null;
   const truckTime = S.biz && S.biz.type === 'truck' && [3,4,5,6,7,8,9].includes(curMonth());
-  if (f.hustle && !truckTime) { gig = currentGig(); lines.push([`Side hustle: ${gig.name}`, hustlePay(gig, Math.random()), `Gigs follow the seasons. ${S.hustleWeeks ? `${S.hustleWeeks} weeks of experience add ${Math.round((hustleXp() - 1) * 100)}% to your pay.` : 'Pay grows as you get good at it.'}`]); S.hustleWeeks = (S.hustleWeeks || 0) + 1; S.hustleLast = S.turn; }
+  if (f.hustle && !truckTime) { gig = currentGig(); lines.push([`Side hustle: ${gig.name}`, hustlePay(gig, Math.random()) * tripF, `${tripF < 1 ? 'Your trip took part of the week, so fewer gigs. ' : ''}Gigs follow the seasons. ${S.hustleWeeks ? `${S.hustleWeeks} weeks of experience add ${Math.round((hustleXp() - 1) * 100)}% to your pay.` : 'Pay grows as you get good at it.'}`]); S.hustleWeeks = (S.hustleWeeks || 0) + 1; S.hustleLast = S.turn; }
   else if (f.hustle && truckTime) S.hustleLast = S.turn;   // i22-a12: a food-truck weekend keeps your hustle skills fresh
   else if (S.hustleWeeks > 0 && S.turn - (S.hustleLast ?? S.turn) > HUSTLE_FADE_AFTER) S.hustleWeeks = Math.max(0, S.hustleWeeks - HUSTLE_FADE);   // B9: rusty after 6 months off
   const home = HOMES[S.home];
@@ -420,7 +421,7 @@ function weekTick(auto){
   // i3-a21: the valley's home prices move with this year's market (2.5% a year on average); owners gain principal + appreciation
   { const hg = on('home.market') ? S.homeGrow ?? 0.025 : 0;   // to-do 2: in Easy homes keep their listed price
     S.homeIdx = (S.homeIdx || 1) * Math.pow(1 + hg, 1/52);
-    if (home.own) S.equity = S.equity * Math.pow(1 + hg, 1/52) + home.equityPer * m; }
+    if (home.own) S.equity = S.equity * Math.pow(1 + hg, 1/52) + (outright() ? 0 : home.equityPer * m); }   // i30-b06: no payments, no principal
   S.carValue = Math.max(cost(500), S.carValue * Math.pow(0.99, m));   // i30-b02: the floor rises with prices
   S.k401 *= Math.pow(1.06, 1/52); if (S.k401match) S.k401match = Math.min(S.k401, S.k401match * Math.pow(1.06, 1/52));
   S.col *= Math.pow(1 + growth('col'), 1/52); S.wage *= Math.pow(1 + growth('wage'), 1/52);
@@ -435,6 +436,7 @@ function weekTick(auto){
   if (smokeRuleWeek()) why.push(pushingSmoke() ? '😷 Pushing through full shifts in the smoke: full pay, full wear, and a chance of a sick week.' : '😷 The smoke rule at work: shorter days, 10% less pay, half the wear on your body.');
   if (commuteOneWay() >= 20) why.push(`🛣️ ${commuteOneWay()} miles each way${carpooling() ? ' (the carpool helps)' : ''}: ▼ happiness.`);
   if (S.money < 0) why.push('💳 Being in debt: ▼ happiness.');
+  if (HOMES[S.home].folks && a >= FOLKS_FROM) why.push('🏡 Still living at your folks\' place: ▼ a little happiness. A place in town would fix that.');   // i37-b04
   if (S.partner || S.dog || S.cat || kidsAtHome()) why.push(`🏡 ${[S.partner ? partnerWord() : '', S.dog ? 'your dog' : '', S.cat ? 'your cat' : '', kidsAtHome() ? 'kids at home' : ''].filter(Boolean).join(', ').replace(/^./, c => c.toUpperCase())}: ▲ happiness${comfortF() < 1 ? `, ${comfortF() <= 0 ? 'but not past the high 80s' : 'less as you near the high 80s'}` : ''}.`);
   if (S.health < 35 && (S.focus === 'work' || S.focus === 'hustle')) why.push('😮‍💨 Pushing through low health with extra work: ▼▼ health.');
   if (S.focus !== 'study' && S.streakF === S.focus && S.streakN + 1 > RUT_WEEKS) why.push(`🔁 In a rut (${S.streakN + 1} weeks of the same thing): ▼ happiness.`);
@@ -451,7 +453,8 @@ function weekTick(auto){
   dh -= commuteOneWay() / 40 * driveDays() * (carpooling() ? 0.6 : 1);
   if (carpooling()) dc += 0.3;                    // riding with neighbors keeps you in the loop
   if (onBus()) dh -= 0.3;                          // i3-a14: longer days on the bus
-  dh += (home.happy * 0.4 + (S.partner ? 0.6 : 0) + (S.dog ? 0.4 : 0) + (S.cat ? 0.2 : 0) + kidsHome * kidJoy()) * comfortF() - (S.money < 0 ? 2 : 0);   // i30-b04: home comforts pull toward the mid-80s
+  dh += (home.happy * 0.4 + (S.partner ? 0.6 : 0) + (S.dog ? 0.4 : 0) + (S.cat ? 0.2 : 0) + kidsHome * kidJoy()) * comfortF() - (S.money < 0 ? 2 : 0)
+    - (home.folks && age() >= FOLKS_FROM ? FOLKS_TUG : 0);   // i37-b04: still living with your folks   // i30-b04: home comforts pull toward the mid-80s
   dc += kidsHome * 0.2;
   if (S.council) dc += 0.8;
   if (awaySouth()) { dh = Math.max(dh, 0.5); dH = Math.max(dH, 0.3); dc -= 1.2; }   // i3-a30: sun holds you up, but town forgets you a little

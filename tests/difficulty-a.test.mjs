@@ -46,7 +46,8 @@ await t.check('jobs.ladder (Normal): no ladder, rungs or promotion in Easy; a sm
 
 await t.check('jobs.interview + jobs.perks (Normal): Easy hires on the odds alone, with no asking for more, sign-on or clearance', async () => {
   const r = await each(d => {
-    life(d, { edu: 3 }); apply('diner');
+    const jo = window.jobOpen; window.jobOpen = () => true;   // i8-a06: this week's openings would make the diner a coin flip
+    life(d, { edu: 3 }); apply('diner'); window.jobOpen = jo;
     const out = { interview: !!S.interview || /Interview:/.test(document.querySelector('#sheet').textContent) };
     closeSheet(); life(d, { edu: 3 }); hired(jobById('cna'));
     out.ask = !!document.querySelector('#sheet [data-i="1"]'); out.signOn = !!document.querySelector('#sheet [data-i="2"]');

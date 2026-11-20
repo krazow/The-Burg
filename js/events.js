@@ -1003,6 +1003,9 @@ Object.assign(EVENT_PLACE, Object.fromEntries(WORK_EVENTS.map(e => [e.title, 'wo
   'Riverfront 5K in Richland':['R','richland'], 'Hanford history tour':['R','richland'], 'Classic car show in Dayton':['R','dayton'],
   'Bluewood season pass sale':['R','bluewood'], 'Chains required on the road to Bluewood':['R','dayton']
 });
+// i42-a05: a road event set in a town (by EVENT_PLACE) needs that town to be this week's drive; valley-wide ones fire anywhere
+const roadEventTown = ev => { const p = EVENT_PLACE[ev.title]; return Array.isArray(p) && p[0] === 'R' && CITIES[p[1]] ? p[1] : null; };
+for (const ev of ROAD_EVENTS) { const town = roadEventTown(ev), w = ev.when; if (town) ev.when = (...a) => roadTown() === town && (!w || w(...a)); }
 const tradeBonus = () => S.tradeBy === S.turn ? cr(500) : 0;   // R-21: a dealer's trade-in bonus, this week only
 
 /* ============================================================
@@ -1010,6 +1013,7 @@ const tradeBonus = () => S.tradeBy === S.turn ? cr(500) : 0;   // R-21: a dealer
    Town pacing category; every amount is in 2027 dollars and goes through cost(); labels show today's price.
    ============================================================ */
 const ownHome = () => !!(HOMES[S.home] && HOMES[S.home].own);
+const outright = () => ownHome() && S.mortgage === 0;   // i30-b06: bought with the sale money, no mortgage
 // W16: shoveling for neighbors counts as a week toward the winter town goal
 function townGoalWeek(key){
   const g = seasonGoal(); if (!g || g.key !== key || S.practice) return '';
@@ -1115,6 +1119,15 @@ const TOWN_EVENTS_W2 = [
     ]}
 ];
 EVENTS.push(...TOWN_EVENTS_W2);
+// i37-b04: the Farm kid's folks' place: from 21, a chance to move into town (a year apart at least)
+EVENTS.push({ ic:'🔑', title:'A place of your own in town', yr:1, w:6, when:() => !!HOMES[S.home].folks && age() >= FOLKS_FROM,
+  text:'The room above Main Street is open again, and your mom says it out loud at dinner: maybe it\'s time you had your own place.',
+  choices:() => [
+    {label:`Rent the room in town (${wk(cost(HOMES.room.cost))}, moving ${fmtc(300)})`, if:() => S.money >= cost(300), go:() => {
+      S.money -= cost(300); S.home = 'room'; adj({happy:4}); outMoved(); log('Moved out of my folks\' place and into the room above Main Street.', undefined, 1);
+      return 'Your dad helped carry the bed up the stairs. Your mom sent you home with a pie.'; }},
+    {label:'Stay home a while longer', go:() => 'Cheap rent, and your mom\'s cooking. It\'s fine for now.'}
+  ]});
 // W22: the Little League season, told in three steps. The later steps come when they're due (added to PLAN_DUE in features.js).
 const leagueOn = () => { const c = (S.chains || {}).league; return !!c && c.step > 1 && c.step < 99; };
 const LEAGUE_STEPS = [
