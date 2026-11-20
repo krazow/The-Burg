@@ -296,6 +296,7 @@ function blankLife(name, len, slot = 0){
     earnYears:0, earnSum:0, pensionYears:0, pensionPay:0, ltc:null, care:null, snowbird:null, scholar:null, will:false, probate:null, roomHost:false, hostLast:-99,
     skills:{}, biz:null, weekly:null, rng:null, rngEv:null, gen:1, goalAt:{}, carpoolJob:null, hustleLast:0, highWater:null, recentF:[], out:outDefault(), years:[],
     plan:[], planI:0,                              // i2-a12: a weekly focus rotation (empty = no plan)
+    hist:[], spend4:[], ansRules:{},               // i15-b01 weekly history, i15-b05 last 4 weeks by kind, i49-a11 answer rules
     opened:{}, unlockQ:[], unlockMode:'go',        // i31: systems open as you go ({id: {w: week, how}}), unlock cards waiting, or everything open
     hireJoy:null, bgRest:null,                     // i38-a01: the week of the last hiring cheer; i37-b06: a background's community resting point
     evSeen:{}, seenOT:false,                       // i52-a10: events seen this life (no repeats in the first year); i52-a03: the overtime note
@@ -348,6 +349,9 @@ function repairLife(s){
   if (Array.isArray(s.plan)) s.plan = s.plan.filter(k => FOCUS[k]).slice(0, PLAN_MAX);
   if (Array.isArray(s.evPins)) s.evPins = s.evPins.filter(isObj).slice(0, 12).map(p => ({ ...p, t: noTags(p.t).slice(0, 80), r: noTags(p.r).slice(0, 400), ic: noTags(p.ic).slice(0, 8) }));
   if (Array.isArray(s.years)) s.years = s.years.filter(isObj).slice(-120).map(y => ({ ...y, m: Array.isArray(y.m) ? y.m.slice(0, 3).map(t => noTags(t).slice(0, 600)) : [] }));
+  if (Array.isArray(s.hist)) s.hist = s.hist.filter(r => Array.isArray(r) && r.length === 6 && r.every(okNum)).slice(-1200);
+  if (Array.isArray(s.spend4)) s.spend4 = s.spend4.filter(isObj).slice(0, 4).map(o => Object.fromEntries(Object.entries(o).filter(([, v]) => okNum(v)).slice(0, 12).map(([k, v]) => [noTags(k).slice(0, 12), v])));
+  if (isObj(s.ansRules)) s.ansRules = Object.fromEntries(Object.entries(s.ansRules).filter(([, r]) => isObj(r) && typeof r.k === 'string').slice(0, 60).map(([t, r]) => [noTags(t).slice(0, 80), { k: noTags(r.k).slice(0, 160), l: noTags(r.l).slice(0, 120) }]));
   if (Array.isArray(s.line)) s.line = s.line.filter(isObj).slice(-40).map(p => Object.fromEntries(Object.entries(p).map(([k, v]) => [k, typeof v === 'string' ? noTags(v).slice(0, 200) : okNum(v) ? v : null])));
   if (isObj(s.certs)) s.certs = Object.fromEntries(Object.keys(s.certs).filter(k => CERTS[k]).map(k => [k, 1]));
   if (s.program != null && !PROGRAMS[s.program]) s.program = null;
@@ -367,7 +371,7 @@ function migrate(s){
   if (s.diff === undefined) { s.diff = 'hard'; s.classic = true; }
   if (s.classic === undefined) s.classic = false;
   if (s.flagsEdited === undefined) s.flagsEdited = false;
-  const d = { slot:0, evPins:[], streakF:null, streakN:0, run:null, yearEvents:0, yearStart:null, evCd:{}, evDone:{}, evSeen:{}, seenOT:true, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, k401match:0, uiPay:null, mortgage:null, loanPay:0 };   // i75: an older 401(k) counts as vested; old benefits pay the floor
+  const d = { hist:[], spend4:[], ansRules:{}, slot:0, evPins:[], streakF:null, streakN:0, run:null, yearEvents:0, yearStart:null, evCd:{}, evDone:{}, evSeen:{}, seenOT:true, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, k401match:0, uiPay:null, mortgage:null, loanPay:0 };   // i75: an older 401(k) counts as vested; old benefits pay the floor
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
   s.rules = cleanRules(s.rules); if (!TIERS[s.tier0]) s.tier0 = recordTier(s.rules);   // i19-b01: unknown knobs fall back to Normal
   if (typeof s.lid !== 'string' || !s.lid) s.lid = newLid();          // i63-b22
