@@ -61,6 +61,7 @@ function careMult(){ const w = S.turn - (S.svc ?? 0); return w <= 26 ? 0.6 : w <
 const ditchMult = () => S.tires === S.car ? 0.4 : 1;
 // plan this week's trip; returns '' or why it can't be planned
 function planTrip(city, ids, van = false){
+  if (!on('trips')) return 'Trips aren\'t part of this life.';   // to-do 2: the feature is switched off
   if (awaySouth()) return 'You\'re in Arizona until April.';   // i3-a30
   if (!CITIES[city] || city === 'waitsburg') return 'Pick a town to visit.';
   ids = [...new Set(ids)];
@@ -77,7 +78,7 @@ function planTrip(city, ids, van = false){
 }
 // runs inside weekTick's money step: adds the trip's lines, does its errands and returns the stat effects
 function tripWeek(lines){
-  const t = S.trip; if (!t || !CITIES[t.city]) { S.trip = null; return null; }
+  const t = S.trip; if (!t || !CITIES[t.city] || !on('trips')) { S.trip = null; return null; }
   const c = CITIES[t.city], fx = { happy:0, health:0, community:0 }, done = [];
   const van = vanTrip(t), gas = van ? 0 : tripGas(t.city);
   if (gas) lines.push([`Trip to ${c.name}: gas`, -gas, `${c.miles} miles each way at ${CARS[S.car].mpg} mpg.`]);
@@ -109,6 +110,7 @@ function tripWeek(lines){
 
 /* ---- trip screens ---- */
 function tripPicker(){
+  if (!on('trips')) return;
   openSystem('trip', { quiet:true, how:'used' });
   sheet(`<h2>🚗 Plan a trip</h2>
     ${firstTime('trips')}<p class="muted">One trip a week, up to ${tripMax()} stop${tripMax() === 1 ? '' : 's'}. It happens when you end the week.${S.trip ? ` You have a trip to ${CITIES[S.trip.city].name} planned.` : ''}</p>${debtTripNote()}
@@ -121,6 +123,7 @@ function tripPicker(){
   $('#n').onclick = closeSheet;
 }
 function tripSheet(city){
+  if (!on('trips')) return;
   const c = CITIES[city], gas = tripGas(city);
   const max = tripMax();
   let sel = S.trip && S.trip.city === city ? S.trip.stops.filter(id => !stopBlocked(stopById(id))).slice(0, max) : [];
@@ -375,7 +378,7 @@ function challengesSheet(){
   $('#weekly').onclick = () => { if (readSlot(WEEKLY_SLOT)) return weeklySheet(); const name = (($('#nm') && $('#nm').value.trim()) || 'Dusty').slice(0,20); closeSheet(); startWeekly(name); };
   document.querySelectorAll('[data-end]').forEach(b => b.onclick = () => endSummary(top10()[+b.dataset.end]));   // i73-b02
   document.querySelectorAll('[data-sc]').forEach(b => b.onclick = () => {
-    const sc = SCENARIOS[b.dataset.sc], name = (($('#nm') && $('#nm').value.trim()) || 'Dusty').slice(0,20), free = slots().indexOf(null);
+    const sc = SCENARIOS[b.dataset.sc], name = (($('#nm') && $('#nm').value.trim()) || 'Dusty').slice(0,20), free = freeSlot();
     closeSheet();
     const opts = { bg: sc.bg, diff: 'hard', scenario: b.dataset.sc };   // to-do 2 D2: story challenges are a Hard feature
     if (free < 0) return askReplace(name, sc.len, opts);
@@ -900,9 +903,7 @@ function shareText(){
 }
 async function shareCard(){
   const c = scoreCard(), blob = await new Promise(r => c.toBlob(r, 'image/png')), name = `the-burg-${S.name.replace(/\W+/g, '-').toLowerCase()}.png`, text = shareText();
-  const file = typeof File === 'function' ? new File([blob], name, { type:'image/png' }) : null;
-  try { if (file && navigator.canShare && navigator.canShare({ files:[file] })) { await navigator.share({ files:[file], title:'My life in The Burg', text }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  if (await shareFile(blob, name, 'My life in The Burg', text) !== 'saved') return;   // i59-a20: the share sheet where there is one
   toast('Score card saved');
   // where a picture can't be shared, the words can still be copied to post with it
   const sh = $('#share');
@@ -1941,7 +1942,7 @@ function planningWire(){
 const FAN_DIY = 45, FAN_BUY = 160, CAPTAIN_MIN = 40;
 const CAPTAIN_PLAN = [[0, 'A phone tree for the block'], [1, 'Who lives alone or needs power for medical equipment'], [3, 'Who has a generator, a chainsaw and shovels']];
 function buildFilter(diy){
-  if (airFilterOn() || (diy && skillLv('handy') < 1)) return false;
+  if (!on('weather.neighbors') || airFilterOn() || (diy && skillLv('handy') < 1)) return false;
   const c = cr(diy ? FAN_DIY : FAN_BUY);
   S.money -= c; S.airFilter = thisYear();
   if (diy) { adj({happy:1}); practice('handy', 1); }
@@ -1949,19 +1950,21 @@ function buildFilter(diy){
   return true;
 }
 function weatherCard(){
+  // to-do 2: every row here is a Hard feature (storm neighbors, home damage); below Hard there's no card
+  const nb = on('weather.neighbors'), dmg = on('weather.homeDamage'); if (!nb && !dmg) return '';
   const m = curMonth(), own = !!HOMES[S.home].own, runs = S.captain ? S.captain.runs || 0 : 0;
   const fanTime = inM(m, 3, 4, 5, 6, 7, 8);                     // April to September, before and during smoke season
   return `<div class="card"><h3>🌦️ Ready for weather</h3>
-    <div class="kv"><span>😷 Air filter for smoke season<br><small class="muted">A box fan with a furnace filter strapped on keeps the air inside clean in a smoke week. Filters clog, so it's good for one summer.</small></span><span>${airFilterOn() ? `Ready for ${thisYear()} ✓` : fanTime ? '' : 'Spring'}</span></div>
+    ${nb ? `<div class="kv"><span>😷 Air filter for smoke season<br><small class="muted">A box fan with a furnace filter strapped on keeps the air inside clean in a smoke week. Filters clog, so it's good for one summer.</small></span><span>${airFilterOn() ? `Ready for ${thisYear()} ✓` : fanTime ? '' : 'Spring'}</span></div>
     ${!airFilterOn() && fanTime ? `<div class="slotbtns">${skillLv('handy') >= 1 ? `<button class="sm" id="fandiy">🔨 Build one (${fmtc(FAN_DIY)} in parts)</button>` : ''}<button class="sm alt" id="fanbuy">Buy an air purifier (${fmtc(FAN_BUY)})</button></div>
-      ${skillLv('handy') < 1 ? `<p class="muted" style="margin:4px 0 0">With the Handy skill you could build one for ${fmtc(FAN_DIY)}.</p>` : ''}` : ''}
-    ${S.roofWait ? `<div class="kv"><span>🏠 Roof: on the roofer's list, with a tarp on it for now</span><span>about ${Math.max(1, S.roofWait.at - S.turn)} wk</span></div>` : ''}
-    ${own && S.floodProof === S.home ? '<div class="kv"><span>🔧 Furnace and water heater raised off the basement floor</span><span>Flood cleanup −80%</span></div>' : ''}
-    <div class="kv"><span>🔦 Block captain${S.captain ? `<br><small class="muted">Your street's storm plan. Each storm you run it: an evening of your time, ▲ community. Storms so far: ${runs}.</small>` : `<br><small class="muted">Keep your street's storm plan: check on neighbors, share generators and shovels. It costs an evening every storm and pays in community, never cash.</small>`}</span>
+      ${skillLv('handy') < 1 ? `<p class="muted" style="margin:4px 0 0">With the Handy skill you could build one for ${fmtc(FAN_DIY)}.</p>` : ''}` : ''}` : ''}
+    ${dmg && S.roofWait ? `<div class="kv"><span>🏠 Roof: on the roofer's list, with a tarp on it for now</span><span>about ${Math.max(1, S.roofWait.at - S.turn)} wk</span></div>` : ''}
+    ${dmg && own && S.floodProof === S.home ? '<div class="kv"><span>🔧 Furnace and water heater raised off the basement floor</span><span>Flood cleanup −80%</span></div>' : ''}
+    ${nb ? `<div class="kv"><span>🔦 Block captain${S.captain ? `<br><small class="muted">Your street's storm plan. Each storm you run it: an evening of your time, ▲ community. Storms so far: ${runs}.</small>` : `<br><small class="muted">Keep your street's storm plan: check on neighbors, share generators and shovels. It costs an evening every storm and pays in community, never cash.</small>`}</span>
       <span>${S.captain ? '<span class="tag cur">Captain</span>' : ''}</span></div>
     ${S.captain ? `<ul class="changes" aria-label="Your street's storm plan">${CAPTAIN_PLAN.map(([n, t]) => `<li>${runs >= n ? '✅' : '⬜'} ${t}${runs >= n ? '' : ` <small class="muted">(after ${n} storm${n > 1 ? 's' : ''})</small>`}</li>`).join('')}</ul>
       <button class="sm alt" id="captoff">Step down as block captain</button>`
-      : S.community >= CAPTAIN_MIN ? '<button class="sm" id="capton">Be your block\'s storm captain</button>' : `<p class="muted" style="margin:4px 0 0">Neighbors pick someone they know: it opens at community ${CAPTAIN_MIN}.</p>`}
+      : S.community >= CAPTAIN_MIN ? '<button class="sm" id="capton">Be your block\'s storm captain</button>' : `<p class="muted" style="margin:4px 0 0">Neighbors pick someone they know: it opens at community ${CAPTAIN_MIN}.</p>`}` : ''}
   </div>`;
 }
 function weatherWire(){
@@ -1973,7 +1976,7 @@ function weatherWire(){
 }
 // i75-a21: the Home tab's winter toggle: clear the neighbor's walk every snow
 function walkCard(){
-  if (!inM(curMonth(), 10, 11, 0, 1, 2) || S.practice) return '';
+  if (!on('town.walk') || !inM(curMonth(), 10, 11, 0, 1, 2) || S.practice) return '';
   return `<div class="card"><div class="kv"><span>❄️ Clear Edna's walk next door when it snows<br><small class="muted">She's 84. Each snowy week: ▼ a little health, ▲ community.${S.walkWinters ? ` Winters so far: ${S.walkWinters}.` : ''}</small></span>
     <button class="sm${S.walk ? '' : ' alt'}" id="walk" aria-pressed="${!!S.walk}" aria-label="Clear the neighbor's walk when it snows">${S.walk ? 'On' : 'Off'}</button></div></div>`;
 }
