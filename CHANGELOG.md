@@ -93,6 +93,18 @@ follows Washington's 2027 prices, and each year brings its own weather. Your bod
   Relaxed no longer mentions having to leave town.
 - The collections fee and the hospital bill now show as lines in the week, so the lines add up to the change in cash.
 - The stress of a promotion counts every week, even weeks with no event or when you're away.
+- A friend's job tip shows the pay the way the job board does, and only comes when a better-paying job is open.
+- Raises, reviews, contract deals and union steps show the raise you actually get, and say when you're at the top of
+  the pay scale.
+- The bluegrass jam event only lands on a jam week, and "Gas prices spike" counts remote days and carpools.
+- Helping a friend with tuition only offers what you can afford ("Help with books" otherwise), so it never puts you
+  below $0.
+- The fixer-upper, food truck and levee buttons show today's prices.
+- Wine country weekends come April to October, and less often.
+- A buddy's engine fix works most of the time; when it doesn't, the shop costs a bit less.
+- The cheaper health plan saves $240 a year, and better coverage also halves the emergency dentist.
+- With a Bluewood pass, each Get outside week from December to March is a ski day.
+- "Feeling run down" comes when health is under 45.
 
 ## 0.2.0 (2026-11-18)
 
