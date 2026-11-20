@@ -64,7 +64,7 @@ const bk = await readBackup(JSON.stringify(backupData())); localStorage.clear();
 });
 
 await t.check('monkey: 600 random taps across every screen cause no errors', async () => {
-  await ev(() => { render = window.__render; toast = window.__toast; closeSheet(); localStorage.clear(); S = null; render(); });
+  await ev(() => { render = window.__render; toast = window.__toast; closeSheet(); localStorage.clear(); setPref('newHere', 1); S = null; render(); });
   await page.fill('#nm', 'Monkey'); await page.click('#start');
   // each tap picks a visible, enabled control inside the page (one round trip per tap keeps this quick);
   // skips anything that deletes, replaces, quits or restores

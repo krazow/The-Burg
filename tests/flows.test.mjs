@@ -397,7 +397,7 @@ await t.check('Life Score so far opens its breakdown from Home; a commuter can j
 });
 
 await t.check('the title screen starts a life with a background and a mode', async () => {
-  await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); render(); });
+  await page.evaluate(() => { localStorage.clear(); setPref('newHere', 1); S = null; closeSheet(); render(); });
   await page.fill('#nm', 'Kid');
   await page.click('#moreopts');
   await page.click('[data-bg="farm"]'); await page.click('[data-mode="hard"]');
@@ -406,6 +406,51 @@ await t.check('the title screen starts a life with a background and a mode', asy
   const s = await S();
   assert(s.bg === 'farm' && s.mode === 'hard' && s.jobId === 'farmhand', JSON.stringify({ bg: s.bg, mode: s.mode, job: s.jobId }));
   assert(/Hard/.test(await page.textContent('header.top')), 'the header should show the mode');
+});
+
+await t.check('i19-b02..b05: Change the rules on the start sheet: grouped knobs with Normal values, a live preview and a record badge', async () => {
+  await page.evaluate(() => { localStorage.clear(); setPref('newHere', 1); S = null; closeSheet(); renderTitle(); });
+  await page.click('#moreopts');
+  assert(/Normal rules/.test(await page.textContent('#rulesum')), await page.textContent('#rulesum'));
+  await page.click('#rulesbtn');
+  const groups = await page.$$eval(`${open} h3`, hs => hs.map(h => h.textContent));
+  assert(JSON.stringify(groups) === '["Money","Events","Assists"]', JSON.stringify(groups));
+  assert((await page.textContent('#rl-start')) === 'Starting money: $1,500 (Normal)', await page.textContent('#rl-start'));
+  assert(/normal records/.test(await page.textContent('#tierbadge')), await page.textContent('#tierbadge'));
+  await page.click('[data-rule="start"][data-opt="comfy"]');
+  assert(/\$6,500 · Normal is \$1,500/.test(await page.textContent('#rl-start')) && /about 43 weeks of rent/.test(await page.textContent('#rp-start')), await page.textContent('#rp-start'));
+  assert(/Custom shelf/.test(await page.textContent('#tierbadge')) && (await page.getAttribute('[data-rule="start"][data-opt="comfy"]', 'aria-pressed')) === 'true', 'badge or pressed state did not follow');
+  await page.click('[data-rule="events"][data-opt="none"]');
+  assert(/never recorded/i.test(await page.textContent('#tierbadge')), await page.textContent('#tierbadge'));
+  await page.click('#rnormal');
+  assert(/normal records/.test(await page.textContent('#tierbadge')) && /\(Normal\)/.test(await page.textContent('#rl-events')), 'Back to Normal did not reset');
+  await page.click('[data-rule="start"][data-opt="comfy"]'); await page.click('[data-rule="routine"][data-opt="on"]');
+  await page.click('#rdone');
+  assert(/Custom rules/.test(await page.textContent('#moresum')) && /Comfortable/.test(await page.textContent('#rulesum')), await page.textContent('#rulesum'));
+  await page.fill('#nm', 'Rulz'); await page.click('#start');
+  const s = await S();
+  assert(s.money === 6500 && JSON.stringify(s.rules) === '{"start":"comfy","routine":"on"}' && s.tier0 === 'custom', JSON.stringify({ m: s.money, r: s.rules, t: s.tier0 }));
+});
+
+await t.check('i19-b19: a "Rules for this life" card on the Life tab: read-only, assists can only be turned off, with a confirm naming the shelf', async () => {
+  await setup(() => { closeSheet(); S.noEvents = true; tab = 'life'; render(); });
+  const card = await page.textContent('#rulescard');
+  assert(/Custom shelf/.test(card) && /Starting money: \$6,500 · Normal is \$1,500/.test(card) && /Handle the routine stuff for me: On/.test(card), card);
+  assert((await page.$$('#rulescard [data-assistoff]')).length === 1, 'only the assist should have a switch');
+  await page.click('[data-assistoff="routine"]');
+  assert(/stays on the Custom shelf/.test(await page.textContent(`${open}`)) && /can't turn it back on/.test(await page.textContent(`${open}`)), await page.textContent(`${open}`));
+  await page.click(`${open} #y`);
+  const s = await S();
+  assert(JSON.stringify(s.rules) === '{"start":"comfy"}' && !(await page.$('[data-assistoff]')), JSON.stringify(s.rules));
+  await life({}, 'life');
+  assert(!(await page.$('#rulescard')), 'a Normal-rules life should not show the rules card');
+});
+
+await t.check('i19-b28: the weekly challenge says everyone plays with the same rules', async () => {
+  await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); renderTitle(); });
+  await page.click('#weekly');
+  assert(/Everyone plays the weekly with the same rules/.test(await page.textContent(open)), await page.textContent(open));
+  await page.click(`${open} #n`);
 });
 
 await t.check('pick life goals on the Life tab, and start a challenge from the title screen', async () => {
@@ -460,7 +505,7 @@ await t.check('title screen: Start comes before a closed "More options" panel, w
 });
 
 await t.check('i20-b01, i20-b06: pick a life aim at setup, see it on the Life tab, and change it only once a year', async () => {
-  await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); setPref('moreOpts', true); renderTitle(); });
+  await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); setPref('moreOpts', true); setPref('newHere', 1); renderTitle(); });
   await page.click('[data-aim="roots"]');
   assert((await page.getAttribute('[data-aim="roots"]', 'aria-pressed')) === 'true' && /Roots/.test(await page.textContent('#moresum')) && /Show up for town/.test(await page.textContent('#aimdesc')), 'aim chip');
   await page.fill('#nm', 'Aimee'); await page.click('#start');
@@ -578,7 +623,8 @@ await t.check('H2: End this life now asks first, and Escape keeps playing', asyn
   await page.waitForSelector(`${open} #yes`);
   const txt = await page.textContent('#sheet');
   assert(/Life Score so far: \d+/.test(txt) && /Keep playing/.test(txt), `confirm sheet: ${txt}`);
-  assert(await page.evaluate(() => document.activeElement && document.activeElement.id === 'no' || document.querySelector('#sheet button').id === 'no'), 'Keep playing should be the default');
+  // i70-b17: Keep playing is now the bottom button; it still gets the first focus
+  assert(await page.waitForFunction(() => document.activeElement && document.activeElement.id === 'no', null, { timeout: 2000 }).then(() => true, () => false), 'Keep playing should be the default');
   await page.keyboard.press('Escape');
   const r = await page.evaluate(() => ({ open: !document.querySelector('#modal').classList.contains('hidden'), slot: slots()[0] && slots()[0].name, over: S.over }));
   assert(!r.open && r.slot === 'Flow' && !r.over, JSON.stringify(r));
@@ -711,7 +757,7 @@ await t.check('i3-a02/a03: the Life tab picks a program and signs up for a certi
   assert((await S()).program === 'nursing', 'program not set');
   assert((await page.textContent('#main')).includes('registered nurse'), 'matching jobs not listed');
   await page.click('[data-cert="phlebotomy"]');
-  await page.click(`${open} #yes`);
+  await page.click(`${open} #all`);                              // i72-b04: Pay it all now (pay as you go is the first choice)
   const s = await S();
   assert(s.certStudy && s.certStudy.id === 'phlebotomy' && s.money === 2300, JSON.stringify({ c: s.certStudy, m: s.money }));
   assert(await page.$eval('[data-cert="welding"]', b => b.disabled), 'one course at a time');
@@ -1389,7 +1435,7 @@ await t.check('i73-b12: a private window (small quota, no persisted) gets a calm
   try {
     assert((await p1.textContent('#tn-private')).includes('This window forgets your lives'), await p1.textContent('#tn-private'));
     assert((await p2.textContent('#tn-private')).includes('may forget'), await p2.textContent('#tn-private'));
-    await p1.fill('#nm', 'Priv'); await p1.click('#start'); await p1.evaluate(() => { tab = 'home'; render(); });
+    await p1.fill('#nm', 'Priv'); await p1.click('#start'); await p1.click('#modal:not(.hidden) #jumpin'); await p1.evaluate(() => { tab = 'home'; render(); });
     await p1.waitForSelector('#privcard');
     await p1.click('#privok');
     await p1.evaluate(() => render());

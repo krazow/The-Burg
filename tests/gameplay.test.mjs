@@ -35,6 +35,7 @@ await t.check('a new 6-month game starts in week one, age 18, on the Jobs tab', 
   await page.fill('#nm', 'Tester');
   await page.click('[data-len=half]');
   await page.click('#start');
+  await page.click('#modal:not(.hidden) #jumpin');                // i23-a01: the very first start offers a practice life
   const s = await S();
   assert(s.name === 'Tester' && s.len === 'half' && s.turn === 0, 'wrong new-game state');
   assert(Math.floor(s.ageMonths / 12) === 18, 'should start at 18');

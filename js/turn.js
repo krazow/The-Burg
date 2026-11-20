@@ -62,6 +62,7 @@ function finishRun(res, why, n){
   if (res.ending) S.endPending = { r: res.ending, debt: !!res.debt, death: !!res.death };   // i22-a02: the ending sticks if the app closes behind the notes
   save();
   const notes = why ? [...res.notes, `⏸ Auto stopped: ${why}`] : res.notes;
+  const cared = careLine();                        // i19-b15: one "Taken care of" line for the routine assist
   const after = () => {
     if (res.ending) return endLife(S.endPending);   // i3-a27: a debt ending can still be a bankruptcy
     COUNT_FROM = { money: S.run.money, happy: S.run.happy, health: S.run.health, community: S.run.community };   // i2-a08: stats count up from last week
@@ -76,12 +77,15 @@ function finishRun(res, why, n){
     else { if (!res.ev) { if (n === 1) sfx('week'); buzz('week'); } next(); }   // i2-a04/a05: one small tick per press
     const r = S.run, dm = S.money - r.money, ch = (n, v) => Math.abs(v) < 0.5 ? `${n} unchanged` : `${n} ${v > 0 ? 'up' : 'down'} ${Math.abs(Math.round(v))}`;
     const own = r.happened.filter(h => h.auto).length;
-    announce(`${r.weeks > 1 ? r.weeks + ' weeks' : 'Week'} done. Cash ${dm >= 0 ? 'up' : 'down'} ${fmt(Math.abs(dm))}, now ${fmt(S.money)}. ${ch('Happiness', S.happy - r.happy)}, ${ch('health', S.health - r.health)}, ${ch('community', S.community - r.community)}. ${own ? `${own} event${own > 1 ? 's' : ''} with no choice to make played out: see the week strip. ` : ''}${dateLabel()}.`);
+    if (cared && !notes.length) toast(cared);
+    if (setting('srWeek') === 'short') announce(weekSentence(res) + (cared ? ` ${cared}.` : ''));   // i7-a02: one plain sentence (Settings can ask for every number)
+    else announce(`${r.weeks > 1 ? r.weeks + ' weeks' : 'Week'} done. Cash ${dm >= 0 ? 'up' : 'down'} ${fmt(Math.abs(dm))}, now ${fmt(S.money)}. ${ch('Happiness', S.happy - r.happy)}, ${ch('health', S.health - r.health)}, ${ch('community', S.community - r.community)}. ${own ? `${own} event${own > 1 ? 's' : ''} with no choice to make played out: see the week strip. ` : ''}${cared ? cared + '. ' : ''}${dateLabel()}.`);
   };
   if (notes.length) {
     const fix = res.ending ? [] : noteFixes(res);
     sheet(`<h2>${S.run.weeks > 1 ? S.run.weeks + ' weeks later' : 'This week'}</h2>
       ${notes.map(t => `<p><b>${t}</b></p>`).join('')}
+      ${cared ? `<p class="muted">${esc(cared)}</p>` : ''}
       <p>${runChips()}</p>
       ${fix.length ? `<p class="muted" style="margin-bottom:4px">Switch your focus in one tap:</p><div class="skiprow">${fix.map(k => `<button class="btn ghost" data-sugg="${k}">${FOCUS[k].ic} ${FOCUS_SHORT[k]}</button>`).join('')}</div>` : ''}
       ${notes.includes(BACKUP_NUDGE) ? '<button class="btn ghost" id="nudgebk">📤 Back up now</button>' : ''}
@@ -97,6 +101,30 @@ function noteFixes(res){
   const map = { happy:'outdoors', health:'rest', community:'community' };
   const want = [...(res.red || []).map(k => map[k]), ...(res.rut ? lowFocus(S.focus) : [])];
   return [...new Set(want)].filter(k => k !== S.focus && !(FOCUS[k].needsJob && (!job() || S.retired))).slice(0, 3);
+}
+// i19-b15: the routine events the assist answered in the last End Week or skip, in one line
+function careLine(){
+  const c = S.run ? S.run.happened.filter(h => h.care) : [];
+  return c.length ? `🧹 Taken care of: ${c.map(h => `${h.title}${h.money ? ` (${h.money > 0 ? '+' : ''}${fmt(h.money)})` : ''}`).join(', ')}` : '';
+}
+// i7-a02: the short week summary a screen reader hears after End Week, e.g.
+// "Week 34 done. You earned $612. Health up 2, happiness down 1. One event waiting."
+function weekSentence(res = {}){
+  const r = S.run; if (!r) return '';
+  const dm = Math.round(S.money - r.money), first = S.turn - r.weeks + 1;
+  const stats = [['Happiness', S.happy - r.happy], ['Health', S.health - r.health], ['Community', S.community - r.community]]
+    .filter(([, v]) => Math.abs(v) >= 0.5).map(([n, v], i) => `${i ? n.toLowerCase() : n} ${v > 0 ? 'up' : 'down'} ${Math.abs(Math.round(v))}`);
+  return [r.weeks > 1 ? `Weeks ${first} to ${S.turn} done.` : `Week ${S.turn} done.`,
+    dm > 0 ? `You earned ${fmt(dm)}.` : dm < 0 ? `You spent ${fmt(-dm)} more than you made.` : 'Your cash stayed the same.',
+    stats.length ? `${stats.join(', ')}.` : 'Your stats held steady.',
+    res.ev ? 'One event waiting.' : ''].filter(Boolean).join(' ');
+}
+// i43-a01: the week strip's numbers in words, for its screen-reader label
+function runWords(){
+  if (!S.run) return '';
+  const r = S.run, dm = S.money - r.money;
+  const ch = (n, v) => Math.abs(v) < 0.5 ? `${n} unchanged` : `${n} ${v > 0 ? 'up' : 'down'} ${Math.abs(Math.round(v))}`;
+  return `${r.weeks > 1 ? `Last ${r.weeks} weeks` : 'Last week'}: cash ${Math.abs(dm) < 0.5 ? 'unchanged' : `${dm > 0 ? 'up' : 'down'} ${fmt(Math.abs(dm))}`}, ${ch('happiness', S.happy - r.happy)}, ${ch('health', S.health - r.health)}, ${ch('community', S.community - r.community)}`;
 }
 // what the last End Week / skip did, counting events resolved since
 function runChips(){
@@ -161,11 +189,13 @@ function animateStats(from){
 }
 // i2-a02: what a focus does to your stats this week; weekTick and the focus preview share it
 const FOCUS_K = 0.28;
+const rutHit = () => mode() === 'relaxed' ? 0.7 : 1.2;
+const comfortF = () => clamp((88 - S.happy) / 30, 0, 1);
 function focusFx(fk, eff, away){
   const f = FOCUS[fk] || FOCUS.rest;
   return Object.fromEntries(Object.entries(f.fx).map(([st,v]) => {
     let d = v * FOCUS_K * (v > 0 ? eff * (away ? (away === true ? TRIP_TIME : away) : 1) : 1);   // i74-a05: a van day passes a number
-    if (fk === 'rest' && v > 0) d *= clamp((86 - S[st]) / 20, 0, 1);   // rest tops out in the low 80s
+    if ((fk === 'rest' || fk === 'outdoors') && v > 0) d *= clamp((restTop() - S[st]) / 20, 0, 1);   // Rest and Get outside top out in the low 80s (i59-b02; the 70s on Hard, i35-b05)
     return [st, d];
   }));
 }
@@ -180,7 +210,7 @@ function focusPreview(fk){
   const away = !!(S.trip && CITIES[S.trip.city] && !tripIsCommute(S.trip.city));
   const fx = focusFx(fk, eff, away), cash = [];
   const rut = fk !== 'study' && n > RUT_WEEKS;
-  if (rut) fx.happy = (fx.happy || 0) - 1.2;
+  if (rut) fx.happy = (fx.happy || 0) - rutHit();
   if (f.payMult && j) cash.push(['overtime after taxes', payNow(j) * W * (f.payMult - 1) * (1 - K401[S.k401rate || 0]) * (1 - taxRate(payNow(j) * f.payMult))]);
   if (f.hustle) { if (truckSeason()) cash.push(['a food-truck weekend', truckPay()]); else { const g = currentGig(); cash.push([g.name, hustlePay(g, 0.5)]); } }
   if (f.cost) cash.push([f.name.toLowerCase(), -cost(f.cost) * W]);
@@ -191,7 +221,7 @@ function previewLine(fk){
   const p = focusPreview(fk), ic = { happy:'😊', health:'❤️', community:'🤝' };
   const st = Object.entries(p.fx).filter(([, v]) => Math.abs(v) >= 0.05).map(([k, v]) => `${ic[k]} ${v > 0 ? '+' : '−'}${Math.abs(v).toFixed(1)}`);
   const cash = p.cash.map(([l, v]) => `💵 ${v >= 0 ? '+' : '−'}${fmt(Math.abs(v)).replace('-', '')} ${l}`);
-  return `<div class="preview" id="fprev"><b>Next week:</b> ${[...st, ...cash].join(' · ') || 'no change'}${p.eff < 1 ? ` · <b>works at ${Math.round(p.eff * 100)}%</b> (${p.n} weeks in a row)` : ''}${p.rut ? ' · in a rut (−1.2 😊)' : ''}${p.away ? ` · your trip takes part of the week (${TRIP_TIME * 100}%)` : ''}
+  return `<div class="preview" id="fprev"><b>Next week:</b> ${[...st, ...cash].join(' · ') || 'no change'}${p.eff < 1 ? ` · <b>works at ${Math.round(p.eff * 100)}%</b> (${p.n} weeks in a row)` : ''}${p.rut ? ` · in a rut (−${rutHit()} 😊)` : ''}${p.away ? ` · your trip takes part of the week (${TRIP_TIME * 100}%)` : ''}
     <span class="s">On top of your job, home and bills. An estimate, before events.</span></div>`;
 }
 function showReview(rv){
@@ -208,7 +238,7 @@ function showReview(rv){
 
 // i3-a28: the bills that come every week, the same in weekTick and the 13-week money outlook (off = weeks from now)
 function billLines(off = 0){
-  const m = W, home = HOMES[S.home], car = CARS[S.car], out = [], c = v => cost(v) * Math.pow(1 + COL_RATE, off / 52);
+  const m = W, home = HOMES[S.home], car = CARS[S.car], out = [], c = v => cost(v) * Math.pow(1 + rule('col'), off / 52);
   const rentV = -(home.own && S.mortgage ? S.mortgage : c(home.cost))*m;
   out.push([home.own ? 'Mortgage' : 'Rent', rentV]);
   const stocked = S.turn + off < S.stockUntil;
@@ -220,7 +250,7 @@ function billLines(off = 0){
   out.push([commuteOneWay() ? 'Gas (commute + errands)' : 'Gas (errands)', -miles*c(GAS)/car.mpg]);
   if (onBus()) out.push(['County bus pass', -c(BUS_PASS)*m]);          // i3-a14
   { const j = S.retired ? null : job();                                 // i3-a10: union dues, not while on strike or gone
-    if (j && j.union && !(S.strike && S.turn + off < S.strike.until) && !(S.notice != null && S.turn + off >= S.notice) && !(j.season && !jobInSeason(j, new Date(S.date + off * 7 * 864e5).getMonth()))) out.push(['Union dues', -payNow(j) * Math.pow(1 + WAGE_RATE, off / 52) * UNION_DUES * m]); }
+    if (j && j.union && !(S.strike && S.turn + off < S.strike.until) && !(S.notice != null && S.turn + off >= S.notice) && !(j.season && !jobInSeason(j, new Date(S.date + off * 7 * 864e5).getMonth()))) out.push(['Union dues', -payNow(j) * Math.pow(1 + rule('wage'), off / 52) * UNION_DUES * m]); }
   if (S.dog) out.push(['Dog food & vet', -c(45)*m]);
   if (S.cat) out.push(['Cat food', -c(CAT_MONTHLY)*m]);              // W14: the barn cat
   if (S.partner) out.push(['Date nights', -c(120)*m]);
@@ -229,6 +259,7 @@ function billLines(off = 0){
   const a0 = yrsOf(S.ageMonths + off * m);
   { const h = healthMonthly(a0, off); if (h) out.push(['Health care', -c(h)*m]); }   // i75-b04: an employee share before 50
   if (S.ltc && S.ltc.ins && !S.care) out.push(['Long-term care insurance', -c(LTC_PREMIUM)*m]);
+  { const cp = certPay(off); if (cp) out.push(['Certificate course', -cp, `Your ${CERTS[S.certStudy.id].name} course, paid as you go: ${fmt(S.certStudy.per)} a week for ${CERTS[S.certStudy.id].weeks} weeks. ${fmt(certOwed())} left before this week.`]); }   // i72-b04
   if (S.care && careMonthly() > 0) out.push([CARE[S.care].bill, -c(careMonthly())*m]);
   return out;
 }
@@ -303,6 +334,7 @@ function weekTick(auto){
   LIFE_UNDO = [];                                  // i2-a25: a played week can't be undone
   jobWeekStart(notes);                             // i3: an interview's answer, notice, seasons and recalls
   const f = FOCUS[S.focus] || FOCUS.rest, j = S.retired ? null : job();
+  if (S.focus === 'work' && j) S.seenOT = true;   // i52-a03: the overtime note has been seen for a whole week
   if (syncCarpool()) log('Your carpool ended with the job change: you drive alone now.');
 
   // ---- money (constants are monthly; m converts to one week) ----
@@ -334,6 +366,7 @@ function weekTick(auto){
   weatherLines(lines, notes);                      // i75: smoke sick days, the roof on the waiting list, the neighbor's walk
   const trip = tripWeek(lines);                    // this week's trip around the region, if one is planned
   lines.push(...billLines());                      // i3-a28: the regular bills, shared with the money outlook
+  if (certOwed()) { S.certStudy.owe -= certPay(); if (S.certStudy.owe < 0.005) S.certStudy.owe = 0; }   // i72-b04: this week's course payment
   eventMoneyWeek(lines);                           // i58-b02: health-plan savings and light duty, week by week
   { const y = new Date(S.date).getFullYear(); if (curMonth() === 0 && S.tabsYear !== y) { lines.push(['Vehicle tabs (DMV)', -vehicleTabs()]); S.tabsYear = y; } }
   if (S.loanLeft > 0) {
@@ -349,7 +382,7 @@ function weekTick(auto){
   if (f.cost) lines.push([f.name, -cost(f.cost)*m]);
   healthWeek(lines, notes, j, gross);              // i74: sick hours, physical therapy, Dad's care
   planWeek(lines, notes);                          // i3-a30/a31/a33/a34: winters south, late-life care, probate and spare-room guests
-  // i3-a03: a certificate course takes the week's classes first (its fee was paid up front)
+  // i3-a03: a certificate course takes the week's classes first (its fee was paid up front, or week by week: i72-b04)
   if (f.study && !certWeek(trip && trip.away ? TRIP_TIME : 1, notes) && S.edu < 3) {
     const tu = tuitionNow() * m, gr = grantShare();
     const why = `Classes at ${SCHOOL[S.edu]}, charged in weeks you Take classes${gr > 0.005 ? `, with ${Math.round(gr * 100)}% paid by the Washington College Grant` : ''}.`;
@@ -370,7 +403,7 @@ function weekTick(auto){
   if (home.own) S.equity = S.equity * Math.pow(1 + (S.homeGrow ?? 0.025), 1/52) + home.equityPer * m;
   S.carValue = Math.max(cost(500), S.carValue * Math.pow(0.99, m));   // i30-b02: the floor rises with prices
   S.k401 *= Math.pow(1.06, 1/52); if (S.k401match) S.k401match = Math.min(S.k401, S.k401match * Math.pow(1.06, 1/52));
-  S.col *= Math.pow(1 + COL_RATE, 1/52); S.wage *= Math.pow(1 + WAGE_RATE, 1/52);
+  S.col *= Math.pow(1 + rule('col'), 1/52); S.wage *= Math.pow(1 + rule('wage'), 1/52);
 
   // ---- stats drift for the week ----
   const a = age();
@@ -382,20 +415,23 @@ function weekTick(auto){
   if (smokeRuleWeek()) why.push(pushingSmoke() ? '😷 Pushing through full shifts in the smoke: full pay, full wear, and a chance of a sick week.' : '😷 The smoke rule at work: shorter days, 10% less pay, half the wear on your body.');
   if (commuteOneWay() >= 20) why.push(`🛣️ ${commuteOneWay()} miles each way${carpooling() ? ' (the carpool helps)' : ''}: ▼ happiness.`);
   if (S.money < 0) why.push('💳 Being in debt: ▼ happiness.');
-  if (S.partner || S.dog || S.cat || kidsAtHome()) why.push(`🏡 ${[S.partner ? 'your partner' : '', S.dog ? 'your dog' : '', S.cat ? 'your cat' : '', kidsAtHome() ? 'kids at home' : ''].filter(Boolean).join(', ').replace(/^./, c => c.toUpperCase())}: ▲ happiness.`);
+  if (S.partner || S.dog || S.cat || kidsAtHome()) why.push(`🏡 ${[S.partner ? 'your partner' : '', S.dog ? 'your dog' : '', S.cat ? 'your cat' : '', kidsAtHome() ? 'kids at home' : ''].filter(Boolean).join(', ').replace(/^./, c => c.toUpperCase())}: ▲ happiness${comfortF() < 1 ? `, ${comfortF() <= 0 ? 'but not past the high 80s' : 'less as you near the high 80s'}` : ''}.`);
   if (S.health < 35 && (S.focus === 'work' || S.focus === 'hustle')) why.push('😮‍💨 Pushing through low health with extra work: ▼▼ health.');
   if (S.focus !== 'study' && S.streakF === S.focus && S.streakN + 1 > RUT_WEEKS) why.push(`🔁 In a rut (${S.streakN + 1} weeks of the same thing): ▼ happiness.`);
   why.push(`⚖️ Stats drift toward the middle: high ones slip, low ones recover a little${a >= 50 ? ', and health drifts lower with age' : ''}.`);
-  let dh = -0.5 + (52 - S.happy) * 0.06;
+  if (S.bgRest != null && S.turn < BG_REST_WEEKS) why.push('🏙️ New in town: community slips back toward 10 until your first year is up, unless you show up.');   // i37-b06
+  if (maxHealth(a) < 100 && S.health >= maxHealth(a) - 1) why.push(`❤️ At ${a}, health tops out at ${Math.round(maxHealth(a))}.`);   // i30-b03
+  let dh = -0.5 + (happyRest() - S.happy) * 0.06;   // i35-b05: Hard rests lower
   let dH = ((a < 30 ? 85 : a < 50 ? 78 : a < 65 ? 68 : a < 80 ? 55 : 42) - S.health) * 0.025;
-  let dc = (25 - S.community) * 0.05 * (S.community > 25 ? 1 - skillLv('people') * 0.15 : 1);   // people skill: community fades slower
+  const cRest = commRest();                        // i35-b05 Hard 20; i37-b06 a newcomer's first year 10
+  let dc = (cRest - S.community) * (S.community > 60 ? 0.1 : 0.05) * (S.community > cRest ? 1 - skillLv('people') * 0.15 : 1);   // people skill: community fades slower; i38-a08: harder above 60
   if (S.retired) dh += 1;
   else if (j) { dh -= j.stress + rungOf(j).stress; dH -= onLeave() ? 0 : j.wear * smokeWearMult(); dc += j.remote === 5 ? -0.4 : j.city==='waitsburg' ? 0.6 : j.city==='dayton' ? 0.2 : 0; }   // i3-a01 rung stress; i3-a13 no coworkers
   else dh -= 2;
   dh -= commuteOneWay() / 40 * driveDays() * (carpooling() ? 0.6 : 1);
   if (carpooling()) dc += 0.3;                    // riding with neighbors keeps you in the loop
   if (onBus()) dh -= 0.3;                          // i3-a14: longer days on the bus
-  dh += home.happy * 0.4 + (S.partner ? 0.6 : 0) + (S.dog ? 0.4 : 0) + (S.cat ? 0.2 : 0) + kidsHome * kidJoy() - (S.money < 0 ? 2 : 0);
+  dh += (home.happy * 0.4 + (S.partner ? 0.6 : 0) + (S.dog ? 0.4 : 0) + (S.cat ? 0.2 : 0) + kidsHome * kidJoy()) * comfortF() - (S.money < 0 ? 2 : 0);   // i30-b04: home comforts pull toward the mid-80s
   dc += kidsHome * 0.2;
   if (S.council) dc += 0.8;
   if (awaySouth()) { dh = Math.max(dh, 0.5); dH = Math.max(dH, 0.3); dc -= 1.2; }   // i3-a30: sun holds you up, but town forgets you a little
@@ -405,7 +441,8 @@ function weekTick(auto){
   if (S.health < 35 && (S.focus === 'work' || S.focus === 'hustle')) dH -= 3.2;
   if (mode() === 'relaxed') { if (dh < 0) dh *= 0.6; if (dH < 0) dH *= 0.6; if (dc < 0) dc *= 0.6; }
   if (mode() === 'hard') { if (dh < 0) dh *= 1.25; if (dH < 0) dH *= 1.25; if (dc < 0) dc *= 1.25; }
-    S.happy = clamp(S.happy + dh*m); S.health = clamp(S.health + dH*m); S.community = clamp(S.community + dc*m);
+  S.happy = clamp(S.happy + dh*m); S.health = clamp(S.health + dH*m); S.community = clamp(S.community + dc*m);
+  if (dH > 0) S.health = Math.min(S.health, Math.max(maxHealth(), S.health - dH*m));   // i30-b03: health recovers only up to its age cap
   // doing the same thing week after week loses its punch (classes excepted), and a long rut wears on you
   if (S.streakF === S.focus) S.streakN++; else { S.streakF = S.focus; S.streakN = 1; }
   S.recentF = [S.focus, ...(S.recentF || [])].slice(0, 4);
@@ -414,9 +451,9 @@ function weekTick(auto){
   if (skiWeek()) { adj({happy:2, health:1}); why.push('⛷️ A ski day at Bluewood on your season pass: ▲ happiness and health, no lift ticket.'); }   // i66-b16
   S.last.why = why;
   if (S.focus !== 'study' && S.streakN > RUT_WEEKS) {
-    adj({happy: -1.2});
+    adj({happy: -rutHit()});                       // i48-b02: softer on Relaxed
     // i48-b03: the note (and a stop for skips) comes back every 13 weeks while the same focus runs on
-    if ((S.streakN - RUT_WEEKS - 1) % RUT_AGAIN === 0) { rut = true; notes.push(`🔁 ${S.streakN - 1} weeks of "${f.name}" in a row. You're in a rut: −1.2 happiness every week until you switch.`); }
+    if ((S.streakN - RUT_WEEKS - 1) % RUT_AGAIN === 0) { rut = true; notes.push(`🔁 ${S.streakN - 1} weeks of "${f.name}" in a row. You're in a rut: −${rutHit()} happiness every week until you switch.`); }
   }
   if (trip) adj(trip.fx);
   seasonWeek(notes);
@@ -433,11 +470,17 @@ function weekTick(auto){
     S.evAt = S.turn; S.pendingEv = ev.title;      // i22-a01: saved with the week, so closing the app can't skip it; the cooldown starts on a choice
     if (ev.big) wxHit();                           // i75-a23: a big weather hit counts toward the year's cap
     { const pl = eventPlace(ev); S.evPins = [{ t: ev.title, ic: ev.ic, m: pl[0], k: pl[1], turn: S.turn + 1, r: '' }, ...(S.evPins || [])].slice(0, 12); }
+    S.evSeen = S.turn < 52 ? { ...(S.evSeen || {}), [ev.title]: 1 } : {};   // i52-a10: only the first year needs it
     S.evLabel = dateLabel();
     S.yearEvents = (S.yearEvents || 0) + 1;
-    if (auto) {                      // while skipping ahead, one-choice events resolve on their own
-      const ch = ev.choices().filter(c => !c.if || c.if());
-      if (ch.length === 1) { resolveChoice(ev, ch[0], true); ev = null; }   // i71-b03
+    // while skipping ahead, one-choice events resolve on their own; with the routine assist (i19-b15) routine events
+    // take a careful player's choice and show up as "Taken care of"
+    const care = rule('routine') && !S.practice ? routinePick(ev) : null, ch = !care && auto ? ev.choices().filter(c => !c.if || c.if()) : [];
+    const pickNow = care || (ch.length === 1 ? ch[0] : null);
+    if (pickNow) {
+      resolveChoice(ev, pickNow, true);                                   // i71-b03
+      if (care && S.run && S.run.happened.length) S.run.happened[S.run.happened.length - 1].care = 1;
+      ev = null;
     }
   }
 
