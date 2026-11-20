@@ -1442,6 +1442,8 @@ function hireResult(x, ok){
   }
   hired(x);
 }
+// i38-a01: a new job's +5 happiness comes once every 26 weeks, so job hopping doesn't carry happiness
+function hireCheer(){ if (S.hireJoy != null && S.turn - S.hireJoy < HIRE_JOY_WEEKS) return; S.hireJoy = S.turn; adj({happy:5}); }
 // i52-a02: a 20+ mile job says what the drive takes: time each way, happiness a month and gas a week
 function driveLine(x){
   const mi = CITIES[x.city].miles; if (mi < 20 || x.remote === 5) return '';
@@ -1452,7 +1454,7 @@ function hired(x){
   const before = { jobId:S.jobId, jobMonths:S.jobMonths, raise:S.raise, rung:S.rung, tenure:S.tenure, appWeeks:S.appWeeks, ref:S.ref, bonus:S.bonus,
     notice:S.notice, strike:S.strike, clearAt:S.clearAt, contractAt:S.contractAt, focus:S.focus, bus:S.bus, money:S.money, fiber:S.fiber };
   startJob(x.id);
-  log(`Hired as ${x.title} in ${CITIES[x.city].name}!`, undefined, 1); adj({happy:5});
+  log(`Hired as ${x.title} in ${CITIES[x.city].name}!`, undefined, 1); hireCheer();
   const extra = [x.apprentice ? `You start as an apprentice at ${Math.round(x.apprentice.startMult * 100)}% pay, stepping up every year for ${x.apprentice.weeks / 52} years.` : '',
     clearing() ? `Your security clearance takes about ${CLEAR_WEEKS} weeks. Until then you're badged out, at ${Math.round(CLEAR_PAY * 100)}% pay. Keep your money in order: heavy debt can sink the check.` : '',
     x.union ? 'It\'s a union job: monthly dues, steadier raises and more protection from layoffs.' : '',
@@ -1493,7 +1495,7 @@ function negotiate(k, before){
 function jobWeekStart(notes){
   if (S.interview) {
     const r = resolveInterview(null);
-    if (r && r.ok) { startJob(r.x.id); log(`Hired as ${r.x.title} in ${CITIES[r.x.city].name}!`, undefined, 1); adj({happy:5}); notes.push(`📞 The ${r.x.title.toLowerCase()} job called back: you're hired!`); }
+    if (r && r.ok) { startJob(r.x.id); log(`Hired as ${r.x.title} in ${CITIES[r.x.city].name}!`, undefined, 1); hireCheer(); notes.push(`📞 The ${r.x.title.toLowerCase()} job called back: you're hired!`); }
     else if (r) { log(`Applied for ${r.x.title} in ${CITIES[r.x.city].name}. They went with someone else.`); adj({happy:-2}); }
   }
   if (S.notice != null && S.turn >= S.notice && working()) {

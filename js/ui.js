@@ -890,8 +890,8 @@ const statBar = (label, v) => `<div class="stat"><label><span>${label}</span><sp
   <div class="bar notched"><i style="width:${v}%;background:${statColor(v)}"></i></div></div>`;
 
 const FOCUS_SHORT = { work:'Work extra', rest:'Rest', community:'Town', study:'Classes', outdoors:'Outside', hustle:'Hustle' };
-const statBtn = (k, label, v) => `<button class="stat statbtn" data-stat="${k}" aria-label="${label} ${Math.round(v)}, ${statWord(v)}: what moves it">
-  <label><span>${label} <span class="info">ⓘ</span></span><span>${Math.round(v)} · ${statWord(v)}</span></label>
+const statBtn = (k, label, v, cap = 100) => `<button class="stat statbtn" data-stat="${k}" aria-label="${label} ${Math.round(v)}, ${statWord(v)}${cap < 100 ? `, tops out at ${Math.round(cap)}` : ''}: what moves it">
+  <label><span>${label} <span class="info">ⓘ</span></span><span>${Math.round(v)}${cap < 100 ? `<small class="muted"> / ${Math.round(cap)}</small>` : ''} · ${statWord(v)}</span></label>
   <div class="bar notched"><i style="width:${v}%;background:${statColor(v)}"></i></div></button>`;
 // i2-a16: a first-month checklist for new players; finished steps are remembered on this device (prefs().cl), no rewards
 const CHECKLIST = [
@@ -963,7 +963,7 @@ function renderHome(){
     : `<div class="card warn">${why} <button class="sm" data-sugg="${fk}">${FOCUS[fk].ic} ${FOCUS[fk].name} this week</button></div>`;
   $('#main').innerHTML = `<div class="homegrid"><div class="hmain">
   <div class="card"><div class="stats">
-    ${statBtn('happy','Happiness', S.happy)}${statBtn('health','Health', S.health)}
+    ${statBtn('happy','Happiness', S.happy)}${statBtn('health','Health', S.health, maxHealth())}
     ${statBtn('community','Community', S.community)}
     <button class="stat statbtn" data-stat="net" aria-label="Net worth ${fmt(netWorth())}: what counts"><label><span>Net worth <span class="info">ⓘ</span></span></label><div style="font-weight:800;font-size:1.125rem;margin-top:2px">${fmt(netWorth())}</div></button>
   </div>${scoreButton()}</div>
@@ -1093,6 +1093,7 @@ function showStatInfo(k){
     sheet(`<h2>${x.t}: ${Math.round(S[k])}</h2>
       <h3>Goes up with</h3>${x.up.map(u => `<div class="logitem">▲ ${u}</div>`).join('')}
       <h3 style="margin-top:10px">Goes down with</h3>${x.down.map(u => `<div class="logitem">▼ ${u}</div>`).join('')}
+      ${k === 'health' ? `<p><b>${maxHealth() < 100 ? `At ${age()}, health tops out at ${Math.round(maxHealth())}.` : 'Health can reach 100 until 55; after that it tops out a little lower each year.'}</b></p>` : ''}
       <p class="muted">${x.note}</p><button class="btn primary" id="ok">Got it</button>`);
   }
   $('#ok').onclick = closeSheet;
