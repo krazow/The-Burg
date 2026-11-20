@@ -1130,7 +1130,7 @@ await t.check('i3-a29/a17: index funds and wine futures from the Life tab', asyn
 
 await t.check('i3-a15/a16: the harvest asks sell or store; stored wheat sells from the Life tab; crop insurance toggles', async () => {
   await life({ jobId: 'farmhand', money: 10000, date: new Date(2027, 7, 2).getTime() }, 'life');
-  await page.evaluate(() => { startBiz('wheat'); S.noEvents = false; S.due = []; });
+  await page.evaluate(() => { startBiz('wheat'); S.biz.paidYear = null; S.noEvents = false; S.due = []; });   // i22-a04: as if leased by March
   await page.click('#cropins');
   assert((await S()).biz.ins === true, 'crop insurance should turn on');
   await page.evaluate(() => { bizWeek([], []); showEvent(takeDue()); });
