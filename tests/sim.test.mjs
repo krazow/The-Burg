@@ -143,7 +143,8 @@ for (const { len, strat, g, opts, label, tier } of JOBS_LIST) {
           if (!S.biz && strat === 'homebody' && S.money > cost(12000)) startBiz('shop');       // a homebody opens a woodshop ($6,000, i75-b15)
           // trips around the region: the planner shops and keeps up car care monthly; the tripper goes out every week
           if (strat === 'planner' && weeks % 4 === 0 && S.money > 300) {
-            const ids = ['stock']; if (S.turn - S.svc > 22) ids.push('oil'); else if (S.turn - S.dentist > 45) ids.push('dentist'); else ids.push('movies');
+            const ids = ['stock']; if (S.turn - S.svc > 22) ids.push('oil'); else if (S.turn - S.dentist > 45) ids.push('dentist');
+            else { const f = weeks % 8 === 0 ? 'movies' : 'college'; ids.push(stopBlocked(STOPS.find(x => x.id === f)) ? 'bistro' : f); }   // i42-a03: a good player varies the fun stop, so it isn't a repeat
             planTrip('wallawalla', ids);
           }
           if (strat === 'tripper') {
