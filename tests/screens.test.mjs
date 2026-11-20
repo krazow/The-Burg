@@ -120,6 +120,23 @@ for (const [label, w, h, nightXL] of SIZES) {
     ['why', async () => { await page.evaluate(() => { closeSheet(); showRunDetails(); }); await page.click('#modal .whyrow'); }],
     ['recap', async () => { await page.evaluate(() => { closeSheet(); recapSheet(Date.now() - 3 * 864e5); }); }],
     ['confirm-move', async () => { await page.evaluate(() => { closeSheet(); S.money = 50000; moveHome('fixer'); }); }],
+    // i56-b20: the longest event with 3 choices and its result, the week's notes, the year in review, the bank and trades
+    // cards, naming an heir (with a will), and backup and restore
+    ['event-longest', async () => { await page.evaluate(() => { closeSheet(); S.money = 9000; S.home = 'room';
+      const len = e => { try { const ch = e.choices().filter(c => !c.if || c.if()); return ch.length === 3 ? (typeof e.text === 'function' ? e.text() : e.text).length + ch.reduce((a, c) => a + c.label.length, 0) : -1; } catch (x) { return -1; } };
+      const ev = EVENTS.reduce((a, e) => len(e) > len(a) ? e : a, EVENTS[0]); window.__LONGEST = ev.title; showEvent(ev); }); }],
+    ['event-result', async () => { await page.click('#modal:not(.hidden) [data-i="0"]'); }],
+    ['week-notes', async () => { await page.evaluate(() => { closeSheet(); S.noEvents = true; const wt = weekTick;
+      weekTick = a => { const r = wt(a); r.notes.push('🎓 You\'re below $0, so this week\'s tuition went on a federal student loan (about 6.5%) instead of the card.', '🛻 The truck is paid off!'); weekTick = wt; return r; };
+      playWeeks(1); }); await page.waitForSelector('#modal:not(.hidden) #ok'); }],
+    ['year-review', async () => { await page.evaluate(() => { closeSheet(); render(); showReview({ year: 2027, start: { nw: 1500, happy: 60, health: 78, community: 30 },
+      end: { nw: netWorth(), happy: S.happy, health: S.health, community: S.community }, events: 7, wx: { cost: 1840, saved: 420 },
+      milestones: ['Hired as Wheat farm hand in Waitsburg!', 'Adopted a dog from the Blue Mountain Humane Society.', 'Finished a welding certificate.', 'Earned a badge: Good dog.'] }); }); }],
+    ['bank-card', async () => { await page.evaluate(() => { closeSheet(); S.k401 = 3200; S.k401rate = 1; S.sloanLeft = 30; S.sloanPay = 120; bankSheet('bank'); }); }],
+    ['trades-card', async () => { await page.evaluate(() => { closeSheet(); tradesSheet('trades'); }); }],
+    ['heir-naming', async () => { await page.evaluate(() => { closeSheet(); legacySheet({ name: 'Margaret Ann Whitmore', nw: 420000, community: 70, home: 'farm', equity: 90000, will: true, col: 1.4, slot: 0, gen: 2, mortgage: 1650 }); }); }],
+    ['backup', async () => { await page.evaluate(() => { closeSheet(); backupSheet(); }); }],
+    ['restore', async () => { await page.evaluate(() => { closeSheet(); restoreSheet(); }); }],
     ['glossary', async () => { await page.evaluate(() => { closeSheet(); tab = 'jobs'; render(); }); await page.click('#main .term').catch(() => {}); }],
     ['tutorial', async () => { await page.evaluate(() => { closeSheet(); startTutorial(); }); await page.waitForTimeout(500); await page.click('#cnext'); await page.waitForTimeout(600); }],
     // the newer pop-ups (G3): life goals, the end screen, the title screen's options, challenges, weekly challenge, records and What's new
@@ -138,6 +155,8 @@ for (const [label, w, h, nightXL] of SIZES) {
   for (const [screen, go] of screens) {
     await go();
     await page.waitForTimeout(250);
+    // a pop-up fades in: on a busy machine 250 ms can catch it part way, which reads as low contrast
+    await page.waitForFunction(() => ['#modal', '#sheet'].every(q => { const e = document.querySelector(q); return !e || e.classList.contains('hidden') || getComputedStyle(e).opacity === '1'; }), null, { timeout: 3000 }).catch(() => {});
     await page.screenshot({ path: `test-results/screens/${label}-${screen}.png` });
     const a = await page.evaluate(audit);
     const where = `${label} ${w}×${h} / ${screen}`;

@@ -53,12 +53,16 @@ function playWeeks(n, stop = null){
   while (!step());
   finishRun(res, why, n);
 }
+const BACKUP_NUDGE = '📤 Your ending is 4 weeks away. Back up now so the record is safe?';
+// i22-a02: an ending that waited (behind the notes, or when the app closed) plays out the same way on Continue
+function endLife(e){ return e.debt && canBankrupt() ? bankruptcySheet(e.r) : finish(e.r, e); }
 function finishRun(res, why, n){
   PLAY_AT = performance.now();
+  if (res.ending) S.endPending = { r: res.ending, debt: !!res.debt, death: !!res.death };   // i22-a02: the ending sticks if the app closes behind the notes
   save();
   const notes = why ? [...res.notes, `⏸ Auto stopped: ${why}`] : res.notes;
   const after = () => {
-    if (res.ending) return res.debt && canBankrupt() ? bankruptcySheet(res.ending) : finish(res.ending);   // i3-a27
+    if (res.ending) return endLife(S.endPending);   // i3-a27: a debt ending can still be a bankruptcy
     COUNT_FROM = { money: S.run.money, happy: S.run.happy, health: S.run.health, community: S.run.community };   // i2-a08: stats count up from last week
     render();
     const next = () => {
@@ -77,8 +81,10 @@ function finishRun(res, why, n){
     sheet(`<h2>${S.run.weeks > 1 ? S.run.weeks + ' weeks later' : 'This week'}</h2>
       ${notes.map(t => `<p><b>${t}</b></p>`).join('')}
       <p>${runChips()}</p>
+      ${notes.includes(BACKUP_NUDGE) ? '<button class="btn ghost" id="nudgebk">📤 Back up now</button>' : ''}
       <button class="btn primary" id="ok">Continue</button>`);
     $('#ok').onclick = () => { closeSheet(); after(); };
+    if ($('#nudgebk')) $('#nudgebk').onclick = () => backupSheet(after);   // closing the backup sheet carries on with the week
   } else after();
 }
 // i7-a02: the short week summary a screen reader hears after End Week, e.g.
@@ -430,22 +436,14 @@ function weekTick(auto){
   dice.done();
   { const due = S.noEvents ? null : takeDue(); if (due) ev = due; }   // a harvest choice or a market drop comes first
   if (ev) {
-    S.evCd[ev.title] = S.turn + (ev.yr ? 40 : 8);
+    S.evAt = S.turn; S.pendingEv = ev.title;      // i22-a01: saved with the week, so closing the app can't skip it; the cooldown starts on a choice
     if (ev.big) wxHit();                           // i75-a23: a big weather hit counts toward the year's cap
     { const pl = eventPlace(ev); S.evPins = [{ t: ev.title, ic: ev.ic, m: pl[0], k: pl[1], turn: S.turn + 1, r: '' }, ...(S.evPins || [])].slice(0, 12); }
-    if (ev.once) S.evDone[ev.title] = 1;
     S.evLabel = dateLabel();
     S.yearEvents = (S.yearEvents || 0) + 1;
     if (auto) {                      // while skipping ahead, one-choice events resolve on their own
       const ch = ev.choices().filter(c => !c.if || c.if());
-      if (ch.length === 1) {
-        const m0 = S.money, r = ch[0].go();
-        wxTrack(ev, S.money - m0);
-        if (r) log(`${ev.title}: ${r}`);
-        if (S.run) S.run.happened.push({ ic: ev.ic, title: ev.title, money: S.money - m0, auto: 1, wx: !!ev.wx });
-        if (S.evPins && S.evPins[0] && S.evPins[0].t === ev.title) S.evPins[0].r = r || '';
-        ev = null;
-      }
+      if (ch.length === 1) { resolveChoice(ev, ch[0], true); ev = null; }   // i71-b03
     }
   }
 
@@ -457,6 +455,8 @@ function weekTick(auto){
   S.date += 7 * 864e5; S.ageMonths += m; S.turn++; S.jobMonths += m; S.applied = false;
   kidBirthdays(m);                                 // i46-a04: a kid turning 18 moves out, in the Journal
   if (age() > oldAge && age() % 10 === 0) notes.push(`🎂 Happy ${age()}th birthday!`);
+  // i63-b08: four weeks before a 2-year or 5-year life ends, one line suggests a backup (once per life)
+  if (!S.practice && !S.backupNudged && (S.len === 'two' || S.len === 'five') && S.turn >= L.turns - 4 && S.turn < L.turns) { S.backupNudged = true; notes.push(BACKUP_NUDGE); }
   if (S.turn % CARD_EVERY === 0 && !S.practice) {  // a quarterly report card in the Journal (doesn't stop skips); i20-b14: it counts toward the final score
     const c = addReportCard(), sc = lifeScore().score, d = S.scoreQ == null ? null : sc - S.scoreQ;
     log(`📋 Report card: ${c} this quarter. Life Score so far ${sc}${d == null ? '' : ` (${d >= 0 ? '+' : ''}${d} since the last one)`}.`);
@@ -479,22 +479,22 @@ function weekTick(auto){
 
   badgeWeek(notes); scenarioWeek(notes);
   // ---- health crises & endings ----
-  let ending = null;
+  let ending = null, death = false;
   if (S.health <= 0) {
-    if (L.turns === Infinity && age() >= 50) ending = `${S.name}'s health finally gave out at age ${age()}.`;
+    if (L.turns === Infinity && age() >= 50) { ending = `${S.name}'s health finally gave out at age ${age()}.`; death = true; }
     else { const ride = ambRide(), bill = Math.round(cost(6500)) + ride; lateLine('🏥 Hospital bill', -bill, ride ? `The hospital stay in Walla Walla, ${fmt(ride)} of it for the ambulance ride.` : 'The hospital stay in Walla Walla; your ambulance district membership covered the ride.'); S.health = 30; adj({happy:-10});   // i74-a04: the ambulance ride, unless you're a member
       notes.push(`🏥 You ended up in the hospital. The bill was ${fmt(bill)}${ride ? `, ${fmt(ride)} of it for the ambulance ride` : ', and your ambulance district membership covered the ride'}.`); log('Spent a week in the hospital in Walla Walla.'); }
   }
   if (!ending && L.turns === Infinity && age() >= 60) {
     const p = Math.pow((age()-60)/35, 3) * 0.22 * (1.6 - S.health/100) * (W/3);
-    if (chance(p) || age() >= 102) ending = `${S.name} passed peacefully at age ${age()}, with the whole town at the service.`;
+    if (chance(p) || age() >= 102) { ending = `${S.name} passed peacefully at age ${age()}, with the whole town at the service.`; death = true; }
   }
   if (!ending && S.turn >= L.turns) ending = `${L.label} in the Burg is in the books.`;
   const debtEnd = debtLimit();                     // i60-a12: the same limit the Home card and Help name
   let debt = false;
   if (!ending && debtEnd != null && S.money < debtEnd) { ending = `Buried in debt, ${S.name} packed up and left Waitsburg.`; debt = true; }
   if (debtEnd == null && S.money < RELAXED_FLOOR) S.money = RELAXED_FLOOR;   // Relaxed: a debt counselor stops the slide
-  return { ev, notes, ending, review, debt };
+  return { ev, notes, ending, review, debt, death };
 }
 
 function deltaChips(before){

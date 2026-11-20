@@ -62,17 +62,17 @@ document.addEventListener('click', e => {
 
 function guideHTML(){
   const W2 = 12/52;
-  const pw = v => '$' + Math.round(v * W2).toLocaleString() + '/wk';
-  const lenRows = Object.values(LENGTHS).map(L => `<tr><td>${L.label}</td><td>${L.turns === Infinity ? 'Age 18 until the end (retire from 62)' : L.turns + ' weeks'}</td><td>$${L.target.toLocaleString()}</td></tr>`).join('');
+  const pw = v => '$' + Math.round(v * W2).toLocaleString('en-US') + '/wk';
+  const lenRows = Object.values(LENGTHS).map(L => `<tr><td>${L.label}</td><td>${L.turns === Infinity ? 'Age 18 until the end (retire from 62)' : L.turns + ' weeks'}</td><td>$${L.target.toLocaleString('en-US')}</td></tr>`).join('');
   const focusRows = Object.entries(FOCUS).map(([k,f]) => `<tr><td>${f.ic} <b>${f.name}</b></td><td>${f.desc} ${fxWords(f.fx)}${f.payMult ? `, +${Math.round((f.payMult - 1) * 100)}% pay` : ''}${f.hustle ? ', extra cash' : ''}${f.study ? ', counts toward your next diploma' : ''}</td><td>${f.cost ? pw(f.cost) : f.study ? 'tuition' : '—'}</td></tr>`).join('');
   const jobRows = Object.entries(CITIES).map(([ck,c]) => `<tr class="grp"><td colspan="3"><b>${c.name}</b> · ${c.miles ? c.miles + ' mi each way' : 'home, no commute'}</td></tr>` +
     JOBS.filter(x => x.city === ck).map(x => `<tr><td>${x.title}${x.season ? ` <small>(${MONTHS[x.season[0]].slice(0,3)}–${MONTHS[x.season[x.season.length-1]].slice(0,3)})</small>` : ''}${x.union ? ' 🪪' : ''}</td><td>${pw(x.pay)}${x.apprentice ? ' <small>(60% as an apprentice)</small>' : ''}</td><td>${EDU[x.edu].replace(' diploma','')}${x.needCert ? ` + ${CERTS[x.needCert].name.replace(/ \(.*/, '')}` : ''}${x.needMajor ? ` in ${PROGRAMS[x.needMajor].name.toLowerCase()}` : ''}</td></tr>`).join('')).join('');
-  const certRows = Object.values(CERTS).map(c => `<tr><td>${c.ic} ${c.name}</td><td>${c.weeks} weeks</td><td>$${c.fee.toLocaleString()}</td><td>${c.what}</td></tr>`).join('');
+  const certRows = Object.values(CERTS).map(c => `<tr><td>${c.ic} ${c.name}</td><td>${c.weeks} weeks</td><td>$${c.fee.toLocaleString('en-US')}</td><td>${c.what}</td></tr>`).join('');
   const progRows = Object.values(PROGRAMS).map(x => `<tr><td>${x.ic} ${x.name}</td><td>${x.jobs.map(id => JOBS.find(j => j.id === id)).filter(Boolean).map(j => j.title.toLowerCase()).join(', ')}</td></tr>`).join('');
   const eduRows = [1,2,3].map(l => `<tr><td>${EDU[l]}</td><td>${STUDY_NEED[l-1]} weeks</td><td>${pw(TUITION[l-1])}</td><td>${SCHOOL[l-1]}</td></tr>`).join('');
-  const homeRows = Object.values(HOMES).map(h => `<tr><td>${h.name}</td><td>${h.own ? 'Buy: $' + h.down.toLocaleString() + ' down, then ' : 'Rent '}${pw(h.cost)}</td><td>${h.own ? 'Builds equity' : '—'}</td></tr>`).join('');
-  const carRows = Object.values(CARS).map(c => `<tr><td>${c.name}</td><td>${c.mpg} mpg</td><td>${c.price ? '$' + c.price.toLocaleString() : c.down ? '$' + c.down.toLocaleString() + ' down + ' + pw(c.pay) + ' for 5 years' : 'Starter'}</td></tr>`).join('');
-  const sec = (id, title, body) => `<section id="g-${id}"><h2>${title}</h2>${body}<button class="totop" onclick="document.querySelector('#helpview').scrollTo({top:0,behavior:'smooth'})">↑ Back to contents</button></section>`;
+  const homeRows = Object.values(HOMES).map(h => `<tr><td>${h.name}</td><td>${h.own ? 'Buy: $' + h.down.toLocaleString('en-US') + ' down, then ' : 'Rent '}${pw(h.cost)}</td><td>${h.own ? 'Builds equity' : '—'}</td></tr>`).join('');
+  const carRows = Object.values(CARS).map(c => `<tr><td>${c.name}</td><td>${c.mpg} mpg</td><td>${c.price ? '$' + c.price.toLocaleString('en-US') : c.down ? '$' + c.down.toLocaleString('en-US') + ' down + ' + pw(c.pay) + ' for 5 years' : 'Starter'}</td></tr>`).join('');
+  const sec = (id, title, body) => `<section id="g-${id}"><h2>${title}</h2>${body}<button class="totop" data-call="helptop">↑ Back to contents</button></section>`;
   const S2 = [
     ['start', '🌾 Getting started', `
       <p>You're 18 and just moved into a rented room above Main Street in <b>Waitsburg, WA</b>, with $1,500, a 1998 pickup and a high school diploma. Make the best life you can before the game ends.</p>
@@ -158,8 +158,8 @@ function guideHTML(){
       <li><b>🤒 Sick hours:</b> like Washington's rule, a job earns one hour of sick time for every 40 worked (one a week), up to ${SICK_CAP}. When the flu or feeling run down hits, they cover the time off so the week isn't unpaid. They never turn into cash.</li>
       <li><b>🌤️ A personal day:</b> when happiness falls below ${MH_HAPPY} and you have a job, a personal day can come up, no reason needed (at most once every ${MH_GAP} weeks). It uses a day of sick hours, or a day's pay.</li>
       <li><b>💺 Desk jobs after ${DESK_AGE}:</b> jobs that are easy on the body start to wear a little (a stiff back, tired eyes). One good choice, walking at lunch, clears it for good.</li>
-      <li><b>🦷 Dental</b> (insurance sheet, $${DENTAL} a month): yearly checkups are free, an emergency dentist costs less, and a cracked tooth costs $${TOOTH_DENTAL.toLocaleString()} instead of $${TOOTH_BILL.toLocaleString()}. A yearly checkup makes a cracked tooth less likely either way.</li>
-      <li><b>🚑 Ambulance district</b> (insurance sheet, $${AMB_YEAR} a year): members pay nothing for the ride on a hospital trip. Without it, a hospital stay adds a $${AMB_RIDE.toLocaleString()} ride bill.</li>
+      <li><b>🦷 Dental</b> (insurance sheet, $${DENTAL} a month): yearly checkups are free, an emergency dentist costs less, and a cracked tooth costs $${TOOTH_DENTAL.toLocaleString('en-US')} instead of $${TOOTH_BILL.toLocaleString('en-US')}. A yearly checkup makes a cracked tooth less likely either way.</li>
+      <li><b>🚑 Ambulance district</b> (insurance sheet, $${AMB_YEAR} a year): members pay nothing for the ride on a hospital trip. Without it, a hospital stay adds a $${AMB_RIDE.toLocaleString('en-US')} ride bill.</li>
       <li><b>💉 Grown-up shots:</b> from 50, the pharmacy (a stop in Dayton or Walla Walla) has the shingles shot, and from 65 the pneumonia shot. With them a flu week is shorter and milder.</li>
       <li><b>🎣 Get outside</b> reads differently with age: hiking the Blues when you're young, creek walks in your 50s, the riverwalk bench at 75. Skiing Bluewood on a powder day wants a fair health score (${SKI_HEALTH} or more); otherwise you can ride up for the view. With a <b>Bluewood season pass</b> (on sale each October), every Get outside week from December through March is a ski day: a little extra happiness and health, no lift ticket.</li>
       <li><b>🩺 The health plan at work</b> (you pick it each January). The cheap plan saves you about $240 that year. The better plan cuts doctor, urgent care, therapy and emergency dentist bills in half.</li>
@@ -218,11 +218,11 @@ function guideHTML(){
       <p><b>Skills</b> grow with practice and show on the Life tab (★ levels 1–3):</p>
       <ul>${Object.values(SKILLS).map(k => `<li>${k.ic} <b>${k.name}:</b> ${k.how}. ${k.perk}.</li>`).join('')}</ul>
       <p><b>Start a business</b> on the Life tab (one at a time; it's worth 60% of what you paid if you sell, less about 5% a year as it ages):</p>
-      <ul>${Object.values(BIZ).map(b => `<li>${b.ic} <b>${b.name}</b> ($${b.cost.toLocaleString()}): ${b.desc}</li>`).join('')}</ul>
+      <ul>${Object.values(BIZ).map(b => `<li>${b.ic} <b>${b.name}</b> ($${b.cost.toLocaleString('en-US')}): ${b.desc}</li>`).join('')}</ul>
       <p>The food truck and the shop only earn in certain weeks: each April a note says what yours needs, each October one says what it earned this year, and the business card shows <b>This season</b> (in red at $0).</p>
-      <p><b>🌾 Wheat:</b> lease by March to farm that year's crop; a lease taken later starts with the next year's crop. What a lease sells for shrinks as its 5 years run down, and a renewed lease is worth what the renewal cost. The ground is hired farmed: custom farming, seed and fertilizer cost about $${WHEAT_FARMING.toLocaleString()} each April, so a drought year loses money. The price per bushel is set each July. At harvest in August choose <b>sell now</b> or <b>store it</b> at the elevator (about 1% of the crop a month); stored wheat's price moves each month, usually up a little, and you sell it from the Life tab before the next July. <b>Crop insurance</b> ($${CROP_INS} each April) makes a drought year pay 90% of a normal crop instead of 30%, and covers most of a hail stripe. The harvest follows the year's weather (see Weather and hard years). <b>🐄 Cattle:</b> pasture rent is $${PASTURE} a month and the vet, minerals and bull lease about $${COW_CARE} per cow a year; hay costs extra in a hard winter, calves come in spring (more if you checked on the herd during calving), and they sell in October at that year's price. Every week without a Get outside week for 6 weeks risks losing a cow.</p>
-      <p><b>📅 Weekly challenge</b> (title screen): a 6-month life where everyone gets the same start and luck that week: the events come in the same weeks whatever you choose (what you chose earlier can still change which ones can happen). The week turns over at midnight UTC on Monday, the same moment for everyone. <b>📤 Share score card</b> on the end screen makes a picture of your result.</p>
-      <p><b>🌳 Legacy:</b> when a Lifetime game ends and you had kids, you can keep playing as your grandkid (18, with a name like Ann Lee II that you can change), with half your net worth (up to $250,000 in 2027 dollars) and some of your standing in town.</p>`],
+      <p><b>🌾 Wheat:</b> lease by March to farm that year's crop; a lease taken later starts with the next year's crop. What a lease sells for shrinks as its 5 years run down, and a renewed lease is worth what the renewal cost. The ground is hired farmed: custom farming, seed and fertilizer cost about $${WHEAT_FARMING.toLocaleString('en-US')} each April, so a drought year loses money. The price per bushel is set each July. At harvest in August choose <b>sell now</b> or <b>store it</b> at the elevator (about 1% of the crop a month); stored wheat's price moves each month, usually up a little, and you sell it from the Life tab before the next July. <b>Crop insurance</b> ($${CROP_INS} each April) makes a drought year pay 90% of a normal crop instead of 30%, and covers most of a hail stripe. The harvest follows the year's weather (see Weather and hard years). <b>🐄 Cattle:</b> pasture rent is $${PASTURE} a month and the vet, minerals and bull lease about $${COW_CARE} per cow a year; hay costs extra in a hard winter, calves come in spring (more if you checked on the herd during calving), and they sell in October at that year's price. Every week without a Get outside week for 6 weeks risks losing a cow.</p>
+      <p><b>📅 Weekly challenge</b> (title screen): a 6-month life where everyone gets the same start and luck that week: the events come in the same weeks whatever you choose (what you chose earlier can still change which ones can happen). The week turns over at midnight UTC on Monday, the same moment for everyone. It has its own place on the title screen, so it never takes one of your 5 slots, and it's cleared when the week ends. <b>📤 Share score card</b> on the end screen makes a picture of your result.</p>
+      <p><b>🌳 Legacy:</b> when a Lifetime game ends and you had kids, you can keep playing as your grandkid (18, with a name like Ann Lee II that you can change), with half your net worth (up to $250,000 in 2027 dollars) and some of your standing in town. A grandkid comes only after a full life (you passed at 60 or older, not run out of town by debt). Tap <b>Not now</b> and the grandkid waits on the title screen until you start or dismiss them; each heir's save carries the family line.</p>`],
     ['weather', '🌦️ Weather and hard years', `
       <p><b>One weather year:</b> each year has its own weather, and everything reads the same one. About 1 year in 7 is <b>dry</b>: a poor wheat harvest, a low river, a short pack season at the onion shed and the food plant (15% less pay for a few weeks, and layoffs a little more likely), hay for the herd from July, and more smoke and heat. A <b>wet</b> spring makes high water on the Touchet more likely. Wildfire smoke comes about 1 summer in 4, and a little more often as the decades go by. In July a note names the year. Each winter is <b>hard</b> (about 1 in 4), <b>mild</b> (1 in 5) or ordinary: a hard one brings more snow, a bigger heating bill, a gray January and a hard winter on the herd; a mild one brings a low heating bill.</p>
       <ul><li><b>Bad luck has a ceiling:</b> at most 2 big weather hits (storms, floods, hail, hard snow on the highway) in a calendar year.</li>
@@ -234,11 +234,16 @@ function guideHTML(){
       <li><b>What the weather cost you:</b> the week's details group weather events on one storm card, and each year in review shows what the weather cost and what getting ready saved.</li></ul>`],
     ['saves', '💾 Saving and loading', `
       <p>You can keep up to <b>5 lives</b>. Each one saves itself after every week.</p>
-      <ul><li><b>Title screen:</b> your lives are listed with Continue and 🗑 Delete. When all 5 slots are full, a new life asks which one to replace.</li>
+      <ul><li><b>Title screen:</b> your lives are listed with Continue and 🗑 Delete. When all 5 slots are full, a new life asks which one to replace. Each life saves on its own, every week and whenever you leave the app; if an event card or an ending was open when the app closed, Continue brings it back. If your phone's storage is full, a warning says the week wasn't saved, and a save that can't be read is kept aside for you to download.</li>
       <li><b>Menu → 💾 Save game:</b> Save writes your current life right now. Save here or Replace on another slot makes a copy as a checkpoint you can go back to.</li>
       <li><b>Menu → 📂 Load game:</b> switches to any saved life. The one you're playing is saved first.</li></ul>
       <p>Finishing a life frees its slot. Saves live on this device and in this browser.</p>
-      <p><b>Menu → 📤 Back up or restore:</b> download a backup file or copy a backup code, then on another device use <b>📥 Restore from a backup</b> (on the title screen or in the same menu). You can add the backup's lives to empty slots or replace all your lives.</p>`],
+      <p><b>Menu → 📤 Back up or restore:</b> download a backup file or copy a backup code, then on another device use <b>📥 Restore from a backup</b> (on the title screen or in the same menu). You can add the backup's lives to empty slots or replace all your lives.</p>
+      <ul><li><b>Codes check themselves.</b> If a backup code gets cut off or a letter changes on the way, restoring it says which: the last part is missing, a piece in the middle is missing, or one piece was changed. Copy it again from the original.</li>
+      <li><b>A backup from a newer game</b> asks you to update first. Tap <b>Check for an update</b>.</li>
+      <li><b>📱 Moving to a new phone</b> (in the Menu and under Back up or restore): a two-step guide. On the old phone, copy the backup code into a text or email to yourself (or download a backup file). On the new phone, tap <b>📱 I'm the new phone</b> on the title screen and paste the code or choose the file.</li>
+      <li><b>Older copies are "rewound".</b> Restoring an earlier week of a life that's already on this phone asks first. A rewound life still plays, but its ending doesn't set best scores or badges.</li>
+      <li><b>Near the end:</b> four weeks before a 2-year or 5-year life ends, the week's report offers <b>📤 Back up now</b>, once.</li></ul>`],
     ['score', '🏆 The Life Score', `
       <p><b>Life Score so far:</b> Home shows the score you'd get if the game ended today. Tap it for the breakdown and a tip for your weakest part. A report card goes in your Journal every 13 weeks. In the <b>📜 Journal</b>, the chips at the top show just Money, Events, Milestones (badges, skills, report cards, town goals, stories) or Trips.</p>
       <p>At the end, your life gets a score out of 100 from four parts:</p>
@@ -278,20 +283,68 @@ function guideHTML(){
       <li><b>Sounds:</b> off at first. Soft or Normal plays small sounds made by the game itself (nothing to download, so they work offline): a tick for each week, a chime for events, a fanfare for badges. ⏩ and Auto stay quiet until something happens.</li>
       <li><b>Vibration:</b> a short buzz for events and badges on phones that can (iPhones can't).</li>
       <li><b>Swipes:</b> swipe left or right on the page to move between Home, Jobs, Life and the Journal. Pull the little handle at the top of a pop-up down to close it. Events that ask you to choose can't be swiped away.</li>
-      <li><b>Week summary (screen readers):</b> after End Week a screen reader says one short sentence (Short, the default), or every number (Full).</li></ul>
+      <li><b>Week summary (screen readers):</b> after End Week a screen reader says one short sentence (Short, the default), or every number (Full).</li>
+
+      <li><b>Back button:</b> your phone's Back closes the pop-up on top, then Help, then takes you to Home; it stays in the game. On an event it just reminds you to pick one, so a stray Back never answers for you.</li></ul>
       <p>On a tablet, a computer or a phone held sideways, Home shows two columns, with your job, home, ride and recent journal entries at the side.</p>`],
     ['install', '📱 Installing and playing offline', `
       <p>The Burg is a web app you can install. On iPhone, open it in Safari, tap Share, then <b>Add to Home Screen</b>. On Android, open it in Chrome and tap <b>Install app</b> (or ⋮ → Add to Home screen). After the first visit it works offline. After you've played a couple of months, Home may offer an <b>Install</b> button where your browser supports it; <b>Not now</b> hides it for two weeks.</p>
+      <p><b>When the browser may not keep your lives</b>, the title screen says so. In a private window, back up before you close it. In a Safari tab on iPhone, Safari can wipe a site after 7 days away, so add the game to your Home Screen. If the browser wiped your lives, load a backup. On iPhone the Home Screen app keeps its own lives, not Safari's. To bring them, copy a backup code in Safari and paste it in the app.</p>
+      <p>The game downloads itself once and then opens from your device, with no download at all on a normal launch. A new version is fetched in the background when there is one.</p>
       <p>There's also an <b>Android app (APK)</b> and a <b>Windows installer</b> on the game's GitHub releases page: github.com/krazow/The-Burg/releases.</p>
-      <p>Version ${APP_VERSION}.</p>`]
+      <p>Version ${APP_VERSION}.</p>`],
+    ['device', '🔒 What this game keeps on your device', deviceHTML()]
   ];
   return `<div class="guide">
     <h2 class="gt">📖 Game guide</h2>
-    <nav class="toc" aria-label="Guide contents">${S2.map(([id,t]) => `<button onclick="document.getElementById('g-${id}').scrollIntoView({behavior:'smooth'})">${t}</button>`).join('')}</nav>
+    <nav class="toc" aria-label="Guide contents">${S2.map(([id,t]) => `<button data-call="helpgo" data-arg="${id}">${t}</button>`).join('')}</nav>
     ${S2.map(([id,t,b]) => sec(id, t, b)).join('')}
   </div>`;
 }
+/* ---------- i57-a23: what the game keeps on this device, and erasing all of it ---------- */
+function storageKB(){ let n = 0; for (const k of myKeys()) { try { n += k.length + (localStorage.getItem(k) || '').length; } catch (e) {} } return Math.max(n ? 1 : 0, Math.round(n / 1024)); }
+function deviceHTML(){
+  const lives = slots().filter(Boolean).length, best = Object.keys(store.get(BEST_KEY) || {}).length, badges = Object.keys(store.get(BADGE_KEY) || {}).length;
+  return `<p>Everything stays in this browser on this device. <b>Nothing is sent anywhere:</b> there's no account and no server, and the game only goes online to download itself and its updates.</p>
+      <ul><li><b>Your lives:</b> ${lives} of ${SLOT_COUNT} slots in use, each saved after every week.</li>
+      <li><b>Best scores:</b> ${best} kept, by length and mode, plus challenges and this week's weekly challenge.</li>
+      <li><b>Badges and challenge wins:</b> ${badges} badge${badges === 1 ? '' : 's'} collected.</li>
+      <li><b>Settings and little notes to itself:</b> theme, text size, sounds, which tips you've seen, and when you last visited.</li>
+      <li><b>The game's own files</b>, so it works with no signal. It also keeps a tiny note that you have played here. That way the title screen can tell you if your lives were wiped.</li></ul>
+      <p>All together your saved data is about <b>${storageKB()} KB</b>.</p>
+      <button class="btn ghost" id="eraseall">🗑 Erase everything</button>`;
+}
+function eraseSheet(){
+  closeHelp();                                      // the sheet sits under the Help page, so Help steps aside
+  sheet(`<h2>🗑 Erase everything?</h2>
+    <p>This deletes every life, best score, badge and setting this game keeps on this device, and its offline copy. It can't be undone. Back up first if you might want them.</p>
+    <label class="field" for="erasetype">Type ERASE to confirm</label>
+    <input type="text" id="erasetype" autocomplete="off" autocapitalize="characters">
+    <button class="btn primary" id="yes" disabled>Erase everything</button>
+    <button class="btn ghost" id="no">Keep it all</button>`);
+  $('#erasetype').oninput = () => { $('#yes').disabled = $('#erasetype').value.trim().toUpperCase() !== 'ERASE'; };
+  $('#no').onclick = () => { closeSheet(); showHelp(); };
+  $('#yes').onclick = () => {
+    for (const k of myKeys()) store.del(k);
+    FLAG_SET = false; S = null; LIFE_UNDO = [];
+    closeSheet(); renderTitle();
+    toast('Everything was erased'); announce('Everything was erased from this device');
+    // then the offline copy, in the background: it never redraws, so a life started meanwhile isn't thrown back to the title
+    const cachePre = KEY_PREFIX === 'theburgbeta.' ? 'theburgbeta-' : 'theburg-';
+    (async () => {
+      try { if (typeof caches !== 'undefined') for (const k of await caches.keys()) if (k.startsWith(cachePre) || k === FLAG_CACHE) await caches.delete(k); } catch (e) {}
+      try { if ('serviceWorker' in navigator) for (const r of await navigator.serviceWorker.getRegistrations()) if (new URL(r.scope).pathname === new URL('./', location.href).pathname) await r.unregister(); } catch (e) {}
+    })();
+  };
+  setTimeout(() => { if ($('#erasetype')) $('#erasetype').focus(); }, 60);
+}
+// i43-b03: guide sections lay out only when scrolled near (content-visibility); a contents jump lays them all out
+// first so it lands on the right spot
+function helpJump(id){ const g = document.querySelector('#helpview .guide'); if (g) g.classList.add('full'); const el = document.getElementById('g-' + id); if (el) el.scrollIntoView({ behavior: calmMotion() ? 'auto' : 'smooth' }); }
 function showHelp(){
+  // i54-a04/a07: remember what to go back to; Help opened from a sheet (the Menu) goes back to what opened that sheet
+  if (!lastHelpFocus) { const a = document.activeElement; lastHelpFocus = a && a.closest && a.closest('#sheet') ? lastFocus : opener(a); }
+  lastFocus = null;
   closeSheet(); $('#toast').classList.add('hidden');
   HELP_FROM = S && !S.over ? 'game' : 'title';
   const v = $('#helpview');
@@ -302,17 +355,19 @@ function showHelp(){
         <button class="btn primary" id="tutstart">Start the tutorial</button></div>
       ${guideHTML()}
     </div>`;
-  if (!lastHelpFocus) lastHelpFocus = document.activeElement && document.activeElement.id || null;
   v.classList.remove('hidden'); v.scrollTop = 0; setTimeout(() => $('#helpclose').focus({ preventScroll: true }), 30);
   $('#helpclose').onclick = closeHelp;
   $('#tutstart').onclick = startTutorial;
+  if ($('#eraseall')) $('#eraseall').onclick = eraseSheet;
+  histSync();
 }
 let lastHelpFocus = null;
 function closeHelp(){
   const wasOpen = !$('#helpview').classList.contains('hidden');
   $('#helpview').classList.add('hidden');
-  const id = lastHelpFocus; lastHelpFocus = null;
-  if (wasOpen && !TUT) setTimeout(() => { const el = id && document.getElementById(id); if (el) el.focus({ preventScroll: true }); }, 30);
+  const f = lastHelpFocus; lastHelpFocus = null;
+  if (wasOpen && !TUT) setTimeout(() => refocus(f), 30);
+  histSync();
 }
 
 /* ---------- guided practice tutorial ---------- */
@@ -434,6 +489,12 @@ function coachStops(){
   return [...own, ...(b ? focusables(b) : [])];
 }
 function hideCoach(){ const c = $('#coach'); if (c) { c.classList.add('hidden'); c.innerHTML = ''; } }
+// i54-a10: on a look-only step the ringed spot is just for looking: taps, long presses and right-clicks on it do nothing
+['click', 'pointerdown', 'contextmenu'].forEach(ev => document.addEventListener(ev, e => {
+  if (!TUT) return;
+  const st = TSTEPS[TUT.i];
+  if (st && !st.tap && st.sel && e.target.closest && e.target.closest(st.sel) && !(e.target.closest('#coach'))) { e.preventDefault(); e.stopImmediatePropagation(); }
+}, true));
 // a tap on the highlighted spot moves the tutorial on (the app handles the tap as usual)
 document.addEventListener('click', e => {
   if (!TUT) return;

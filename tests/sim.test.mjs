@@ -54,7 +54,7 @@ for (const { len, strat, g, opts, label } of JOBS_LIST) {
         newGame('Bot', len, 0, opts);
         if (debt) { S.money = -debt; apply('farmhand'); if (!S.jobId) startJob('farmhand'); }   // i75-b21: a fresh start, broke
         S.k401rate = { planner: 2, homebody: 1, commuter: 1, student: 1, rotation: 1 }[strat] || 0;
-        const bad = [], events = {};
+        const bad = [], events = {}, choiceFx = {};
         const best = () => JOBS.filter(x => x.edu <= S.edu).sort((a, b) =>
           (b.pay - commuteCost(CITIES[b.city].miles) * (strat === 'homebody' ? 4 : 1)) - (a.pay - commuteCost(CITIES[a.city].miles) * (strat === 'homebody' ? 4 : 1)))[0];
         let ending = null, weeks = 0, nw65 = null, climbed = false;
@@ -132,8 +132,25 @@ for (const { len, strat, g, opts, label } of JOBS_LIST) {
           if (S.money >= 0) climbed = true;
           if (res.ev) {
             events[res.ev.title] = (events[res.ev.title] || 0) + 1;
+            // i66-b27: replay each choice from a copy of this week (same side dice for every choice, so the game's own
+            // dice are untouched) and keep what each did to money, happiness, health and community
+            { const ch0 = res.ev.choices().filter(c => !c.if || c.if());
+              if (ch0.length > 1) {
+                const S0 = S, snap = JSON.stringify(S), rnd = Math.random, fx = [];
+                for (let i = 0; i < ch0.length; i++) {
+                  let a = (weeks * 2654435761 + 97) >>> 0;
+                  Math.random = () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+                  try { S = JSON.parse(snap); const c = res.ev.choices().filter(c => !c.if || c.if())[i]; c.go();
+                    fx.push({ label: c.label.replace(/\(.*?\)/g, '').replace(/[-+$\d,.%]/g, '').replace(/\s+/g, ' ').trim(),
+                      d: [S.money - S0.money, S.happy - S0.happy, S.health - S0.health, S.community - S0.community] }); }
+                  catch (e) { fx.push(null); }
+                  finally { Math.random = rnd; }
+                }
+                S = S0; save();
+                if (fx.every(Boolean)) (choiceFx[res.ev.title] = choiceFx[res.ev.title] || []).push(fx);
+              } }
             const ch = res.ev.choices().filter(c => !c.if || c.if());
-            const m0 = S.money; (strat === 'careless' ? ch[Math.floor(Math.random() * ch.length)] : ch[0]).go(); wxTrack(res.ev, S.money - m0);   // i75-a30: the weather bill
+            resolveChoice(res.ev, strat === 'careless' ? ch[Math.floor(Math.random() * ch.length)] : ch[0]);   // i71-b03: as a tap does (the weather bill, the cooldown)
           }
           ending = res.ending;
           for (const k of ['happy', 'health', 'community']) if (!(S[k] >= 0 && S[k] <= 100)) bad.push(`${k}=${S[k]} in week ${S.turn}`);
@@ -144,7 +161,7 @@ for (const { len, strat, g, opts, label } of JOBS_LIST) {
         return { weeks, ending, bad, events, score: sc.score, parts: sc.parts, cardAvg: sc.cardAvg, snap: sc.snap, aimPart: Math.round(sc.aim), drag: sc.drag, good: S.goodWeeks, nw: Math.round(sc.real), age: age(), edu: S.edu, kids: S.kids.length,
                  debt: /debt/.test(ending || ''), endedOk: !!ending, cash: Math.round(S.money), bk: S.bk != null, climbed, nw65,
                  src: Object.fromEntries(Object.entries(src).map(([k, v]) => [k, Math.round(v)])),
-                 wxCost: Math.round((S.wxLife || {}).cost || 0), wxSaved: Math.round((S.wxLife || {}).saved || 0), yrs: Math.max(0.5, S.turn / 52) };
+                 choiceFx, wxCost: Math.round((S.wxLife || {}).cost || 0), wxSaved: Math.round((S.wxLife || {}).saved || 0), yrs: Math.max(0.5, S.turn / 52) };
       }, [len, strat, opts]);
       r.len = len; r.strat = strat; r.errors = errors; r.label = label;
       results.push(r);
@@ -280,6 +297,88 @@ if (VARIANTS.length) {
 }
 if (process.env.SIM_DEBUG) for (const lab of [...new Set(results.map(r => r.label))].filter(l => l.startsWith('aim-'))) for (const st of ['planner', 'idle']) { const rs = results.filter(r => r.label === lab && r.strat === st); if (rs.length) console.log(lab.padEnd(14), st.padEnd(8), 'scores', rs.map(r => r.score).join(','), 'aim part', rs.map(r => r.aimPart).join(','), 'parts', JSON.stringify(rs[0].parts), 'cards', rs[0].cardAvg, 'end', rs[0].snap, 'nw', rs.map(r => r.nw).join(',')); }
 if (process.env.SIM_DEBUG) for (const len of Object.keys(GAMES)) for (const st of STRATEGIES) { const rs = results.filter(r => r.len===len && r.strat===st); const avg = k => Math.round(rs.reduce((a,r)=>a+(k in r.parts ? r.parts[k] : r[k] || 0),0)/rs.length); console.log(len.padEnd(5), st.padEnd(9), 'happy', avg('happy'), 'health', avg('health'), 'comm', avg('community'), 'wealth', avg('wealth'), 'cards', avg('cardAvg'), 'end', avg('snap'), 'drag', avg('drag'), 'good', avg('good'), 'kids', rs.map(r=>r.kids).join(',')); }
+// ---- i66-b27: strictly better choices (information only) ----
+// Every event with 2+ choices was replayed choice by choice from a copy of the week. A choice that beats another on
+// money, happiness, health and community (at least as good on all four, better on one) in 95% of its fires
+// (5 fires or more) makes the other choice pointless, unless it sets up something later (a story, a pet, a habit).
+{
+  const fires = {};
+  for (const r of results) for (const [title, list] of Object.entries(r.choiceFx || {})) for (const fx of list) {
+    const key = title + ' :: ' + fx.map(c => c.label).join(' | '); (fires[key] = fires[key] || { title, labels: fx.map(c => c.label), runs: [] }).runs.push(fx.map(c => c.d));
+  }
+  const TOL = [1, 0.05, 0.05, 0.05], beats = (a, b) => a.every((v, k) => v >= b[k] - TOL[k]) && a.some((v, k) => v > b[k] + TOL[k]);
+  const flagged = [];
+  for (const f of Object.values(fires)) {
+    if (f.runs.length < 5) continue;
+    for (let i = 0; i < f.labels.length; i++) for (let j = 0; j < f.labels.length; j++) {
+      if (i === j) continue;
+      const n = f.runs.filter(run => beats(run[i], run[j])).length;
+      if (n >= f.runs.length * 0.95) flagged.push(`${f.title}: "${f.labels[i]}" beats "${f.labels[j]}" in ${n} of ${f.runs.length} fires`);
+    }
+  }
+  const checked = Object.values(fires).filter(f => f.runs.length >= 5).length;
+  const sb = `\n**Strictly better choices** (i66-b27, information only): ${checked} events with 5+ fires checked, ${flagged.length} choice pairs flagged.\n` +
+    (flagged.length ? flagged.map(x => `- ${x}`).join('\n') + '\n' : '');
+  md += sb; console.log(sb);
+  await t.check('the strictly-better choice check ran on the simulated events', async () => {
+    if (!checked && !FILTERED) throw new Error('no event with 2+ choices fired 5 times: the replay found nothing to compare');
+  });
+}
+
+// ---- i56-b17: every job gets worked (reported apart from the balance medians) ----
+// The rotator takes each job in turn (with the school, certificates and program it needs, starting in its season)
+// and works it for 26 weeks: pay arrives, the commute is paid, work events can happen and the Jobs tab reads right.
+if (!process.env.SIM_ONLY || process.env.SIM_ONLY.split(',').includes('rotator')) {
+  const ctx = await browser.newContext({ serviceWorkers: 'block' });
+  await ctx.addInitScript(seedScript(171717));
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(srv.url, { waitUntil: 'load' });
+  const rows = await page.evaluate(() => JOBS.map(x => {
+    newGame('Rotator', 'two', 0); S.noEvents = true;
+    S.edu = 3; S.certs = Object.fromEntries(Object.keys(CERTS).map(k => [k, 1])); if (x.needMajor) S.major = x.needMajor;
+    if (x.season) S.date = new Date(2027, x.season[0], 4).getTime();
+    S.money = 20000; startJob(x.id);
+    const out = { id: x.id, title: x.title, payWeeks: 0, inSeason: 0, pay: [], gas: 0, workEv: new Set(), problems: [] };
+    const expect = payNow(x) * 12 / 52;
+    for (let w = 0; w < 26; w++) {
+      S.focus = ['work', 'rest', 'community'][w % 3];
+      const m = curMonth(), working = S.jobId === x.id && !S.retired;
+      if (working) { out.inSeason += jobInSeason(x, m) ? 1 : 0; for (const e of EVENTS) if (evCat(e) === 'work' && (!e.when || e.when(m))) out.workEv.add(e.title); }
+      weekTick(false);
+      const pay = S.last.lines.filter(l => /^Paycheck/.test(l[0])).reduce((a, l) => a + l[1], 0);
+      if (working && pay > 0) { out.payWeeks++; out.pay.push(pay / (/overtime/.test(S.last.lines.map(l => l[0]).join()) ? FOCUS.work.payMult : 1)); }
+      if (working && S.last.lines.some(l => /^Gas/.test(l[0]) && /commute/.test(l[0]))) out.gas++;
+      for (const k of ['money', 'happy', 'health', 'community']) if (!Number.isFinite(S[k])) out.problems.push(`${k} is ${S[k]}`);
+    }
+    // the Jobs tab reads right for this life
+    tab = 'jobs'; render(); const txt = document.querySelector('main, #app, body').innerText;
+    if (/NaN|undefined|\[object/.test(txt)) out.problems.push('the Jobs tab shows NaN or undefined');
+    const med = [...out.pay].sort((a, b) => a - b)[Math.floor(out.pay.length / 2)] || 0;
+    out.ratio = expect ? Math.round(med / expect * 100) / 100 : 0;
+    out.far = CITIES[x.city].miles > 0 && x.remote !== 5;
+    out.workEv = out.workEv.size;
+    return out;
+  }));
+  await ctx.close();
+  const jt = `\n**Every job, 26 weeks each** (i56-b17, the rotator; apart from the medians above):\n\n| Job | Weeks paid | Pay vs listed | Commute weeks | Work events possible |\n|---|---|---|---|---|\n` +
+    rows.map(r => `| ${r.title} | ${r.payWeeks} | ${Math.round(r.ratio * 100)}% | ${r.far ? r.gas : '—'} | ${r.workEv} |`).join('\n') + '\n';
+  md += jt; console.log(jt);
+  await t.check(`the rotator works every job (${rows.length}) for 26 weeks: paid, commuting, with work events and a sane Jobs tab`, async () => {
+    const bad = [];
+    if (errors.length) bad.push(errors[0]);
+    for (const r of rows) {
+      if (r.problems.length) bad.push(`${r.id}: ${r.problems[0]}`);
+      if (r.payWeeks < Math.min(13, r.inSeason)) bad.push(`${r.id}: paid in only ${r.payWeeks} of ${r.inSeason} weeks in season`);
+      if (!(r.ratio >= 0.4 && r.ratio <= 1.6)) bad.push(`${r.id}: pay is ${Math.round(r.ratio * 100)}% of the listed pay`);
+      if (r.far && r.gas < r.payWeeks / 3) bad.push(`${r.id}: commute gas in only ${r.gas} of ${r.payWeeks} weeks`);
+      if (!r.workEv) bad.push(`${r.id}: no work event can happen`);
+    }
+    if (bad.length) throw new Error(bad.join('; '));
+  });
+}
+
 fs.mkdirSync('test-results', { recursive: true });
 fs.writeFileSync('test-results/balance-report.md', md);
 if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md + '\n');
