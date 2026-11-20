@@ -13,7 +13,7 @@ const STOP_KINDS = { errand:'🛒 Errands', car:'🛻 Car care', eat:'🍽️ Ea
 const STOPS = [
   { id:'stock', kind:'errand', ic:'🛒', name:'Stock-up grocery run', towns:['wallawalla','kennewick','pasco','richland'], cost:0,
     note:`Big-store prices: groceries cost ${STOCK_OFF*100}% less for the next ${STOCK_WEEKS} weeks.` },
-  { id:'oil', kind:'car', ic:'🔧', name:'Oil change and tune-up', towns:['dayton','wallawalla','kennewick','pasco'], cost:90,
+  { id:'oil', feat:'car.upkeep', kind:'car', ic:'🔧', name:'Oil change and tune-up', towns:['dayton','wallawalla','kennewick','pasco'], cost:90,
     note:'Fewer breakdowns for 6 months. After a year without one, breakdowns get more likely.' },
   { id:'tires', kind:'car', ic:'❄️', name:'Winter tires', towns:['wallawalla','kennewick','pasco'], cost:480, when:inSeason(9,10,11,0), season:'October–January',
     ok:() => S.tires !== S.car, note:'Much less likely to slide off Highway 12 in the snow. Good for as long as you keep this vehicle.' },
@@ -45,12 +45,13 @@ const tripMax = () => S.money < 0 ? 1 : TRIP_MAX;
 const debtTripNote = () => S.money < 0 ? `<div class="card warn">💳 You're ${fmt(-S.money)} in debt: trips cost gas and money, so they're limited to 1 stop until you're back above $0.</div>` : '';
 // why a stop can't be picked right now ('' when it can)
 function stopBlocked(s){
+  if (s.feat && !on(s.feat)) return 'Not offered';   // to-do 2: a stop whose feature is off
   if (s.min21 && age() < 21) return '21 and over';
   if (s.when && !s.when()) return `Only ${s.season}`;
   if (s.ok && !s.ok()) return s.okWhy ? s.okWhy() : s.id === 'tires' ? 'Already on this vehicle' : 'Not now';
   return '';
 }
-const townStops = city => STOPS.filter(s => s.towns.includes(city));
+const townStops = city => STOPS.filter(s => s.towns.includes(city) && !(s.feat && !on(s.feat)));
 const tripIsCommute = city => !S.retired && job() && job().city === city;
 const tripGas = city => tripIsCommute(city) ? 0 : CITIES[city].miles * 2 * cost(GAS) / CARS[S.car].mpg;
 // a stop costs more with your partner along on a dinner or a movie
@@ -644,15 +645,15 @@ function insSheet(focusSel){
 const MOODS = { hot:{ ic:'🔥', name:'Hot', desc:'buyers are lining up and prices are climbing', buy:1.05 },
   steady:{ ic:'🏡', name:'Steady', desc:'prices are creeping up like usual', buy:1 },
   slow:{ ic:'🧊', name:'Slow', desc:'houses are sitting and prices are slipping', buy:0.97 } };
-const homeMood = () => S.homeGrow >= 0.05 ? 'hot' : S.homeGrow <= 0 ? 'slow' : 'steady';
+const homeMood = () => !on('home.market') ? 'steady' : S.homeGrow >= 0.05 ? 'hot' : S.homeGrow <= 0 ? 'slow' : 'steady';
 const homePriceF = () => (S.homeIdx || 1) * MOODS[homeMood()].buy;          // a hot year costs more to buy into
 const homeValue = (k = S.home) => HOMES[k].value ? HOMES[k].value * (S.homeIdx || 1) : 0;
 const payF = (rate, months = 360) => { const i = rate / 1200; return i / (1 - Math.pow(1 + i, -months)); };
 const buyRate = () => S.rate + (bkActive() ? BK_RATE : 0);
 const homeDown = k => Math.round(HOMES[k].down * homePriceF());
 const newMortgage = k => HOMES[k].cost * homePriceF() * payF(buyRate()) / payF(BASE_RATE);
-const propTax = () => homeValue() * PROP_TAX / 2;                              // twice a year, April and October
-const canRefi = () => !!(HOMES[S.home].own && S.mortgage && !loanBlock() && S.rate <= (S.mortRate ?? BASE_RATE) - 1);
+const propTax = () => on('home.propertyTax') ? homeValue() * PROP_TAX / 2 : 0;                              // twice a year, April and October
+const canRefi = () => !!(on('home.loans') && HOMES[S.home].own && S.mortgage && !loanBlock() && S.rate <= (S.mortRate ?? BASE_RATE) - 1);
 const refiFee = () => homeValue() * REFI_FEE;
 const refiPay = () => S.mortgage * payF(S.rate) / payF(S.mortRate ?? BASE_RATE);
 function refinance(){
@@ -664,7 +665,7 @@ function refinance(){
 }
 const heI = () => S.heRate / 1200;
 const heBalance = () => S.heLeft > 0 && S.hePay ? S.hePay * (1 - Math.pow(1 + heI(), -S.heLeft)) / heI() : 0;
-const heMax = () => HOMES[S.home].own ? Math.floor(Math.max(0, S.equity * HE_SHARE) / 500) * 500 : 0;
+const heMax = () => HOMES[S.home].own && on('home.loans') ? Math.floor(Math.max(0, S.equity * HE_SHARE) / 500) * 500 : 0;
 function takeHE(amount){
   if (!HOMES[S.home].own || S.heLeft > 0 || loanBlock() || !(amount > 0) || amount > heMax()) return false;
   S.heRate = S.rate + 1; S.hePay = amount * payF(S.heRate, HE_MONTHS); S.heLeft = HE_MONTHS; S.money += amount;
@@ -683,11 +684,12 @@ function heSheet(){
 // the home card's money lines on the Life tab
 function homeMoneyHTML(){
   const own = !!HOMES[S.home].own, md = MOODS[homeMood()], blk = loanBlock();
-  return `<div class="kv"><span>${md.ic} Housing market: <b>${md.name}</b><br><small class="muted">This year ${md.desc}${md.buy !== 1 ? ` (buying costs ${md.buy > 1 ? 'more' : 'less'})` : ''}.</small></span><span>${S.homeGrow >= 0 ? '+' : ''}${(S.homeGrow * 100).toFixed(1)}%/yr</span></div>
-    <div class="kv"><span>🏦 Mortgage rate this year${bkActive() ? ' (+3 points after bankruptcy)' : ''}</span><span>${buyRate().toFixed(2)}%</span></div>
+  const mk = on('home.market');   // to-do 2: Easy has no market or rate changes, Easy and Normal no home loans
+  return `${mk ? `<div class="kv"><span>${md.ic} Housing market: <b>${md.name}</b><br><small class="muted">This year ${md.desc}${md.buy !== 1 ? ` (buying costs ${md.buy > 1 ? 'more' : 'less'})` : ''}.</small></span><span>${S.homeGrow >= 0 ? '+' : ''}${(S.homeGrow * 100).toFixed(1)}%/yr</span></div>
+    <div class="kv"><span>🏦 Mortgage rate this year${bkActive() ? ' (+3 points after bankruptcy)' : ''}</span><span>${buyRate().toFixed(2)}%</span></div>` : ''}
     ${own ? `<div class="kv"><span>Your house is worth</span><span>${fmt(homeValue())}</span></div>
       <div class="kv"><span>Your mortgage rate</span><span>${(S.mortRate ?? BASE_RATE).toFixed(2)}%</span></div>
-      <div class="kv"><span>🧾 Property tax (April and October)</span><span>${fmt(propTax())} each</span></div>
+      ${on('home.propertyTax') ? `<div class="kv"><span>🧾 Property tax (April and October)</span><span>${fmt(propTax())} each</span></div>` : ''}
       ${S.heLeft > 0 ? `<div class="kv"><span>🏦 Home equity loan<br><small class="muted">${Math.ceil(S.heLeft / W)} weekly payments left</small></span><span>${wk(S.hePay)} · owe ${fmt(heBalance())}</span></div>` : ''}
       ${canRefi() ? `<div class="card tip" style="margin:6px 0">📉 Rates dropped to ${S.rate.toFixed(2)}%. Refinancing would cut your payment to ${wk(refiPay())} for ${fmt(refiFee())} in closing costs (it pays off in about ${Math.ceil(refiFee() / Math.max(1, S.mortgage - refiPay()))} months). <button class="sm" id="refi">Refinance</button></div>` : ''}
       ${!S.heLeft && heMax() >= cost(2000) ? (blk ? `<p class="muted">🏦 ${blk}</p>` : `<button class="btn ghost" id="heloan">🏦 Borrow against your home (up to ${fmt(heMax())})</button>`) : ''}` : ''}`;
@@ -744,8 +746,8 @@ function moneyMonth(notes){
   wxEnsure();
   if (S.monKey === key) return; S.monKey = key;
   if (!S.mkt || S.mkt.y !== y) {                                   // New Year: home prices, mortgage rates and the stock market
-    S.homeGrow = HOME_GROW + (Math.random() - 0.5) * 0.12;
-    S.rate = Math.round(clamp(S.rate + (BASE_RATE - S.rate) * 0.3 + (Math.random() - 0.5) * 2, 4, 9.5) * 4) / 4;
+    if (on('home.market')) { S.homeGrow = HOME_GROW + (Math.random() - 0.5) * 0.12;   // to-do 2: Easy keeps homes and rates as listed
+    S.rate = Math.round(clamp(S.rate + (BASE_RATE - S.rate) * 0.3 + (Math.random() - 0.5) * 2, 4, 9.5) * 4) / 4; }
     const bad = on('money.index') && chance(MKT.badOdds); S.mkt = { y, bad, dropAt: bad ? S.turn + ri(8, 40) : null };
   }
   const wheat = S.biz && S.biz.type === 'wheat';
@@ -758,7 +760,7 @@ function moneyMonth(notes){
 function moneyWeek(lines, notes){
   moneyMonth(notes);
   const home = HOMES[S.home], d = new Date(S.date), key = `${d.getFullYear()}-${d.getMonth()}`;
-  if (home.own && [3, 9].includes(d.getMonth()) && S.ptaxDone !== key) { S.ptaxDone = key; lines.push(['Property tax (county)', -propTax()]); }
+  if (home.own && [3, 9].includes(d.getMonth()) && S.ptaxDone !== key && on('home.propertyTax')) { S.ptaxDone = key; lines.push(['Property tax (county)', -propTax()]); }
   if (S.heLeft > 0) {
     const n = Math.min(W, S.heLeft); lines.push(['Home equity loan', -S.hePay * n]); S.heLeft -= n;
     if (S.heLeft < 1e-6) { S.heLeft = 0; S.hePay = 0; notes.push('🏦 Your home equity loan is paid off!'); S.paidOff = true; log('Paid off the home equity loan.'); }
@@ -1819,13 +1821,13 @@ function moneyOutlook(n = 13){
     if (S.loanLeft > i * W) lines.push(['Truck payment', -(S.loanPay || CARS.truck.pay) * Math.min(W, S.loanLeft - i * W)]);
     if (S.sloanLeft > i * W) lines.push(['Student loan', -S.sloanPay * Math.min(W, S.sloanLeft - i * W)]);
     if (S.heLeft > i * W) lines.push(['Home equity loan', -S.hePay * Math.min(W, S.heLeft - i * W)]);   // round 3 money
-    if (HOMES[S.home].own && [3, 9].includes(d.getMonth()) && `${d.getFullYear()}-${d.getMonth()}` !== S.ptaxDone && !out.some(w => w.ptax === `${d.getFullYear()}-${d.getMonth()}`)) big.push(['Property tax (county)', -propTax()]);
+    if (HOMES[S.home].own && on('home.propertyTax') && [3, 9].includes(d.getMonth()) && `${d.getFullYear()}-${d.getMonth()}` !== S.ptaxDone && !out.some(w => w.ptax === `${d.getFullYear()}-${d.getMonth()}`)) big.push(['Property tax (county)', -propTax()]);
     if (S.biz && S.biz.type === 'wheat' && S.biz.ins && d.getMonth() === 3 && S.biz.insYear !== d.getFullYear() && !out.some(w => w.crop)) big.push(['Crop insurance premium', -cost(CROP_INS)]);
     if (S.biz && S.biz.type === 'wheat' && d.getMonth() === 3 && S.biz.farmYear !== d.getFullYear() && !out.some(w => w.farm)) big.push(['Custom farming, seed and fertilizer', -cost(WHEAT_FARMING)]);
     if (S.biz && S.biz.type === 'truck' && d.getMonth() === 3 && S.biz.permitYear !== d.getFullYear() && !out.some(w => w.permit)) big.push(['County health permit', -cost(TRUCK_PERMIT)]);
     if (S.biz && S.biz.stored) lines.push(['Elevator storage', -S.biz.stored * WHEAT_STORE_FEE * W]);
     if (S.biz && S.biz.type === 'cattle') { lines.push(['Pasture rent', -cost(PASTURE) * grow * W], ['Vet, minerals and bull lease', -cost(COW_CARE) * (S.biz.cows ?? CATTLE_COWS) / 12 * grow * W]); if ([10, 11, 0, 1, 2].includes(d.getMonth())) lines.push(['Hay', -cost(HAY) * (S.biz.cows ?? CATTLE_COWS) * grow * W]); }
-    if (d.getMonth() === 0 && tabsYear !== d.getFullYear()) { big.push(['Vehicle tabs (DMV)', -vehicleTabs() * grow]); tabsYear = d.getFullYear(); }
+    if (d.getMonth() === 0 && tabsYear !== d.getFullYear() && on('car.upkeep')) { big.push(['Vehicle tabs (DMV)', -vehicleTabs() * grow]); tabsYear = d.getFullYear(); }
     if (lease != null && lease === i) big.push(['Wheat lease renewal', -leaseCost()]);
     if (S.retired && S.snowbird === d.getFullYear() && SOUTH_MONTHS.includes(d.getMonth())) big.push(['Winter in Arizona', -cost(SOUTH_COST) * grow * W]);
     if (S.roomHost && spareRoom() && hostWeekAt(d)) lines.push(['Spare-room guests', cost(HOST_PAY) * grow]);
@@ -1859,7 +1861,7 @@ function planningCard(){
   const inc = on('retire.income'), will = on('legacy.will'), sch = on('legacy.scholarship'), host = on('retire.host');   // to-do 2 D2
   const pens = inc && (S.pensionYears || 0) > 0 ? row(`🏛️ Public pension<br><small class="muted">${PENSION_RATE * 100}% of your best public pay for each of your ${Math.floor(S.pensionYears * 10) / 10} years${pensionVested() ? '' : ` · vests at ${PENSION_VEST}`}</small>`,
     pensionVested() ? `<b>${wk(pensionPay())}</b>` : 'Not vested yet') : '';
-  const first = (will && !hasWill() && age() >= WILL_MIN_AGE ? firstTime('will') : '') || (life && age() >= LTC_AGE && !S.care ? firstTime('ltc') : '');   // i68-b11
+  const first = (will && !hasWill() && age() >= WILL_MIN_AGE ? firstTime('will') : '') || (life && age() >= LTC_AGE && !S.care && on('health.lateCare') ? firstTime('ltc') : '');   // i68-b11
   const body = `
     ${on('money.outlook') ? '<button class="sm alt" id="outlook">📅 Money outlook: next 13 weeks</button>' : ''}
     ${inc ? row(`🇺🇸 Social Security${S.retired ? '' : ' (estimate)'}<br><small class="muted">${Math.floor(S.earnYears || 0)} years worked of ${SS_FULL_YEARS} · ${Math.round(ssFactor() * 100)}% of the standard amount</small>`, `<b>${wk(ssPay())}</b>`) : ''}
