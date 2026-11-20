@@ -235,11 +235,12 @@ for (const d of ['easy', 'normal', 'hard']) {
       if (LEFTOVER.test(txt)) bad.push(`${name} shows "${txt.match(new RegExp('.{0,30}(' + LEFTOVER.source + ').{0,10}'))[0].replace(/\s+/g, ' ')}"`);
     }
     // Help, with every section in it
-    const sec = await page.evaluate(() => { closeSheet(); showHelp(); document.querySelectorAll('#helpview details').forEach(x => x.open = true); return document.querySelectorAll('#helpview section[id^="g-"]').length; });
+    const sec = await page.evaluate(() => { closeSheet(); showHelp(); document.querySelectorAll('#helpview details').forEach(x => x.open = true); return [document.querySelectorAll('#helpview section[id^="g-"]').length, document.querySelectorAll('#g-modes .whichlist li').length, !!document.querySelector('#helpview .toc [data-arg="modes"]')]; });
     if (LEFTOVER.test(await shown())) bad.push('Help shows ' + (await shown()).match(LEFTOVER)[0]);
     await page.evaluate(() => { closeHelp(); closeSheet(); });
     assert(opened >= 22, `only ${opened} of ${SHEETS.length} sheets could be opened`);
-    assert(sec > 0, 'Help has no sections');
+    assert(sec[0] > 0, 'Help has no sections');
+    assert(sec[1] === 3 && sec[2], `D9: Help should have the Which mode is for me? section with Easy, Normal and Hard (${sec})`);
     assert(!bad.length, bad.join('; '));
     assert(!errors.length, errors.join(' | '));
   });
