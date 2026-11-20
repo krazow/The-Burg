@@ -35,8 +35,8 @@ const AIM_RUNS = process.env.SIM_ONLY && !process.env.SIM_AIMS ? [] : [
   ...AIM_KEYS.map(aim => ({ len: 'two', strat: 'idle', opts: { aim }, label: `aim-${aim}`, n: 3 }))];
 if (process.env.SIM_AIMS) { STRATEGIES.length = 0; STRATEGIES.push('planner', 'idle'); for (const k of Object.keys(GAMES)) delete GAMES[k]; VARIANTS.length = 0; }
 // i19-b33: every rule option that still counts (Standard or Custom tier; sandbox lives are never recorded), and every
-// preset once PRESETS exists, read from the game itself, played by a planner, a careless and an idle bot
-// (one 6-month and one 2-year game each); SIM_RULES=1 runs them in a filtered tuning run too
+// preset once PRESETS exists, read from the game itself: a planner plays one 5-year game (its 70 target is for long
+// games), a careless and an idle bot one 6-month and one 2-year game each; SIM_RULES=1 runs them in a filtered tuning run too
 let RULE_SETS = [];
 if (!(process.env.SIM_ONLY || process.env.SIM_LEN || process.env.SIM_AIMS) || process.env.SIM_VARIANTS || process.env.SIM_RULES) {
   const p0 = await browser.newPage();
@@ -51,7 +51,7 @@ const RULE_LENS = { half: 1, two: Math.max(1, Math.round(SCALE)) };
 const JOBS_LIST = [];
 for (const len of Object.keys(GAMES)) for (const strat of STRATEGIES) for (let g = 0; g < Math.max(1, Math.round(GAMES[len] * SCALE)); g++) JOBS_LIST.push({ len, strat, g, opts: {}, label: 'normal' });
 for (const v of [...VARIANTS, ...AIM_RUNS]) for (let g = 0; g < (v.n || 4); g++) JOBS_LIST.push({ ...v, g });
-for (const rs of RULE_SETS) for (const strat of ['planner', 'careless', 'idle']) for (const [len, n] of Object.entries(RULE_LENS)) for (let g = 0; g < n; g++)
+for (const rs of RULE_SETS) for (const [strat, lens] of [['planner', { five: 1 }], ['careless', RULE_LENS], ['idle', RULE_LENS]]) for (const [len, n] of Object.entries(lens)) for (let g = 0; g < n; g++)
   JOBS_LIST.push({ len, strat, g, opts: { rules: rs.rules }, label: `rules:${rs.label}`, tier: rs.tier });
 for (const { len, strat, g, opts, label, tier } of JOBS_LIST) {
   {
@@ -257,7 +257,7 @@ if (planner < 70) md += `\n> ⚠️ Good play scores too low.\n`;
 // i19-b33: custom rules, per option and per record tier (6-month and 2-year games)
 const ruleTiers = {};
 if (RULE_SETS.length) {
-  md += `\n**Custom rules** (one 6-month and ${RULE_LENS.two} 2-year game${RULE_LENS.two > 1 ? 's' : ''} per bot):\n\n| Rule | Counts toward | Planner | Careless | Idle |\n|---|---|---|---|---|\n`;
+  md += `\n**Custom rules** (planner: one 5-year game; careless and idle: one 6-month and ${RULE_LENS.two} 2-year game${RULE_LENS.two > 1 ? 's' : ''}):\n\n| Rule | Counts toward | Planner | Careless | Idle |\n|---|---|---|---|---|\n`;
   for (const rs of RULE_SETS) {
     const m = st => med(results.filter(r => r.label === `rules:${rs.label}` && r.strat === st).map(r => r.score));
     md += `| ${rs.label} | ${rs.tier} | ${m('planner')} | ${m('careless')} | ${m('idle')} |\n`;

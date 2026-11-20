@@ -597,7 +597,7 @@ const ruleLabel = (id, opt, ctx) => { const R = RULES[id], v = ruleValue(id, opt
 function rulePreview(id, opt, ctx = {}){
   const o = RULES[id].opts[opt], rent = HOMES.room.cost * W;
   if (id === 'start') { const m = o.startSet != null ? o.startSet : bgMoney(ctx.bg || 'fresh') + o.startAdd;
-    return m <= 0 ? 'Nothing in the bank: the first rent check comes out of your first paycheck.' : `That pays about ${Math.floor(m / rent)} weeks of rent for a room (${fmt(rent)} a week).`; }
+    return m <= 0 ? 'Nothing in the bank: the first rent check comes out of your first paycheck.' : `That pays about ${Math.floor(m / rent)} weeks of rent for a room (${fmt(rent)} a week).${o.startAdd ? ` The extra ${fmt(o.startAdd)} doesn't count toward your score.` : ''}`; }
   if (id === 'prices') { const ten = v => fmt(v * Math.pow(1 + o.col, 10)), pay = 600 * Math.pow(1 + o.wage, 10);
     return `A room's rent is ${fmt(rent)} a week now and about ${ten(rent)} in 10 years. A ${fmt(600)}-a-week paycheck becomes about ${fmt(pay)}.`; }
   if (id === 'debt') { const d = debtLimit(ctx.mode || 'normal', { debt: opt });

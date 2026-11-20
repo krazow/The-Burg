@@ -1106,7 +1106,7 @@ function wireAimCard(){
 // net worth as the score counts it: 2027 dollars, with student loans at half (i62-a04)
 function scoredReal(){
   const sl = S.sloanLeft > 0 ? S.sloanLeft * S.sloanPay * 0.85 : 0;
-  return (netWorth() + sl * SLOAN_SCORE) / (S.col || 1);
+  return (netWorth() + sl * SLOAN_SCORE) / (S.col || 1) - (rule('startAdd') || 0);   // i19-b09 (scaled-down): a Comfortable start's extra cash can't lift the score
 }
 const debtFloor = () => DEBT_FLOOR[mode()] ?? -33;
 // one snapshot of the parts. o.p: a report card's progress (the net-worth target scales with it);

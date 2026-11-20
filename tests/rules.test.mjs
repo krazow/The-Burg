@@ -2280,6 +2280,11 @@ await t.check('i19-b01: the knobs reach prices, pay, debt, event odds and starti
   assert(r.tight === -15000 && r.deep === -80000 && r.modeLine === -25000, JSON.stringify(r));
 });
 
+await t.check('i19-b09 (scaled down): a Comfortable start\'s extra $5,000 does not count toward the score', async () => {
+  const r = await ev(() => { newGame('R', 'two', 0, {}); const a = scoredReal(); newGame('R', 'two', 0, { rules: { start: 'comfy' } }); return { a, b: scoredReal() }; });
+  assert(near(r.a, r.b), JSON.stringify(r));
+});
+
 await t.check('i19-b03: recordTier: Normal rules and the routine assist are Standard, changed knobs Custom, no events Sandbox', async () => {
   const r = await ev(() => [recordTier({}), recordTier({ routine: 'on' }), recordTier({ start: 'comfy' }), recordTier({ start: 'broke', events: 'none' }), recordTier({ prices: 'bogus' })]);
   assert(JSON.stringify(r) === '["standard","standard","custom","sandbox","standard"]', JSON.stringify(r));
