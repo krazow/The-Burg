@@ -35,6 +35,8 @@ function scene(m = new Date().getMonth()){
 // the title screen shows the season of the life you played last (or today's, with no lives yet)
 const titleMonth = () => { const g = slots().filter(Boolean).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0], m = g && g.date ? new Date(g.date).getMonth() : NaN; return Number.isInteger(m) ? m : new Date().getMonth(); };
 
+// to-do 2 D1: a difficulty card on the start screen says in plain words what that difficulty includes
+const diffCard = (k, on) => `<button class="dcard${on ? ' on' : ''}" data-diff="${k}" aria-pressed="${on}"><b>${DIFFS[k].ic} ${DIFFS[k].label}</b><span>${DIFFS[k].blurb}</span></button>`;
 function renderTitle(){
   histSync();
   const all = slots(), used = all.filter(Boolean).length;
@@ -54,6 +56,8 @@ function renderTitle(){
     <label class="field">Game length</label>
     <div class="lengths">${Object.entries(LENGTHS).map(([k,L]) =>
       `<button class="len ${k===len?'on':''}" data-len="${k}" aria-pressed="${k===len}"><b>${L.label}</b><span>${L.sub}</span><small>⏱ ${L.mins}</small></button>`).join('')}</div>
+    <label class="field" id="difflbl">Difficulty</label>
+    <div class="diffs" role="group" aria-labelledby="difflbl">${DIFF_LIST.map(k => diffCard(k, k === 'normal')).join('')}</div>
     <button class="btn primary bigstart" id="start">Start a new life</button>
     ${used ? '' : '<button class="btn ghost" id="newbie">🌱 Never played one of these?</button>'}
     <button class="moreopts" id="moreopts" aria-expanded="${more}" aria-controls="morepanel"><span><b>More options</b><span class="s" id="moresum"></span></span><span class="caret" aria-hidden="true">${more ? '▴' : '▾'}</span></button>
@@ -62,10 +66,6 @@ function renderTitle(){
       <div class="bgs" role="group" aria-label="How your life begins">${Object.entries(BACKGROUNDS).map(([k,b]) =>
         `<button class="chip ${k==='fresh'?'on':''}" data-bg="${k}" aria-pressed="${k==='fresh'}">${b.ic} ${b.name}</button>`).join('')}</div>
       <div class="muted bgdesc" id="bgdesc">${BACKGROUNDS.fresh.desc} <b>${BACKGROUNDS.fresh.hint}.</b></div>
-      <label class="field">Mode</label>
-      <div class="maptog" role="group" aria-label="Mode">${Object.entries(MODES).map(([k,m]) =>
-        `<button class="${k==='normal'?'on':''}" data-mode="${k}" aria-pressed="${k==='normal'}">${m.ic} ${m.name}</button>`).join('')}</div>
-      <div class="muted bgdesc" id="modedesc">${MODES.normal.desc}</div>
       <label class="field">What you're playing for</label>
       <div class="bgs" role="group" aria-label="Life aim">${Object.entries(AIMS).map(([k,a]) =>
         `<button class="chip ${k==='all'?'on':''}" data-aim="${k}" aria-pressed="${k==='all'}">${a.ic} ${a.name}</button>`).join('')}</div>
@@ -85,9 +85,10 @@ function renderTitle(){
     <button class="btn ghost" id="settings">⚙️ Settings</button>
     <div class="muted" style="margin-top:14px;font-size:0.75rem">v${APP_VERSION}</div>
   </div>`;
-  let bg = 'fresh', md = 'normal', aim = 'all', rules = {};
+  let bg = 'fresh', dif = 'normal', aim = 'all', rules = {};
+  const md = () => DIFF_MODE[dif];
   const moreSum = () => { const t = recordTier(rules), cu = Object.keys(rules).length;
-    $('#moresum').textContent = `${BACKGROUNDS[bg].ic} ${BACKGROUNDS[bg].name} · ${MODES[md].ic} ${MODES[md].name} · ${AIMS[aim].ic} ${AIMS[aim].name}${cu ? ` · 🎛️ ${TIERS[t].name} rules` : ''}${um === 'all' ? ` · ${UNLOCK_MODES.all.ic} ${UNLOCK_MODES.all.name}` : ''}`;
+    $('#moresum').textContent = `${BACKGROUNDS[bg].ic} ${BACKGROUNDS[bg].name} · ${DIFFS[dif].ic} ${DIFFS[dif].label} · ${AIMS[aim].ic} ${AIMS[aim].name}${cu ? ` · 🎛️ ${TIERS[t].name} rules` : ''}${um === 'all' ? ` · ${UNLOCK_MODES.all.ic} ${UNLOCK_MODES.all.name}` : ''}`;
     $('#rulesum').textContent = `${rulesSummary(rules)} · ${TIERS[t].ic} counts toward ${TIERS[t].shelf}`; };
   moreSum();
   // G2: starting backgrounds and modes live in a "More options" panel; open or closed is remembered
@@ -98,13 +99,13 @@ function renderTitle(){
   };
   document.querySelectorAll('[data-bg]').forEach(b => b.onclick = () => { bg = b.dataset.bg;
     document.querySelectorAll('[data-bg]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#bgdesc').innerHTML = `${BACKGROUNDS[bg].desc} <b>${BACKGROUNDS[bg].hint}.</b>`; moreSum(); });
-  document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { md = b.dataset.mode;
-    document.querySelectorAll('[data-mode]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#modedesc').textContent = MODES[md].desc; moreSum(); });
+  document.querySelectorAll('[data-diff]').forEach(b => b.onclick = () => { dif = b.dataset.diff;   // to-do 2 D1
+    document.querySelectorAll('[data-diff]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); moreSum(); });
   document.querySelectorAll('[data-aim]').forEach(b => b.onclick = () => { aim = b.dataset.aim;   // i20-b01
     document.querySelectorAll('[data-aim]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#aimdesc').textContent = aimDesc(aim); moreSum(); });
   document.querySelectorAll('[data-um]').forEach(b => b.onclick = () => { um = b.dataset.um; setPref('unlockMode', um);
     document.querySelectorAll('[data-um]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#umdesc').textContent = UNLOCK_MODES[um].desc; moreSum(); });
-  $('#rulesbtn').onclick = () => rulesSheet(rules, { bg, mode: md }, r => { rules = r; moreSum(); });   // i19-b02
+  $('#rulesbtn').onclick = () => rulesSheet(rules, { bg, mode: md() }, r => { rules = r; moreSum(); });   // i19-b02
   document.querySelectorAll('.len').forEach(b => b.onclick = () => {
     len = b.dataset.len; document.querySelectorAll('.len').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
   });
@@ -112,7 +113,7 @@ function renderTitle(){
   wireTitleExtras();
   document.querySelectorAll('[data-del]').forEach(b => b.onclick = () => askDelete(+b.dataset.del));
   // the start as picked right now (name, length, background, mode, aim), run now or after the practice life
-  const startNow = () => { const name = ($('#nm').value.trim() || 'Dusty').slice(0,20), l = len, o = { bg, mode: md, aim, rules, unlock: um };
+  const startNow = () => { const name = ($('#nm').value.trim() || 'Dusty').slice(0,20), l = len, o = { bg, diff: dif, aim, rules, unlock: um };
     return () => { const free = slots().indexOf(null); if (free < 0) return askReplace(name, l, o); newGame(name, l, free, o); }; };
   $('#start').onclick = () => {
     const go = startNow();
@@ -121,7 +122,7 @@ function renderTitle(){
   };
   if ($('#newbie')) $('#newbie').onclick = () => newbieSheet({   // i7-a06
     len: k => { const b = document.querySelector(`.len[data-len="${k}"]`); if (b) b.click(); },
-    mode: k => { const b = document.querySelector(`[data-mode="${k}"]`); if (b) b.click(); }, startNow });
+    diff: k => { const b = document.querySelector(`[data-diff="${k}"]`); if (b) b.click(); }, startNow });
   $('#how').onclick = showHelp;
   $('#chal').onclick = challengesSheet;   // i50-a05: the weekly challenge and your records live in the Challenges sheet
   $('#restore').onclick = restoreSheet;
@@ -201,7 +202,7 @@ function newHereSheet(go){
 const NEWBIE_Q = [
   ['len', 'How long do you want to play?', [['half', 'A few minutes'], ['two', 'About 10 minutes'], ['five', 'Longer, over a few sittings']]],
   ['text', 'How do you like to read?', [['normal', 'Normal text'], ['l', 'Bigger text']]],
-  ['easy', 'Want it easy?', [['normal', 'No, the game as designed'], ['relaxed', 'Yes, go easy on me']]]
+  ['easy', 'Want it easy?', [['normal', 'No, a normal game'], ['easy', 'Yes, go easy on me']]]
 ];
 function newbieSheet(set){
   const pick = { len: 'half', text: setting('textSize') === 'normal' ? 'normal' : 'l', easy: 'normal' };
@@ -209,14 +210,14 @@ function newbieSheet(set){
     sheet(`<h2>🌱 New to games like this?</h2><p>Three quick questions, and we'll set up a good first life. You can change any of it later.</p>
       <div class="newq">${NEWBIE_Q.map(([k, q, opts]) => `<h3 id="nq-${k}">${q}</h3><div class="maptog wrap" role="group" aria-labelledby="nq-${k}">${opts.map(([v, l]) =>
         `<button data-nq="${k}" data-v="${v}" class="${pick[k] === v ? 'on' : ''}" aria-pressed="${pick[k] === v}">${l}</button>`).join('')}</div>`).join('')}</div>
-      <p class="muted">${LENGTHS[pick.len].label}: ${LENGTHS[pick.len].mins}. ${pick.easy === 'relaxed' ? `${MODES.relaxed.ic} Relaxed: ${MODES.relaxed.desc}` : `${MODES.normal.ic} Normal: ${MODES.normal.desc}`}</p>
+      <p class="muted">${LENGTHS[pick.len].label}: ${LENGTHS[pick.len].mins}. ${DIFFS[pick.easy].ic} ${DIFFS[pick.easy].label}: ${DIFFS[pick.easy].blurb}</p>
       <button class="btn primary" id="yes">Set it up</button><button class="btn ghost" id="no">Back</button>`);
     document.querySelectorAll('#sheet [data-nq]').forEach(b => b.onclick = () => { pick[b.dataset.nq] = b.dataset.v; const k = b.dataset.nq, v = b.dataset.v; draw();
       const n = document.querySelector(`#sheet [data-nq="${k}"][data-v="${v}"]`); if (n) n.focus({ preventScroll: true }); });
     $('#no').onclick = closeSheet;
     $('#yes').onclick = () => {
-      set.len(pick.len); set.mode(pick.easy); setPref('textSize', pick.text); applyPrefs(); setPref('newHere', 1);
-      const go = set.startNow(), sum = `${LENGTHS[pick.len].label}, ${MODES[pick.easy].name}${pick.text === 'l' ? ', bigger text' : ''}`;
+      set.len(pick.len); set.diff(pick.easy); setPref('textSize', pick.text); applyPrefs(); setPref('newHere', 1);
+      const go = set.startNow(), sum = `${LENGTHS[pick.len].label}, ${DIFFS[pick.easy].label}${pick.text === 'l' ? ', bigger text' : ''}`;
       sheet(`<h2>✅ All set</h2><p>${sum}. Want a short <b>practice life</b> first? It takes about 4 minutes, a pulsing ring shows what to tap, and your real life starts right after.</p>
         <button class="btn primary" id="yes">🎓 Practice life first</button><button class="btn ghost" id="jumpin">Start my life</button><button class="btn ghost" id="no">Back to the title</button>`);
       $('#yes').onclick = () => { closeSheet(); startTutorial(go); };
@@ -776,7 +777,10 @@ function resetFilters(){ logFilter = 'all'; jobCity = 'all'; jobNear = false; }
 function newGame(name, len, slot = 0, opts = {}){
   LIFE_UNDO = []; PLAY_AT = -1e9; resetFilters();
   S = blankLife(name, len, slot);                 // road and work events (health plan, ski pass, job-hunt help and more) included
-  S.bg = BACKGROUNDS[opts.bg] ? opts.bg : 'fresh'; S.mode = MODES[opts.mode] ? opts.mode : 'normal'; S.aim = AIMS[opts.aim] ? opts.aim : 'all';
+  S.bg = BACKGROUNDS[opts.bg] ? opts.bg : 'fresh'; S.aim = AIMS[opts.aim] ? opts.aim : 'all';
+  // to-do 2 D1: the difficulty sets the mode's numbers (Easy plays Relaxed's); an heir of a Classic life stays Classic
+  if (opts.classic) { S.diff = 'hard'; S.classic = true; S.mode = MODES[opts.mode] ? opts.mode : 'normal'; }
+  else { S.diff = DIFFS[opts.diff] ? opts.diff : MODE_DIFF[opts.mode] || 'normal'; S.mode = DIFF_MODE[S.diff]; }
   if (BACKGROUNDS[S.bg].set) BACKGROUNDS[S.bg].set(S);
   // i19-b01/b28: custom rules, except in weekly challenges, scenarios and practice, where everyone plays Normal rules
   S.rules = opts.weekly || SCENARIOS[opts.scenario] || opts.practice ? {} : cleanRules(opts.rules); S.tier0 = recordTier(S.rules);
@@ -855,7 +859,7 @@ function render(){
   const nar = S.practice ? '' : ' skipx';          // i2-a23: on narrow phones the ⏩ buttons hide behind a long press on End Week
   $('#app').innerHTML = `
   <header class="top">
-    <div class="row"><h2>${esc(S.name)}${S.practice ? ' <span class="tag">Practice</span>' : ''}${mode() !== 'normal' && !S.practice ? ` <span class="tag">${MODES[mode()].ic} ${MODES[mode()].name}</span>` : ''}${S.scenario ? ` <span class="tag">🏁</span>` : ''}${S.weekly ? ` <span class="tag">📅</span>` : ''}${S.gen > 1 ? ` <span class="tag">🌳 ${S.gen}</span>` : ''}</h2><div class="hdr-r"><button class="money" id="moneybtn" aria-label="Cash ${fmt(S.money)}: this week's money in and out" aria-haspopup="dialog">${fmt(S.money)}</button><button id="helpbtn" aria-label="Help and tutorial">?</button></div></div>
+    <div class="row"><h2>${esc(S.name)}${S.practice ? ' <span class="tag">Practice</span>' : ''}${(S.classic ? mode() !== 'normal' : diff() !== 'normal') && !S.practice ? ` <span class="tag">${S.classic ? `${MODES[mode()].ic} ${MODES[mode()].name}` : diffTag()}</span>` : ''}${S.scenario ? ` <span class="tag">🏁</span>` : ''}${S.weekly ? ` <span class="tag">📅</span>` : ''}${S.gen > 1 ? ` <span class="tag">🌳 ${S.gen}</span>` : ''}</h2><div class="hdr-r"><button class="money" id="moneybtn" aria-label="Cash ${fmt(S.money)}: this week's money in and out" aria-haspopup="dialog">${fmt(S.money)}</button><button id="helpbtn" aria-label="Help and tutorial">?</button></div></div>
     <div class="meta"><span>${dateLabel()} · age ${age()}</span><span>${left}</span></div>
     <div class="progress"><i style="width:${pct}%"></i></div>
   </header>
