@@ -45,7 +45,7 @@ await t.check('i57-a10: in the Android app the page loads and saves a backup fil
     const p = await ctx.newPage();
     p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
     await p.goto('https://appassets.androidplatform.net/www/index.html', { waitUntil: 'load' });
-    await p.fill('#nm', 'Droid'); await p.click('#start');
+    await p.fill('#nm', 'Droid'); await p.click('#start'); await p.click('#modal:not(.hidden) #jumpin');   // i23-a01: the very first start offers a practice life
     await p.evaluate(() => { tab = 'home'; render(); });
     await p.click('[data-tab=menu]'); await p.click('#backup'); await p.click('#bkfile');
     await p.waitForFunction(() => window.__saved, null, { timeout: 5000 });

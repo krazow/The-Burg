@@ -44,7 +44,22 @@ const FIRST = {
   biz: { ic:'🏪', t:'Your own business', d:() => `One at a time: ${Object.values(BIZ).map(b => `${b.ic} ${b.name.toLowerCase()} (${fmtc(b.cost)})`).join(', ')}. Selling gets back 60% of the price, less about ${BIZ_DEP * 100}% a year as it ages.` },
   k401: { ic:'🏦', t:'The 401(k)', d:() => `Save ${K401.slice(1).map(r => r * 100 + '%').join(' or ')} of each paycheck before taxes. At 5% or more your employer adds 3%: free money that grows about 6% a year.` },
   school: { ic:'📚', t:'School', d:() => `Pick Take classes as your focus. ${EDU.slice(1).map((e, i) => `${e}: ${STUDY_NEED[i]} weeks`).join(', ')}. Classes never put you in a rut.` },
-  carpool: { ic:'🚙', t:'Carpools', d:() => 'With community 30 or more you can ride with neighbors on a 20+ mile commute: half the gas, an easier drive, and a little community. The carpool goes with the job.' }
+  carpool: { ic:'🚙', t:'Carpools', d:() => 'With community 30 or more you can ride with neighbors on a 20+ mile commute: half the gas, an easier drive, and a little community. The carpool goes with the job.' },
+  // i68-b10: the jobs and school systems
+  interview: { ic:'🗣️', t:'Interviews', d:() => 'Pick how to answer. Being straight helps a little, selling hard needs People skill, and asking about pay suits hard-to-fill jobs. Decide later keeps today\'s odds.' },
+  offer: { ic:'🤝', t:'Asking for more', d:() => `Hard-to-fill jobs let you ask for 5% more pay or a ${fmtc(SIGN_ON)} sign-on bonus. Asking risks the offer: about 1 time in ${Math.round(1 / ASK_LOSE)} they pull it.` },
+  union: { ic:'🪪', t:'Union jobs', d:() => `Dues are ${UNION_DUES * 100}% of your pay. In return: a 1.5% step raise each January, half the layoff risk, and a contract vote now and then.` },
+  ladder: { ic:'🪜', t:'The job ladder', d:() => 'Every job has three steps. The second (+12% pay) comes after a year on the job; the top (+25%) needs 3 years plus more school or People skill 2. A promotion offer shows up when you qualify.' },
+  program: { ic:'🎓', t:'Programs', d:() => `Pick a program before you study. Same weeks and tuition, but your diploma counts as a major: +${Math.round(MAJOR_PAY * 100)}% pay and better odds at matching jobs.` },
+  cert: { ic:'📜', t:'Certificates', d:() => `A short course of Take classes weeks that opens one kind of job: ${Object.values(CERTS).map(c => `${c.name.replace(/ \(.*/, '')} ${c.weeks} weeks, ${fmtc(c.fee)}`).join('; ')}. Pay as you go or all at once.` },
+  // i68-b11: the money systems
+  invest: { ic:'📈', t:'Index funds', d:() => `About 6% a year on average, but about 1 year in ${Math.round(1 / MKT.badOdds)} the market drops about ${MKT.drop * 100}%. Keep a month of bills in cash first: debt costs 1.5% a month.` },
+  ins: { ic:'🛡️', t:'Insurance', d:() => `Cheaper coverage saves a little each month. When something breaks, you pay the first part: ${fmtc(AUTO_DED)} for your car or truck on full coverage, ${fmtc(RENTERS_DED)} with renters insurance.` },
+  will: { ic:'📜', t:'A will', d:() => `${fmtc(WILL_FEE)} from age ${WILL_MIN_AGE}. With one, your grandkid gets their share and the family home right away. Without one, the house is sold and probate takes ${PROBATE_CUT * 100}% and 6 months.` },
+  ltc: { ic:'📋', t:'Long-term care', d:() => `From ${LTC_AGE}, you can buy care insurance for ${fmtc(LTC_PREMIUM)} a month. If you need help at home or a care home after ${CARE_AGE}, it pays ${LTC_COVER * 100}% of the bill. Care costs ${fmtc(CARE.aide.cost)} to ${fmtc(CARE.living.cost)} a month without it.` },
+  ptax: { ic:'🏛️', t:'Property tax', d:() => `Owners pay the county ${PROP_TAX * 100}% of the home's value a year, half in April and half in October: about ${fmt(propTax())} each time right now.` },
+  collect: { ic:'📞', t:'Debt and collections', d:() => `Below $0, debt costs 1.5% a month. After ${COLLECT_WEEKS} weeks in a row it goes to collections: a ${fmtc(COLLECT_FEE)} fee, daily calls (▼ happiness) and worse odds on jobs and loans.` },
+  wheat: { ic:'🌾', t:'Stored wheat', d:() => `The elevator keeps your grain while you wait for a better price, for ${fmtc(WHEAT_STORE_FEE * 1000)} a month per 1,000 bushels. It has to be sold by July, when the new crop comes in.` }
 };
 let FIRST_SLOT = null;          // one explainer per screen: render() opens the slot, the first unseen explainer takes it
 function firstTime(key){
@@ -352,7 +367,7 @@ function showHelp(){
   v.innerHTML = `<div class="helphead"><h1>❓ Help</h1><button class="sm alt" id="helpclose" aria-label="Close help">✕ Close</button></div>
     <div class="helpbody">
       <div class="card tutcard"><h3>🎮 Gameplay tutorial</h3>
-        <p>Play a short <b>practice life</b>, about 4 minutes: jobs, your weekly focus, skips and plans, Out and about, trips, insurance, the money outlook, the maps and Settings. A pulsing ring shows exactly what to tap, and each step waits for your tap. ${HELP_FROM === 'game' ? 'Your current life is saved first and comes right back afterward.' : 'Nothing is saved.'}</p>
+        <p>Play a short <b>practice life</b>, about 4 minutes: jobs, your weekly focus, skips and plans, how the Life Score adds up, Out and about, trips, insurance, the money outlook, the maps and Settings. A pulsing ring shows exactly what to tap, and each step waits for your tap. ${HELP_FROM === 'game' ? 'Your current life is saved first and comes right back afterward.' : 'Nothing is saved.'}</p>
         <button class="btn primary" id="tutstart">Start the tutorial</button></div>
       ${guideHTML()}
     </div>`;
@@ -385,7 +400,9 @@ const TSTEPS = [
   { before:() => showEvent(EVENTS.find(e => e.title === 'Celebration Days')), sel:'#modal:not(.hidden) [data-i="0"]', tap:1, text:'<b>Events</b> pop up as life happens. Tap the first choice.' },
   { sel:'#modal:not(.hidden) #ok', tap:1, text:'Every choice shows what it did. Tap <b>Continue</b>.' },
   { sel:'#ff4', tap:1, text:'<b>⏩</b> plays several weeks with the same focus and stops if something needs you. On small phones it hides behind a long press on End Week. Tap <b>⏩ 4</b>.' },
-  { sel:'#auto', text:'<b>⏭ Auto</b> plays until something needs you. Press and hold it (or Menu → Skip and Auto options) to pick <b>Auto until</b>: a stat getting low, cash below $0, or a new season.' },
+  { sel:'#app:has(#auto) #scorenow', tap:1, text:'This is how you win. Your <b>🏆 Life Score</b> is made of four parts. Tap <b>Life Score so far</b>.' },
+  { sel:'#modal:not(.hidden) .card.tip', text:'Happiness counts 30%, net worth 30%, health 20% and community 20%. Your <b>weakest part</b> counts extra. This tip names it and what helps it, so balance beats grinding one thing.' },
+  { before:() => closeSheet(), sel:'#auto', text:'<b>⏭ Auto</b> plays until something needs you. Press and hold it (or Menu → Skip and Auto options) to pick <b>Auto until</b>: a stat getting low, cash below $0, or a new season.' },
   { sel:'#planbtn', text:'<b>🗓 Plan</b> sets up to 4 focuses that take turns, one a week. Picking a focus by hand pauses the plan for that week.' },
   { sel:'#outbtn', tap:1, text:'Quick visits to Waitsburg\'s shops, on top of your focus. Tap <b>🛍️ Out and about</b>.' },
   { sel:'#modal:not(.hidden) #no', tap:1, text:'Every place has a card: when it\'s open and what you can do there. Up to 3 visits a week. Tap <b>Close</b>.' },
@@ -415,10 +432,11 @@ const TSTEPS = [
   { sel:'#modal:not(.hidden) #close', tap:1, text:'Tap <b>Close</b>.' },
   { sel:'#helpbtn', text:'🎉 That\'s the basics! Balance <b>happiness, health, community and money</b>, and mix up your focus. When a life ends, your <b>life story</b> plays before the score. Tap <b>?</b> any time for the game guide or this tutorial.', done:1 }
 ];
-function startTutorial(){
+// after: what to do when the practice life ends from the title screen (i23-a01: start the real life the player picked)
+function startTutorial(after){
   closeHelp(); closeSheet();
   if (S && !S.over && !S.practice) save();
-  TUT = { i: -1, skipped: [], prev: { S: S && !S.over ? clone(S) : null, tab, prefs: clone(prefs()), jobCity, jobOK, undo: LIFE_UNDO } };
+  TUT = { i: -1, skipped: [], prev: { S: S && !S.over ? clone(S) : null, tab, prefs: clone(prefs()), jobCity, jobOK, undo: LIFE_UNDO, after: typeof after === 'function' ? after : null } };
   LIFE_UNDO = [];
   setPref('mapView', false); jobCity = 'all'; jobOK = false;
   newGame('Practice', 'half', 0, { practice: true });
@@ -508,6 +526,6 @@ function endTutorial(done){
   if (!prev) return;
   store.set(PREF_KEY, prev.prefs); applyPrefs(); jobCity = prev.jobCity; jobOK = prev.jobOK; LIFE_UNDO = prev.undo || [];
   S = prev.S; tab = prev.tab || 'home'; MAPSIDE = null; MAPSEL = null;
-  if (S) { render(); window.scrollTo(0,0); } else renderTitle();
+  if (S) { render(); window.scrollTo(0,0); } else { renderTitle(); if (prev.after) { prev.after(); return; } }
   toast(done ? '🎉 Tutorial finished' : 'Tutorial closed');
 }
