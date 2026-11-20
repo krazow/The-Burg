@@ -560,7 +560,8 @@ await t.check('H2: End this life now asks first, and Escape keeps playing', asyn
   await page.waitForSelector(`${open} #yes`);
   const txt = await page.textContent('#sheet');
   assert(/Life Score so far: \d+/.test(txt) && /Keep playing/.test(txt), `confirm sheet: ${txt}`);
-  assert(await page.evaluate(() => document.activeElement && document.activeElement.id === 'no' || document.querySelector('#sheet button').id === 'no'), 'Keep playing should be the default');
+  // i70-b17: Keep playing is now the bottom button; it still gets the first focus
+  assert(await page.waitForFunction(() => document.activeElement && document.activeElement.id === 'no', null, { timeout: 2000 }).then(() => true, () => false), 'Keep playing should be the default');
   await page.keyboard.press('Escape');
   const r = await page.evaluate(() => ({ open: !document.querySelector('#modal').classList.contains('hidden'), slot: slots()[0] && slots()[0].name, over: S.over }));
   assert(!r.open && r.slot === 'Flow' && !r.over, JSON.stringify(r));
