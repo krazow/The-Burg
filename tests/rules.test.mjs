@@ -560,10 +560,10 @@ await t.check('a story chain moves step by step and ends', async () => {
 
 await t.check('challenges set up the life and are judged at the end (or as soon as they are met)', async () => {
   const r = await ev(() => { localStorage.removeItem(CHALLENGE_KEY);
-    newGame('C', 'two', 0, { bg: 'fresh', scenario: 'debtfree' }); S.noEvents = true; const debt = S.money; S.money = 500; const mid = SCENARIOS.debtfree.win();
+    newGame('C', 'two', 0, { bg: 'fresh', scenario: 'debtfree' }); S.noEvents = true; const debt = S.money; S.money = 500; const short = SCENARIOS.debtfree.win(); S.money = 15000; const mid = SCENARIOS.debtfree.win();
     newGame('L', 'five', 0, { bg: 'fresh', scenario: 'lab' }); S.noEvents = true; S.jobId = 'scientist'; const res = week();
     return { debt, mid, note: res.notes.join(' '), won: S.scWon, stored: store.get(CHALLENGE_KEY) }; });
-  assert(r.debt === -8000 && r.mid, JSON.stringify(r));
+  assert(r.debt === -20000 && !r.short && r.mid, JSON.stringify(r));   // i35-b02
   assert(/Challenge complete/.test(r.note) && r.won && r.stored.lab, JSON.stringify(r));
 });
 
@@ -636,7 +636,7 @@ await t.check('i75-b18: every business returns between 0% and 30% a year (index 
 // low jobs together, so in-town jobs at the same pay now beat several commuting ones (mall retail and the food plant have perks this
 // check can't see: sure hiring and a discount, harvest overtime). A job beaten that isn't on the list fails, and a listed job that
 // is no longer beaten is reported so the list can shrink.
-const DOMINATED_KNOWN = ['diner', 'hardware', 'cellar', 'onion', 'retail', 'mech', 'foodplant', 'airport', 'reporter'];
+const DOMINATED_KNOWN = [];   // b19: emptied once the nine were repriced
 await t.check('i75-b19: no job is beaten on take-home, happiness and wear by another job at the same or a lower school level', async () => {
   const r = await ev(() => {
     fresh('two');
@@ -924,7 +924,7 @@ await t.check('road and work events: prices rise, and skills, remote days, carpo
     S.date = new Date(2027, 9, 10).getTime(); S.skiPass = skiSeason(); S.date = new Date(2028, 0, 10).getTime(); const passOk = skiPass(); m = S.money; const pd = open(E('Powder day at Bluewood'))[0]; const rnd = Math.random; Math.random = () => .5; pd.go(); Math.random = rnd; const ski = { label: pd.label, paid: m - S.money };
     // a recruiter makes your next application a sure thing; a clearance-sale outfit helps a little
     fresh('two', { jobId: 'farmhand', community: 40 }); open(E('A recruiter calls'))[0].go(); const old = Math.random; Math.random = () => .999;
-    render(); apply('scientist'); Math.random = old; closeSheet(); const hired = S.jobId;
+    const jo = jobOpen; jobOpen = () => true; render(); apply('scientist'); Math.random = old; jobOpen = jo; closeSheet(); const hired = S.startLater ? S.startLater.id : S.jobId;   // i37-b05: it starts in 6 weeks
     return { ticket, flat0, flat1: flat1.length, noPool, pool, nearOffice, farOffice, gas, saved, doc, passOk, ski, hired };
   });
   assert(near(r.ticket.paid, 320) && /\$320/.test(r.ticket.label), `ticket ${JSON.stringify(r.ticket)}`);
@@ -2133,9 +2133,9 @@ await t.check('Waitsburg pack A, part 1 (W1–W15): months, who sees what, town 
 // ---- ideas round 75, economy balance (i75-b01 … b14) ----
 await t.check('i75-b01: every full-time job pays at least Washington\'s 2027 minimum wage, and the starting jobs keep their order', async () => {
   const r = await ev(() => ({ min: MIN_WAGE_MONTH, low: JOBS.filter(j => j.pay < MIN_WAGE_MONTH).map(j => `${j.id} ${j.pay}`),
-    order: ['diner', 'lift', 'farmhand', 'hardware', 'onion', 'para'].map(id => jobById(id).pay), retail: jobById('retail').pay }));
+    order: ['diner', 'lift', 'farmhand', 'hardware', 'para'].map(id => jobById(id).pay), retail: jobById('retail').pay }));
   assert(r.min === 3050 && !r.low.length, `under the minimum wage: ${r.low.join(', ')}`);
-  assert(r.order.every((p, i) => i === 0 || p > r.order[i - 1]) && r.order[0] >= 3050 && r.order[5] <= 3400 && r.retail >= 3050, `order ${r.order}`);
+  assert(r.order.every((p, i) => i === 0 || p > r.order[i - 1]) && r.order[0] >= 3050 && r.order[4] <= 3400 && r.retail >= 3050, `order ${r.order}`);
 });
 
 await t.check('i75-b02: living costs at 2027 prices: food and utilities $700, a room $650, the rented house $1,250', async () => {
@@ -2182,7 +2182,7 @@ await t.check('i75-b06/b08/b09: nurses, aides and techs at valley rates; the foo
     return { rn: p('rn'), cna: p('cna'), imaging: p('imaging'), para: p('para'), mech: p('mech'), plant: p('foodplant'), loan: p('loan'), lab: p('labadmin'),
       remote: [jobById('loan').remote, jobById('labadmin').remote], best3 }; });
   assert(r.rn === 8600 && r.cna === 3800 && r.imaging === 6400 && r.para === 3300 && r.mech === 4800, JSON.stringify(r));
-  assert(r.plant === 3600 && r.loan === 6900 && r.lab === 5400 && r.remote.join() === '3,3' && r.best3, JSON.stringify(r));
+  assert(r.plant === 4150 && r.loan === 6900 && r.lab === 5400 && r.remote.join() === '3,3' && r.best3, JSON.stringify(r));
 });
 
 await t.check('i75-b08: the mall is always hiring and gives 10% off Tri-Cities stops; the food plant pays 30% harvest overtime', async () => {
@@ -2192,7 +2192,7 @@ await t.check('i75-b08: the mall is always hiring and gives 10% off Tri-Cities s
     fresh('two', { jobId: 'foodplant', focus: 'rest', date: new Date(2027, 4, 3).getTime() }); const may = week().lines['Paycheck'];
     return { odds, court, aug, may }; });
   assert(r.odds >= 0.95 && near(r.court, -14 * 0.9, 0.01), JSON.stringify(r));
-  assert(near(r.aug, 3600 * W * 1.3) && near(r.may, 3600 * W), JSON.stringify(r));
+  assert(near(r.aug, 4150 * W * 1.3) && near(r.may, 4150 * W), JSON.stringify(r));
 });
 
 await t.check('i75-b11/b12: the 401(k) counts at 88% after tax; the match vests after 3 years, and leaving sooner gives it back', async () => {
@@ -2319,6 +2319,7 @@ await t.check('i56-b16: reach table: every event can happen under some setup, an
     // [month, setup] per event that the broad setups below don't reach
     const REACH = {
       'Starting a family?': [3, () => { S.partner = true; S.ageMonths = 26 * 12; }],
+      'A place of your own in town': [4, () => { S.home = 'folks'; S.ageMonths = 22 * 12; }],   // i37-b04
       'A kid heads off to college': [8, () => { S.ageMonths = 45 * 12; S.kids = [S.ageMonths - 18 * 12 - 2]; }],
       'A hard winter on the herd': [0, () => { S.biz = { type: 'cattle', weeks: 60, value: 16000, hard: thisYear() - 1 }; }],
       'Wildfire smoke over the valley': [7, () => { S.smoke = thisYear(); }],
@@ -2927,6 +2928,97 @@ await t.check('i46-a01/a05: commute childcare is only for kids under 13, and the
 await t.check('older saves get the stop streak and recent trip fields', async () => {
   const r = await ev(() => { const old = { turn: 30, date: new Date(2028, 3, 1).getTime() }; migrate(old); return old; });
   assert(JSON.stringify(r.stopRun) === '{}' && Array.isArray(r.tripTurns) && !r.tripTurns.length, JSON.stringify([r.stopRun, r.tripTurns]));
+});
+
+// ---- wave 1: jobs, starts and challenges ----
+await t.check('i8-a03: a retiree has no Apply buttons and apply() does nothing', async () => {
+  const r = await ev(() => { fresh('life', { ageMonths: 66 * 12, retired: true }); const m = S.money; apply('farmhand'); const after = { jobId: S.jobId, iv: S.interview, applied: S.applied };
+    tab = 'jobs'; render(); return { after, buttons: document.querySelectorAll('#main [data-apply]').length, note: !!document.querySelector('#retiredjobs'), m: S.money === m }; });
+  assert(!r.after.jobId && !r.after.iv && !r.after.applied && r.buttons === 0 && r.note, JSON.stringify(r));
+});
+
+await t.check('i8-a04: retiring asks first with the week\'s money before and after, then marks the day; a Home card from 62', async () => {
+  const r = await ev(() => { fresh('life', { ageMonths: 63 * 12, jobId: 'farmhand', k401: 50000 }); tab = 'home'; render();
+    const card = !!document.querySelector('#retirecard [data-call="retireSheet"]');
+    document.querySelector('#retirecard [data-call="retireSheet"]').click(); const ask = document.querySelector('#sheet').textContent;
+    document.querySelector('#n').click(); const still = !S.retired;
+    retireSheet(); document.querySelector('#y').click(); const moment = document.querySelector('#sheet').textContent;
+    fresh('life', { ageMonths: 61 * 12, jobId: 'farmhand' }); tab = 'home'; render(); const young = !document.querySelector('#retirecard');
+    return { card, ask, still, retired: S.retired, moment, young }; });
+  assert(r.card && r.young && r.still, JSON.stringify(r));
+  assert(/can't un-retire/.test(r.ask) && /Each week now/.test(r.ask) && /Each week retired/.test(r.ask) && /Social Security/.test(r.ask) && /401\(k\)/.test(r.ask) && /Home payment/.test(r.ask), r.ask);
+  assert(/Happy retirement/.test(r.moment), r.moment);
+});
+
+await t.check('i8-a05: each challenge shows its progress and weeks left, and warns once when out of reach', async () => {
+  const r = await ev(() => { const out = {};
+    for (const id of Object.keys(SCENARIOS)) { const sc = SCENARIOS[id]; newGame('C', sc.len, 0, { bg: sc.bg, scenario: id }); S.noEvents = true; tab = 'home'; render();
+      out[id] = { has: !!sc.progress, line: document.querySelector('.sgoal').textContent.replace(/\s+/g, ' ') }; }
+    newGame('L', 'five', 0, { bg: 'fresh', scenario: 'lab' }); S.noEvents = true; S.turn = 240; const n1 = []; scenarioWeek(n1); const n2 = []; scenarioWeek(n2);
+    return { out, warn: n1.join(' '), again: n2.length }; });
+  for (const [id, x] of Object.entries(r.out)) assert(x.has && /weeks left/.test(x.line), `${id}: ${x.line}`);
+  assert(/Debt left: \$20,000/.test(r.out.debtfree.line) && /Average happiness/.test(r.out.single.line) && /Down payment saved/.test(r.out.farm.line) && /Class weeks left/.test(r.out.lab.line), JSON.stringify(r.out));
+  assert(/out of reach/.test(r.warn) && r.again === 0, JSON.stringify(r));
+});
+
+await t.check('i8-a06: about 60% of jobs are hiring each week, the same for a weekly challenge; your job and the mall are always listed', async () => {
+  const r = await ev(() => { fresh('two', { jobId: 'cna', date: new Date(2027, 3, 5).getTime() }); let open = 0, n = 0, mine = true, mall = true;
+    for (let w = 0; w < 30; w++) { S.turn = w; for (const x of JOBS) { n++; if (jobOpen(x)) open++; } mine = mine && jobOpen(jobById('cna')); mall = mall && jobOpen(jobById('retail')); }
+    S.turn = 0; const closed = JOBS.find(x => !jobOpen(x)); S.jobId = null; S.applied = false; apply(closed.id); const refused = !S.applied && !S.interview;
+    tab = 'jobs'; render(); const shown = document.querySelectorAll('#main [data-job]').length, note = (document.querySelector('#closedjobs') || {}).textContent || '';
+    const wkOpen = () => { newGame('W', 'half', 0, { weekly: '2026-W47' }); return JOBS.filter(jobOpen).map(x => x.id).join(); };
+    const a = wkOpen(), b = wkOpen();
+    fresh('two', { mode: 'hard' }); let hard = 0; for (let w = 0; w < 30; w++) { S.turn = w; hard += JOBS.filter(jobOpen).length; }
+    return { share: open / n, mine, mall, refused, shown, total: JOBS.length, note, same: a === b, hard: hard / (30 * JOBS.length) }; });
+  assert(r.share > 0.5 && r.share < 0.72 && r.mine && r.mall && r.refused, JSON.stringify(r));
+  assert(r.shown < r.total && /hiring this week/.test(r.note) && r.same && r.hard < r.share, JSON.stringify(r));
+});
+
+await t.check('i37-b03/b04: the Farm kid starts at the folks\' place with its own welcome; the place pulls on happiness from 21 and town comes calling', async () => {
+  const r = await ev(() => { localStorage.clear(); newGame('F', 'two', 0, { bg: 'farm' }); S.noEvents = true; const first = S.log[0].m, home = S.home, job = S.jobId;
+    tab = 'life'; render(); const listed = [...document.querySelectorAll('#main [data-home]')].map(b => b.dataset.home);
+    const l = week().lines;
+    const tug = a => { fresh('two', { home: 'folks', ageMonths: a * 12, happy: 60, jobId: 'farmhand', focus: 'rest' }); const h = S.happy; week(); return S.happy - h; };
+    const d = tug(20) - tug(22);
+    fresh('two', { home: 'folks', ageMonths: 22 * 12, money: 2000 }); const E = EVENTS.find(e => e.title === 'A place of your own in town'); const can = E.when(0); E.choices()[0].go();
+    fresh('two'); tab = 'life'; render(); const freshList = [...document.querySelectorAll('#main [data-home]')].map(b => b.dataset.home);
+    return { first, home, job, listed, rent: l['Rent'], gas: l['Gas (errands)'], d, can, moved: S.home, freshList }; });
+  assert(/harvest crew starts at six/.test(r.first) && r.home === 'folks' && r.job === 'farmhand', JSON.stringify(r));
+  assert(near(r.rent, -400 * W) && r.gas < -(300 * 3.89 / 15) * W - 1, JSON.stringify(r));
+  assert(near(r.d, 0.5 * W, 0.05) && r.can && !r.freshList.includes('folks') && !r.listed.includes('folks'), JSON.stringify(r));
+});
+
+await t.check('i37-b05: a $6,000+ job starts 6 weeks after hiring; a stopgap job keeps paying until then', async () => {
+  const r = await ev(() => { fresh('two', { bg: 'grad', edu: 1, jobId: 'farmhand' }); hired(jobById('hanford')); closeSheet(); const at = S.startLater && S.startLater.at, kept = S.jobId;
+    S.applied = false; apply('hanford'); const again = S.applied;
+    tab = 'jobs'; render(); const line = (document.querySelector('#startlater') || {}).textContent || '';
+    weeks(6); const before = S.jobId; weeks(1); const after = S.jobId, pend = S.startLater;
+    fresh('two'); hired(jobById('diner')); closeSheet(); const small = S.jobId;
+    return { at, kept, again, line, before, after, pend, small }; });
+  assert(r.at === 6 && r.kept === 'farmhand' && !r.again && /You start as hanford cleanup technician/.test(r.line), JSON.stringify(r));
+  assert(r.before === 'farmhand' && r.after === 'hanford' && !r.pend && r.small === 'diner', JSON.stringify(r));
+});
+
+await t.check('i35-b01/b02/b03: one "out of debt"; Debt-free starts $20,000 down and needs $15,000; the family farm is a 2-year race idle play loses', async () => {
+  const r = await ev(() => {
+    fresh('two', { money: 100, loanLeft: 30 }); const truck = debtFree(); S.loanLeft = 0; const clean = debtFree();
+    newGame('P', 'two', 0, { bg: 'parent', scenario: 'single' }); S.money = 100; S.loanLeft = 20; S.happySum = 60; S.monthsPlayed = 1; const single = SCENARIOS.single.win();
+    const idle = id => { const sc = SCENARIOS[id]; newGame('I', sc.len, 0, { bg: sc.bg, scenario: id }); S.noEvents = true; if (!S.jobId) startJob('farmhand'); let most = -1e9;
+      for (let w = 0; w < LENGTHS[sc.len].turns; w++) { S.focus = 'rest'; weekTick(false); most = Math.max(most, S.money); } return { won: sc.win(), most, need: homeDown('farm') + cost(300), money: S.money }; };
+    return { truck, clean, single, df: idle('debtfree'), farm: idle('farm'), farmLen: SCENARIOS.farm.len, desc: SCENARIOS.single.desc + SCENARIOS.debtfree.desc }; });
+  assert(!r.truck && r.clean && !r.single && /mortgage doesn't count/.test(r.desc), JSON.stringify(r));
+  assert(!r.df.won && r.farmLen === 'two' && r.farm.most < r.farm.need, JSON.stringify(r));
+});
+
+await t.check('i30-b06: selling a home that covers the smaller one buys it outright: no mortgage, the rest to cash', async () => {
+  const r = await ev(() => { fresh('life', { home: 'farm', equity: 400000, mortgage: 1650, money: 1000, focus: 'rest' }); const sale = Math.round(400000 * (1 - SELL_FEE)), price = homePrice('fixer');
+    moveHome('fixer'); const offer = !!document.querySelector('#yalt'); document.querySelector('#yalt').click();
+    const st = { home: S.home, mortgage: S.mortgage, money: S.money, equity: S.equity }; const l = week().lines; const eq2 = S.equity;
+    const mig = migrate(JSON.parse(JSON.stringify(S))).mortgage;
+    fresh('life', { home: 'farm', equity: 20000, mortgage: 1650, money: 20000 }); moveHome('fixer'); const noOffer = !document.querySelector('#yalt'); closeSheet();
+    return { offer, st, want: 1000 + sale - price - 300, value: homeValue('fixer'), mortLine: 'Mortgage' in l, rent: 'Rent' in l, eq2, mig, noOffer }; });
+  assert(r.offer && r.st.home === 'fixer' && r.st.mortgage === 0 && near(r.st.money, r.want) && near(r.st.equity, r.value), JSON.stringify(r));
+  assert(!r.mortLine && !r.rent && r.eq2 < r.st.equity * 1.01 && r.mig === 0 && r.noOffer, JSON.stringify(r));
 });
 
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });

@@ -367,28 +367,55 @@ const STORY_EVENTS = [
 /* ============================================================
    🏁 CHALLENGE SCENARIOS (#74): set-up stories with a goal
    ============================================================ */
+// i35-b01: one meaning of "out of debt" for every challenge: cash at $0 or more, and no truck loan or student loan. A mortgage doesn't count.
+const debtFree = () => S.money >= 0 && !(S.loanLeft > 0) && !(S.sloanLeft > 0);
+const DEBT_WORDS = 'Out of debt means cash at $0 or more and no truck or student loan. A mortgage doesn\'t count.';
+// i35-b02: the Debt-free challenge starts $20,000 down and needs $15,000 saved (2027 dollars)
+const DF_START = -20000, DF_SAVE = 15000;
+// i8-a05: what the best week can still do, to warn when a goal is out of reach (2027 dollars saved a week)
+const SC_REACH_WEEK = 1000;
+const scWeeksLeft = sc => Math.max(0, LENGTHS[sc.len].turns - S.turn);
+const avgHappy = () => S.monthsPlayed ? S.happySum / S.monthsPlayed : S.happy;
+// class weeks still needed for a bachelor's degree
+const degreeWeeks = () => { let w = 0; for (let l = S.edu; l < 3; l++) w += STUDY_NEED[l] - (l === S.edu ? S.studyProg : 0); return Math.max(0, Math.ceil(w)); };
 const SCENARIOS = {
   debtfree: { ic:'💳', name:'Debt-free in 2 years', len:'two', bg:'fresh', endOnly:true,
-    desc:'You start $8,000 in debt. Finish two years with no debt and no loans.',
-    set:s => { s.money = -8000; }, win:() => S.money >= 0 && !(S.loanLeft > 0) && !(S.sloanLeft > 0) },
-  farm: { ic:'🏡', name:'Save the family farm', len:'five', bg:'farm',
-    desc:'The family farmhouse is up for sale. Buy it within five years.', win:() => S.home === 'farm' },
+    desc:`You start ${fmt(-DF_START)} in debt. Finish two years out of debt with ${fmt(DF_SAVE)} saved. A mortgage doesn't count.`,
+    set:s => { s.money = DF_START; }, win:() => debtFree() && S.money >= cost(DF_SAVE),
+    progress:() => { const need = cost(DF_SAVE) - S.money + (S.loanLeft > 0 ? S.loanLeft * (S.loanPay || 0) : 0) + (S.sloanLeft > 0 ? S.sloanLeft * S.sloanPay : 0);
+      return { text: S.money < 0 ? `Debt left: ${fmt(-S.money)}. Then save ${fmtc(DF_SAVE)}.` : `Saved ${fmt(S.money)} of ${fmtc(DF_SAVE)}${S.loanLeft > 0 || S.sloanLeft > 0 ? ', with a loan still to pay off' : ''}.`,
+        ok: debtFree() && S.money >= cost(DF_SAVE), lost: need > scWeeksLeft(SCENARIOS.debtfree) * cost(SC_REACH_WEEK) }; } },
+  farm: { ic:'🏡', name:'Save the family farm', len:'two', bg:'farm',
+    desc:'The family farmhouse is up for sale. Buy it within two years.', win:() => S.home === 'farm',
+    progress:() => { const need = homeDown('farm') + cost(300);
+      return { text: `Down payment saved: ${fmt(Math.max(0, S.money))} of ${fmt(need)} (the farmhouse's down payment and the move).`, ok: S.money >= need,
+        lost: need - S.money > scWeeksLeft(SCENARIOS.farm) * cost(SC_REACH_WEEK) }; } },
   single: { ic:'👶', name:'Single parent', len:'two', bg:'parent', endOnly:true,
-    desc:'Two years with a toddler: stay out of debt and keep your average happiness at 55 or more.',
-    win:() => S.money >= 0 && (S.monthsPlayed ? S.happySum / S.monthsPlayed : S.happy) >= 55 },
+    desc:'Two years with a toddler: stay out of debt (no truck or student loan; a mortgage doesn\'t count) and keep your average happiness at 55 or more.',
+    win:() => debtFree() && avgHappy() >= 55,
+    progress:() => { const left = scWeeksLeft(SCENARIOS.single) * W, mp = S.monthsPlayed || 0, best = mp + left ? ((S.happySum || 0) + 100 * left) / (mp + left) : 100;
+      return { text: `Average happiness ${Math.round(avgHappy())} (needs 55)${debtFree() ? ', out of debt' : ', not out of debt yet'}.`, ok: debtFree() && avgHappy() >= 55, lost: best < 55 }; } },
   lab: { ic:'🔬', name:'From the wheat to the lab', len:'five', bg:'fresh',
-    desc:'Become a national lab scientist in Richland within five years.', win:() => S.jobId === 'scientist' }
+    desc:'Become a national lab scientist in Richland within five years.', win:() => S.jobId === 'scientist',
+    progress:() => S.edu >= 3 ? { text: 'Bachelor\'s degree done: apply for National lab scientist on the Jobs tab.', ok: S.jobId === 'scientist', lost: false }
+      : { text: `Class weeks left for a bachelor's degree: ${degreeWeeks()}.`, ok: false, lost: degreeWeeks() > scWeeksLeft(SCENARIOS.lab) } }
 };
 const CHALLENGE_KEY = KEY_PREFIX + 'challenges.v1';
 function scenarioWeek(notes){
   if (!on('challenges.scenarios')) return;
-  const sc = SCENARIOS[S.scenario]; if (!sc || sc.endOnly || S.scWon) return;
+  const sc = SCENARIOS[S.scenario]; if (!sc || S.scWon) return;
+  if (!S.scWarned && sc.progress && sc.progress().lost) {   // i8-a05: say so once when the goal can't be reached any more
+    S.scWarned = true; notes.push(`⚠️ The ${sc.name} challenge is out of reach now: ${sc.progress().text} You can still play on for your Life Score.`);
+  }
+  if (sc.endOnly) return;
   if (sc.win()) { S.scWon = true; notes.push(`🏁 Challenge complete: <b>${sc.name}</b>! Play on as long as you like.`); log(`Completed the challenge: ${sc.name}.`, 'mile'); markChallenge(S.scenario); }
 }
 function markChallenge(id){ if (S.practice || S.rewound) return; const w = store.get(CHALLENGE_KEY) || {}; w[id] = 1; store.set(CHALLENGE_KEY, w); }
 function scenarioLine(){
   const sc = SCENARIOS[S.scenario]; if (!sc || !on('challenges.scenarios')) return '';
-  return `<div class="sgoal">${sc.ic} <b>Challenge:</b> ${sc.desc}${S.scWon ? ' ✅ Done!' : ''}</div>`;
+  const p = !S.scWon && sc.progress ? sc.progress() : null, left = scWeeksLeft(sc);
+  return `<div class="sgoal">${sc.ic} <b>Challenge:</b> ${sc.desc}${S.scWon ? ' ✅ Done!' : ''}
+    ${p ? `<div class="scprog">${p.ok ? '✅' : p.lost ? '⚠️' : '⏳'} ${p.text} <b>${left} week${left === 1 ? '' : 's'} left.</b>${p.lost ? ' Out of reach now.' : ''}</div>` : ''}</div>`;
 }
 // i20-a30: Start sits under each description (no more clipping at 360 wide), with the length and your best as tags.
 // i50-a05: the weekly challenge and your records moved here from the title screen.
@@ -687,6 +714,7 @@ const homeValue = (k = S.home) => HOMES[k].value ? HOMES[k].value * (S.homeIdx |
 const payF = (rate, months = 360) => { const i = rate / 1200; return i / (1 - Math.pow(1 + i, -months)); };
 const buyRate = () => S.rate + (bkActive() ? BK_RATE : 0);
 const homeDown = k => Math.round(HOMES[k].down * homePriceF());
+const homePrice = k => Math.round((HOMES[k].value || 0) * homePriceF());   // i30-b06: the whole price of an owned home today
 const newMortgage = k => HOMES[k].cost * homePriceF() * payF(buyRate()) / payF(BASE_RATE);
 const propTax = () => on('home.propertyTax') ? homeValue() * PROP_TAX / 2 : 0;                              // twice a year, April and October
 const canRefi = () => !!(on('home.loans') && HOMES[S.home].own && S.mortgage && !loanBlock() && S.rate <= (S.mortRate ?? BASE_RATE) - 1);
@@ -1006,7 +1034,7 @@ function startLegacy(parent, name = heirName(parent.name)){
   S.carValue = cost(2500);                         // i30-b01: the old pickup is worth a starter truck in today's dollars
   if (inh.will) {
     S.money = inh.now;
-    if (inh.home) { S.home = inh.home; S.equity = parent.equity || 0; S.mortgage = parent.mortgage || cost(HOMES[inh.home].cost); }
+    if (inh.home) { S.home = inh.home; S.equity = parent.equity || 0; S.mortgage = parent.mortgage ?? cost(HOMES[inh.home].cost); }
   } else if (inh.later > 0) S.probate = { amt: inh.later, at: S.turn + PROBATE_WEEKS, from: parent.name };
   S.yearStart = { nw: netWorth(), happy: S.happy, health: S.health, community: S.community };
   S.badges = {}; S.log = [];
@@ -1064,7 +1092,7 @@ function scoreLines(sc, end){
     ${part('Happiness', `average ${Math.round(sc.avgH)}${so}${end ? ' (30 → 0, 90 → 100)' : ''}`, sc.parts.happy, w.happy)}
     ${part('Health', `average ${Math.round(sc.avgHe)}${so}${end ? ' (40 → 0, 95 → 100)' : ''}`, sc.parts.health, w.health)}
     ${part('Community', `average ${Math.round(sc.avgC)}${so}${end ? ' (10 → 0, 90 → 100)' : `, now ${Math.round(S.community)}`}`, sc.parts.community, w.community)}
-    ${part('Net worth', `${fmt(sc.nw)}${S.col > 1.05 ? ` (${fmt(sc.real)} in 2027 dollars)` : ''} of ${fmt(target)}${end ? '' : ' by the end'}${S.sloanLeft > 0 ? '; student loans count at half' : ''}`, Math.max(0, sc.parts.wealth), Math.round(w.wealth))}
+    ${part('Net worth', `${fmt(sc.nw)}${S.col > 1.05 ? ` (${fmt(sc.real)} in 2027 dollars)` : ''} of ${fmt(target)}${end ? '' : ' by the end'}${LENGTHS[S.len].free ? `, counted from ${fmt(target * LENGTHS[S.len].free)} (a paycheck alone gets you that far)` : ''}${S.sloanLeft > 0 ? '; student loans count at half' : ''}`, Math.max(0, sc.parts.wealth), Math.round(w.wealth))}
     ${w.aim > 0 ? part(aims.length === 1 ? `${AIMS[aims[0]].ic} ${AIMS[aims[0]].name}` : '🧭 Your aims', `your life aim${aims.length > 1 ? `s, by the weeks you held each (${aims.map(k => `${AIMS[k].name} ${Math.round(sh[k] * 100)}%`).join(', ')})` : ''}`, Math.round(sc.aim), Math.round(w.aim)) : ''}</tbody></table>
     ${dc ? `<div class="kv debt"><span>💳 Debt<br><small>${dc.cost ? `Debt is costing you ${dc.cost} point${dc.cost === 1 ? '' : 's'}.` : 'Debt costs you nothing more right now.'}${!end && dc.back ? ` Back to $0 by the end wins back ${dc.back}.` : ''}${sc.drag ? ` ${S.deepWeeks} week${S.deepWeeks === 1 ? '' : 's'} below ${fmtc(-DEEP_DEBT)}.` : ''}</small></span><span><b>−${dc.cost}</b></span></div>` : ''}
     <div class="kv"><span>⚖️ Weakest part: ${PART_NAMES[weakestPart(sc)]}<br><small class="muted">A balanced life counts more: the weakest part counts ${WEAK_SHARE * 100}% on its own</small></span><span><b>${Math.round(sc.weakest)}</b>/100</span></div>
@@ -1237,7 +1265,8 @@ function scoreSnap(o = {}){
   const avg = (sum, now) => mp > 0 && sum != null ? sum / mp : now;   // i5-a02: over the months actually played
   const avgH = avg(S.happySum, S.happy), avgHe = avg(S.healthSum, S.health), avgC = avg(S.commSum, S.community);
   const real = o.real ?? scoredReal(), scale = real < 0 ? Math.min(T, DEBT_SCALE) : T * Math.pow(p, CARD_POW);
-  const wealth = clamp(real / scale * 100, debtFloor(), 100);
+  // wave 1 (b-idle): in a short game the first share of the target is what a paycheck alone brings in, so it counts for nothing
+  const fs = real < 0 ? 0 : LENGTHS[S.len].free || 0, wealth = clamp((real / scale - fs) / (1 - fs) * 100, debtFloor(), 100);
   const hp = clamp((avgH - 30) / 60 * 100), he = clamp((avgHe - 40) / 55 * 100), cm = clamp((avgC - 10) / 80 * 100);
   const sh = aimShares(), allShare = sh.all || 0, aimW = AIM_W * (1 - allShare);
   // a report card judges Legacy (things that build late) as net worth; the ending counts it in full
@@ -1438,6 +1467,16 @@ function extraLock(x){
 // i3-a06: seasonal jobs
 const jobInSeason = (x, m = curMonth()) => !seasonal(x) || x.season.includes(m);
 const seasonWords = x => `${MONTHS[x.season[0]]} to ${MONTHS[x.season[x.season.length - 1]]}`;
+// i8-a06: this week's openings. The same job in the same week is always open or always closed (seeded per life, and per
+// week for the weekly challenge); a practice life and a retiree see the whole board
+const openShare = (m = curMonth()) => mode() === 'hard' ? JOB_OPEN_HARD : JOB_BUSY_MONTHS.includes(m) ? JOB_OPEN_BUSY : JOB_OPEN;
+function jobOpen(x){
+  if (!S || S.practice || S.retired || !x) return true;
+  if (x.id === S.jobId || x.id === 'retail' || (S.recall && S.recall.job === x.id) || (S.startLater && S.startLater.id === x.id)) return true;
+  return hash01(`${S.weekly || S.jobSeed || 0}:${S.turn}:${x.id}`) < openShare();
+}
+// i37-b05: big-pay jobs start a few weeks after you're hired
+const startsLate = x => !S.practice && x.pay >= LATE_START_PAY;
 // i3-a09: a reference from your last job
 const refNow = () => S.ref && S.turn < S.ref.until ? S.ref.k : null;
 const refBonus = () => ({ good: 0.06, bad: -0.12 })[refNow()] || 0;
@@ -1532,6 +1571,15 @@ function hireResult(x, ok){
   hired(x);
 }
 // i38-a01: a new job's +5 happiness comes once every 26 weeks, so job hopping doesn't carry happiness
+// i37-b05: take a job you were just hired for: now, or LATE_START_WEEKS from now for big-pay jobs. Returns the start week (or null).
+function beginJob(x){
+  if (!startsLate(x)) { S.startLater = null; startJob(x.id); log(`Hired as ${x.title} in ${CITIES[x.city].name}!`, undefined, 1); hireCheer(); return null; }
+  if (S.startLater && S.startLater.id !== x.id) log(`Turned down the ${jobById(S.startLater.id).title.toLowerCase()} job for a better offer.`);
+  S.startLater = { id:x.id, at:S.turn + LATE_START_WEEKS, raise:1, bonus:0 };
+  log(`Hired as ${x.title} in ${CITIES[x.city].name}! It starts in ${LATE_START_WEEKS} weeks.`, undefined, 1); hireCheer();
+  return S.startLater.at;
+}
+const startDay = at => new Date(S.date + (at - S.turn) * 7 * 864e5).toLocaleDateString('en-US', { month:'long', day:'numeric' });
 function hireCheer(){ if (S.hireJoy != null && S.turn - S.hireJoy < HIRE_JOY_WEEKS) return; S.hireJoy = S.turn; adj({happy:5}); }
 // i52-a02: a 20+ mile job says what the drive takes: time each way, happiness a month and gas a week
 function driveLine(x){
@@ -1541,17 +1589,16 @@ function driveLine(x){
 }
 function hired(x){
   const before = { jobId:S.jobId, jobMonths:S.jobMonths, raise:S.raise, rung:S.rung, tenure:S.tenure, appWeeks:S.appWeeks, ref:S.ref, bonus:S.bonus,
-    notice:S.notice, strike:S.strike, clearAt:S.clearAt, contractAt:S.contractAt, focus:S.focus, bus:S.bus, money:S.money, fiber:S.fiber };
-  startJob(x.id);
-  log(`Hired as ${x.title} in ${CITIES[x.city].name}!`, undefined, 1); hireCheer();
-  const extra = [x.apprentice ? `You start as an apprentice at ${Math.round(x.apprentice.startMult * 100)}% pay, stepping up every year for ${x.apprentice.weeks / 52} years.` : '',
-    clearing() ? `Your security clearance takes about ${CLEAR_WEEKS} weeks. Until then you're badged out, at ${Math.round(CLEAR_PAY * 100)}% pay. Keep your money in order: heavy debt can sink the check.` : '',
+    notice:S.notice, strike:S.strike, clearAt:S.clearAt, contractAt:S.contractAt, focus:S.focus, bus:S.bus, money:S.money, fiber:S.fiber, startLater:S.startLater };
+  const later = beginJob(x);
+  const extra = [later ? `You start on ${startDay(later)}, ${LATE_START_WEEKS} weeks from now, after the paperwork and training dates. Keep your job${S.jobId ? '' : ', or take a stopgap job,'} until then.` : '', x.apprentice ? `You start as an apprentice at ${Math.round(x.apprentice.startMult * 100)}% pay, stepping up every year for ${x.apprentice.weeks / 52} years.` : '',
+    !later && clearing() ? `Your security clearance takes about ${CLEAR_WEEKS} weeks. Until then you're badged out, at ${Math.round(CLEAR_PAY * 100)}% pay. Keep your money in order: heavy debt can sink the check.` : '',
     unionJob(x) ? 'It\'s a union job: monthly dues, steadier raises and more protection from layoffs.' : '',
     seasonal(x) ? `It's seasonal work, ${seasonWords(x)}. You're laid off between seasons and called back after.` : ''].filter(Boolean);
   const drive = driveLine(x);
   const ask = HARD_TO_FILL.includes(x.id) && !S.practice && on('jobs.interview');   // difficulty: asking for more is Normal and up
   sheet(`<div class="big">🎉</div><h2 style="text-align:center">You're hired!</h2>
-    <p style="text-align:center">${x.title} in ${CITIES[x.city].name} at ${wk(payNow(x))}.</p>
+    <p style="text-align:center">${x.title} in ${CITIES[x.city].name} at ${wk(payNow(x, false))}.</p>
     ${drive ? `<p class="otnote">${drive}</p>` : ''}${extra.map(t => `<p class="muted">${t}</p>`).join('')}
     ${ask ? `${firstTime('offer')}<p>They need people for this job, so you could ask for more. Ask too hard and they may pull the offer (1 in 10).</p>
       <button class="btn primary" data-i="0">Take it as it is</button>
@@ -1567,25 +1614,34 @@ function hired(x){
 // i3-a08: 0 take it, 1 ask for 5% more, 2 ask for a sign-on bonus. Returns what happened ('' for take it).
 function negotiate(k, before){
   if (!k) return '';
-  const x = job();
+  const pend = S.startLater, x = pend ? jobById(pend.id) : job();
   if (chance(ASK_LOSE)) {
     Object.assign(S, before); S.money = before.money;
     log(`The ${x.title} offer was pulled after you asked for more.`); adj({happy:-6});
     return `They thought it over and pulled the offer. ${before.jobId ? `You still have your job as ${jobById(before.jobId).title.toLowerCase()}.` : 'Back to the job board.'}`;
   }
   if (k === 1) {
-    if (chance(0.5 + skillLv('people') * 0.1)) { S.raise *= 1.05; return `They agreed to 5% more. You start at ${wk(payNow(x))}.`; }
-    return `They held firm at ${wk(payNow(x))}, but the offer stands.`;
+    if (chance(0.5 + skillLv('people') * 0.1)) { if (pend) pend.raise = (pend.raise || 1) * 1.05; else S.raise *= 1.05; return `They agreed to 5% more. You start at ${wk(payNow(x, !pend) * (pend ? pend.raise : 1))}.`; }
+    return `They held firm at ${wk(payNow(x, !pend))}, but the offer stands.`;
   }
-  if (chance(0.75)) { const amt = Math.round(cost(SIGN_ON)); S.money += amt; S.bonus = { amt, until:S.turn + 52, job:x.id }; return `A ${fmt(amt)} sign-on bonus, paid now. Stay a year or you pay it back.`; }
+  if (chance(0.75)) { const amt = Math.round(cost(SIGN_ON)); S.money += amt; if (pend) pend.bonus = amt; else S.bonus = { amt, until:S.turn + 52, job:x.id }; return `A ${fmt(amt)} sign-on bonus, paid now. Stay a year or you pay it back.`; }
   return 'No bonus, but the offer stands.';
 }
 // the week's job upkeep, at the start of each week (turn.js): a pending interview, notice, seasons and recalls
 function jobWeekStart(notes){
   if (S.interview) {
     const r = resolveInterview(null);
-    if (r && r.ok) { startJob(r.x.id); log(`Hired as ${r.x.title} in ${CITIES[r.x.city].name}!`, undefined, 1); hireCheer(); notes.push(`📞 The ${r.x.title.toLowerCase()} job called back: you're hired!`); }
+    if (r && r.ok && S.retired) S.interview = null;   // i8-a03: a retiree doesn't take the job
+    else if (r && r.ok) { const later = beginJob(r.x); notes.push(`📞 The ${r.x.title.toLowerCase()} job called back: you're hired!${later ? ` You start on ${startDay(later)}.` : ''}`); }
     else if (r) { log(`Applied for ${r.x.title} in ${CITIES[r.x.city].name}. They went with someone else.`); adj({happy:-2}); }
+  }
+  if (S.startLater && (S.retired || !jobById(S.startLater.id))) S.startLater = null;
+  if (S.startLater && S.turn >= S.startLater.at) {   // i37-b05: the first day at a job you were hired for weeks ago
+    const p = S.startLater, x = jobById(p.id), had = S.jobId && S.jobId !== p.id ? job().title : null; S.startLater = null;
+    startJob(x.id); if (p.raise) S.raise *= p.raise;
+    if (p.bonus) S.bonus = { amt:p.bonus, until:S.turn + 52, job:x.id };
+    log(`First day as ${x.title} in ${CITIES[x.city].name}.`, undefined, 1);
+    notes.push(`🗓️ Your first day as ${x.title.toLowerCase()}${had ? `, and your last at the ${had.toLowerCase()} job` : ''}.`);
   }
   if (S.notice != null && S.turn >= S.notice && working()) {
     const t = job().title; leaveJob('notice'); log(`Quit the job as ${t} after two weeks' notice.`);
