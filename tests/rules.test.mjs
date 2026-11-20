@@ -1153,6 +1153,70 @@ await t.check('skips play one-choice events on their own and list them, but stop
   assert(r.b.weeks === 1 && r.b.sheet, `real choice: ${JSON.stringify(r.b)}`);
 });
 
+await t.check('i49-a03: good-news notes ride along on a skip and show on the next sheet; notes that need you still stop it', async () => {
+  const r = await ev(() => {
+    const ok = e => e.choices().filter(c => !c.if || c.if()), two = EVENTS.find(e => !e.once && ok(e).length >= 2), real = rollEvent;
+    fresh('two', { jobId: 'farmhand', loanLeft: W * 1.5, loanPay: 400 }); S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1]));
+    playWeeks(4); const a = { weeks: S.run.weeks, txt: $('#sheet').textContent, open: !$('#modal').classList.contains('hidden') }; closeSheet();
+    fresh('two', { jobId: 'farmhand', loanLeft: W * 1.5, loanPay: 400 }); S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1])); S.noEvents = false;
+    let n = 0; rollEvent = () => ++n === 3 ? two : null;
+    playWeeks(4); const b = { weeks: S.run.weeks, ride: ($('#sheet .ridealong') || {}).textContent || '', title: ($('#sheet h2') || {}).textContent }; closeSheet(); rollEvent = real;
+    fresh('two', { jobId: 'farmhand', focus: 'work', streakF: 'work', streakN: RUT_WEEKS - 1 }); S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1]));
+    playWeeks(4); const c = { weeks: S.run.weeks, txt: $('#sheet').textContent }; closeSheet();
+    return { a, b, c, rides: rides('🛻 The truck is paid off!'), stops: rides('🏥 You ended up in the hospital.') };
+  });
+  assert(r.rides && !r.stops, 'the note kinds are wrong');
+  assert(r.a.weeks === 4 && r.a.open && /truck is paid off/.test(r.a.txt), `the skip should run on and end on the note: ${JSON.stringify(r.a).slice(0, 200)}`);
+  assert(r.b.weeks === 3 && /truck is paid off/.test(r.b.ride) && !!r.b.title, `the note should sit on top of the event: ${JSON.stringify(r.b)}`);
+  assert(r.c.weeks < 4 && /rut/.test(r.c.txt), `a rut still stops the skip: ${JSON.stringify(r.c).slice(0, 200)}`);
+});
+
+await t.check('i49-a11: an answer rule settles a small event during skips (a line in the strip) but not on a plain End Week', async () => {
+  const r = await ev(() => {
+    const ok = e => e.choices().filter(c => !c.if || c.if()), real = rollEvent;
+    fresh('two', { jobId: 'farmhand' }); S.noEvents = false; S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1]));
+    const two = EVENTS.find(e => ruleOK(e) && ok(e).length >= 2), pick = ok(two)[1];
+    S.ansRules = { [two.title]: { k: ruleKey(pick.label), l: pick.label } };
+    rollEvent = () => two; playWeeks(4);
+    const a = { weeks: S.run.weeks, rule: S.run.happened.filter(h => h.rule).length, strip: (() => { closeSheet(); showRunDetails(); return $('#sheet').textContent; })() }; closeSheet();
+    playWeeks(1); const b = { evSheet: !!$('#sheet [data-i]') }; closeSheet();
+    rollEvent = real;
+    return { a, b, key: ruleKey('Pay $1,250 to fix it'), key2: ruleKey('Pay $1,400 to fix it'), big: ruleOK(EVENTS.find(e => e.title === 'Starting a family?')) };
+  });
+  assert(r.a.weeks === 4 && r.a.rule === 4 && /your rule/.test(r.a.strip), JSON.stringify(r.a).slice(0, 300));
+  assert(r.b.evSheet, 'a plain End Week should still ask');
+  assert(r.key === r.key2 && !r.big, `rule keys ${r.key} / ${r.key2}, big ${r.big}`);
+});
+
+await t.check('i15-b01/b05: a small weekly history (weekly for 2 years, then monthly and yearly) and the last 4 weeks by kind', async () => {
+  const r = await ev(() => {
+    fresh('life', { jobId: 'farmhand' }); for (let i = 0; i < 1500; i++) { weekTick(false); if (S.health < 30) S.health = 70; }
+    const h = S.hist, last = h.slice(-HIST_WEEKS);
+    return { n: h.length, size: JSON.stringify(h).length, weekly: last.every((x, i) => !i || x[0] - last[i - 1][0] === 1), end: h[h.length - 1][0] === S.turn && h[h.length - 1][1] === Math.round(S.money),
+      spend: S.spend4.length, kinds: Object.keys(S.spend4[0]), rent: spendKind('Rent', -100), tabs: spendKind('Vehicle tabs (DMV)', -60) };
+  });
+  assert(r.n > 104 && r.n < 400 && r.size < 12000 && r.weekly && r.end, JSON.stringify(r));
+  assert(r.spend === 4 && r.kinds.includes('pay') && r.kinds.includes('home') && r.rent === 'home' && r.tabs === 'ride', JSON.stringify(r));
+});
+
+await t.check('i15-b06: up next lists dated things in the next 8 weeks (tabs, New Year, a last truck payment)', async () => {
+  const r = await ev(() => {
+    fresh('two', { jobId: 'farmhand', loanLeft: W * 2.5, loanPay: 400 }); S.date = new Date(2027, 11, 6).getTime(); S.tabsYear = 2027;
+    const a = upNext().map(x => x.ic + x.n);
+    fresh('two', { jobId: 'farmhand' }); S.date = new Date(2027, 4, 3).getTime(); S.svc = -30; S.sgoal = { id: seasonId(seasonGoal()), prog: 6, done: true };
+    return { a, b: upNext().map(x => x.ic + x.n) };
+  });
+  assert(r.a.includes('📅3') && r.a.includes('🪪4') && r.a.includes('🛻2'), JSON.stringify(r.a));
+  assert(!r.b.length, JSON.stringify(r.b));
+});
+
+await t.check('i15-b01 / i49-a11: an older save without the history, the rules or the spend list loads with empty ones', async () => {
+  const r = await ev(() => { fresh('two'); const o = JSON.parse(JSON.stringify(S)); delete o.hist; delete o.ansRules; delete o.spend4; o.ansRules = undefined;
+    const m = migrate(o); const bad = migrate({ ...JSON.parse(JSON.stringify(S)), hist: [[1, 'x']], ansRules: { a: 5, b: { k: '<b>x</b>', l: 'y' } } });
+    return { m: [m.hist, m.ansRules, m.spend4], bad: [bad.hist.length, Object.keys(bad.ansRules), bad.ansRules.b.k] }; });
+  assert(JSON.stringify(r.m) === '[[],{},[]]' && JSON.stringify(r.bad) === '[0,["b"],"x"]', JSON.stringify(r));
+});
+
 await t.check('a double tap on End Week plays one week, not two', async () => {
   const r = await ev(() => {
     fresh('two', { jobId: 'farmhand' }); S.badges = Object.fromEntries(BADGES.map(b => [b.id, 1])); PLAY_AT = -1e9; const t0 = S.turn;

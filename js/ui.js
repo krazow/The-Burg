@@ -960,7 +960,7 @@ function render(){
   ${tab==='home' ? `${S.run ? `<button class="weekstrip" id="strip" aria-label="${esc(runWords())}. Details"><span class="wl">${S.run.weeks > 1 ? `Last ${S.run.weeks} wks` : 'Last week'}</span><span class="wc">${runChips()}</span><span class="more">›</span></button>` : ''}
     <div class="endbar${ROLL ? ' rolling' : ''}">${ROLL ? `<button class="btn primary" id="stoproll">⏹ Stop<small>${S.run.weeks} of up to ${ROLL.n} weeks</small></button>`
       : `<div class="endwrap"><button class="btn primary" id="end" aria-keyshortcuts="Shift+Enter" aria-description="Press and hold, or Shift+Enter, for more ways to skip ahead">End Week →<small>${FOCUS_SHORT[S.focus]}${S.trip && CITIES[S.trip.city] ? ` + 🚗 ${CITIES[S.trip.city].name}` : ''}</small></button><button class="endf" id="endf" aria-expanded="${FOCUS_ROW}" aria-controls="focusrow" aria-label="Change this week's focus, now ${FOCUS_SHORT[S.focus]}"><span aria-hidden="true">${FOCUS[S.focus].ic}</span><span class="caret" aria-hidden="true">${FOCUS_ROW ? '▴' : '▾'}</span></button></div>
-    ${on('ui.auto') ? `<button class="btn ghost${nar}" id="ff4" aria-label="Skip 4 weeks">⏩ 4</button>${big ? `<button class="btn ghost${nar}" id="ff13" aria-label="Skip 13 weeks">⏩ 13</button>` : ''}<button class="btn ghost" id="auto" aria-label="Auto: play until ${autoUntil() === 'event' ? 'something needs you' : AUTO_UNTIL[autoUntil()].short + ' or something needs you'}. Press and hold for options">⏭ Auto</button>` : ''}`}</div>${FOCUS_ROW && !ROLL ? focusRow() : ''}` : ''}
+    ${on('ui.auto') ? `<button class="btn ghost${nar}" id="ff4" aria-label="Skip 4 weeks">⏩ 4</button><button class="btn ghost" id="auto" aria-label="Auto: play until ${autoUntil() === 'event' ? 'something needs you' : AUTO_UNTIL[autoUntil()].short + ' or something needs you'}. Press and hold for options">⏭ Auto</button>` : ''}`}</div>${FOCUS_ROW && !ROLL ? focusRow() : ''}` : ''}
   <nav><div class="in">
     ${[['home','🏠','Home'],['jobs','💼','Jobs'],['life','🌾','Life'],['log','📜','Journal']].map(([k,ic,l]) => { const nw = tab !== k && tabHasNew(k);   // i31-b15: a dot for something new there
       return `<button data-tab="${k}" class="${tab===k?'on':''}${nw ? ' hasnew' : ''}"${tab===k?' aria-current="page"':''}${nw ? ` aria-label="${l}, new"` : ''}><span class="ic" aria-hidden="true">${ic}</span>${l}${nw ? '<span class="ndot" aria-hidden="true"></span>' : ''}</button>`; }).join('')}
@@ -974,7 +974,6 @@ function render(){
   $('#moneybtn').onclick = cashSheet;
   if ($('#end')) { $('#end').onclick = e => { if (holdDone(e)) return; tapPlay(1, e); }; holdOpens($('#end'), skipSheet); }
   if ($('#ff4')) $('#ff4').onclick = e => tapPlay(4, e);
-  if ($('#ff13')) $('#ff13').onclick = e => focusCheck(() => tapPlay(13, e), () => playWeeks(13), e);
   if ($('#auto')) { $('#auto').onclick = e => { if (holdDone(e)) return; focusCheck(() => tapPlay('auto', e), autoPlay, e); }; holdOpens($('#auto'), skipSheet); }
   if ($('#stoproll')) $('#stoproll').onclick = stopRoll;
   if ($('#strip')) $('#strip').onclick = showRunDetails;
@@ -1069,7 +1068,7 @@ function holdOpens(el, fn){
   el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); e.stopPropagation(); fn(); } });
 }
 const holdDone = e => { const el = e.currentTarget; if (el && el._held) { el._held = false; return true; } return false; };
-// i48-b06: before ⏩ 13 or Auto, after 4+ weeks of one focus (it starts to fade), ask once per run of that focus
+// i48-b06: before Auto, after 4+ weeks of one focus (it starts to fade), ask once per run of that focus
 let FOCUS_ASKED = null;
 function focusCheck(now, later, e){
   const f = S && S.focus, key = S && `${S.name}|${S.streakF}|${S.turn - S.streakN}`;
@@ -1094,15 +1093,15 @@ function lowFocus(cur = S.focus){
   const map = { happy:'outdoors', health:'rest', community:'community' };
   return Object.keys(map).sort((a, b) => S[a] - S[b]).map(k => map[k]).filter(k => k !== cur);
 }
-// the skip options: ⏩ 4 and ⏩ 13, what ⏭ Auto plays until (i2-a11), and whether to watch the weeks go by (i2-a28)
+// the skip options: ⏩ 4, what ⏭ Auto plays until (i2-a11), and whether to watch the weeks go by (i2-a28)
+// i50-a14: the ⏩ 13 skip is gone: ⏩ 4 and Auto cover it
 function skipSheet(){
   if (!S || S.over || ROLL || !on('ui.auto')) return;
-  const L = LENGTHS[S.len], big = L.turns === Infinity || L.turns >= 104;
   const k = autoUntil(), sp = watchWeeks() ? 'watch' : 'instant', rm = reducedMotion();
   const opt = (grp, val, on, label, dis) => `<button class="btn ghost opt${on ? ' on' : ''}" role="radio" aria-checked="${on}" data-${grp}="${val}"${dis ? ' disabled' : ''}>${on ? '✓ ' : ''}${label}</button>`;
   sheet(`<h2>Skip ahead</h2>
-    <p class="muted">Skips keep your ${S.plan && S.plan.length ? 'focus plan' : 'focus'} and stop when something needs you: an event with a choice, a milestone or New Year. Events with only one way to go play out on their own.</p>
-    <div class="skiprow"><button class="btn primary" id="sk4">⏩ 4 weeks</button>${big ? '<button class="btn primary" id="sk13">⏩ 13 weeks</button>' : ''}</div>
+    <p class="muted">Skips keep your ${S.plan && S.plan.length ? 'focus plan' : 'focus'} and stop when something needs you: an event with a choice, news you need to act on, or New Year. Good news waits for the next stop. Events with only one way to go, or with an answer rule, play out on their own.</p>
+    <div class="skiprow"><button class="btn primary" id="sk4">⏩ 4 weeks</button></div>
     <h3 style="margin-top:14px" id="untilh">⏭ Auto plays up to ${AUTO_MAX} weeks, until…</h3>
     <div role="radiogroup" aria-labelledby="untilh">${Object.entries(AUTO_UNTIL).map(([key, o]) => opt('until', key, k === key, o.name)).join('')}</div>
     <h3 style="margin-top:14px" id="speedh">While skipping</h3>
@@ -1111,7 +1110,6 @@ function skipSheet(){
     <button class="btn primary" id="skauto">⏭ Auto now</button>
     <button class="btn ghost" id="close">Close</button>`);
   $('#sk4').onclick = () => { closeSheet(); playWeeks(4); };
-  if ($('#sk13')) $('#sk13').onclick = () => { closeSheet(); playWeeks(13); };
   $('#skauto').onclick = () => { closeSheet(); autoPlay(); };
   $('#close').onclick = closeSheet;
   const keep = sel => { const id = document.activeElement && document.activeElement.dataset; skipSheet(); const b = id && $(`#sheet [data-${sel}="${id[sel]}"]`); if (b) setTimeout(() => b.focus(), 40); };
@@ -1207,6 +1205,7 @@ function renderHome(){
     <button class="stat statbtn" data-stat="net" aria-label="Net worth ${fmt(netWorth())}: what counts"><label><span>Net worth <span class="info">ⓘ</span></span></label><div style="font-weight:800;font-size:1.125rem;margin-top:2px">${fmt(netWorth())}</div></button>
   </div>${scoreButton()}</div>
   ${unlockCard()}${cl}${hint ? `<div class="card next"><div>👉 <b>Next step:</b> ${hint.t}</div><button class="sm" data-next="${hint.go}">${hint.b}</button></div>` : ''}
+  ${S.practice ? '' : upNextLine()}
   ${privateCard()}
   ${!j && !S.retired ? noPayCard() : ''}
   ${S.happy < 30 ? sugg('happy', 'outdoors', `😟 Happiness is low (${Math.round(S.happy)}).`) : ''}
@@ -1246,6 +1245,7 @@ function renderHome(){
   if ($('#planbtn')) $('#planbtn').onclick = planSheet;
   walkWire();
   document.querySelectorAll('[data-stat]').forEach(b => b.onclick = () => showStatInfo(b.dataset.stat));
+  if ($('#upnext')) $('#upnext').onclick = upNextSheet;
   if ($('#scorenow')) $('#scorenow').onclick = showScoreNow;
   document.querySelectorAll('[data-sugg]').forEach(b => b.onclick = () => handFocus(b.dataset.sugg, true));
   { const pc = perkChips(); document.querySelectorAll('[data-perk]').forEach(b => b.onclick = () => { const c = pc[+b.dataset.perk]; if (c) c.go(); }); }
@@ -1396,11 +1396,59 @@ const STATINFO = {
   community: { t:'🤝 Community', up:['Show up for town', 'Working in Waitsburg (a little in Dayton)', 'Kids at home, a council seat, helping in events'],
     down:['It fades slowly if you don\'t show up', 'Skipping out on neighbors'], note:'Counts for 20% of your Life Score. Higher standing helps you get hired.' }
 };
+/* ---------- i15-b02/b03: small charts from S.hist, drawn as plain SVG ---------- */
+const HIST_COL = { money:1, net:2, happy:3, health:4, community:5 };
+const TREND_WEEKS = 26;
+function trendSVG(k){
+  const rows = (S.hist || []).slice(-TREND_WEEKS), c = HIST_COL[k], name = { happy:'Happiness', health:'Health', community:'Community' }[k];
+  if (rows.length < 2) return '<p class="muted trend">Play a few weeks and a trend line shows up here.</p>';
+  const W0 = 300, H0 = 84, x = i => 4 + i * (W0 - 8) / (rows.length - 1), y = v => 4 + (100 - v) * (H0 - 8) / 100;
+  const vals = rows.map(r => r[c]), lo = Math.min(...vals);
+  const mark = (v, l) => `<line x1="0" x2="${W0}" y1="${y(v)}" y2="${y(v)}" stroke="var(--muted)" stroke-dasharray="4 4" stroke-width="1"/><text x="${W0 - 2}" y="${y(v) - 3}" text-anchor="end" font-size="10" fill="var(--muted)">${l}</text>`;
+  return `<figure class="trend"><svg viewBox="0 0 ${W0} ${H0}" role="img" aria-label="${name} over the last ${rows.length} weeks: from ${vals[0]} to ${vals[vals.length - 1]}, lowest ${lo}.">
+    ${mark(30, '30: low')}${k === 'health' ? mark(0, '0: hospital') : ''}
+    <polyline fill="none" stroke="var(--barn)" stroke-width="2.5" stroke-linejoin="round" points="${rows.map((r, i) => `${x(i).toFixed(1)},${y(r[c]).toFixed(1)}`).join(' ')}"/>
+    <circle cx="${x(rows.length - 1)}" cy="${y(vals[vals.length - 1])}" r="3.5" fill="var(--barn)"/></svg>
+    <figcaption class="muted">The last ${rows.length} weeks${lo < 30 ? `, lowest ${lo}` : ''}.</figcaption></figure>`;
+}
+const MONEY_PTS = 120;
+function moneyChart(){
+  const all = S.hist || [];
+  if (all.length < 2) return '<p class="muted trend">Play a few weeks and a chart of your cash and net worth shows up here.</p>';
+  const step = Math.ceil(all.length / MONEY_PTS), rows = all.filter((r, i) => i % step === 0 || i === all.length - 1);
+  const W0 = 320, H0 = 170, L0 = 6, R0 = 74, vs = rows.flatMap(r => [r[1], r[2]]);
+  let lo = Math.min(0, ...vs), hi = Math.max(1, ...vs); if (hi - lo < 100) hi = lo + 100;
+  const x = i => L0 + i * (W0 - L0 - R0) / (rows.length - 1), y = v => 8 + (hi - v) * (H0 - 16) / (hi - lo);
+  const line = (c, dash, col) => `<polyline fill="none" stroke="${col}" stroke-width="2.5" ${dash ? 'stroke-dasharray="6 4"' : ''} stroke-linejoin="round" points="${rows.map((r, i) => `${x(i).toFixed(1)},${y(r[c]).toFixed(1)}`).join(' ')}"/>`;
+  const end = rows[rows.length - 1], ly = [y(end[2]), y(end[1])];
+  if (Math.abs(ly[0] - ly[1]) < 12) { if (ly[0] <= ly[1]) ly[1] = ly[0] + 12; else ly[0] = ly[1] + 12; }   // labels don't sit on each other
+  return `<figure class="trend money"><svg id="mchart" viewBox="0 0 ${W0} ${H0}" aria-hidden="true">
+    ${lo < 0 ? `<line x1="${L0}" x2="${W0 - R0}" y1="${y(0)}" y2="${y(0)}" stroke="var(--muted)" stroke-dasharray="4 4" stroke-width="1"/><text x="${L0 + 2}" y="${y(0) - 3}" font-size="10" fill="var(--muted)">$0</text>` : ''}
+    ${line(2, false, 'var(--soil)')}${line(1, true, 'var(--sky)')}
+    <text x="${W0 - R0 + 4}" y="${ly[0] + 4}" font-size="11" font-weight="700" fill="var(--soil)">Net worth</text>
+    <text x="${W0 - R0 + 4}" y="${ly[1] + 4}" font-size="11" font-weight="700" fill="var(--sky)">- - Cash</text>
+    <line id="mpick" x1="0" x2="0" y1="4" y2="${H0 - 4}" stroke="var(--muted)" stroke-width="1"/></svg>
+    <label class="mrange"><span class="sr-only">Pick a week on the chart</span><input type="range" id="mweek" min="0" max="${rows.length - 1}" value="${rows.length - 1}"></label>
+    <p id="mread" aria-live="polite"></p><figcaption class="sr-only">Since ${MONTHS[histDate(rows[0]).getMonth()]} ${histDate(rows[0]).getFullYear()}, cash went from ${fmt(rows[0][1])} to ${fmt(end[1])} and net worth from ${fmt(rows[0][2])} to ${fmt(end[2])}.</figcaption></figure>`;
+}
+function moneyChartWire(){
+  const all = S.hist || [], sv = $('#mchart'), r = $('#mweek'); if (!sv || !r) return;
+  const step = Math.ceil(all.length / MONEY_PTS), rows = all.filter((x, i) => i % step === 0 || i === all.length - 1);
+  const W0 = 320, L0 = 6, R0 = 74, x = i => L0 + i * (W0 - L0 - R0) / (rows.length - 1);
+  const show = i => { const row = rows[i], d = histDate(row);
+    $('#mpick').setAttribute('x1', x(i)); $('#mpick').setAttribute('x2', x(i));
+    $('#mread').textContent = `Week of ${MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}, ${d.getFullYear()}: cash ${fmt(row[1])}, net worth ${fmt(row[2])}`; };
+  r.oninput = () => show(+r.value);
+  sv.onclick = e => { const b = sv.getBoundingClientRect(), fx = (e.clientX - b.left) / b.width * W0;
+    const i = clamp(Math.round((fx - L0) / ((W0 - L0 - R0) / (rows.length - 1))), 0, rows.length - 1); r.value = i; show(i); };
+  show(rows.length - 1);
+}
 function showStatInfo(k){
   if (k === 'net') {
     const loan = S.loanLeft > 0 ? S.loanLeft * (S.loanPay || CARS.truck.pay) * 0.85 : 0;
     const t = lenTarget();
     sheet(`<h2>💰 Net worth</h2><p class="muted">Everything you own minus what you owe.</p>
+      <h3>Money over time</h3>${moneyChart()}
       <div class="kv"><span>Cash</span><span>${fmt(S.money)}</span></div>
       <div class="kv"><span>${term('equity')}</span><span>${fmt(S.equity)}</span></div>
       <div class="kv"><span>${CARS[S.car].name}</span><span>${fmt(S.carValue)}</span></div>
@@ -1414,9 +1462,10 @@ function showStatInfo(k){
       <div class="kv"><span><b>Net worth</b></span><span><b>${fmt(netWorth())}</b></span></div>
       <p class="muted">Counts for 30% of your ${term('lifescore')}: ${fmt(t)} (in ${term('dollars')}) or more by the end gets full points.</p>
       <button class="btn primary" id="ok">Got it</button>`);
+    moneyChartWire();
   } else {
     const x = STATINFO[k];
-    sheet(`<h2>${x.t}: ${Math.round(S[k])}</h2>
+    sheet(`<h2>${x.t}: ${Math.round(S[k])}</h2>${trendSVG(k)}
       <h3>Goes up with</h3>${x.up.map(u => `<div class="logitem">▲ ${u}</div>`).join('')}
       <h3 style="margin-top:10px">Goes down with</h3>${x.down.map(u => `<div class="logitem">▼ ${u}</div>`).join('')}
       ${k === 'health' ? `<p><b>${maxHealth() < 100 ? `At ${age()}, health tops out at ${Math.round(maxHealth())}.` : 'Health can reach 100 until 55; after that it tops out a little lower each year.'}</b></p>` : ''}
@@ -1450,6 +1499,31 @@ function jobRow(x){
     <div class="s">${x.where ? esc(x.where) + ', ' : ''}${c.name}${c.miles ? ` · ${c.miles} mi` : ' · no commute'} · pay ${wk(payNow(x, cur))}${c.miles ? `, gas ${wk(commuteCost(c.miles, CARS[S.car], x))}` : ''}${tags.length ? ` · ${tags.join(' · ')}` : ''}</div></div>
     <div style="text-align:right"><div class="pay">${fmt(th)}/wk</div>
     <div class="s">${cur ? 'take-home' : base && Math.abs(diff) >= 1 ? `<span class="${diff>0?'upt':'downt'}">${diff>0?'▲':'▼'} ${fmt(Math.abs(diff))}</span>` : 'take-home'}</div>${btn}</div></div>`;
+}
+/* ---------- i15-b08: two jobs side by side, in words rather than raw numbers ---------- */
+const riskWord = x => { const r = (LAYOFF_RISK[x.id] ?? .5) * (x.union ? 0.5 : 1); return r <= 0.05 ? 'very steady' : r <= 0.25 ? 'steady' : r <= 0.6 ? 'some risk' : 'shaky'; };
+const stressWord = x => x.stress < 0.35 ? 'calm' : x.stress < 0.65 ? 'some stress' : 'stressful';
+const wearWord = x => x.wear < 0.25 ? 'easy on your body' : x.wear < 0.65 ? 'some wear' : 'hard on your body';
+function compareSheet(a, b){
+  const cur = job() && !S.retired ? job() : null, list = JOBS;
+  a = jobById(a) || cur || list[0];
+  b = jobById(b) || [...list].filter(x => x.id !== a.id && x.edu <= S.edu && !extraLock(x)).sort((p, q) => takeHome(q) - takeHome(p))[0] || list.find(x => x.id !== a.id);
+  const sel = (id, v) => `<label><span class="sr-only">${id === 'cmpa' ? 'First' : 'Second'} job</span><select id="${id}">${list.map(x => `<option value="${x.id}"${x.id === v.id ? ' selected' : ''}>${x.id === (cur && cur.id) ? '★ ' : ''}${esc(x.title)} (${CITIES[x.city].name})</option>`).join('')}</select></label>`;
+  const col = x => { const c = CITIES[x.city], lock = S.edu < x.edu ? EDU[x.edu] : extraLock(x);
+    return { 'Take-home': `<b>${fmt(takeHome(x))}/wk</b><small>after taxes and gas</small>`, Pay: wk(payNow(x, S.jobId === x.id)),
+      Commute: c.miles ? `${c.miles} mi each way<small>gas ${wk(commuteCost(c.miles, CARS[S.car], x))}</small>` : 'none', Stress: stressWord(x), 'On your body': wearWord(x),
+      Layoffs: `${riskWord(x)}${x.union ? '<small>union: half the risk</small>' : ''}${x.season ? `<small>seasonal: ${seasonWords(x)}</small>` : ''}`,
+      'You need': lock ? `🔒 ${esc(lock)}` : x.id === (cur && cur.id) ? 'your job now' : '✅ can apply' }; };
+  const A = col(a), B = col(b);
+  sheet(`<h2>⚖️ Compare two jobs</h2>
+    <div class="cmpsel">${sel('cmpa', a)}${sel('cmpb', b)}</div>
+    <table class="cmpgrid"><caption class="sr-only">${esc(a.title)} compared with ${esc(b.title)}</caption>
+      <thead><tr><td></td><th scope="col">${esc(a.title)}</th><th scope="col">${esc(b.title)}</th></tr></thead>
+      <tbody>${Object.keys(A).map(k => `<tr><th scope="row">${k}</th><td>${A[k]}</td><td>${B[k]}</td></tr>`).join('')}</tbody></table>
+    <button class="btn primary" id="ok">Close</button>`);
+  $('#cmpa').onchange = () => { compareSheet($('#cmpa').value, b.id); setTimeout(() => $('#cmpa') && $('#cmpa').focus(), 40); };
+  $('#cmpb').onchange = () => { compareSheet(a.id, $('#cmpb').value); setTimeout(() => $('#cmpb') && $('#cmpb').focus(), 40); };
+  $('#ok').onclick = closeSheet;
 }
 let jobOK = false, jobNear = false;
 function explainLocked(id){
@@ -1531,7 +1605,7 @@ function renderJobs(){
     `<button class="chip ${jobCity===k?'on':''}" data-c="${k}">${l}</button>`).join('')}</div>
   ${jobCity!=='all' ? `<div class="card muted">${CITIES[jobCity].blurb}</div>` : ''}
   <div class="card">
-    <h3>Job board <span class="tag">${S.applied ? 'Applied this week' : '1 application per week'}</span></h3>
+    <h3>Job board <span class="tag">${S.applied ? 'Applied this week' : '1 application per week'}</span> <button class="sm alt" id="cmpjobs" aria-haspopup="dialog">⚖️ Compare</button></h3>
     <p class="muted" style="margin:0 0 4px;font-size:0.8125rem">${term('takehome')} is pay after taxes and gas${job() && !S.retired ? ', with ▲▼ against your current job' : ''}.${GOOD_JOBS.length ? ' ⭐ Good first jobs are close to home: the top of the list can mean an hour on the road each way, and long drives wear down happiness.' : ''}</p>
     ${boardHTML(list)}
   </div>`}
@@ -1543,6 +1617,7 @@ function renderJobs(){
   ${LENGTHS[S.len].turns===Infinity && age()>=62 && !S.retired && on('retire.income') ? `<button class="btn primary" id="retire">Retire (Social Security ${wk(ssPay())}${pensionVested()?` + pension ${wk(pensionPay())}`:''}${S.k401>0?` + 401(k) ${wk(S.k401*drawRate()/12)}`:''})</button>` : ''}`;
   document.querySelectorAll('.chip[data-c]').forEach(b => b.onclick = () => { jobCity = b.dataset.c; render(); });
   if ($('#jobok')) $('#jobok').onclick = () => { jobOK = !jobOK; render(); };
+  if ($('#cmpjobs')) $('#cmpjobs').onclick = () => compareSheet();
   if ($('#jobnear')) $('#jobnear').onclick = () => { jobNear = false; render(); announce('Showing all jobs'); };
   if ($('#carpool')) $('#carpool').onclick = () => { S.carpool = !S.carpool; S.carpoolJob = S.carpool ? S.jobId : null; save(); render(); toast(S.carpool ? '🚙 You joined a carpool' : 'Driving alone again'); };
   document.querySelectorAll('[data-apply]').forEach(b => b.onclick = () => apply(b.dataset.apply));
@@ -1819,7 +1894,9 @@ function showMenu(){
     <p class="muted" style="margin-top:12px">${esc(S.name)}'s life is in ${slotName(S.slot)} and also saves itself after every week.</p>
     <button class="btn ghost" id="settings">⚙️ Settings</button>
     <button class="btn ghost" id="skipopts">⏩ Skip and Auto options</button>
+    ${S.ansRules && Object.keys(S.ansRules).length ? `<button class="btn ghost" id="ansrules">🔁 Answer rules (${Object.keys(S.ansRules).length})</button>` : ''}
     <button class="btn ghost" id="help">❓ Help & tutorial</button>
+    <button class="btn ghost" id="done">👋 Done for now</button>
     <button class="btn ghost" id="title">Back to title screen</button>
     <button class="btn ghost" id="retireNow">End this life now (see score)</button>
     <button class="btn ghost" id="close">Close</button>`);
@@ -1829,10 +1906,50 @@ function showMenu(){
   $('#movephone').onclick = movePhoneSheet;
   $('#settings').onclick = () => settingsSheet(true);
   $('#skipopts').onclick = skipSheet;
+  if ($('#ansrules')) $('#ansrules').onclick = ansRulesSheet;
+  $('#done').onclick = doneSheet;
   $('#help').onclick = showHelp;
   $('#title').onclick = () => { save(); closeSheet(); S = null; renderTitle(); };
   $('#retireNow').onclick = confirmRetire;
   $('#close').onclick = closeSheet;
+}
+
+/* ---------- i49-a05: Done for now: save, one small card about this sitting, then the title screen ---------- */
+// a sitting starts the first time a life is played after it's opened (kept in memory only, not in the save)
+let SIT = null;
+const sitKey = () => `${S.lifeId || ''}|${S.slot}|${S.gen || 1}`;
+function sitting(){
+  if (!S) return null;
+  if (!SIT || SIT.key !== sitKey() || S.turn < SIT.turn) {
+    const top = S.log[0];
+    SIT = { key: sitKey(), turn: S.turn, date: dateLabel(), score: S.practice ? null : lifeScore().score, top: top ? top.d + '|' + top.m : null };
+  }
+  return SIT;
+}
+// the best moment: a milestone from this sitting's Journal, or else its first event
+function sitBest(st){
+  const fresh = [];
+  for (const e of S.log) { if (st.top && e.d + '|' + e.m === st.top) break; fresh.push(e); }
+  const mile = fresh.filter(isMile);
+  const e = mile[mile.length - 1] || fresh.filter(x => (x.k || logKind(x.m)) === 'ev').pop();
+  return e ? `${e.d}: ${e.m}` : '';
+}
+function doneSheet(){
+  save();
+  const st = SIT && SIT.key === sitKey() ? SIT : null, n = st ? S.turn - st.turn : 0;
+  const now = S.practice ? null : lifeScore().score, best = st && n ? sitBest(st) : '';
+  sheet(`<h2>👋 Done for now</h2>
+    <p class="muted">${esc(S.name)}'s life is saved in ${slotName(S.slot)}. Continue any time from the title screen.</p>
+    ${n ? `<div class="kv"><span>Weeks played this sitting</span><span><b>${n}</b></span></div>
+      <div class="kv"><span>From</span><span>${st.date}</span></div>
+      <div class="kv"><span>To</span><span>${dateLabel()}</span></div>
+      ${now != null && st.score != null ? `<div class="kv"><span>Life Score</span><span>${st.score} → <b>${now}</b> <span class="delta ${now > st.score ? 'up' : now < st.score ? 'down' : 'flat'}">${now === st.score ? '±0' : (now > st.score ? '▲' : '▼') + Math.abs(now - st.score)}</span></span></div>` : ''}
+      ${best ? `<h3 style="margin-top:10px">⭐ Best moment</h3><div class="logitem">${best}</div>` : ''}`
+      : `<p>No weeks played this sitting.${now != null ? ` Life Score so far: <b>${now}</b>.` : ''}</p>`}
+    <button class="btn primary" id="ok">To the title screen</button>
+    <button class="btn ghost" id="back">Keep playing</button>`);
+  $('#ok').onclick = () => { closeSheet(); SIT = null; S = null; renderTitle(); };
+  $('#back').onclick = closeSheet;
 }
 
 /* ---------- ⚙️ Settings (i2-a03): comfort options in one place; none of them changes the game ---------- */
@@ -1842,7 +1959,7 @@ const SETTING_ROWS = [
   ['sound', '🎵 Sounds', 'Small sounds for a new week, events and badges. Quiet while ⏩ and Auto play.'],
   ['vibrate', '📳 Vibration', 'A short buzz for events and badges, on phones that can (not iPhones).'],
   ['swipe', '👆 Swipes', 'Swipe left or right to change tabs, and swipe a pop-up\'s handle down to close it.'],
-  ['skipAsk', '⏩ Focus check', 'Before ⏩ 13 or Auto, ask about a focus you\'ve kept 4 weeks or more.'],
+  ['skipAsk', '⏩ Focus check', 'Before Auto, ask about a focus you\'ve kept 4 weeks or more.'],
   ['srWeek', '🗣️ Week summary (screen readers)', 'What a screen reader says after End Week: one short sentence, or every number.'],
   ['motion', '✨ Animations', 'Stat bars that slide, cash that counts up after a week, and confetti for badges. Always off when your device asks for reduced motion.']
 ];

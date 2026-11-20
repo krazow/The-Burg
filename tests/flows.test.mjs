@@ -687,9 +687,10 @@ await t.check('Life tab: a change that rolled the dice cannot be undone (no rero
 
 await t.check('a long press, Shift+Enter or the Menu opens the skip options; Auto until and the speed are remembered', async () => {
   await life({ jobId: 'farmhand' }, 'home', 'five');
-  assert(await page.isVisible('#auto') && !(await page.isVisible('#ff4')) && !(await page.isVisible('#ff13')), 'a narrow phone shows End Week and Auto only');
+  assert(await page.isVisible('#auto') && !(await page.isVisible('#ff4')) && !(await page.$('#ff13')), 'a narrow phone shows End Week and Auto only');
   await page.focus('#end'); await page.keyboard.press('Shift+Enter');
-  await page.waitForSelector(`${open} #sk13`);
+  await page.waitForSelector(`${open} #sk4`);
+  assert(!(await page.$(`${open} #sk13`)), 'i50-a14: the 13-week skip is gone');
   assert((await S()).turn === 0, 'Shift+Enter should not play a week');
   await page.click(`${open} [data-until="season"]`);
   assert(await page.getAttribute(`${open} [data-until="season"]`, 'aria-checked') === 'true', 'the pick is not shown as checked');
@@ -701,8 +702,75 @@ await t.check('a long press, Shift+Enter or the Menu opens the skip options; Aut
   await page.click('[data-tab=menu]'); await page.click(`${open} #skipopts`); await page.click(`${open} [data-until="event"]`); await page.click(`${open} #close`);
   await page.setViewportSize({ width: 768, height: 1024 });
   await setup(() => render());
-  assert(await page.isVisible('#ff4') && await page.isVisible('#ff13'), 'wide screens keep the ⏩ buttons');
+  assert(await page.isVisible('#ff4') && !(await page.$('#ff13')), 'wide screens keep ⏩ 4 (i50-a14: and no ⏩ 13)');
   await page.setViewportSize({ width: 390, height: 844 });
+});
+
+await t.check('i49-a02 / i49-a11: an event result goes straight to next week, and a seen small event offers an answer rule', async () => {
+  await life({ jobId: 'farmhand' }, 'home');
+  await setup(() => { const ok = e => e.choices().filter(c => !c.if || c.if()); const e = EVENTS.find(x => ruleOK(x) && ok(x).length >= 2); S.evCd[e.title] = -1; window.TEST_EV = e; showEvent(e); });
+  await page.click(`${open} [data-i="1"]`);
+  assert(await page.isVisible(`${open} #nextwk`) && await page.isVisible(`${open} #always`), 'no Next week button or rule box');
+  await page.check(`${open} #always`);
+  const t0 = (await S()).turn;
+  await page.click(`${open} #nextwk`); await clearSheets();
+  const s = await S(), title = await page.evaluate(() => TEST_EV.title);
+  assert(s.turn === t0 + 1, `Next week should play one week (turn ${s.turn})`);
+  assert(s.ansRules[title] && s.ansRules[title].k, `rule not kept: ${JSON.stringify(s.ansRules)}`);
+  await page.click('[data-tab=menu]'); await page.click(`${open} #ansrules`);
+  assert((await page.textContent('#sheet')).includes(title), 'the rules sheet should list it');
+  await page.click(`${open} [data-unrule]`);
+  assert(!Object.keys((await S()).ansRules).length, 'Turn off should drop the rule');
+  await page.click(`${open} #back`); await page.click(`${open} #close`);
+});
+
+await t.check('i49-a05: Done for now saves and shows the sitting (weeks, dates, score), then the title screen', async () => {
+  await life({ jobId: 'farmhand' }, 'home');
+  await setup(() => { SIT = null; });
+  for (let i = 0; i < 3; i++) { await page.click('#end'); await clearSheets(); await page.waitForTimeout(380); }
+  await page.click('[data-tab=menu]'); await page.click(`${open} #done`);
+  const txt = await page.textContent('#sheet');
+  assert(/Weeks played this sitting\s*3/.test(txt) && /Life Score/.test(txt) && /Jan/.test(txt), txt.slice(0, 300));
+  await page.click(`${open} #ok`);
+  assert(await page.evaluate(() => S === null && !!$('#start')), 'should be on the title screen');
+  assert(await page.evaluate(() => (store.get(slotKey(0)) || {}).turn === 3), 'the life should be saved');
+});
+
+await t.check('i15-b02/b03: the stat sheets show trend lines, and net worth a cash and net-worth chart you can pick a week on', async () => {
+  await life({ jobId: 'farmhand' }, 'home');
+  await setup(() => { for (let i = 0; i < 30; i++) weekTick(false); render(); });
+  await page.click('[data-stat="health"]');
+  assert(await page.$(`${open} .trend polyline`) && (await page.textContent('#sheet')).includes('0: hospital'), 'no health trend line');
+  await page.click(`${open} #ok`);
+  await page.click('[data-stat="net"]');
+  assert(await page.$(`${open} #mchart polyline:nth-of-type(2)`), 'no money chart');
+  const box = await page.evaluate(() => $('#mchart').getBoundingClientRect().height);
+  assert(box < 300, `chart ${box}px tall`);
+  const before = await page.textContent('#mread');
+  await page.focus('#mweek'); await page.keyboard.press('Home');
+  const after = await page.textContent('#mread');
+  assert(/cash .* net worth/.test(after) && before !== after, `${before} / ${after}`);
+  await page.click(`${open} #ok`);
+});
+
+await t.check('i15-b08 / i15-b06 / i15-b05: compare two jobs, the up-next line on Home, and the last 4 weeks by kind', async () => {
+  await life({ jobId: 'farmhand' }, 'jobs');
+  await page.click('#cmpjobs');
+  assert(await page.inputValue(`${open} #cmpa`) === 'farmhand', 'the job you have should be the first column');
+  await page.selectOption(`${open} #cmpb`, 'diner');
+  const txt = await page.textContent('#sheet');
+  assert(/Take-home/.test(txt) && /steady|shaky|some risk/.test(txt) && (await page.$$(`${open} .cmpgrid tbody tr`)).length >= 6, txt.slice(0, 300));
+  await page.click(`${open} #ok`);
+  await setup(() => { S.date = new Date(2027, 11, 6).getTime(); tab = 'home'; render(); });
+  assert(/coming up/.test(await page.textContent('#upnext')), 'no up-next line');
+  await page.click('#upnext');
+  assert(/New Year/.test(await page.textContent('#sheet')), 'up next should list New Year');
+  await page.click(`${open} #ok`);
+  for (let i = 0; i < 5; i++) { await page.click('#end'); await clearSheets(); await page.waitForTimeout(380); }
+  await page.click('#strip'); await page.click(`${open} #spend4`);
+  const sp = await page.textContent('#sheet');
+  assert(/Last 4 weeks by kind/.test(sp) && /Pay and benefits/.test(sp) && /Home/.test(sp), sp.slice(0, 300));
+  await page.click(`${open} #ok`); await page.click(`${open} #ok`);
 });
 
 await t.check('🗓 Plan: build a rotation, End Week follows it, and picking by hand pauses it for a week', async () => {
@@ -2078,9 +2146,9 @@ await t.check('i48-b05: a skip stops when a stat drops into the red, and warns a
   assert(r.n1.length === 0 && r.n2.includes('health'), JSON.stringify(r));
 });
 
-await t.check('i48-b06: ⏩ 13 after 4+ weeks of one focus asks to keep or switch, once, and can be turned off', async () => {
+await t.check('i48-b06: Auto after 4+ weeks of one focus asks to keep or switch, once, and can be turned off', async () => {
   await life({ jobId: 'farmhand', focus: 'rest', streakF: 'rest', streakN: 5, happy: 70, health: 70, community: 20 });
-  await page.evaluate(() => $('#ff13').click());
+  await page.evaluate(() => $('#auto').click());   // i50-a14: ⏩ 13 is gone; Auto asks the same
   assert(/Keep Rest, or switch/.test(await page.textContent(`${open} h2`)), 'no focus check');
   const fc = await page.$$eval(`${open} [data-fc]`, bs => bs.map(b => b.dataset.fc));
   assert(fc.length === 2 && fc[0] === 'community' && !fc.includes('rest'), JSON.stringify(fc));
@@ -2088,11 +2156,11 @@ await t.check('i48-b06: ⏩ 13 after 4+ weeks of one focus asks to keep or switc
   const s = await S();
   assert(s.run.weeks >= 1 && s.streakF === 'community', JSON.stringify({ w: s.run.weeks, f: s.streakF }));
   await setup(() => { closeSheet(); S.focus = 'rest'; S.streakF = 'rest'; S.streakN = 6; S.turn = 20; render(); });
-  await page.evaluate(() => $('#ff13').click());
+  await page.evaluate(() => $('#auto').click());   // i50-a14: ⏩ 13 is gone; Auto asks the same
   await page.click(`${open} #fcoff`); await clearSheets();
   assert(await page.evaluate(() => setting('skipAsk')) === 'off', 'setting not saved');
   await setup(() => { closeSheet(); S.focus = 'rest'; S.streakF = 'rest'; S.streakN = 7; S.turn = 0; render(); });
-  await page.evaluate(() => $('#ff13').click());
+  await page.evaluate(() => $('#auto').click());   // i50-a14: ⏩ 13 is gone; Auto asks the same
   assert(!(await page.$(open)) || !/or switch/.test(await page.textContent(`${open} h2`)), 'asked again after Don\'t ask again');
   await setup(() => { closeSheet(); setPref('skipAsk', 'on'); });
 });
