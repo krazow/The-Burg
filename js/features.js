@@ -1693,6 +1693,50 @@ EVENTS.push(...PLAN_EVENTS);
 Object.assign(EVENT_PLACE, { 'Long-term care insurance':['T','mainst'], 'Who will care for you?':['T','home'], 'Winter in Arizona?':['T','home'],
   'Scholarship night at Waitsburg High':['T','school'], 'Wine weekend guests':['T','home'], 'A rough guest':['T','home'] });
 
+/* ---------- i15-b06: Up next: dated things in the next 8 weeks, behind one line on Home ---------- */
+const UP_WEEKS = 8;
+const wksTo = t => Math.ceil((t - S.date) / (7 * 864e5) - 1e-9);
+const inWks = n => n <= 0 ? 'this week' : n === 1 ? 'next week' : `in ${n} weeks`;
+function upNext(){
+  if (!S || S.over) return [];
+  const out = [], d = new Date(S.date), y = d.getFullYear();
+  const add = (n, ic, t) => { if (n >= 0 && n <= UP_WEEKS) out.push({ n, ic, t }); };
+  // vehicle tabs: every January
+  { const jan = d.getMonth() === 0 && S.tabsYear !== y ? S.date : new Date(y + 1, 0, 1).getTime();
+    add(Math.max(0, wksTo(jan)), '🪪', `Vehicle tabs at the DMV, about ${fmt(vehicleTabs())}`); }
+  // the oil change: breakdowns rise after 26 weeks, and more after a year
+  { const w = S.turn - (S.svc ?? 0);
+    if (w < 26) add(26 - w, '🔧', 'An oil change is due: after that, breakdowns get more likely. Car care is on a trip to Dayton, Walla Walla or the Tri-Cities.');
+    else if (w < 52) add(52 - w, '🔧', 'A year since the last oil change: breakdowns get even more likely after that.'); }
+  // the wheat lease
+  if (S.biz && S.biz.type === 'wheat') { const end = S.biz.lease ?? LEASE_WEEKS, left = end - S.biz.weeks;
+    if (left > 0) add(left, '🌾', `The wheat lease is up: renew it on the Life tab for about ${fmt(leaseCost())}.`);
+    else add(end + LEASE_GRACE - S.biz.weeks - 1, '🌾', `Last chance to renew the wheat lease (${fmt(leaseCost())}) before it ends.`); }
+  // loans paid off
+  if (S.loanLeft > 0) add(Math.ceil(S.loanLeft / W) - 1, '🛻', 'The last truck payment.');
+  if (S.sloanLeft > 0) add(Math.ceil(S.sloanLeft / W) - 1, '🎓', 'The last student loan payment.');
+  // this season's town goal
+  { const g = seasonGoal();
+    if (g && !S.practice) { const st = S.sgoal && S.sgoal.id === seasonId(g) ? S.sgoal : { prog:0, done:false };
+      let n = 0; while (n < 20 && g.months.includes(new Date(S.date + (n + 1) * 7 * 864e5).getMonth())) n++;
+      if (!st.done) add(n, g.ic, `The town goal ends (${g.name}): ${g.need - st.prog} more week${g.need - st.prog === 1 ? '' : 's'} of ${g.what} needed.`); } }
+  // New Year and the year in review
+  if (LENGTHS[S.len].turns > 26) add(Math.max(0, wksTo(new Date(y + 1, 0, 1).getTime()) - 1), '📅', `New Year: your ${y} in review.`);
+  return out.sort((a, b) => a.n - b.n);
+}
+function upNextLine(){
+  const u = upNext(); if (!u.length) return '';
+  return `<button class="card upnext" id="upnext" aria-haspopup="dialog"><span>📆 ${u.length} thing${u.length === 1 ? '' : 's'} coming up</span><span aria-hidden="true">›</span></button>`;
+}
+function upNextSheet(){
+  const u = upNext();
+  sheet(`<h2>📆 Coming up in the next ${UP_WEEKS} weeks</h2>
+    ${u.length ? u.map(x => `<div class="kv"><span>${x.ic} ${x.t}</span><span class="tag">${inWks(x.n)}</span></div>`).join('') : '<p>Nothing dated in the next 8 weeks.</p>'}
+    ${S.practice ? '' : '<button class="btn ghost" id="outlook">📅 Money outlook: next 13 weeks</button>'}
+    <button class="btn primary" id="ok">Close</button>`);
+  $('#ok').onclick = closeSheet;
+  if ($('#outlook')) $('#outlook').onclick = () => outlookSheet(upNextSheet);
+}
 // i3-a28: the next 13 weeks of regular money, read-only, from the same bill lines weekTick uses
 function moneyOutlook(n = 13){
   const out = [], j = S.retired ? null : job(), f = FOCUS[S.focus] || FOCUS.rest, d0 = new Date(S.date);

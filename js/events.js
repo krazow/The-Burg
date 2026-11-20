@@ -58,13 +58,39 @@ function resolveChoice(ev, choice, auto = false){
   S.pendingEv = null; S.evAt = null;
   return { result, dm };
 }
-function showEvent(ev, then = null){
+/* ---------- i49-a11: "Next time, answer the same way" for small events you've seen before ----------
+   A rule answers the event by itself during ⏩ and Auto (never on a plain End Week), as a line in the week strip.
+   Rules are matched by the choice's words, so a price that rose with the years still matches. Menu → Answer rules. */
+const RULE_NO = new Set(['Someone catches your eye', 'A rough patch', 'A friendly stray', 'A promotion offer', 'Layoffs', 'Market drop',
+  'Harvest: sell or store?', 'Run for town council?', 'Starting a family?', 'Winter in Arizona?', 'Scholarship night at Waitsburg High',
+  'A kid heads off to college', 'The trip of a lifetime', 'Contract vote', 'Federal shutdown', 'An inheritance', 'Long-term care insurance', 'Who will care for you?']);
+const ruleOK = ev => !!ev && !ev.once && !ev.big && !ev.fixed && !RULE_NO.has(ev.title);
+const ruleKey = label => noTags(label).replace(/[-−+]?\$[\d,.]+/g, '$').replace(/\d+/g, '#').replace(/\s+/g, ' ').trim();
+function ruleChoice(ev, choices){
+  const r = S.rules && S.rules[ev.title]; if (!r || !ruleOK(ev)) return null;
+  return choices.find(c => ruleKey(c.label) === r.k) || null;
+}
+function rulesSheet(){
+  const list = Object.entries(S.rules || {});
+  sheet(`<h2>🔁 Answer rules</h2>
+    <p class="muted">These small events answer themselves while you skip ahead with ⏩ or Auto. On a plain End Week they still ask you.</p>
+    ${list.length ? list.map(([t, r]) => `<div class="kv job"><div><div class="t">${esc(t)}</div><div class="s">${esc(r.l)}</div></div><button class="sm alt" data-unrule="${esc(t)}" aria-label="Turn off the rule for ${esc(t)}">Turn off</button></div>`).join('')
+      : '<p>No rules yet. After a small event you\'ve seen before, tick <b>Next time, answer the same way</b>.</p>'}
+    ${list.length > 1 ? '<button class="btn ghost" id="unall">Turn all rules off</button>' : ''}
+    <button class="btn ghost" id="back">← Back to Menu</button>`);
+  document.querySelectorAll('#sheet [data-unrule]').forEach(b => b.onclick = () => { delete S.rules[b.dataset.unrule]; save(); rulesSheet(); announce('Rule turned off'); });
+  if ($('#unall')) $('#unall').onclick = () => { S.rules = {}; save(); rulesSheet(); announce('All rules turned off'); };
+  $('#back').onclick = showMenu;
+}
+function showEvent(ev, then = null, pre = []){
   const before = {happy:S.happy, health:S.health, community:S.community};
   const choices = ev.choices().filter(c => !c.if || c.if());
+  const seen = S.evCd[ev.title] != null && ruleOK(ev) && choices.length > 1;   // i49-a11: seen before, so a rule can be set
   const pin = S.evPins && S.evPins[0] && S.evPins[0].t === ev.title ? [S.evPins[0].m, S.evPins[0].k] : eventPlace(ev);
   sheet(`<div class="big">${ev.ic}</div><h2 style="text-align:center">${ev.title}</h2><p class="evplace">📍 ${esc(placeName(pin))}${pin[0] === 'R' ? ' · on the region map' : ''}</p><p>${typeof ev.text==='function'?ev.text():ev.text}</p>
     <div class="evchoices">${choices.map((c,i) => `<button class="btn ${i===0?'primary':'ghost'}" data-i="${i}">${c.label}</button>`).join('')}</div>`);
   $('#sheet').classList.add('ev');            // i2-a24: the choices sit at the bottom of the pop-up, in thumb reach
+  if (pre && pre.length && $('#sheet .big')) $('#sheet .big').insertAdjacentHTML('beforebegin', rideHTML(pre));   // i49-a03
   sfx('event'); buzz('event');
   document.querySelectorAll('#sheet [data-i]').forEach(b => b.onclick = () => {
     const { result, dm } = resolveChoice(ev, choices[+b.dataset.i]);
@@ -72,11 +98,19 @@ function showEvent(ev, then = null){
     const st = ['happy', 'health', 'community'].reduce((a, k) => a + S[k] - before[k], 0);
     sfx(dm < 0 || st < -1 ? 'bad' : dm > 0 || st > 1 ? 'good' : 'tap');
     if (choices.length === 1) { closeSheet(); render(); toast(`${ev.ic} ${result}${dm ? ` (${dm>0?'+':''}${fmt(dm)})` : ''}`); if (then) showReview(then); return; }
+    const c = choices[+b.dataset.i], had = !!(S.rules && S.rules[ev.title] && S.rules[ev.title].k === ruleKey(c.label));
+    const next = !then && !S.over && !S.endPending;   // i49-a02: straight on to next week, when nothing else is waiting
     sheet(`<div class="big">${ev.ic}</div><p>${result}</p>
       <p>${dm ? `<span class="delta ${dm>0?'up':'down'}">${dm>0?'+':''}${fmt(dm)}</span>` : ''}${deltaChips(before)}</p>
-      <div class="evchoices"><button class="btn primary" id="ok">Continue</button></div>`);
+      ${seen ? `<label class="rulechk"><input type="checkbox" id="always"${had ? ' checked' : ''}> Next time, answer the same way<small>While you skip ahead. Turn it off in the Menu.</small></label>` : ''}
+      <div class="evchoices${next ? ' two' : ''}"><button class="btn primary" id="ok">${next ? 'OK' : 'Continue'}</button>${next ? `<button class="btn ghost" id="nextwk" aria-label="Next week: end the week with the same focus, ${esc(FOCUS[S.focus].name)}">Next week →<small>${FOCUS[S.focus].ic} ${FOCUS_SHORT[S.focus]}</small></button>` : ''}</div>`);
     $('#sheet').classList.add('ev');          // the result keeps the same layout, so Continue is where the choice was
-    $('#ok').onclick = () => { closeSheet(); render(); if (then) showReview(then); };
+    const keepRule = () => { if (!$('#always')) return;
+      if ($('#always').checked) S.rules = { ...(S.rules || {}), [ev.title]: { k: ruleKey(c.label), l: noTags(c.label).slice(0, 120) } };
+      else if (S.rules && S.rules[ev.title]) delete S.rules[ev.title];
+      save(); };
+    $('#ok').onclick = () => { keepRule(); closeSheet(); render(); if (then) showReview(then); };
+    if ($('#nextwk')) $('#nextwk').onclick = () => { keepRule(); closeSheet(); render(); endTurn(); };
   });
 }
 // where each event happens: ['T', place] on the Waitsburg map or ['R', town or landmark] on the region map;
