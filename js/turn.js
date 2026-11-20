@@ -426,6 +426,7 @@ function weekTick(auto){
   jobWeekEnd(notes);                               // i3: months on the job, apprenticeships, clearances, strikes
   S.date += 7 * 864e5; S.ageMonths += m; S.turn++; S.jobMonths += m; S.applied = false;
   if (age() > oldAge && age() % 10 === 0) notes.push(`🎂 Happy ${age()}th birthday!`);
+  unlockCheck(true);                               // i31-b22: systems whose moment came, or whose deadline for this game length passed, open
   if (S.turn % 13 === 0 && !S.practice) {          // a quarterly report card in the Journal (doesn't stop skips)
     const sc = lifeScore().score, d = S.scoreQ == null ? null : sc - S.scoreQ;
     log(`📋 Report card: Life Score ${sc}${d == null ? '' : ` (${d >= 0 ? '+' : ''}${d} since the last one)`}.`);

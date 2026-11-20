@@ -289,12 +289,14 @@ function showHelp(){
       <div class="card tutcard"><h3>🎮 Gameplay tutorial</h3>
         <p>Play a short <b>practice life</b>, about 4 minutes: jobs, your weekly focus, skips and plans, Out and about, trips, insurance, the money outlook, the maps and Settings. A pulsing ring shows exactly what to tap, and each step waits for your tap. ${HELP_FROM === 'game' ? 'Your current life is saved first and comes right back afterward.' : 'Nothing is saved.'}</p>
         <button class="btn primary" id="tutstart">Start the tutorial</button></div>
+      ${comingUpCard()}
       ${guideHTML()}
     </div>`;
   if (!lastHelpFocus) lastHelpFocus = document.activeElement && document.activeElement.id || null;
   v.classList.remove('hidden'); v.scrollTop = 0; setTimeout(() => $('#helpclose').focus({ preventScroll: true }), 30);
   $('#helpclose').onclick = closeHelp;
   $('#tutstart').onclick = startTutorial;
+  comingUpWire();
 }
 let lastHelpFocus = null;
 function closeHelp(){
@@ -361,7 +363,7 @@ function startTutorial(){
 function tutNext(){
   if (!TUT) return;
   TUT.i++;
-  const st = TSTEPS[TUT.i];
+  const st = tsteps()[TUT.i];
   if (!st) return endTutorial(true);
   if (st.before) st.before();
   TUT.tries = 0;
@@ -369,7 +371,7 @@ function tutNext(){
 }
 function drawCoach(){
   if (!TUT) return;
-  const st = TSTEPS[TUT.i], c = $('#coach');
+  const st = tsteps()[TUT.i], c = $('#coach'), N = tsteps().length;
   $('#toast').classList.add('hidden');
   const el = st.sel ? document.querySelector(st.sel) : null;
   if (st.sel && !el) { if (++TUT.tries < 12) return setTimeout(drawCoach, 150); TUT.skipped.push(TUT.i); return tutNext(); }   // skip a step whose target never appeared
@@ -385,13 +387,13 @@ function drawCoach(){
   c.innerHTML = dim.map(([x,y,w,h]) => `<div class="cdim" style="left:${x}px;top:${y}px;width:${w}px;height:${h}px"></div>`).join('') +
     (box ? `<div class="cring${st.tap ? ' tap' : ''}" style="left:${box.x}px;top:${box.y}px;width:${box.w}px;height:${box.h}px"></div>${st.tap ? `<div class="cfinger" style="left:${box.x + box.w/2}px;top:${box.y + box.h/2}px">👆</div>` : ''}` : '') +
     `<div class="cbubble" role="dialog" aria-live="polite" style="${box ? 'visibility:hidden' : 'top:50%;transform:translate(-50%,-50%)'}">
-      <div class="cstep">Step ${TUT.i + 1} of ${TSTEPS.length}</div>
+      <div class="cstep">${TUT.mini ? '👀 Show me how · ' : ''}Step ${TUT.i + 1} of ${N}</div>
       <div class="ctext">${st.text}</div>
       <div class="cbtns">${st.tap ? '<span class="chint">👆 Tap the highlighted spot</span>' : `<button class="sm" id="cnext">${st.done ? 'Finish' : 'Next'}</button>`}
-        ${st.done ? '' : '<button class="sm alt" id="cskip">Skip tutorial</button>'}</div></div>`;
+        ${st.done ? '' : `<button class="sm alt" id="cskip">${TUT.mini ? 'Close' : 'Skip tutorial'}</button>`}</div></div>`;
   c.classList.remove('hidden');
   if (box) placeBubble(c.querySelector('.cbubble'), box, vw, vh, !!st.tap);
-  announce(`Tutorial step ${TUT.i + 1} of ${TSTEPS.length}. ${c.querySelector('.ctext').textContent}`);
+  announce(`${TUT.mini ? 'Show me how' : 'Tutorial'} step ${TUT.i + 1} of ${N}. ${c.querySelector('.ctext').textContent}`);
   { const f = st.tap && el && el.focus ? el : $('#cnext'); if (f) f.focus({ preventScroll: true }); }   // keyboard users can press Enter
   if ($('#cnext')) $('#cnext').onclick = e => { e.stopPropagation(); hideCoach(); tutNext(); };
   if ($('#cskip')) $('#cskip').onclick = e => { e.stopPropagation(); endTutorial(false); };
@@ -419,15 +421,72 @@ function hideCoach(){ const c = $('#coach'); if (c) { c.classList.add('hidden');
 // a tap on the highlighted spot moves the tutorial on (the app handles the tap as usual)
 document.addEventListener('click', e => {
   if (!TUT) return;
-  const st = TSTEPS[TUT.i];
+  const st = tsteps()[TUT.i];
   if (st && st.tap && st.sel && e.target.closest && e.target.closest(st.sel)) { hideCoach(); setTimeout(tutNext, 60); }
 }, true);
 addEventListener('resize', () => { if (TUT && !$('#coach').classList.contains('hidden')) drawCoach(); });
 function endTutorial(done){
-  const prev = TUT && TUT.prev; if (TUT) LAST_TUT_SKIPPED = TUT.skipped; TUT = null; hideCoach(); closeSheet();
+  const prev = TUT && TUT.prev; if (TUT && !TUT.mini) LAST_TUT_SKIPPED = TUT.skipped; TUT = null; hideCoach(); closeSheet();
   if (!prev) return;
+  if (prev.mini) { tab = prev.tab || 'home'; render(); window.scrollTo(0,0); return; }   // i31-b17: a Show me tour changed nothing but the tab
   store.set(PREF_KEY, prev.prefs); applyPrefs(); jobCity = prev.jobCity; jobOK = prev.jobOK; LIFE_UNDO = prev.undo || [];
   S = prev.S; tab = prev.tab || 'home'; MAPSIDE = null; MAPSEL = null;
   if (S) { render(); window.scrollTo(0,0); } else renderTitle();
   toast(done ? '🎉 Tutorial finished' : 'Tutorial closed');
+}
+
+/* ---------- 👀 'Show me how' (i31-b16/b17): short tours of one system, run on your real life ---------- */
+// A few rings with Next, no taps needed: nothing is bought, saved or played, and you come back to the tab you were on.
+const tsteps = () => (TUT && TUT.steps) || TSTEPS;
+const MINI_TOURS = {
+  study: [
+    { tab:'home', sel:'.fbtn[data-f="study"]', text:'📚 <b>Take classes</b> is a weekly focus. Each week of classes counts toward a certificate or a diploma. Tuition is less with the Washington College Grant when your pay is low.' },
+    { tab:'jobs', sel:'[data-locked]', text:'🔒 jobs need more schooling, a certificate or a program. Tap a locked job any time to see what it takes.' },
+    { tab:'life', sel:'#educard', text:'On the <b>Life</b> tab you can pick a program (more pay at matching jobs) or sign up for a short certificate.' }],
+  out: [
+    { tab:'home', sel:'#outbtn', text:() => `🛍️ <b>Out and about:</b> up to ${OUT_MAX} quick visits a week to places in town, on top of your focus. One per place a week; going back within ${OUT_REPEAT} weeks is half as special.` }],
+  goals: [
+    { tab:'life', sel:'#goalscard', text:() => `🎯 <b>Life goals:</b> pin up to ${GOAL_MAX} badges. Each one you reach after pinning it adds ${GOAL_POINTS} points to your Life Score.` }],
+  k401: [
+    { tab:'life', sel:'#k401card', text:'🏦 Your <b>401(k)</b> saves part of each paycheck before taxes. It grows about 6% a year.' },
+    { tab:'life', sel:'[data-k401="1"]', text:'At <b>5%</b> or more your employer adds 3% on top: free money. You can change it any time.' }],
+  hustle: [
+    { tab:'home', sel:'.fbtn[data-f="hustle"]', text:'🔧 <b>Side hustle</b> is a weekly focus: weekend gigs that change with the seasons, and pay more as you get good at them.' },
+    { tab:'home', sel:'.fdesc', text:'Gigs cost a little happiness and health, so mix them with Rest or Get outside. Three weeks in four wears you down.' }],
+  plan: [
+    { tab:'home', sel:'#planbtn', text:() => `🗓 <b>Plan</b> sets up to ${PLAN_MAX} focuses that take turns, one a week. Picking a focus by hand pauses the plan for that week only.` }],
+  score: [
+    { tab:'home', sel:'#scorenow', text:'🏆 Your <b>Life Score so far</b>: what you\'d get if the game ended today. Tap it to see the parts and your weakest one.' }],
+  trip: [
+    { tab:'home', sel:'#tripchip', text:() => `🚗 <b>Trips:</b> pick a town and up to ${TRIP_MAX} stops. The trip happens when you end the week. A stock-up run makes groceries cheaper for a while.` }],
+  skills: [
+    { tab:'life', sel:'#skillscard', text:'🧰 <b>Skills</b> grow as you practice: cooking on Rest weeks, people skills in town, handy work on side hustles. Each level saves money or opens a choice.' }],
+  biz: [
+    { tab:'life', sel:'#bizcard', text:'🏪 <b>Your own business:</b> one at a time. It earns (or loses) a little every week, and you can sell it later for part of what you paid.' }]
+};
+function miniTour(id){
+  const steps = MINI_TOURS[id]; if (!steps || !S || S.over || TUT) return;
+  closeHelp(); closeSheet();
+  if (!$('#coach')) document.body.insertAdjacentHTML('beforeend', '<div id="coach" class="hidden"></div>');
+  TUT = { i: -1, skipped: [], mini: id, prev: { mini: true, tab },
+    steps: steps.map((st, i) => ({ sel: st.sel, text: typeof st.text === 'function' ? st.text() : st.text, done: i === steps.length - 1 ? 1 : 0,
+      before: () => { if (st.tab && tab !== st.tab) { tab = st.tab; render(); window.scrollTo(0,0); } } })) };
+  tutNext();
+}
+// i31-b18/b19/b22: in Help, the next two systems coming up (and by when at the latest), 'I know this one', and the tours
+function comingUpCard(){
+  if (!S || S.over || S.practice) return '';
+  const soon = UNLOCKS.filter(u => !isOpen(u.id)), by = u => unlockBy(u) ?? 1e9;
+  const next = soon.slice().sort((a, b) => by(a) - by(b)).slice(0, 2), tours = UNLOCKS.filter(u => isOpen(u.id) && MINI_TOURS[u.id]);
+  if (!next.length && !tours.length) return '';
+  return `<div class="card" id="comingup"><h3>🔓 Your life so far</h3>
+    ${next.length ? `<p class="muted" style="margin:4px 0">Coming up in your life:</p>${next.map(u => `<div class="kv"><span>${u.ic} ${u.label}<br><small class="muted">Opens ${unlockWhen(u)}</small></span><button class="sm alt" data-early="${u.id}" aria-label="I know this one: open ${u.label} now">I know this one</button></div>`).join('')}
+      <button class="sm alt" id="openall">Open everything now</button>` : ''}
+    ${tours.length ? `<p class="muted" style="margin:8px 0 4px">👀 Show me how:</p><div class="chips">${tours.map(u => `<button class="chip" data-tour="${u.id}">${u.ic} ${u.label}</button>`).join('')}</div>` : ''}</div>`;
+}
+function comingUpWire(){
+  const redo = msg => { save(); render(); const c = $('#comingup'); if (c) { c.outerHTML = comingUpCard(); comingUpWire(); } announce(msg); const f = $('#comingup button'); if (f) f.focus({ preventScroll: true }); };
+  document.querySelectorAll('#comingup [data-early]').forEach(b => b.onclick = () => { const u = UNLOCK[b.dataset.early]; openSystem(u.id, { quiet:true, how:'early' }); redo(`${u.label} is open.`); });
+  if ($('#openall')) $('#openall').onclick = () => { UNLOCKS.forEach(u => openSystem(u.id, { quiet:true, how:'early' })); redo('Everything is open.'); };
+  document.querySelectorAll('#comingup [data-tour]').forEach(b => b.onclick = () => miniTour(b.dataset.tour));
 }

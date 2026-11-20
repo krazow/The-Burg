@@ -434,12 +434,13 @@ await t.check('side-hustle gigs follow the seasons and pay more with experience'
 
 await t.check('Life Score so far shows on Home and a report card lands in the Journal every 13 weeks', async () => {
   const r = await ev(() => { fresh('two', { jobId: 'farmhand' }); tab = 'home'; render();
-    const btn = document.querySelector('#scorenow').textContent; weeks(13); const log13 = S.log.find(e => /Report card/.test(e.m)); const q = S.scoreQ;
+    const early = !!document.querySelector('#scorenow'); weeks(4); render();   // i31: it shows after your first month
+    const btn = document.querySelector('#scorenow').textContent; weeks(9); const log13 = S.log.find(e => /Report card/.test(e.m)); const q = S.scoreQ;
     weeks(13); const log26 = S.log.find(e => /Report card/.test(e.m)).m;
     showScoreNow(); const sheetText = document.querySelector('#modal').textContent; closeSheet();
-    return { btn, log13: log13 && log13.m, q, log26, sheetText, score: lifeScore().score };
+    return { early, btn, log13: log13 && log13.m, q, log26, sheetText, score: lifeScore().score };
   });
-  assert(/Life Score so far/.test(r.btn), r.btn);
+  assert(!r.early && /Life Score so far/.test(r.btn), `${r.early} ${r.btn}`);
   assert(r.log13 && Number.isInteger(r.q) && /since the last one/.test(r.log26), `${r.log13} / ${r.log26}`);
   assert(/weakest part/.test(r.sheetText) && /if the game ended today/.test(r.sheetText), 'score sheet text');
 });
