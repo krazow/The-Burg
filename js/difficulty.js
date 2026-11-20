@@ -12,6 +12,15 @@ const DIFFS = {
   hard:   { ic:'🔥', label:'Hard', mode:'hard', blurb:'The full game: adds layoffs and strikes, home damage, caring for Dad, farming and more. Stats wear down faster, costs are 10% higher, and debt ends the game at -$25,000.' }
 };
 const DIFF_ORDER = { easy:0, normal:1, hard:2 };
+// to-do 2 D9: "Which mode is for me?" in plain words, shared by the start screen's card and the Help section
+const DIFF_WHO = {
+  easy:   'New to games like this, or want a calm game. There is less to keep track of, fewer bad surprises, and debt never ends your life.',
+  normal: 'Want the game as it was made. You plan for kids, savings, weather and rising prices, and deep debt can end your life.',
+  hard:   'Know the game well and want a test. Everything is on, money is tighter, and the same good play scores a few points lower.'
+};
+const DIFF_WHO_NOTE = 'Not sure? Start on Easy or Normal. You pick a mode for each new life, and each mode keeps its own records.';
+const whichModeHTML = () => `<ul class="whichlist">${DIFF_LIST.map(k => `<li><b>${DIFFS[k].ic} ${DIFFS[k].label}:</b> ${DIFF_WHO[k]}</li>`).join('')}</ul><p class="whichnote">${DIFF_WHO_NOTE}</p>`;
+
 const DIFF_LIST = ['easy', 'normal', 'hard'];
 // the old mode a difficulty plays with, and the difficulty an old mode maps to (for callers that still pass a mode)
 const DIFF_MODE = { easy:'relaxed', normal:'normal', hard:'hard' };
