@@ -203,7 +203,7 @@ function badgeWeek(notes){
   S.badges = S.badges || {};
   const all = store.get(BADGE_KEY) || {};
   for (const b of BADGES) if (!S.badges[b.id] && b.test()) {
-    S.badges[b.id] = S.turn; all[b.id] = 1;
+    S.badges[b.id] = S.turn; if (!S.rewound) all[b.id] = 1;   // i63-b22: a rewound life's badges stay in the life, not the collection
     const goal = (S.goals || []).includes(b.id);
     buzz('badge');
     (S.newBadges = S.newBadges || []).push(`${b.ic} Badge earned: ${b.name}${goal ? ` (a life goal! +${GOAL_POINTS} Life Score)` : ''}`);   // a toast, not a stop
@@ -341,7 +341,7 @@ function scenarioWeek(notes){
   const sc = SCENARIOS[S.scenario]; if (!sc || sc.endOnly || S.scWon) return;
   if (sc.win()) { S.scWon = true; notes.push(`🏁 Challenge complete: <b>${sc.name}</b>! Play on as long as you like.`); log(`Completed the challenge: ${sc.name}.`, 'mile'); markChallenge(S.scenario); }
 }
-function markChallenge(id){ if (S.practice) return; const w = store.get(CHALLENGE_KEY) || {}; w[id] = 1; store.set(CHALLENGE_KEY, w); }
+function markChallenge(id){ if (S.practice || S.rewound) return; const w = store.get(CHALLENGE_KEY) || {}; w[id] = 1; store.set(CHALLENGE_KEY, w); }
 function scenarioLine(){
   const sc = SCENARIOS[S.scenario]; if (!sc) return '';
   return `<div class="sgoal">${sc.ic} <b>Challenge:</b> ${sc.desc}${S.scWon ? ' ✅ Done!' : ''}</div>`;
@@ -844,9 +844,26 @@ function scoreCard(){
   g.fillStyle = '#9b2f1f'; g.font = '600 44px system-ui, sans-serif'; g.fillText('krazow.github.io/The-Burg', 540, 1260);
   return c;
 }
+// i73-b18: a short line of text goes with the picture (Messages and Facebook show it under the picture)
+const weekOf = w => { const m = /^(\d{4})-W(\d\d)$/.exec(w || ''); if (!m) return w; const j4 = new Date(Date.UTC(+m[1], 0, 4)), d = new Date(j4 - ((j4.getUTCDay() || 7) - 1) * 864e5 + (+m[2] - 1) * 7 * 864e5); return `${MONTHS[d.getUTCMonth()].slice(0, 3)} ${d.getUTCDate()}`; };
+function shareText(){
+  const { score, title } = lifeScore(), L = { half: '6-month', two: '2-year', five: '5-year' }[S.len];
+  return `${S.name} scored ${score}, ${title}, in ${L ? `a ${L} life` : 'a lifetime'} in The Burg${S.weekly ? ` (Weekly challenge, week of ${weekOf(S.weekly)})` : ''}. krazow.github.io/The-Burg`;
+}
 async function shareCard(){
-  const c = scoreCard(), blob = await new Promise(r => c.toBlob(r, 'image/png')), name = `the-burg-${S.name.replace(/\W+/g, '-').toLowerCase()}.png`;
-  if (await shareFile(blob, name, 'My life in The Burg') === 'saved') toast('Score card saved');
+  const c = scoreCard(), blob = await new Promise(r => c.toBlob(r, 'image/png')), name = `the-burg-${S.name.replace(/\W+/g, '-').toLowerCase()}.png`, text = shareText();
+  if (await shareFile(blob, name, 'My life in The Burg', text) !== 'saved') return;   // i59-a20: the share sheet where there is one
+  toast('Score card saved');
+  // where a picture can't be shared, the words can still be copied to post with it
+  const sh = $('#share');
+  if (sh && !$('#sharetext')) {
+    sh.insertAdjacentHTML('afterend', `<button class="btn ghost" id="sharetext">📋 Copy the text to go with it</button><p class="muted hidden" id="sharetextout"></p>`);
+    $('#sharetext').onclick = async () => {
+      let ok = false; try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {}
+      const o = $('#sharetextout'); o.classList.remove('hidden'); o.textContent = ok ? `Copied: “${text}”` : text;
+      announce(ok ? 'Text copied' : 'Text shown: select and copy it');
+    };
+  }
 }
 
 /* ============================================================
@@ -1197,7 +1214,7 @@ function finish(reason, opts = {}){
   if (sc && scWin) markChallenge(S.scenario);
   const best = store.get(BEST_KEY) || {};
   const bk = sc ? `sc-${S.scenario}` : S.weekly ? `wk-${S.weekly}` : bestKey(S.len, mode());
-  const isBest = !best[bk] || score > best[bk];
+  const isBest = (!best[bk] || score > best[bk]) && !S.rewound;     // i63-b22: a rewound life sets no best score
   if (isBest && !S.practice) { best[bk] = score; store.set(BEST_KEY, best); const nt = store.get(BEST_NOTE_KEY) || {}; if (back) nt[bk] = back; else delete nt[bk]; store.set(BEST_NOTE_KEY, nt); }
   const heir = heirOK(opts), stub = endStub(reason, { score, title, parts });
   // i73-b25: the family line so far, carried into the grandkid's save
@@ -1219,6 +1236,7 @@ function finish(reason, opts = {}){
     ${back ? `<p class="comeback" style="text-align:center;margin-top:-6px">${back}</p>` : ''}
     <p class="goodweeks" style="text-align:center"><b>☀️ ${goodLine()}.</b><br><span class="muted">Played for: ${aimLabel()}</span></p>
     ${modeScoreNote()}
+    ${S.rewound ? '<p class="muted" style="text-align:center">⏪ This life was rewound from an older backup, so its score and badges don\'t go in your records.</p>' : ''}
     <h3 style="margin-top:10px">How the score adds up</h3>
     ${scoreLines(scr, true)}
     ${sc ? `<div class="card ${scWin ? 'tip' : 'warn'}" style="margin-top:10px">${sc.ic} <b>${scWin ? 'Challenge complete!' : 'Challenge not met this time.'}</b> ${sc.name}: ${sc.desc}</div>` : ''}
