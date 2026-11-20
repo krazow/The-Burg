@@ -193,7 +193,8 @@ const evByTitle = t => EVENTS.find(e => e.title === t);
 Object.assign(evByTitle('Hurt on the job'), {
   text:() => `${BODY[bodyOf()].hurt} at your ${job().title.toLowerCase()} job.`,
   choices:() => { const b = BODY[bodyOf()], hurt = () => { if (!(S.injury && S.injury.pt != null)) S.injury = { part: bodyOf(), ask: true, at: S.turn + 1 }; }; return [
-    {label:`Light duty for 4 weeks (-${fmt(weekPay() * .8)})`, go:() => { const v = Math.round(weekPay() * .8); adj({money:-v}); hurt(); return `Four weeks of light duty at 80% pay: ${fmt(v)} less. Your ${b.name} got a rest.`; }},
+    {label:`Light duty for 4 weeks (-${fmt(weekPay() * .8)})`, go:() => { const v = Math.round(weekPay() * .8); S.lightDuty = { until: S.turn + 4, job: S.jobId }; hurt();   // i58-b02: paid by the week (eventMoneyWeek)
+      return `Four weeks of light duty at 80% pay: ${fmt(v)} less, a little out of each paycheck. Your ${b.name} got a rest.`; }},
     {label:'Push through', go:() => { adj({health:-6}); hurt(); return `You kept working. Your ${b.name} kept score.`; }},
     {label:`${b.fix} (-${fmt(medBill(120))})`, go:() => { adj({money:-Math.round(medBill(120)), health:-2}); hurt(); return `The doctor checked your ${b.name}. It's healing.`; }}
   ]; }
