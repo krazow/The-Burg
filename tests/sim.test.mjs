@@ -27,10 +27,26 @@ const VARIANTS = (process.env.SIM_ONLY || process.env.SIM_LEN) && !process.env.S
   ...['relaxed', 'hard'].flatMap(mode => ['planner', 'careless', 'idle'].map(strat => ({ len: 'two', strat, opts: { mode }, label: mode }))),
   // i75-b21: a broke start: -$5,000 and the farm hand job, played sensibly (the struggler) and idle, 8 games each
   ...['struggler', 'idle'].map(strat => ({ len: 'two', strat, opts: { debt: 5000 }, label: 'broke', n: 8 }))];
+// i19-b33: every rule option that still counts (Standard or Custom tier; sandbox lives are never recorded), and every
+// preset once PRESETS exists, read from the game itself, played by a planner, a careless and an idle bot
+// (one 6-month and two 2-year games each); SIM_RULES=1 runs them in a filtered tuning run too
+let RULE_SETS = [];
+if (!(process.env.SIM_ONLY || process.env.SIM_LEN) || process.env.SIM_VARIANTS || process.env.SIM_RULES) {
+  const p0 = await browser.newPage();
+  await p0.goto(srv.url, { waitUntil: 'load' });
+  RULE_SETS = await p0.evaluate(() => [
+    ...Object.entries(RULES).flatMap(([id, R]) => Object.keys(R.opts).filter(o => o !== R.def).map(o => ({ label: `${R.name}: ${R.opts[o].name}`, rules: { [id]: o } }))),
+    ...(typeof PRESETS !== 'undefined' ? Object.entries(PRESETS).map(([k, p]) => ({ label: `Preset: ${p.name || k}`, rules: p.rules || {} })) : [])
+  ].map(x => ({ ...x, tier: recordTier(x.rules) })).filter(x => x.tier !== 'sandbox'));
+  await p0.close();
+}
+const RULE_LENS = { half: 1, two: Math.max(1, Math.round(2 * SCALE)) };
 const JOBS_LIST = [];
 for (const len of Object.keys(GAMES)) for (const strat of STRATEGIES) for (let g = 0; g < Math.max(1, Math.round(GAMES[len] * SCALE)); g++) JOBS_LIST.push({ len, strat, g, opts: {}, label: 'normal' });
 for (const v of VARIANTS) for (let g = 0; g < (v.n || 4); g++) JOBS_LIST.push({ ...v, g });
-for (const { len, strat, g, opts, label } of JOBS_LIST) {
+for (const rs of RULE_SETS) for (const strat of ['planner', 'careless', 'idle']) for (const [len, n] of Object.entries(RULE_LENS)) for (let g = 0; g < n; g++)
+  JOBS_LIST.push({ len, strat, g, opts: { rules: rs.rules }, label: `rules:${rs.label}`, tier: rs.tier });
+for (const { len, strat, g, opts, label, tier } of JOBS_LIST) {
   {
     {
       const seed = (len.length * 7919 + STRATEGIES.indexOf(strat) * 104729 + g * 1299709) >>> 0;   // backgrounds and modes reuse the normal games' dice, so they compare directly
@@ -128,7 +144,7 @@ for (const { len, strat, g, opts, label } of JOBS_LIST) {
                  src: Object.fromEntries(Object.entries(src).map(([k, v]) => [k, Math.round(v)])),
                  wxCost: Math.round((S.wxLife || {}).cost || 0), wxSaved: Math.round((S.wxLife || {}).saved || 0), yrs: Math.max(0.5, S.turn / 52) };
       }, [len, strat, opts]);
-      r.len = len; r.strat = strat; r.errors = errors; r.label = label;
+      r.len = len; r.strat = strat; r.errors = errors; r.label = label; r.tier = tier;
       results.push(r);
       await ctx.close();
     }
@@ -212,7 +228,27 @@ md += `\nIdle median **${idle}** (target 50 or below) · Careless median **${car
 if (idle > 50) md += `\n> ⚠️ Doing nothing scores too high (issue #20).\n`;
 if (careless > 60) md += `\n> ⚠️ Careless play scores too high (issue #7).\n`;
 if (planner < 70) md += `\n> ⚠️ Good play scores too low.\n`;
+// i19-b33: custom rules, per option and per record tier (6-month and 2-year games)
+const ruleTiers = {};
+if (RULE_SETS.length) {
+  md += `\n**Custom rules** (one 6-month and ${RULE_LENS.two} 2-year games per bot):\n\n| Rule | Counts toward | Planner | Careless | Idle |\n|---|---|---|---|---|\n`;
+  for (const rs of RULE_SETS) {
+    const m = st => med(results.filter(r => r.label === `rules:${rs.label}` && r.strat === st).map(r => r.score));
+    md += `| ${rs.label} | ${rs.tier} | ${m('planner')} | ${m('careless')} | ${m('idle')} |\n`;
+  }
+  for (const tier of [...new Set(RULE_SETS.map(r => r.tier))]) {
+    const m = st => med(results.filter(r => r.tier === tier && r.strat === st).map(r => r.score));
+    ruleTiers[tier] = { planner: m('planner'), careless: m('careless'), idle: m('idle') };
+    md += `\n${tier} tier with changed rules: planner median **${ruleTiers[tier].planner}** (target 70 or above), careless **${ruleTiers[tier].careless}** (60 or below), idle **${ruleTiers[tier].idle}** (50 or below).\n`;
+  }
+}
 console.log(md);
+if (Object.keys(ruleTiers).length) {
+  await t.check('i19-b33: every counted rule tier keeps the balance: careless and idle under their ceilings, good play 70 or more', async () => {
+    const bad = Object.entries(ruleTiers).filter(([, v]) => v.careless > CEILING.careless || v.idle > CEILING.idle || v.planner < 70);
+    if (bad.length) throw new Error(bad.map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join('; '));
+  });
+}
 // ---- balance ceilings (T1/B7): these fail the full run, not a filtered tuning run ----
 if (!FILTERED) {
   await t.check(`careless play scores ${CEILING.careless} or below (median ${careless})`, async () => {

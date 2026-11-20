@@ -347,7 +347,7 @@ function scenarioLine(){
 function challengesSheet(){
   const won = store.get(CHALLENGE_KEY) || {};
   sheet(`<h2>🏁 Challenges</h2>
-    <p class="muted">Set-up stories with a goal. They use the name you typed and Normal mode.</p>
+    <p class="muted">Set-up stories with a goal. They use the name you typed, Normal mode and Normal rules.</p>
     ${Object.entries(SCENARIOS).map(([k,sc]) => `<div class="kv job"><div><div class="t">${sc.ic} ${sc.name}${won[k] ? ' ✅' : ''}</div><div class="s">${sc.desc} ${LENGTHS[sc.len].label}.</div></div><button class="sm" data-sc="${k}">Start</button></div>`).join('')}
     <button class="btn ghost" id="n">Close</button>`);
   document.querySelectorAll('[data-sc]').forEach(b => b.onclick = () => {
@@ -1011,8 +1011,9 @@ function finish(reason){
   const sc = SCENARIOS[S.scenario], scWin = sc ? (S.scWon || sc.win()) : false;
   if (sc && scWin) markChallenge(S.scenario);
   const best = store.get(BEST_KEY) || {};
-  const bk = sc ? `sc-${S.scenario}` : S.weekly ? `wk-${S.weekly}` : bestKey(S.len, mode());
-  const isBest = !best[bk] || score > best[bk];
+  const tier = sc || S.weekly ? 'standard' : lifeTier();   // i19-b03: Custom rules get their own shelf, a sandbox is never recorded
+  const bk = sc ? `sc-${S.scenario}` : S.weekly ? `wk-${S.weekly}` : (tier === 'custom' ? 'cu-' : '') + bestKey(S.len, mode());
+  const isBest = tier !== 'sandbox' && (!best[bk] || score > best[bk]);
   if (isBest && !S.practice) { best[bk] = score; store.set(BEST_KEY, best); }
   if (!S.practice) writeSlot(S.slot ?? 0, null);
   S.over = true;
@@ -1023,6 +1024,7 @@ function finish(reason){
     <div class="score" id="finalscore" tabindex="-1" aria-label="Life Score ${score}">${score}</div>
     <p style="text-align:center;margin-top:0"><b>${title}</b>${mode() !== 'normal' ? ` <span class="tag">${MODES[mode()].ic} ${MODES[mode()].name} score</span>` : ''}${isBest ? ` · <span class="tag cur">New best${mode() !== 'normal' ? ` (${MODES[mode()].name})` : ''}!</span>` : ''}</p>
     ${modeScoreNote()}
+    ${tier !== 'standard' && !S.practice ? `<p class="muted" style="text-align:center" id="tiernote">${TIERS[tier].ic} This life counted toward ${TIERS[tier].shelf}. ${esc(rulesSummary(S.rules))}.</p>` : ''}
     <h3 style="margin-top:10px">How the score adds up</h3>
     ${part('Happiness', `average ${Math.round(avgH)} (30 → 0, 90 → 100)`, parts.happy, 30)}
     ${part('Health', `average ${Math.round(avgHe)} (40 → 0, 95 → 100)`, parts.health, 20)}
@@ -1308,7 +1310,7 @@ function furloughBackPay(lines){
 // i3-a28 outlook: the job's money in week i from now (pay, strike, furlough, clearance, apprenticeship steps,
 // seasons, call-backs, notice and unemployment). Returns { gross, lines, big } before taxes; read-only.
 function jobOutlook(i, d, f){
-  const lines = [], big = [], mo = d.getMonth(), wage = Math.pow(1 + WAGE_RATE, i / 52);
+  const lines = [], big = [], mo = d.getMonth(), wage = Math.pow(1 + rule('wage'), i / 52);
   let j = S.retired ? null : job(), gross = 0;
   if (j && S.notice != null && S.turn + i >= S.notice) j = null;                  // gave notice
   if (j && j.season && !jobInSeason(j, mo)) j = null;                             // the season ends
@@ -1507,11 +1509,11 @@ function moneyOutlook(n = 13){
   let cash = S.money, tabsYear = S.tabsYear, lowWeek = null;
   const lease = S.biz && S.biz.type === 'wheat' ? (S.biz.lease ?? LEASE_WEEKS) - S.biz.weeks : null;
   for (let i = 0; i < n; i++) {
-    const d = new Date(d0.getTime() + i * 7 * 864e5), lines = [], big = [], grow = Math.pow(1 + COL_RATE, i / 52);
+    const d = new Date(d0.getTime() + i * 7 * 864e5), lines = [], big = [], grow = Math.pow(1 + rule('col'), i / 52);
     let gross = 0;
     let rate = 0;
     if (S.retired) { gross = ssPay() * W + pensionPay() * W; lines.push(['Social Security and pension', gross]); rate = Math.max(0, gross - cost(RETIRE_TAX_FREE) * W) * RETIRE_TAX / gross; }
-    else { const jo = jobOutlook(i, d, f); rate = taxRate(jo.gross / W / Math.pow(1 + WAGE_RATE, i / 52)); gross = jo.gross * (1 - (S.k401rate ? K401[S.k401rate] : 0)); lines.push(...jo.lines.filter(l => l[0] !== 'Paycheck' && l[0] !== 'Strike pay'), [jo.lines.some(l => l[0] === 'Strike pay') ? 'Strike pay' : 'Paycheck', gross]); big.push(...jo.big); }   // i3: the job's own ups and downs
+    else { const jo = jobOutlook(i, d, f); rate = taxRate(jo.gross / W / Math.pow(1 + rule('wage'), i / 52)); gross = jo.gross * (1 - (S.k401rate ? K401[S.k401rate] : 0)); lines.push(...jo.lines.filter(l => l[0] !== 'Paycheck' && l[0] !== 'Strike pay'), [jo.lines.some(l => l[0] === 'Strike pay') ? 'Strike pay' : 'Paycheck', gross]); big.push(...jo.big); }   // i3: the job's own ups and downs
     if (gross && rate) lines.push(['Taxes', -gross * rate]);   // i75-b03/b14
     if (S.partner && age() < 65) lines.push(["Partner's paycheck", 1400 * S.wage * W]);
     lines.push(...billLines(i));
