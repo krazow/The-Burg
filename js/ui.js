@@ -2201,3 +2201,12 @@ document.addEventListener('pointerup', e => {
   }
   if (quick && Math.abs(dx) >= SWIPE_MIN && Math.abs(dx) > 2 * Math.abs(dy)) swipeTab(dx < 0 ? 1 : -1);
 });
+// i43-a04: a control reached with Tab is never left under End Week, the week strip or the tabs (the browser's own
+// focus scroll doesn't always count the fixed bars)
+document.addEventListener('focusin', e => {
+  const a = e.target; if (!a || !a.closest || !a.closest('#main')) return;
+  const tops = ['#strip', '.endbar', '#app > nav'].map(q => document.querySelector(q)).filter(Boolean).map(x => x.getBoundingClientRect().top).filter(t => t > 0);
+  if (!tops.length) return;
+  const lim = Math.min(...tops) - 8, b = a.getBoundingClientRect();
+  if (b.bottom > lim) window.scrollBy(0, b.bottom - lim);
+});
