@@ -12,7 +12,7 @@ const store = {
   del(k){ try { localStorage.removeItem(k); } catch(e){} }
 };
 const $ = s => document.querySelector(s);
-const fmt = n => (n < 0 ? '-$' : '$') + Math.abs(Math.round(n)).toLocaleString();
+const fmt = n => (n < 0 ? '-$' : '$') + Math.abs(Math.round(n)).toLocaleString('en-US');
 const clamp = (v,a=0,b=100) => Math.max(a, Math.min(b, v));
 const ri = (a,b) => a + Math.floor(Math.random()*(b-a+1));
 const chance = p => Math.random() < p;

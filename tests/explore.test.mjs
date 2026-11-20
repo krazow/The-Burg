@@ -106,6 +106,7 @@ await t.check('H1: damaged saves and thin backups never blank the game', async (
   for (const [name, slotsVal] of Object.entries(cases)) {
     const before = errors.length;
     await ev(([v, old]) => { localStorage.clear(); if (v !== null) localStorage.setItem(SLOTS_KEY, JSON.stringify(v)); if (old) localStorage.setItem(SAVE_KEY, '42'); }, [slotsVal, name.includes('old single')]);
+    await page.waitForFunction(() => !HIST_T && !HIST_SKIP);   // let the Back-button history settle (i64-a01) so it can't cancel the reload
     await page.reload({ waitUntil: 'load' });
     await ev(() => closeSheet());
     if (!(await page.$('#start'))) { bad.push(`${name}: no title screen`); continue; }
