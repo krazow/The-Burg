@@ -585,7 +585,7 @@ await t.check('a business costs money up front, earns, counts in net worth, and 
     let earned = 0, work = 0; for (let i = 0; i < 20; i++) { S.focus = 'rest'; const l = week().lines; earned += l['🪚 Woodworking shop'] || 0; }
     S.focus = 'community'; for (let i = 0; i < 4; i++) work += week().lines['🪚 Woodworking shop'] || 0;
     const m = S.money; sellBiz(); const got = S.money - m;
-    fresh('two', { money: 10000, date: new Date(2027, 1, 5).getTime() }); render(); startBiz('wheat'); S.date = new Date(2027, 6, 5).getTime(); let check = 0, n = 0;   // i22-a04: leased by March
+    fresh('two', { money: 10000, date: new Date(2027, 1, 5).getTime(), diff: 'hard' }); render(); startBiz('wheat'); S.date = new Date(2027, 6, 5).getTime(); let check = 0, n = 0;   // i22-a04: leased by March
     for (let i = 0; i < 6; i++) { const l = week().lines; if (l['🌾 Harvest check']) { check = l['🌾 Harvest check']; n++; } }
     return { lost: nw0 - nw1, earned, work, got, biz: S.biz && S.biz.type, check, n }; });
   assert(near(r.lost, 6000 * 0.4, 0.02), `starting should only lose 40% of the cost in net worth: ${r.lost}`);
@@ -805,7 +805,7 @@ await t.check('R12: a carpool ends when the job changes', async () => {
 
 await t.check('R13: businesses lose 5% of their value a year; the wheat lease must be renewed every 5 years', async () => {
   const r = await ev(() => { fresh('five', { money: 50000, col: 1 }); render(); startBiz('shop'); const v0 = bizValue(); for (let i = 0; i < 52; i++) bizWeek([], []); const v1 = bizValue() / S.col;
-    fresh('five', { money: 50000 }); render(); startBiz('wheat'); S.biz.weeks = LEASE_WEEKS - 1; const notes = []; bizWeek([], notes); const due = leaseDue();
+    fresh('five', { money: 50000, diff: 'hard' }); render(); startBiz('wheat'); S.biz.weeks = LEASE_WEEKS - 1; const notes = []; bizWeek([], notes); const due = leaseDue();
     tab = 'life'; render(); const btn = !!document.querySelector('#renew'); const m = S.money; document.querySelector('#renew').click();
     const paid = m - S.money, after = !leaseDue() && S.biz.lease === LEASE_WEEKS * 2;
     S.biz.weeks = S.biz.lease - 1; bizWeek([], []); for (let i = 0; i < LEASE_GRACE; i++) bizWeek([], []); const gone = S.biz === null;
@@ -1406,7 +1406,7 @@ await t.check('older saves get the round-3 job fields', async () => {
 /* ---------- round 3: money ---------- */
 await t.check('i3-a15: wheat has a July price; the harvest waits on sell-or-store; storing costs a fee and sells by July', async () => {
   const r = await ev(() => {
-    fresh('two', { money: 20000, date: new Date(2027, 1, 5).getTime() }); render(); startBiz('wheat'); S.date = new Date(2027, 6, 5).getTime();   // i22-a04: leased by March
+    fresh('two', { money: 20000, date: new Date(2027, 1, 5).getTime(), diff: 'hard' }); render(); startBiz('wheat'); S.date = new Date(2027, 6, 5).getTime();   // i22-a04: leased by March
     const prices = []; for (let i = 0; i < 300; i++) { S.monKey = 0; moneyMonth([]); prices.push(S.wheatPrice); }
     const avgP = prices.reduce((a, v) => a + v, 0) / prices.length;
     S.wheatPrice = WHEAT_BASE; S.noEvents = false; S.due = []; S.date = new Date(2027, 7, 2).getTime(); const lines = [];
@@ -1425,7 +1425,7 @@ await t.check('i3-a15: wheat has a July price; the harvest waits on sell-or-stor
 
 await t.check('i3-a16: crop insurance costs about what a drought year loses on average, charged in April', async () => {
   const r = await ev(() => {
-    fresh('two', { money: 20000, date: new Date(2027, 2, 5).getTime() }); render(); startBiz('wheat'); S.date = new Date(2027, 3, 5).getTime();   // i22-a04: leased by March
+    fresh('two', { money: 20000, date: new Date(2027, 2, 5).getTime(), diff: 'hard' }); render(); startBiz('wheat'); S.date = new Date(2027, 3, 5).getTime();   // i22-a04: leased by March
     const sample = ins => { S.biz.ins = ins; const a = []; for (let i = 0; i < 4000; i++) { S.wx = null; a.push(wheatYield()); } return a; };   // i75-a01: a new weather year each draw
     const off = sample(false), on = sample(true);
     const lines = []; bizWeek(lines, []); const prem = (lines.find(l => /premium/.test(l[0])) || [])[1]; const again = []; bizWeek(again, []);
@@ -1452,11 +1452,11 @@ await t.check('i3-a17: wine futures sell in the fall, count at cost, and pay out
 
 await t.check('i3-a18: cattle earn for an owner who checks the herd and lose money for one who never does', async () => {
   const r = await ev(() => {
-    const year = active => { fresh('two', { money: 30000, jobId: 'farmhand' }); render(); startBiz('cattle'); let cash = 0;
+    const year = active => { fresh('two', { money: 30000, jobId: 'farmhand', diff: 'hard' }); render(); startBiz('cattle'); let cash = 0;
       for (let i = 0; i < 52; i++) { S.focus = active && i % 3 === 0 ? 'outdoors' : 'rest'; const l = week().lines; for (const [k, v] of Object.entries(l)) if (k.startsWith('🐄')) cash += v; }
       return { cash, cows: S.biz ? S.biz.cows : 0, hay: true }; };
     const a = [], b = []; for (let i = 0; i < 6; i++) { a.push(year(true)); b.push(year(false)); }
-    fresh('two', { money: 30000, date: new Date(2027, 11, 6).getTime() }); render(); startBiz('cattle'); const w = week().lines;
+    fresh('two', { money: 30000, date: new Date(2027, 11, 6).getTime(), diff: 'hard' }); render(); startBiz('cattle'); const w = week().lines;
     return { active: a.reduce((x, v) => x + v.cash, 0) / 6, idle: b.reduce((x, v) => x + v.cash, 0) / 6, cowsA: a.reduce((x, v) => x + v.cows, 0) / 6, cowsI: b.reduce((x, v) => x + v.cows, 0) / 6, hay: w['🐄 Hay'] || w['🐄 Hay (hard winter)'], rent: w['🐄 Pasture rent'], vet: w['🐄 Vet, minerals and bull lease'] }; });
   assert(r.active > 1000 && r.idle < 0, `active ${r.active}, idle ${r.idle}`);
   assert(r.cowsA > r.cowsI && r.cowsA >= 5.5, `cows ${r.cowsA} vs ${r.cowsI}`);
@@ -2445,7 +2445,7 @@ await t.check('i22-a03: a new job clears leftover unemployment months', async ()
 
 await t.check('i22-a04: a wheat lease taken after March skips that year\'s farming bill and harvest; one taken by March gets both', async () => {
   const r = await ev(() => {
-    const run = mo => { fresh('two', { money: 50000 }); S.date = new Date(2028, mo, 3).getTime(); startBiz('wheat'); const seen = {};
+    const run = mo => { fresh('two', { money: 50000, diff: 'hard' }); S.date = new Date(2028, mo, 3).getTime(); startBiz('wheat'); const seen = {};
       while (new Date(S.date).getFullYear() === 2028) { week(); for (const [l] of S.last.lines) seen[l] = 1; } return seen; };
     const late = run(5), early = run(1);
     return { lateFarm: !!late['🌾 Custom farming, seed and fertilizer'], lateHarvest: !!late['🌾 Harvest check'], earlyFarm: !!early['🌾 Custom farming, seed and fertilizer'], earlyHarvest: !!early['🌾 Harvest check'] }; });
@@ -2661,9 +2661,9 @@ await t.check('i62-a04, i63-a01, i63-a02: debt pulls the wealth part below 0 aga
 });
 
 await t.check('i63-a03, i63-a04: weeks below -$1,000 drag the score up to 6 points (3 Relaxed); climbing out cuts it to a third', async () => {
-  const r = await ev(() => { fresh('two'); S.turn = 100; S.deepWeeks = 100; S.money = -5000; const deep = debtDrag();
+  const r = await ev(() => { fresh('two', { diff: 'hard' }); S.turn = 100; S.deepWeeks = 100; S.money = -5000; const deep = debtDrag();
     S.money = 100; S.equity = 50000; const out = debtDrag(); S.mode = 'relaxed'; S.money = -5000; S.equity = 0; const rel = debtDrag();
-    fresh('two', { jobId: null, money: -2000 }); weeks(3); const n = S.deepWeeks, low = S.debtLow;
+    fresh('two', { jobId: null, money: -2000, diff: 'hard' }); weeks(3); const n = S.deepWeeks, low = S.debtLow;
     return { deep, out, rel, n, low, sc: lifeScore().drag }; });
   assert(r.deep === 6 && r.out === 2 && r.rel === 3, JSON.stringify(r));
   assert(r.n === 3 && r.low < -2000, JSON.stringify(r));

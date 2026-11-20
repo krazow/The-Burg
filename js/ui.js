@@ -99,10 +99,17 @@ function renderTitle(){
   };
   document.querySelectorAll('[data-bg]').forEach(b => b.onclick = () => { bg = b.dataset.bg;
     document.querySelectorAll('[data-bg]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#bgdesc').innerHTML = `${BACKGROUNDS[bg].desc} <b>${BACKGROUNDS[bg].hint}.</b>`; moreSum(); });
+  // to-do 2 D2: the picks a difficulty doesn't have are hidden (Easy: no Lifetime, Fresh start only, All-around only)
+  const limits = () => { const ds = { diff: dif };
+    const gate = (attr, key, keep, only) => document.querySelectorAll(`.title [data-${attr}]`).forEach(x => {
+      const v = x.dataset[attr], off = !on(key, ds) && (only ? v === only : v !== keep);
+      x.classList.toggle('hidden', off);
+      if (off && x.classList.contains('on')) { const k = document.querySelector(`.title [data-${attr}="${keep}"]`); if (k) k.click(); } });
+    gate('len', 'lengths.life', 'five', 'life'); gate('bg', 'backgrounds', 'fresh'); gate('aim', 'score.aims', 'all'); };
   document.querySelectorAll('[data-diff]').forEach(b => b.onclick = () => { dif = b.dataset.diff;   // to-do 2 D1
     document.querySelectorAll('[data-diff]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
     const pc = document.querySelector('[data-bg="parent"]'); if (pc) { pc.hidden = !on('family.kids', { diff: dif }); if (pc.hidden && bg === 'parent') document.querySelector('[data-bg="fresh"]').click(); }   // to-do 2: no kids in Easy
-    moreSum(); });
+    limits(); moreSum(); });
   document.querySelectorAll('[data-aim]').forEach(b => b.onclick = () => { aim = b.dataset.aim;   // i20-b01
     document.querySelectorAll('[data-aim]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#aimdesc').textContent = aimDesc(aim); moreSum(); });
   document.querySelectorAll('[data-um]').forEach(b => b.onclick = () => { um = b.dataset.um; setPref('unlockMode', um);
@@ -347,6 +354,7 @@ const baseVersion = () => APP_VERSION.replace(/-.*/, '');
 // shows the card once per version to players who played before; brand-new players and the tutorial skip it
 const verNum = v => String(v || '0').replace(/-.*/, '').split('.').reduce((a, x) => a * 1000 + (parseInt(x, 10) || 0), 0);
 function whatsNew(){
+  if (!on('help.whatsNew')) return false;
   const cur = baseVersion(), seen = store.get(SEEN_KEY);
   if (seen === cur || (typeof TUT !== 'undefined' && TUT)) return false;
   const played = slots().some(Boolean) || Object.keys(store.get(BEST_KEY) || {}).length > 0;
@@ -369,7 +377,7 @@ function loadSlot(i){
   LIFE_UNDO = []; S = migrate(clone(g)); S.slot = i; tab = 'home'; MAPSIDE = null; MAPSEL = null; useDice(); resetFilters();
   closeSheet(); render(); window.scrollTo(0,0);
   if (resumePending()) return;
-  if (g.savedAt && Date.now() - g.savedAt >= RECAP_AFTER && S.recapAt !== g.savedAt && !S.practice) recapSheet(g.savedAt);
+  if (g.savedAt && Date.now() - g.savedAt >= RECAP_AFTER && S.recapAt !== g.savedAt && !S.practice && on('ui.recap')) recapSheet(g.savedAt);
 }
 // i22-a01 / i22-a02: an ending or an event card that was waiting when the app closed comes back on Continue
 const findEvent = t => [...EVENTS, ...DUE_EVENTS, ...PLAN_DUE].find(e => e.title === t) || null;
@@ -778,11 +786,14 @@ function loadSheet(){
 function resetFilters(){ logFilter = 'all'; jobCity = 'all'; jobNear = false; }
 function newGame(name, len, slot = 0, opts = {}){
   LIFE_UNDO = []; PLAY_AT = -1e9; resetFilters();
+  // to-do 2 D2: what the difficulty doesn't have can't be picked (Easy: no Lifetime, Fresh start only, All-around only)
+  const ds = { diff: opts.classic || SCENARIOS[opts.scenario] ? 'hard' : DIFFS[opts.diff] ? opts.diff : MODE_DIFF[opts.mode] || 'normal' };   // story challenges are Hard
+  if (len === 'life' && !on('lengths.life', ds)) len = 'five';
   S = blankLife(name, len, slot);                 // road and work events (health plan, ski pass, job-hunt help and more) included
-  S.bg = BACKGROUNDS[opts.bg] ? opts.bg : 'fresh'; S.aim = AIMS[opts.aim] ? opts.aim : 'all';
+  S.bg = BACKGROUNDS[opts.bg] && on('backgrounds', ds) ? opts.bg : 'fresh'; S.aim = AIMS[opts.aim] && on('score.aims', ds) ? opts.aim : 'all';
   // to-do 2 D1: the difficulty sets the mode's numbers (Easy plays Relaxed's); an heir of a Classic life stays Classic
   if (opts.classic) { S.diff = 'hard'; S.classic = true; S.mode = MODES[opts.mode] ? opts.mode : 'normal'; }
-  else { S.diff = DIFFS[opts.diff] ? opts.diff : MODE_DIFF[opts.mode] || 'normal'; S.mode = DIFF_MODE[S.diff]; }
+  else { S.diff = ds.diff; S.mode = DIFF_MODE[S.diff]; }
   if (S.bg === 'parent' && !on('family.kids')) S.bg = 'fresh';   // to-do 2: the Young parent start needs kids (Normal and up)
   if (BACKGROUNDS[S.bg].set) BACKGROUNDS[S.bg].set(S);
   // i19-b01/b28: custom rules, except in weekly challenges, scenarios and practice, where everyone plays Normal rules
@@ -870,7 +881,7 @@ function render(){
   ${tab==='home' ? `${S.run ? `<button class="weekstrip" id="strip" aria-label="${esc(runWords())}. Details"><span class="wl">${S.run.weeks > 1 ? `Last ${S.run.weeks} wks` : 'Last week'}</span><span class="wc">${runChips()}</span><span class="more">›</span></button>` : ''}
     <div class="endbar${ROLL ? ' rolling' : ''}">${ROLL ? `<button class="btn primary" id="stoproll">⏹ Stop<small>${S.run.weeks} of up to ${ROLL.n} weeks</small></button>`
       : `<button class="btn primary" id="end" aria-keyshortcuts="Shift+Enter" aria-description="Press and hold, or Shift+Enter, for more ways to skip ahead">End Week →<small>${FOCUS[S.focus].ic} ${FOCUS_SHORT[S.focus]}${S.trip && CITIES[S.trip.city] ? ` + 🚗 ${CITIES[S.trip.city].name}` : ''}</small></button>
-    <button class="btn ghost${nar}" id="ff4" aria-label="Skip 4 weeks">⏩ 4</button>${big ? `<button class="btn ghost${nar}" id="ff13" aria-label="Skip 13 weeks">⏩ 13</button>` : ''}<button class="btn ghost" id="auto" aria-label="Auto: play until ${autoUntil() === 'event' ? 'something needs you' : AUTO_UNTIL[autoUntil()].short + ' or something needs you'}. Press and hold for options">⏭ Auto</button>`}</div>` : ''}
+    ${on('ui.auto') ? `<button class="btn ghost${nar}" id="ff4" aria-label="Skip 4 weeks">⏩ 4</button>${big ? `<button class="btn ghost${nar}" id="ff13" aria-label="Skip 13 weeks">⏩ 13</button>` : ''}<button class="btn ghost" id="auto" aria-label="Auto: play until ${autoUntil() === 'event' ? 'something needs you' : AUTO_UNTIL[autoUntil()].short + ' or something needs you'}. Press and hold for options">⏭ Auto</button>` : ''}`}</div>` : ''}
   <nav><div class="in">
     ${[['home','🏠','Home'],['jobs','💼','Jobs'],['life','🌾','Life'],['log','📜','Journal']].map(([k,ic,l]) => { const nw = tab !== k && tabHasNew(k);   // i31-b15: a dot for something new there
       return `<button data-tab="${k}" class="${tab===k?'on':''}${nw ? ' hasnew' : ''}"${tab===k?' aria-current="page"':''}${nw ? ` aria-label="${l}, new"` : ''}><span class="ic" aria-hidden="true">${ic}</span>${l}${nw ? '<span class="ndot" aria-hidden="true"></span>' : ''}</button>`; }).join('')}
@@ -964,7 +975,7 @@ function lowFocus(cur = S.focus){
 }
 // the skip options: ⏩ 4 and ⏩ 13, what ⏭ Auto plays until (i2-a11), and whether to watch the weeks go by (i2-a28)
 function skipSheet(){
-  if (!S || S.over || ROLL) return;
+  if (!S || S.over || ROLL || !on('ui.auto')) return;
   const L = LENGTHS[S.len], big = L.turns === Infinity || L.turns >= 104;
   const k = autoUntil(), sp = watchWeeks() ? 'watch' : 'instant', rm = reducedMotion();
   const opt = (grp, val, on, label, dis) => `<button class="btn ghost opt${on ? ' on' : ''}" role="radio" aria-checked="${on}" data-${grp}="${val}"${dis ? ' disabled' : ''}>${on ? '✓ ' : ''}${label}</button>`;
@@ -1008,7 +1019,7 @@ const CHECKLIST = [
   { id:'out', ic:'🛍️', t:'Visit a place in town, or plan a trip', done:() => !!S.trip || !!(S.out && S.out.visits) || Object.keys(S.towns || {}).length > 0, go:'out', b:'Go out' }
 ];
 function checklist(){
-  if (S.practice || S.turn >= 26 || prefs().clHide) return null;
+  if (!on('ui.checklist') || S.practice || S.turn >= 26 || prefs().clHide) return null;
   const cl = { ...(prefs().cl || {}) }; let changed = false;
   for (const c of CHECKLIST) if (!cl[c.id] && c.done()) { cl[c.id] = 1; changed = true; }
   if (changed) setPref('cl', cl);
@@ -1081,7 +1092,7 @@ function renderHome(){
   ${overtimeTip() ? `<div class="card warn">${overtimeTip()}</div>` : ''}
   ${S.money < 0 && !inCollections() && on('money.collections') ? firstTime('collect') : ''}
   ${S.money < debtWarnAt() ? `<div class="card warn" id="debtwarn">⚠️ Your debt is getting dangerous.${debtLimit() == null ? ` In Relaxed it never ends your life (a debt counselor stops it at ${fmt(RELAXED_FLOOR)}), but the interest keeps eating your cash.` : ` Below ${fmt(debtLimit())} you'll have to leave town${canBankrupt() ? ' or file for bankruptcy' : ''}.`}</div>` : onPlan() ? `<div class="card">📞 <b>On a payment plan.</b> Your debt is still in collections (worse odds on job applications and loans until you're back above $0), but the calls stop while your cash keeps going up.</div>` : inCollections() ? `<div class="card warn">📞 Your debt is in collections: daily calls (−happiness) and worse odds on job applications and loans until you're back above $0. Raise your cash ${PLAN_WEEKS} weeks in a row to get on a payment plan.</div>` : ''}
-  <div class="card"><div class="focushead"><h3>This week's focus</h3>${isOpen('plan') ? `<button class="sm alt" id="planbtn" aria-pressed="${!!(S.plan && S.plan.length)}" aria-label="Focus plan: ${S.plan && S.plan.length ? 'on' : 'off'}${newTag('plan') ? ', new' : ''}">🗓 Plan${S.plan && S.plan.length ? ' ✓' : ''}${newTag('plan')}</button>` : ''}</div>${scenarioLine() || seasonLine()}${mapToggle()}
+  <div class="card"><div class="focushead"><h3>This week's focus</h3>${isOpen('plan') && on('ui.plan') ? `<button class="sm alt" id="planbtn" aria-pressed="${!!(S.plan && S.plan.length)}" aria-label="Focus plan: ${S.plan && S.plan.length ? 'on' : 'off'}${newTag('plan') ? ', new' : ''}">🗓 Plan${S.plan && S.plan.length ? ' ✓' : ''}${newTag('plan')}</button>` : ''}</div>${scenarioLine() || seasonLine()}${mapToggle()}
     ${prefs().mapView ? mapBlock('T') : `<div class="fgrid">${Object.entries(FOCUS).map(([k,x]) => {
       if (!focusOpen(k)) return soonSlot(UNLOCK_FOCUS[k]);   // i31-b02: a focus not open yet keeps its spot, so the grid doesn't jump
       const dis = (x.needsJob && (!j || S.retired)) || (x.study && !canStudy());
@@ -1207,7 +1218,7 @@ const INSTALL_AFTER = 8, INSTALL_SNOOZE = 14 * 864e5;
 const isInstalled = () => (typeof matchMedia === 'function' && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true || String(document.referrer || '').startsWith('android-app://');
 function installReady(){
   const p = prefs();
-  return !!(typeof INSTALL_EVT !== 'undefined' && INSTALL_EVT) && !S.practice && !isInstalled() && !p.installed
+  return on('ui.nudges') && !!(typeof INSTALL_EVT !== 'undefined' && INSTALL_EVT) && !S.practice && !isInstalled() && !p.installed
     && !(p.installNo && Date.now() - p.installNo < INSTALL_SNOOZE) && S.turn >= INSTALL_AFTER && !checklist();
 }
 function installNow(){
@@ -1228,7 +1239,7 @@ function handFocus(k, say){
   else if (say) toast(`This week: ${FOCUS[k].name}`);
 }
 function planLine(){
-  if (!S.plan || !S.plan.length) return '';
+  if (!on('ui.plan') || !S.plan || !S.plan.length) return '';
   const i = (S.planI || 0) % S.plan.length, p = planFocus();
   const list = S.plan.map((k, j) => j === i ? `<b>${FOCUS[k].ic} ${FOCUS_SHORT[k]}</b>` : `${FOCUS[k].ic} ${FOCUS_SHORT[k]}`).join(' → ');
   return `<div class="planline">🗓 Plan: ${list}${p !== S.focus ? ` <span class="muted">(paused this week)</span>` : ''}</div>`;
@@ -1407,7 +1418,7 @@ function renderJobs(){
       : canCarpool() ? `<p class="muted" style="margin:0 0 6px">Split the drive to ${CITIES[j.city].name} with neighbors: half the gas, less wear from the commute, and a little community.</p><button class="sm" id="carpool">Join a carpool</button>`
       : `<p class="muted" style="margin:0">Know more people in town (community 30+) and you can join a carpool: half the gas and an easier commute.</p>`}</div>` : ''}
   ${j && !S.retired && S.notice == null ? `<button class="btn ghost" id="quit">Quit my job</button>` : ''}
-  ${LENGTHS[S.len].turns===Infinity && age()>=62 && !S.retired ? `<button class="btn primary" id="retire">Retire (Social Security ${wk(ssPay())}${pensionVested()?` + pension ${wk(pensionPay())}`:''}${S.k401>0?` + 401(k) ${wk(S.k401*drawRate()/12)}`:''})</button>` : ''}`;
+  ${LENGTHS[S.len].turns===Infinity && age()>=62 && !S.retired && on('retire.income') ? `<button class="btn primary" id="retire">Retire (Social Security ${wk(ssPay())}${pensionVested()?` + pension ${wk(pensionPay())}`:''}${S.k401>0?` + 401(k) ${wk(S.k401*drawRate()/12)}`:''})</button>` : ''}`;
   document.querySelectorAll('.chip[data-c]').forEach(b => b.onclick = () => { jobCity = b.dataset.c; render(); });
   if ($('#jobok')) $('#jobok').onclick = () => { jobOK = !jobOK; render(); };
   if ($('#jobnear')) $('#jobnear').onclick = () => { jobNear = false; render(); announce('Showing all jobs'); };
@@ -1569,6 +1580,7 @@ let LIFE_UNDO = [], undoPre = null;
 const UNDO_MAX = 5;
 const undoKey = () => JSON.stringify({ ...S, savedAt: 0, saveN: 0, focus: 0, plan: 0, planI: 0 });
 function undoTop(){
+  if (!on('ui.undo')) return null;
   const u = LIFE_UNDO[LIFE_UNDO.length - 1];
   return u && S && u.life === S.slot && u.after === undoKey() ? u : null;   // stale once anything else changed the life
 }

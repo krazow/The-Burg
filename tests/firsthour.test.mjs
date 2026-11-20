@@ -221,7 +221,7 @@ await t.check('i68-b10/b11: first-time explainers for the jobs, school and money
     firstOn('ltc', () => { S.ageMonths = 56 * 12; tab = 'life'; render(); });
     firstOn('ptax', () => { S.home = 'fixer'; S.mortgage = 950; tab = 'life'; render(); });
     firstOn('collect', () => { S.money = -500; tab = 'home'; render(); });
-    firstOn('wheat', () => { S.money = 1e6; S.biz = null; startBiz('wheat'); S.biz.stored = 2000; tab = 'life'; render(); });
+    firstOn('wheat', () => { S.money = 1e6; S.biz = null; S.diff = 'hard'; startBiz('wheat'); S.biz.stored = 2000; tab = 'life'; render(); });
     closeSheet(); return out;
   });
   const missing = Object.entries(where).filter(([, v]) => !v).map(([k]) => k);
