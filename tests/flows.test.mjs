@@ -500,8 +500,8 @@ await t.check('title screen: Start comes before a closed "More options" panel, w
   assert(await page.isHidden('#morepanel') && (await page.getAttribute('#moreopts', 'aria-expanded')) === 'false', 'the panel should start closed');
   await page.click('#moreopts');
   assert(await page.isVisible('[data-bg="grad"]') && (await page.getAttribute('#moreopts', 'aria-expanded')) === 'true', 'the panel did not open');
-  await page.click('[data-bg="grad"]'); await page.click('[data-diff="easy"]');
-  assert(/Grad coming home · .*Easy/.test(await page.textContent('#moresum')), await page.textContent('#moresum'));
+  await page.click('[data-bg="grad"]'); await page.click('[data-diff="hard"]');   // to-do 2 D2: Easy has Fresh start only
+  assert(/Grad coming home · .*Hard/.test(await page.textContent('#moresum')), await page.textContent('#moresum'));
   await page.evaluate(() => renderTitle());
   assert(await page.isVisible('#morepanel'), 'open panel not remembered');
   await page.click('#moreopts');
@@ -1226,7 +1226,7 @@ await t.check('i3-a19: the insurance sheet changes coverage and the weekly bill'
 });
 
 await t.check('i3-a21/a22/a23: the home card shows the market and rates; refinancing and borrowing against the house work', async () => {
-  await life({ jobId: 'farmhand', money: 20000, homeGrow: 0.07 }, 'life');
+  await life({ jobId: 'farmhand', money: 20000, homeGrow: 0.07, diff: 'hard' }, 'life');
   assert(/Hot/.test(await page.textContent('#main')), 'a hot market should show');
   await page.click('[data-home="fixer"]');
   assert(/hot/.test(await page.textContent('#sheet')), 'the buy sheet shows the market');
@@ -1257,7 +1257,7 @@ await t.check('i3-a29/a17: index funds and wine futures from the Life tab', asyn
 
 await t.check('i3-a15/a16: the harvest asks sell or store; stored wheat sells from the Life tab; crop insurance toggles', async () => {
   await life({ jobId: 'farmhand', money: 10000, date: new Date(2027, 7, 2).getTime() }, 'life');
-  await page.evaluate(() => { startBiz('wheat'); S.biz.paidYear = null; S.noEvents = false; S.due = []; });   // i22-a04: as if leased by March
+  await page.evaluate(() => { S.diff = 'hard'; startBiz('wheat'); S.biz.paidYear = null; S.noEvents = false; S.due = []; });   // i22-a04: as if leased by March
   await page.click('#cropins');
   assert((await S()).biz.ins === true, 'crop insurance should turn on');
   await page.evaluate(() => { bizWeek([], []); showEvent(takeDue()); });
@@ -1273,7 +1273,7 @@ await t.check('i3-a15/a16: the harvest asks sell or store; stored wheat sells fr
 
 await t.check('i3-a18: a cattle herd shows on the Life tab and warns when nobody has checked it', async () => {
   await life({ jobId: 'farmhand', money: 20000 }, 'life');
-  await page.evaluate(() => { startBiz('cattle'); S.biz.check = S.turn - 10; render(); });
+  await page.evaluate(() => { S.diff = 'hard'; startBiz('cattle'); S.biz.check = S.turn - 10; render(); });
   const txt = await page.textContent('#main');
   assert(/6 cows/.test(txt) && /Get outside/.test(txt), txt.slice(0, 200));
 });
@@ -1549,7 +1549,7 @@ await t.check('i23-a05/i50-a03: the town goal shows what is left and the reward,
   await life({ jobId: 'farmhand', date: new Date(2027, 0, 4).getTime() }, 'home');
   const g = await page.textContent('#main .sgoal');
   assert(/7 more needed · \d+ weeks left · reward ▲5 community ▲4 happiness/.test(g), g);   // i37: winter needs 7 weeks now
-  await page.evaluate(() => { S.scenario = 'farm'; render(); });
+  await page.evaluate(() => { S.scenario = 'farm'; S.diff = 'hard'; render(); });   // story challenges are Hard
   assert((await page.$$('#main .sgoal')).length === 1 && /Challenge/.test(await page.textContent('#main .sgoal')), 'a challenge life shows only the challenge line');
 });
 
