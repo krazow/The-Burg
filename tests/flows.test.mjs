@@ -405,6 +405,51 @@ await t.check('the title screen starts a life with a background and a mode', asy
   assert(/Hard/.test(await page.textContent('header.top')), 'the header should show the mode');
 });
 
+await t.check('i19-b02..b05: Change the rules on the start sheet: grouped knobs with Normal values, a live preview and a record badge', async () => {
+  await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); renderTitle(); });
+  await page.click('#moreopts');
+  assert(/Normal rules/.test(await page.textContent('#rulesum')), await page.textContent('#rulesum'));
+  await page.click('#rulesbtn');
+  const groups = await page.$$eval(`${open} h3`, hs => hs.map(h => h.textContent));
+  assert(JSON.stringify(groups) === '["Money","Events","Assists"]', JSON.stringify(groups));
+  assert((await page.textContent('#rl-start')) === 'Starting money: $1,500 (Normal)', await page.textContent('#rl-start'));
+  assert(/normal records/.test(await page.textContent('#tierbadge')), await page.textContent('#tierbadge'));
+  await page.click('[data-rule="start"][data-opt="comfy"]');
+  assert(/\$6,500 · Normal is \$1,500/.test(await page.textContent('#rl-start')) && /about 43 weeks of rent/.test(await page.textContent('#rp-start')), await page.textContent('#rp-start'));
+  assert(/Custom shelf/.test(await page.textContent('#tierbadge')) && (await page.getAttribute('[data-rule="start"][data-opt="comfy"]', 'aria-pressed')) === 'true', 'badge or pressed state did not follow');
+  await page.click('[data-rule="events"][data-opt="none"]');
+  assert(/never recorded/i.test(await page.textContent('#tierbadge')), await page.textContent('#tierbadge'));
+  await page.click('#rnormal');
+  assert(/normal records/.test(await page.textContent('#tierbadge')) && /\(Normal\)/.test(await page.textContent('#rl-events')), 'Back to Normal did not reset');
+  await page.click('[data-rule="start"][data-opt="comfy"]'); await page.click('[data-rule="routine"][data-opt="on"]');
+  await page.click('#rdone');
+  assert(/Custom rules/.test(await page.textContent('#moresum')) && /Comfortable/.test(await page.textContent('#rulesum')), await page.textContent('#rulesum'));
+  await page.fill('#nm', 'Rulz'); await page.click('#start');
+  const s = await S();
+  assert(s.money === 6500 && JSON.stringify(s.rules) === '{"start":"comfy","routine":"on"}' && s.tier0 === 'custom', JSON.stringify({ m: s.money, r: s.rules, t: s.tier0 }));
+});
+
+await t.check('i19-b19: a "Rules for this life" card on the Life tab: read-only, assists can only be turned off, with a confirm naming the shelf', async () => {
+  await setup(() => { closeSheet(); S.noEvents = true; tab = 'life'; render(); });
+  const card = await page.textContent('#rulescard');
+  assert(/Custom shelf/.test(card) && /Starting money: \$6,500 · Normal is \$1,500/.test(card) && /Handle the routine stuff for me: On/.test(card), card);
+  assert((await page.$$('#rulescard [data-assistoff]')).length === 1, 'only the assist should have a switch');
+  await page.click('[data-assistoff="routine"]');
+  assert(/stays on the Custom shelf/.test(await page.textContent(`${open}`)) && /can't turn it back on/.test(await page.textContent(`${open}`)), await page.textContent(`${open}`));
+  await page.click(`${open} #y`);
+  const s = await S();
+  assert(JSON.stringify(s.rules) === '{"start":"comfy"}' && !(await page.$('[data-assistoff]')), JSON.stringify(s.rules));
+  await life({}, 'life');
+  assert(!(await page.$('#rulescard')), 'a Normal-rules life should not show the rules card');
+});
+
+await t.check('i19-b28: the weekly challenge says everyone plays with the same rules', async () => {
+  await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); renderTitle(); });
+  await page.click('#weekly');
+  assert(/Everyone plays the weekly with the same rules/.test(await page.textContent(open)), await page.textContent(open));
+  await page.click(`${open} #n`);
+});
+
 await t.check('pick life goals on the Life tab, and start a challenge from the title screen', async () => {
   await life({ jobId: 'farmhand' }, 'life');
   await page.click('#goals');

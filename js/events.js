@@ -2,11 +2,11 @@
 /* ---------- events ---------- */
 // G5: events are paced by category so new ones don't crowd out the old. Each week one roll decides which category
 // (if any) gets an event: town 14%, road 8% (only in weeks you commute 20+ miles each way or take a trip),
-// work 8% (only with a job). At most one event a week; Hard mode adds 25% to each.
+// work 8% (only with a job). At most one event a week; Hard mode adds 25% to each, and the events rule (i19-b01) scales them all.
 const EVENT_ODDS = { town: 0.14, road: 0.08, work: 0.08 };
 const evCat = e => e.cat || 'town';
 function eventOdds(trip){
-  const hard = mode() === 'hard' ? 1.25 : 1, hasJob = !!job() && !S.retired;
+  const hard = (mode() === 'hard' ? 1.25 : 1) * rule('evMult'), hasJob = !!job() && !S.retired;
   return { town: EVENT_ODDS.town * hard, road: trip || commuteOneWay() >= 20 ? EVENT_ODDS.road * hard : 0, work: hasJob ? EVENT_ODDS.work * hard : 0 };
 }
 function rollEvent(month, trip){
@@ -44,6 +44,20 @@ function pickEvent(month, cat = 'town'){
   const total = ok.reduce((a,e) => a + wt(e), 0);
   let r = Math.random() * total;
   for (const e of ok) { r -= wt(e); if (r <= 0) return e; }
+  return null;
+}
+// i19-b15: routine events and the choice a careful player makes (first label found among the choices you have)
+const ROUTINE = {
+  'Flat tire on US-12': ['Change it yourself', 'Call a tow'], 'Stuck behind a wheat truck': ['Wait it out'], 'Train crossing in Pasco': ['Wait'],
+  'Fog in the Touchet Valley': ['Drive slow'], 'Speeding ticket': ['Traffic school'], 'Road-construction detour': ['Take the long way'],
+  'Pothole season': ['Swerve and slow down'], 'Wrong pump at the gas station': ['Drain and refill'], 'Payroll error: a late paycheck': ['Wait it out'],
+  'Safety inspection': ['Prep the crew'], 'New software rollout': ['Learn it early'], 'Mice in the walls': ['Set traps'],
+  'Frozen pipes': ['Fix it yourself', 'Call a plumber', 'Call the landlord']
+};
+function routinePick(ev){
+  const want = ROUTINE[ev.title]; if (!want) return null;
+  const ch = ev.choices().filter(c => !c.if || c.if());
+  for (const w of want) { const c = ch.find(x => String(x.label).startsWith(w)); if (c) return c; }
   return null;
 }
 // i71-b03: one way to settle an event, for a tapped choice and for one resolved on its own during a skip: the choice,
