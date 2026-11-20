@@ -2270,7 +2270,8 @@ await t.check('i56-b16: reach table: every event can happen under some setup, an
       ['out of work', () => { S.jobId = null; S.ui = 20; S.money = 500; S.happy = 40; }],
       ['student', () => { S.focus = 'study'; S.edu = 1; S.jobId = 'barista'; }]);
     // an ordinary weather year and winter (no dice), so what's reached doesn't depend on the roll; rows set the weather they need
-    const start = m => { newGame('Reach', 'life', 0); S.noEvents = true; S.turn = 300; S.date = new Date(2031, m, 8).getTime();
+    const start = m => { newGame('Reach', 'life', 0, { diff: 'hard' }); S.noEvents = true;   // Hard: the full game, every event in play
+      S.turn = 300; S.date = new Date(2031, m, 8).getTime();
       S.wx = { y: 2031, dry: false, wet: false, smoke: false, heat: false, rain: false }; S.wxW = { y: winterYear(), kind: 'normal' }; };
     const all = [...EVENTS.map(e => ['pick', e]), ...PLAN_DUE.map(e => ['due', e])];
     // pickEvent with only this event in the list (so the dice can't pick another), planDue with only this one due

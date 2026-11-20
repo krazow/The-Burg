@@ -67,13 +67,13 @@ await t.check('i7-a06: Never played one of these? sets the length, mode and text
   await page.click('#newbie');
   await page.click(`${open} [data-nq="len"][data-v="two"]`);
   await page.click(`${open} [data-nq="text"][data-v="l"]`);
-  await page.click(`${open} [data-nq="easy"][data-v="relaxed"]`);
-  assert((await page.getAttribute(`${open} [data-nq="easy"][data-v="relaxed"]`, 'aria-pressed')) === 'true', 'the pick is not pressed');
+  await page.click(`${open} [data-nq="easy"][data-v="easy"]`);
+  assert((await page.getAttribute(`${open} [data-nq="easy"][data-v="easy"]`, 'aria-pressed')) === 'true', 'the pick is not pressed');
   await page.click(`${open} #yes`);
   assert(/All set/.test(await page.textContent('#sheet h2')) && /practice life/.test(await page.textContent('#sheet')), 'no practice offer at the end');
   await page.click(`${open} #jumpin`);
   const s = await S();
-  assert(s.len === 'two' && s.mode === 'relaxed' && s.name === 'Gentle', JSON.stringify({ l: s.len, m: s.mode, n: s.name }));
+  assert(s.len === 'two' && s.diff === 'easy' && s.mode === 'relaxed' && s.name === 'Gentle', JSON.stringify({ l: s.len, d: s.diff, m: s.mode, n: s.name }));
   assert(await ev(() => prefs().textSize === 'l' && document.documentElement.classList.contains('ts-l')), 'bigger text not set');
   assert(await ev(() => !!prefs().newHere), 'the New here offer should not come again');
   await ev(() => setPref('textSize', 'normal'));

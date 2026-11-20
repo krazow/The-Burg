@@ -284,7 +284,8 @@ function blankLife(name, len, slot = 0){
     focus:'rest', applied:false, happySum:0, healthSum:0, monthsPlayed:0,
     log:[], over:false, cause:null, streakF:null, streakN:0, run:null, yearEvents:0,
     trip:null, svc:0, tires:null, stockUntil:-1, dentist:0, stopLast:{}, tabsYear:2027, carpool:false, hustleWeeks:0, scoreQ:null,
-    bg:'fresh', mode:'normal', sloanLeft:0, sloanPay:0, sgoal:null, seasonWins:0,
+    bg:'fresh', mode:'normal', diff:'normal', classic:false, flagsEdited:false, sloanLeft:0,   // to-do 2 D1: difficulty
+    sloanPay:0, sgoal:null, seasonWins:0,
     badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false,
     earnYears:0, earnSum:0, pensionYears:0, pensionPay:0, ltc:null, care:null, snowbird:null, scholar:null, will:false, probate:null, roomHost:false, hostLast:-99,
     skills:{}, biz:null, weekly:null, rng:null, rngEv:null, gen:1, goalAt:{}, carpoolJob:null, hustleLast:0, highWater:null, recentF:[], out:outDefault(), years:[],
@@ -313,6 +314,7 @@ function repairLife(s){
   if (!CARS[s.car]) s.car = 'beater';
   if (s.jobId != null && !jobById(s.jobId)) s.jobId = null;
   if (s.mode !== undefined && !MODES[s.mode]) s.mode = 'normal';
+  if (s.diff !== undefined && !(typeof DIFFS !== 'undefined' && DIFFS[s.diff])) s.diff = 'hard';   // to-do 2 D1: an unknown difficulty plays the full game
   if (s.bg !== undefined && !BACKGROUNDS[s.bg]) s.bg = 'fresh';
   if (!FOCUS[s.focus]) s.focus = 'rest';
   if (s.scenario != null && !(typeof SCENARIOS !== 'undefined' && SCENARIOS[s.scenario])) s.scenario = null;
@@ -354,6 +356,10 @@ function repairLife(s){
 const noTags = v => String(v == null ? '' : v).replace(/<[^>]*>?/g, '');
 function migrate(s){
   repairLife(s);
+  // to-do 2 D1: a life from before difficulties plays the full game (Hard content) with its own mode's numbers, labeled Classic
+  if (s.diff === undefined) { s.diff = 'hard'; s.classic = true; }
+  if (s.classic === undefined) s.classic = false;
+  if (s.flagsEdited === undefined) s.flagsEdited = false;
   const d = { slot:0, evPins:[], streakF:null, streakN:0, run:null, yearEvents:0, yearStart:null, evCd:{}, evDone:{}, evSeen:{}, seenOT:true, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, k401match:0, uiPay:null, mortgage:null, loanPay:0 };   // i75: an older 401(k) counts as vested; old benefits pay the floor
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
   s.rules = cleanRules(s.rules); if (!TIERS[s.tier0]) s.tier0 = recordTier(s.rules);   // i19-b01: unknown knobs fall back to Normal

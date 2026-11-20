@@ -919,7 +919,7 @@ function startLegacy(parent, name = heirName(parent.name)){
   const all = slots(), slot = all[parent.slot ?? 0] == null ? parent.slot ?? 0 : all.indexOf(null);
   if (slot < 0) { S = null; useDice(); renderTitle(); return toast(`All ${SLOT_COUNT} slots are full: delete a life first, and your grandkid is still waiting.`); }
   if (parent.id) setHeirs(heirs().filter(p => p.id !== parent.id));
-  newGame(name, 'life', slot, { bg:'fresh', mode:parent.mode, aim:parent.aim });
+  newGame(name, 'life', slot, { bg:'fresh', mode:parent.mode, diff:parent.diff, classic:parent.diff === undefined || !!parent.classic, aim:parent.aim });   // to-do 2 D1: the heir keeps the difficulty (Classic from an older record)
   S.line = Array.isArray(parent.line) ? parent.line.slice(-40) : [];   // i73-b25
   S.gen = (parent.gen || 1) + 1; S.community = clamp(Math.round(parent.community / 2) + 15);
   S.date = parent.date; S.col = parent.col; S.wage = parent.wage; S.tabsYear = new Date(S.date).getFullYear();
@@ -1192,7 +1192,7 @@ const heirOK = (opts = {}) => LENGTHS[S.len].turns === Infinity && (S.kids || []
 // i73-b01: what's kept of a finished life (about 1 KB)
 function endStub(reason, sc){
   const y1 = new Date(S.date).getFullYear(), y0 = new Date(S.date - (S.turn || 0) * 7 * 864e5).getFullYear(), j = S.retired ? null : job();
-  return { name:S.name, from:y0, to:y1, at:Date.now(), len:S.len, mode:mode(), bg:S.bg, score:sc.score, title:sc.title, parts:sc.parts, cause:String(reason).slice(0, 200),
+  return { name:S.name, from:y0, to:y1, at:Date.now(), len:S.len, mode:mode(), diff:diff(), classic:!!S.classic, bg:S.bg, score:sc.score, title:sc.title, parts:sc.parts, cause:String(reason).slice(0, 200),
     age:age(), job: S.retired ? 'Retired' : j ? jobTitle(j) : 'No job', home:HOMES[S.home].name, kids:(S.kids || []).length, gen:S.gen || 1,
     seed:S.weekly || null, scenario:S.scenario || null, nw:Math.round(netWorth()) };
 }
@@ -1233,7 +1233,7 @@ function finish(reason, opts = {}){
   const heir = heirOK(opts), stub = endStub(reason, { score, title, parts });
   // i73-b25: the family line so far, carried into the grandkid's save
   const line = [...(S.line || []), { name:S.name, years:`${stub.from}–${stub.to}`, job:stub.job, home:stub.home, score, title, epitaph:stub.cause }].slice(-40);
-  const parent = { id:S.lifeId, name:S.name, nw:netWorth(), community:S.community, slot:S.slot === WEEKLY_SLOT ? 0 : S.slot, mode:mode(), aim:S.aim, gen:S.gen || 1, date:S.date, col:S.col, wage:S.wage,
+  const parent = { id:S.lifeId, name:S.name, nw:netWorth(), community:S.community, slot:S.slot === WEEKLY_SLOT ? 0 : S.slot, mode:mode(), diff:diff(), classic:!!S.classic, aim:S.aim, gen:S.gen || 1, date:S.date, col:S.col, wage:S.wage,
     will:hasWill(), home:S.home, equity:S.equity, mortgage:S.mortgage, line };
   if (!S.practice) {
     addEnd(stub);

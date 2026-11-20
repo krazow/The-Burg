@@ -397,11 +397,11 @@ await t.check('the title screen starts a life with a background and a mode', asy
   await page.evaluate(() => { localStorage.clear(); setPref('newHere', 1); S = null; closeSheet(); render(); });
   await page.fill('#nm', 'Kid');
   await page.click('#moreopts');
-  await page.click('[data-bg="farm"]'); await page.click('[data-mode="hard"]');
-  assert(/family farm/.test(await page.textContent('#bgdesc')) && /more events/i.test(await page.textContent('#modedesc')), 'descriptions should follow the picks');
+  await page.click('[data-bg="farm"]'); await page.click('[data-diff="hard"]');
+  assert(/family farm/.test(await page.textContent('#bgdesc')) && (await page.getAttribute('[data-diff="hard"]', 'aria-pressed')) === 'true', 'descriptions should follow the picks');
   await page.click('#start');
   const s = await S();
-  assert(s.bg === 'farm' && s.mode === 'hard' && s.jobId === 'farmhand', JSON.stringify({ bg: s.bg, mode: s.mode, job: s.jobId }));
+  assert(s.bg === 'farm' && s.diff === 'hard' && s.mode === 'hard' && s.jobId === 'farmhand', JSON.stringify({ bg: s.bg, diff: s.diff, mode: s.mode, job: s.jobId }));
   assert(/Hard/.test(await page.textContent('header.top')), 'the header should show the mode');
 });
 
@@ -492,8 +492,8 @@ await t.check('title screen: Start comes before a closed "More options" panel, w
   assert(await page.isHidden('#morepanel') && (await page.getAttribute('#moreopts', 'aria-expanded')) === 'false', 'the panel should start closed');
   await page.click('#moreopts');
   assert(await page.isVisible('[data-bg="grad"]') && (await page.getAttribute('#moreopts', 'aria-expanded')) === 'true', 'the panel did not open');
-  await page.click('[data-bg="grad"]'); await page.click('[data-mode="relaxed"]');
-  assert(/Grad coming home · .*Relaxed/.test(await page.textContent('#moresum')), await page.textContent('#moresum'));
+  await page.click('[data-bg="grad"]'); await page.click('[data-diff="easy"]');
+  assert(/Grad coming home · .*Easy/.test(await page.textContent('#moresum')), await page.textContent('#moresum'));
   await page.evaluate(() => renderTitle());
   assert(await page.isVisible('#morepanel'), 'open panel not remembered');
   await page.click('#moreopts');
