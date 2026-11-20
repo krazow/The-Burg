@@ -924,7 +924,7 @@ function wealthTrack(real){
   return `<div class="kv"><span>${ok ? '✅' : '⏳'} Net worth on track?<br><small class="muted">By now (${Math.round(p * 100)}% of the way) you'd want about ${fmt(want)} in ${term('dollars')}</small></span><span><b>${ok ? 'On track' : `${Math.round(real / want * 100)}% there`}</b></span></div>`;
 }
 function scoreButton(){
-  if (S.practice || !isOpen('score')) return '';     // i31: shows after your first month
+  if (S.practice || !isOpen('score')) return '';     // i31: part of the stats, open from the start
   const sc = lifeScore(), d = S.scoreQ == null ? 0 : sc.score - S.scoreQ;
   const title = S.turn < 4 ? 'Just getting started' : sc.title;   // i5-a02: no verdict in the first weeks
   return `<button class="scorebtn" id="scorenow" aria-label="Life Score so far ${sc.score}, ${title}: see how it adds up${isNew('score') ? '. New' : ''}">

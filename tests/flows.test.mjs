@@ -1293,7 +1293,7 @@ for (const len of ['half', 'two', 'five', 'life']) {
       return { start, w1, dl, opened: S.opened, cards: document.querySelectorAll('#unlockcard').length, maxQ, turn: S.turn };
     });
     assert(r.start.open.join() === 'work,rest,community,outdoors' && r.start.soon === 2, JSON.stringify(r.start));
-    assert(!r.start.out && !r.start.plan && !r.start.trip && !r.start.score, `week 1 is just focuses and End Week: ${JSON.stringify(r.start)}`);
+    assert(!r.start.out && !r.start.plan && !r.start.trip && r.start.score, `week 1 is just focuses and End Week: ${JSON.stringify(r.start)}`);
     assert(r.w1 === 5, `study opens after the first week (${r.w1} focuses)`);
     for (const id of r.dl) assert(r.opened[id], `${id} should be open by week ${r.turn} of a ${len} life`);
     assert(r.cards === 1, `one unlock card at a time (${r.cards}), queue ${r.maxQ}`);
@@ -1361,7 +1361,7 @@ await t.check('i31: an older save keeps every system it already uses open', asyn
     return migrate(g).opened;
   });
   for (const id of ['hustle', 'plan', 'biz', 'skills', 'study', 'out', 'goals']) assert(r[id], `${id} stays open: ${Object.keys(r)}`);
-  assert(!r.score && !r.trip, `nothing unused and not due yet opens: ${Object.keys(r)}`);
+  assert(!r.trip, `nothing unused and not due yet opens: ${Object.keys(r)}`);
 });
 
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });
