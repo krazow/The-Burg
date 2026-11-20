@@ -308,7 +308,7 @@ await t.check('i62-a01/a06/a22: damaged backup codes get plain messages, and cod
   });
   const bad = Object.entries(r).filter(([k, v]) => ['inText', 'wrapped', 'quoted', 'plusOk', 'plus'].includes(k) ? v !== 'ok:Rules' : !/^err:/.test(v) || /fetch|JSON|token|atob|decod|Unexpected|undefined/i.test(v));
   assert(!bad.length, JSON.stringify(bad));
-  assert(/damaged/.test(r.cut) && /damaged/.test(r.fileCut) && /doesn't look like/.test(r.notOurs), JSON.stringify(r));
+  assert(/missing|damaged/.test(r.cut) && /damaged/.test(r.plain0Cut) && /damaged/.test(r.fileCut) && /doesn't look like/.test(r.notOurs), JSON.stringify(r));
 });
 
 await t.check('i62-a02/a03/a10: re-restoring never makes twins, a records-only backup restores, and tips are merged', async () => {
