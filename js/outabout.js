@@ -46,9 +46,10 @@ const PLACES = [
     desc:'The town clinic: checkups, and where you go when you\'re feeling run down.', hours:'Weekdays',
     acts:[{ id:'checkup', ic:'🩺', name:'A checkup', cost:150, fx:{health:5}, note:'Does more when your health is low.' }] },
   { id:'gather', name:'Grenache & Gather', ic:'🍷', lb:'Tasting', addr:'120 Main St.', st:'main', x:60, y:110, kind:'Wine tasting and guest-chef dinners',
-    desc:'A tasting room with guest-chef dinners. Home of Grenache Fest. 21 and over.', hours:'Thursday to Sunday',
+    desc:'A tasting room with guest-chef dinners. Home of Grenache Fest. Tastings and the wine dinners are 21 and over; anyone can stop in for a cheese board.', hours:'Thursday to Sunday',
     acts:[{ id:'taste', ic:'🍷', name:'A wine tasting', cost:30, fx:{happy:4}, min21:true, date:true },
-          { id:'chef', ic:'👩‍🍳', name:'A guest-chef dinner', cost:85, fx:{happy:7}, min21:true, date:true }] },
+          { id:'chef', ic:'👩‍🍳', name:'A guest-chef dinner', cost:85, fx:{happy:7}, min21:true, date:true },
+          { id:'board', ic:'🧀', name:'A cheese board and sparkling cider', cost:22, fx:{happy:3}, date:true }] },   // i26-b05: for any age
   { id:'basket', name:'Burg Basket Grocery', ic:'🛒', lb:'Grocery', addr:'200 Main St.', st:'main', x:240, y:110, kind:'Grocery store',
     desc:'The town grocery. A little pricier than the big stores in Walla Walla, but you see everybody.', hours:'Every day',
     acts:[{ id:'shop', ic:'🛒', name:'Shop local this week', cost:12, fx:{happy:1, community:2}, note:'A few dollars more than the big store, and a chat in every aisle.' }] },
@@ -64,8 +65,9 @@ const PLACES = [
     acts:[{ id:'paper', ic:'📰', name:'Pick up the paper', cost:2, fx:{community:1} },
           { id:'ad', ic:'📣', name:'Place an ad for your side hustle', cost:15, note:`Side-hustle pay +${AD_BOOST * 100}% for ${AD_WEEKS} weeks.` }] },
   { id:'brick', name:'The Royal Brick', ic:'🎶', lb:'Wine bar', addr:'222 Main St.', st:'main', x:380, y:110, kind:'Wine bar with music nights',
-    desc:'A wine bar in an old brick block, with music nights. Out-of-town visitors stay upstairs. 21 and over.', hours:'Evenings, Thursday to Saturday',
-    acts:[{ id:'night', ic:'🍷', name:'An evening at the wine bar', cost:25, fx:{happy:3, community:2}, min21:true, date:true }] },
+    desc:'A wine bar in an old brick block, with music nights. Out-of-town visitors stay upstairs. The bar is 21 and over; the early open-mic hour is for everyone.', hours:'Evenings, Thursday to Saturday',
+    acts:[{ id:'night', ic:'🍷', name:'An evening at the wine bar', cost:25, fx:{happy:3, community:2}, min21:true, date:true },
+          { id:'openmic', ic:'🎸', name:'The all-ages open-mic hour', cost:5, fx:{happy:2, community:2}, note:'Early evening, before the bar crowd. A few dollars at the door.' }] },   // i26-b05
   { id:'mrq', name:'Mr. Q\'s Smokehouse', ic:'🍖', lb:'BBQ', addr:'405 Preston Ave.', st:'preston', x:256, y:104, kind:'Barbecue takeout',
     desc:'Barbecue takeout, smoked low and slow.', hours:'Thursday to Saturday, while the smoker\'s going',
     acts:[{ id:'bbq', ic:'🍖', name:'Barbecue takeout', cost:18, fx:{happy:3} }] },
@@ -116,6 +118,8 @@ function placeClosed(p){
 }
 // which of a place's options show at all (drinks only for 21 and over)
 const shownActs = p => p.acts.filter(a => !(a.min21 && age() < 21));
+// i26-b05: a place where everything is 21 and over says so on its pin and in the list
+const only21 = p => age() < 21 && p.acts.some(a => a.min21) && !shownActs(p).some(a => !a.info);
 // why an option can't be done right now ('' when it can)
 function actBlocked(p, a){
   if (awaySouth()) return 'You\'re in Arizona until April';   // i3-a30
@@ -169,6 +173,7 @@ function visit(pid, aid){
 /* ---- screens ---- */
 function placeLine(p){
   const shut = placeClosed(p), acts = shownActs(p).filter(a => !a.info), from = acts.length ? Math.min(...acts.map(a => a.cost)) : null;
+  if (!shut && only21(p)) return '21+: nothing here for you until you turn 21';
   return shut ? `Closed: ${shut.replace(/^Closed (for )?/i, '').replace(/^\w/, c => c.toLowerCase())}` : `Open this week${from != null ? ` · ${from ? 'from ' + fmtc(from) : 'free'}` : ''}`;
 }
 function outButton(){
@@ -253,11 +258,11 @@ function mainStreetSVG(){
     <text x="100" y="169" class="mlbl" text-anchor="middle" font-weight="700">Main St. · 100 block</text><text x="318" y="169" class="mlbl" text-anchor="middle" font-weight="700">200 block</text>
     <text x="${MSW - 6}" y="${MSH - 4}" class="mlbl" text-anchor="end" font-size="7.5">Not to scale</text>`;
   for (const p of PLACES.filter(x => x.st === 'main')) {
-    const shut = !!placeClosed(p), recent = (S.evPins || []).find(x => OUT_EVENT_BIZ[x.t] === p.id && S.turn - x.turn <= 4);
-    s += `<g class="mpin mspin" data-biz="${p.id}" tabindex="0" role="button" aria-label="${esc(p.name)}, ${esc(p.addr)}: ${shut ? 'closed this week' : 'open this week'}" data-call="BIZTAP" data-arg="${p.id}">
+    const shut = !!placeClosed(p) || only21(p), recent = (S.evPins || []).find(x => OUT_EVENT_BIZ[x.t] === p.id && S.turn - x.turn <= 4);
+    s += `<g class="mpin mspin" data-biz="${p.id}" tabindex="0" role="button" aria-label="${esc(p.name)}, ${esc(p.addr)}: ${only21(p) ? '21 and over' : shut ? 'closed this week' : 'open this week'}" data-call="BIZTAP" data-arg="${p.id}">
       <circle cx="${p.x}" cy="${p.y}" r="42" fill="transparent"/><circle cx="${p.x}" cy="${p.y}" r="15" style="fill:${shut ? 'var(--map-pin-off)' : 'var(--map-pin)'};stroke:var(--map-ink)" stroke-width="1.4"${shut ? ' stroke-dasharray="3 2"' : ''}/>
       <text x="${p.x}" y="${p.y + 5.5}" font-size="15" text-anchor="middle">${p.ic}</text>
-      <text x="${p.x}" y="${p.y + 27}" class="mtown" text-anchor="middle">${p.lb}</text></g>`;
+      <text x="${p.x}" y="${p.y + 27}" class="mtown" text-anchor="middle">${p.lb}${only21(p) ? ' 21+' : ''}</text></g>`;
     if (recent) s += `<g class="evbadge" pointer-events="none"><circle cx="${p.x + 14}" cy="${p.y - 12}" r="9" fill="#ffd166" stroke="#9b2f1f" stroke-width="1.5"/><text x="${p.x + 14}" y="${p.y - 8}" font-size="10" text-anchor="middle">${recent.ic}</text></g>`;
   }
   return s + '</svg>';
@@ -319,6 +324,13 @@ const OUT_EVENTS = [
     text:'A band from Walla Walla is playing The Royal Brick on Saturday night.',
     choices:() => [
       {label:`Go (-${fmtc(25)})`, go:() => { adj({money:-cost(25), happy:4, community:2}); return 'Standing room only, and the band played two encores.'; }},
+      {label:'Early night', go:() => 'You slept well, at least.'}
+    ]},
+  // i26-b05: the same band plays an early all-ages set, so under-21s get music night too
+  { ic:'🎸', title:'All-ages show at The Royal Brick', biz:'brick', w:2, when:() => age() < 21,
+    text:'A band from Walla Walla is playing an early all-ages set at The Royal Brick before the bar opens on Saturday.',
+    choices:() => [
+      {label:`Go (-${fmtc(12)})`, go:() => { adj({money:-cost(12), happy:4, community:2}); return 'You stood up front, and the drummer tossed you a broken stick.'; }},
       {label:'Early night', go:() => 'You slept well, at least.'}
     ]},
   { ic:'🍔', title:'The grill is open at Laughing Lad', biz:'lad', yr:1, w:3, when:m => inM(m,4),
