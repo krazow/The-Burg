@@ -289,7 +289,7 @@ await t.check('backups round-trip: compressed code, plain code and file JSON all
     const sig = x => x.lives.map(g => g && `${g.name}/${g.len}/${g.turn}/${Math.round(g.money)}`).join('|');
     return { gz: gz.slice(0, 6), short: gz.length < JSON.stringify(data).length / 2, a: sig(a), b: sig(b), c: sig(c), best: a.best.two };
   });
-  assert(r.gz === 'BURG1:' && r.short, `code ${r.gz}, compressed well: ${r.short}`);
+  assert(r.gz === 'BURG2:' && r.short, `code ${r.gz}, compressed well: ${r.short}`);
   assert(r.a === r.b && r.b === r.c && r.a.startsWith('Rules/two/30/12345|Second/life/9'), `${r.a} / ${r.b} / ${r.c}`);
   assert(r.best === 66, 'best scores missing');
 });
@@ -1974,6 +1974,110 @@ await t.check('i75: older saves load with the new fields filled in (unvested mat
   const r = await ev(() => { const old = JSON.parse(JSON.stringify(fresh('two', { jobId: 'farmhand', k401: 500, ui: 3 }))); delete old.k401match; delete old.uiPay;
     const m = migrate(old); S = m; S.jobId = null; const ui = week().lines['Unemployment benefits']; return { match: m.k401match, uiPay: m.uiPay, ui }; });
   assert(r.match === 0 && r.uiPay === null && near(r.ui, 1500 * W), JSON.stringify(r));
+});
+
+// i63-b02: one frozen backup per format this app has ever written; every one must still restore
+const FIXTURES = {
+  json: '{"app":"theburg","kind":"backup","v":1,"slots":[{"name":"Fixture","len":"two","turn":5,"money":1000}],"best":{"two":61}}',
+  burg0: 'BURG0:eyJhcHAiOiJ0aGVidXJnIiwia2luZCI6ImJhY2t1cCIsInYiOjEsInNsb3RzIjpbeyJuYW1lIjoiRml4dHVyZSIsImxlbiI6InR3byIsInR1cm4iOjUsIm1vbmV5IjoxMDAwfV0sImJlc3QiOnsidHdvIjo2MX19',
+  burg1: 'BURG1:H4sIAAAAAAAC/x2MOxKEIBBE79IxAQYazAG8xNYGoFNqqUAJ+CmKuzu7Wb/+FZgQQEgz23xMUFgXN4phzbDmIHyCGoW4+RRBnwJndpa8X+6UD5bCxu53cHnRYgm0Crt3/MhSa12/CpZjApV/i7qm1hcuwp+qeAAAAA==',
+  burg2: 'BURG2:H4sIAAAAAAAC/x2MOw7CMBBE7zK1CwcJij0AB6BFFDZZgZVkbflDQJbvzkI3b+ZpOlxKINQn+5YfMFiCzFp4d19aUn6BDgZljbWArh3iNtb9HN61ZVZhZfkd7FGzVgpHgy0Kf0CTtXbcDDyXCup/i07TUCHIhd3MWaXxBRnt/gSGAAAA.132.14be3af5',
+  burg2plain: 'BURG2:eyJhcHAiOiJ0aGVidXJnIiwia2luZCI6ImJhY2t1cCIsInYiOjIsInNsb3RzIjpbeyJuYW1lIjoiRml4dHVyZSIsImxlbiI6InR3byIsInR1cm4iOjUsIm1vbmV5IjoxMDAwfV0sImJlc3QiOnsidHdvIjo2MX0sIm1pblJlYWRlciI6MX0=.134.04feed19'
+};
+await t.check('i63-b02: a frozen backup of every format (file, BURG0, BURG1, BURG2) still restores', async () => {
+  const r = await ev(async fx => { const out = {}; for (const [k, v] of Object.entries(fx)) { try { const b = await readBackup(v); out[k] = `${b.lives[0].name}/${b.lives[0].turn}/${b.best.two}`; } catch (e) { out[k] = 'ERR ' + e.message; } } return out; }, FIXTURES);
+  for (const [k, v] of Object.entries(r)) assert(v === 'Fixture/5/61', `${k}: ${v}`);
+});
+
+await t.check('i63-b01: a BURG2 code checks itself: a cut-off end, a missing middle and a changed letter each say so', async () => {
+  const r = await ev(async () => {
+    localStorage.clear(); newGame('Check', 'two', 0); S.turn = 12; save();
+    const code = await backupCode(backupData()), [, body, len, crc] = code.match(/^BURG2:(.*)\.(\d+)\.(\w+)$/);
+    const msg = async t => { try { await readBackup(t); return 'accepted'; } catch (e) { return e.part || e.message; } };
+    const mid = Math.floor(body.length / 2), swap = body[mid] === 'A' ? 'B' : 'A';
+    const wrapped = code.replace(/(.{60})/g, '$1\n ');          // pasted through a message that wraps lines
+    return { ok: (await readBackup(code)).lives[0].name, wrapped: (await readBackup(wrapped)).lives[0].name,
+      cut: await msg(code.slice(0, code.length - 30)), cutTail: await msg(code.slice(0, code.lastIndexOf('.'))),
+      middle: await msg(`BURG2:${body.slice(0, mid - 8) + body.slice(mid - 4)}.${len}.${crc}`),
+      changed: await msg(`BURG2:${body.slice(0, mid) + swap + body.slice(mid + 1)}.${len}.${crc}`),
+      text: await (async () => { try { await readBackup(code.slice(0, -40)); } catch (e) { return e.message; } })() };
+  });
+  assert(r.ok === 'Check' && r.wrapped === 'Check', `round trip: ${r.ok} / ${r.wrapped}`);
+  assert(r.cut === 'end' && r.cutTail === 'end', `cut-off code: ${r.cut} / ${r.cutTail}`);
+  assert(r.middle === 'middle', `missing middle: ${r.middle}`);
+  assert(r.changed === 'changed', `changed letter: ${r.changed}`);
+  assert(/last part/i.test(r.text), r.text);
+});
+
+await t.check('i63-b02: a backup from a newer Burg asks you to update instead of guessing', async () => {
+  const r = await ev(async () => {
+    const tryIt = async t => { try { await readBackup(t); return 'accepted'; } catch (e) { return e.newer ? 'newer' : e.message; } };
+    const life = [{ name: 'Future', len: 'two', turn: 3 }];
+    return { v9: await tryIt(JSON.stringify({ app: 'theburg', v: 9, minReader: 9, slots: life })),
+      v9ok: await tryIt(JSON.stringify({ app: 'theburg', v: 9, minReader: 1, slots: life })),
+      code: await tryIt('BURG7:abc'), mine: backupData().v === BACKUP_V && backupData().minReader === 1 };
+  });
+  assert(r.v9 === 'newer' && r.code === 'newer', `newer: ${r.v9} / ${r.code}`);
+  assert(r.v9ok === 'accepted', `a newer backup old apps can still read: ${r.v9ok}`);
+  assert(r.mine, 'backupData() writes v and minReader');
+});
+
+await t.check('i63-b22: restoring an earlier week of a life on this phone marks it rewound: no best score or badges at its end', async () => {
+  const r = await ev(async () => {
+    localStorage.clear(); newGame('Rewind', 'half', 0); S.noEvents = true; S.turn = 4; save();
+    const lid = S.lid, old = await readBackup(JSON.stringify(backupData()));
+    S.turn = 20; save();
+    const older = olderCopies(old).length;
+    restoreBackup(old, 'add');
+    const copy = slots()[1];
+    const fresh = await readBackup(JSON.stringify(backupData()));   // same weeks as here: not older
+    loadSlot(1); const rew = S.rewound; S.turn = 25; S.health = 90; S.money = 900000;
+    store.set(BEST_KEY, {}); store.set(BADGE_KEY, {});
+    badgeWeek([]); const inLife = Object.keys(S.badges).length;
+    finish('done'); closeSheet();
+    return { lid: !!lid && copy.lid === lid, older, rewound: copy.rewound && rew, notOlder: olderCopies(fresh).filter(([g]) => g.lid === lid && g.turn === 20).length,
+      best: Object.keys(store.get(BEST_KEY) || {}).length, badges: Object.keys(store.get(BADGE_KEY) || {}).length, inLife };
+  });
+  assert(r.lid, 'lives keep their id through a backup');
+  assert(r.older === 1 && r.rewound, `older ${r.older}, rewound ${r.rewound}`);
+  assert(r.notOlder === 0, 'a copy at the same week is not older');
+  assert(r.best === 0, 'a rewound life set a best score');
+  assert(r.inLife > 0 && r.badges === 0, `badges: ${r.inLife} in the life, ${r.badges} in the collection`);
+});
+
+await t.check('i63-b08: 4 weeks before a 2-year or 5-year life ends, the week offers a backup, once', async () => {
+  const r = await ev(() => {
+    const run = (len, from) => { fresh(len, { jobId: 'farmhand' }); S.turn = from; const got = []; for (let i = 0; i < 6 && S.turn < LENGTHS[len].turns - 1; i++) { const res = weekTick(false); if (res.notes.includes(BACKUP_NUDGE)) got.push(S.turn); } return got; };
+    return { two: run('two', 97), five: run('five', 253), half: run('half', 19), old: (() => { const g = migrate({ name: 'Old', len: 'two', turn: 50 }); return g.backupNudged === false && typeof g.lid === 'string'; })() };
+  });
+  assert(r.two.join() === '100' && r.five.join() === '256', `2y ${r.two} 5y ${r.five}`);
+  assert(!r.half.length, `6-month life nudged: ${r.half}`);
+  assert(r.old, 'old saves get the new fields');
+});
+
+await t.check('i73-b18: the shared score card comes with a short text (and the week for a weekly challenge)', async () => {
+  const r = await ev(() => { fresh('two'); const a = shareText(); S.len = 'half'; S.weekly = '2026-W47'; const b = shareText(); S.weekly = null; S.len = 'life'; const c = shareText(); return { a, b, c }; });
+  assert(/^Rules scored \d+, [A-Z][\w ]+, in a 2-year life in The Burg\. krazow\.github\.io\/The-Burg$/.test(r.a), r.a);
+  assert(r.b.includes('in a 6-month life in The Burg (Weekly challenge, week of Nov 16).'), r.b);
+  assert(r.c.includes('in a lifetime in The Burg'), r.c);
+});
+
+await t.check('i63-b12: QR codes: every size fits, a big backup splits into labelled parts that join back in any order', async () => {
+  const r = await ev(async () => {
+    const sizes = [1, 100, 320, 900, 2900].map(n => qrMake('x'.repeat(n), 'L')).map(q => [q.version, q.size]);
+    let tooLong = false; try { qrMake('x'.repeat(3000), 'L'); } catch (e) { tooLong = true; }
+    const code = 'BURG2:' + 'abcdefgh'.repeat(400) + '.2400.0badc0de', parts = qrParts(code);
+    const col = qrCollector(), order = parts.map((_, i) => i).reverse(); let res;
+    col.add('BURGP:1/3:other');                                    // a different backup's frame is dropped when the count changes
+    for (const i of [order[0], order[0], ...order.slice(1)]) res = col.add(parts[i]);
+    const single = qrCollector().add('BURG2:short.5.00000000');
+    return { sizes, tooLong, n: parts.length, label: parts[2].slice(0, 11), longest: Math.max(...parts.map(p => p.length)), joined: res.done && res.code === code, single: single.done && single.code };
+  });
+  assert(r.sizes.map(s => s[1]).join() === '21,37,61,101,177', `sizes ${JSON.stringify(r.sizes)}`);
+  assert(r.tooLong, 'an oversized code should refuse');
+  assert(r.n === 11 && r.label === 'BURGP:3/11:' && r.longest < 340, `parts ${r.n} ${r.label} ${r.longest}`);
+  assert(r.joined, 'frames did not join back');
+  assert(r.single === 'BURG2:short.5.00000000', 'a one-frame code');
 });
 
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });

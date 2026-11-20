@@ -5,6 +5,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import http from 'node:http';
 import { serve, launch, runner, assert, SITE_DIR } from './helpers.mjs';
 
 const FILES = ['index.html', 'js', 'sw.js', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png'];
@@ -59,6 +60,28 @@ await t.check('a life started online can be continued and played offline', async
   } finally { await ctx.setOffline(false); }
 });
 
+await t.check('i43-b02: a normal launch downloads nothing: every file comes from the cache', async () => {
+  const net = [], fromNet = [];
+  const onReq = r => { if (r.serviceWorker()) net.push(new URL(r.url()).pathname); };
+  const onRes = r => { if (r.url().startsWith(srv.url) && !r.fromServiceWorker()) fromNet.push(new URL(r.url()).pathname); };
+  ctx.on('request', onReq); page.on('response', onRes);
+  try { await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(500); }
+  finally { ctx.off('request', onReq); page.off('response', onRes); }
+  assert(!net.length, `the service worker went to the network for: ${net.join(', ')}`);
+  assert(!fromNet.filter(p => p !== '/sw.js').length, `not from the cache: ${fromNet.join(', ')}`);
+});
+
+await t.check('i54-a13: offline, a link with ?something on it still opens the game', async () => {
+  await ctx.setOffline(true);
+  try {
+    await page.goto(srv.url + '?source=home', { waitUntil: 'load' });
+    await page.waitForSelector('.title h1');
+    await page.goto(srv.url + 'index.html?from=share#x', { waitUntil: 'load' });
+    await page.waitForSelector('.title h1');
+  } finally { await ctx.setOffline(false); }
+  await page.goto(srv.url, { waitUntil: 'load' });
+});
+
 await t.check('a new version replaces the old one: new cache, old cache gone, saves and best scores kept', async () => {
   await page.evaluate(() => { save(); store.set(BEST_KEY, { two: 77 }); });
   const before = await page.evaluate(() => JSON.stringify(slots().map(g => g && { name: g.name, turn: g.turn })));
@@ -109,6 +132,39 @@ await t.check('H3: the beta keeps its lives under its own keys, apart from the l
     assert(back.names === 'LiveLife,,,,' && back.pref === 'LiveLife', `live sees: ${JSON.stringify(back)}`);
     assert(back.keys.every(k => k.startsWith('theburg.') || k.startsWith('theburgbeta.')), `stray keys: ${back.keys}`);
   } finally { await c2.close(); s2.close(); fs.rmSync(both, { recursive: true, force: true }); }
+});
+
+await t.check('i57-a13: a Wi-Fi login page is never saved as the game', async () => {
+  // a server that turns into a captive portal: every address answers 200 with a login page
+  let portal = false;
+  const files = http.createServer((req, res) => {
+    if (portal) { res.writeHead(200, { 'Content-Type': 'text/html' }); return res.end('<!doctype html><title>Hotel Wi-Fi</title><h1>Log in to the Wi-Fi</h1>'); }
+    const types = { '.html': 'text/html', '.js': 'text/javascript', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.png': 'image/png' };
+    let f = path.join(dir, decodeURIComponent(new URL(req.url, 'http://x').pathname));
+    if (fs.existsSync(f) && fs.statSync(f).isDirectory()) f = path.join(f, 'index.html');
+    if (!fs.existsSync(f)) return res.writeHead(404).end();
+    res.writeHead(200, { 'Content-Type': types[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-cache' }); fs.createReadStream(f).pipe(res);
+  });
+  await new Promise(r => files.listen(0, '127.0.0.1', r));
+  const url = `http://127.0.0.1:${files.address().port}/`, c3 = await browser.newContext(), p3 = await c3.newPage();
+  p3.on('pageerror', e => errors.push(String(e)));
+  try {
+    await p3.goto(url, { waitUntil: 'load' });
+    await p3.evaluate(() => navigator.serviceWorker.ready);
+    await p3.reload({ waitUntil: 'load' });
+    portal = true;
+    const r = await p3.evaluate(async () => {
+      const got = await (await fetch('js/state.js?fresh=1')).text();          // not in the cache: goes to the "network"
+      const keys = [];
+      for (const n of await caches.keys()) if (n.startsWith('theburg-')) for (const q of await (await caches.open(n)).keys()) keys.push(new URL(q.url).pathname + new URL(q.url).search);
+      return { got: got.slice(0, 40), keys };
+    });
+    assert(/Wi-Fi/.test(r.got), `the portal answered ${r.got}`);
+    assert(!r.keys.some(k => k.includes('fresh=1')), `the login page was cached: ${r.keys.join(', ')}`);
+    await p3.goto(url + '?source=home', { waitUntil: 'load' });
+    assert(await p3.$('.title h1'), 'the cached game did not open behind the portal');
+    assert(!(await p3.textContent('body')).includes('Log in to the Wi-Fi'), 'the login page replaced the game');
+  } finally { portal = false; await c3.close(); files.close(); }
 });
 
 await t.check('no page errors', async () => { assert(!errors.length, errors.join('; ')); });

@@ -264,8 +264,11 @@ const age = () => Math.floor(S.ageMonths/12);
 const kidsAtHome = () => (S.kids || []).filter(b => S.ageMonths - b < 18*12).length;
 // fill in fields that older saves don't have
 // H1: a fresh life's fields, used by newGame and to repair damaged saves
+// i63-b22: every life gets an id, so a restored backup can tell an older copy of the same life (no Math.random: the dice stay put)
+let LID_N = 0;
+const newLid = () => { try { return [...crypto.getRandomValues(new Uint32Array(2))].map(n => n.toString(36)).join(''); } catch (e) { return Date.now().toString(36) + (LID_N++).toString(36); } };
 function blankLife(name, len, slot = 0){
-  return { v:3, slot, name, len, turn:0, date: new Date(2027,0,4).getTime(), ageMonths:18*12, evCd:{}, evDone:{}, last:null, ui:0,
+  return { v:3, slot, name, len, lid:newLid(), rewound:false, backupNudged:false, turn:0, date: new Date(2027,0,4).getTime(), ageMonths:18*12, evCd:{}, evDone:{}, last:null, ui:0,
     col:1, wage:1, kids:[], k401:0, k401rate:0, k401match:0, uiPay:null, mortgage:null, loanPay:0,   // i75-b12 unvested match, i75-b05 benefit
     money:1500, health:78, happy:60, community:30,
     edu:0, studyProg:0, jobId:null, jobMonths:0, raise:1, retired:false,
@@ -316,6 +319,9 @@ function migrate(s){
   repairLife(s);
   const d = { slot:0, evPins:[], streakF:null, streakN:0, run:null, yearEvents:0, yearStart:null, evCd:{}, evDone:{}, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, k401match:0, uiPay:null, mortgage:null, loanPay:0 };   // i75: an older 401(k) counts as vested; old benefits pay the floor
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
+  if (typeof s.lid !== 'string' || !s.lid) s.lid = newLid();          // i63-b22
+  if (s.rewound === undefined) s.rewound = false;
+  if (s.backupNudged === undefined) s.backupNudged = false;          // i63-b08
   // Around the region (0.3.0): older lives count as just serviced and checked, with this year's tabs paid
   if (s.tenure === undefined) s.tenure = s.jobMonths || 0;          // i3-a01: older lives count the months since the last raise
   if (s.certs === undefined) {                                       // lives from before certificates and seasons (0.2.0)

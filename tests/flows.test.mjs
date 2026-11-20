@@ -1262,6 +1262,229 @@ await t.check('W22: the Little League season runs coach → losing streak → co
   assert(!(await page.evaluate(() => leagueOn() || !!planDue(curMonth()))), 'skipping started the season');
 });
 
+/* ---------- wave 1, batch C: backups, moving phones and the offline shell ---------- */
+await t.check('i63-b08: the week 4 weeks before the end offers a backup; closing it carries on with the week', async () => {
+  await life({ jobId: 'farmhand' }, 'home', 'two');
+  await page.evaluate(() => { S.turn = 99; save(); render(); });
+  await page.click('#end');
+  await page.waitForSelector(`${open} #nudgebk`);
+  assert((await page.textContent('#sheet')).includes('Your ending is 4 weeks away'), 'no nudge line');
+  await page.click('#nudgebk');
+  await page.waitForSelector(`${open} #bkfile`);
+  assert(!(await page.$(`${open} #bkrestore`)), 'restore should not be offered mid-week');
+  await page.click(`${open} #no`);
+  await clearSheets();
+  await page.evaluate(() => { S.turn = 99; S.noEvents = true; save(); render(); });
+  await page.click('#end');
+  assert(!(await page.$(`${open} #nudgebk`)), 'the nudge came twice');
+  await clearSheets();
+  const s = await S();
+  assert(s.backupNudged && s.turn === 100, `nudged ${s.backupNudged} turn ${s.turn}`);
+  assert(!(await page.$(`${open} #nudgebk`)), 'the nudge came twice');
+});
+
+await t.check('i63-b15/b12: Moving to a new phone shows the lives as looping QR codes, then the new phone\'s steps', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => { for (let i = 0; i < 40; i++) log('A long, long journal line to make the backup bigger: ' + i + ' ' + Math.random().toString(36)); S.turn = 30; save(); for (let i = 1; i < 4; i++) { const c = clone(S); c.slot = i; c.name = 'Copy' + i; c.lid = 'x' + i; writeSlot(i, c); } });
+  await page.click('[data-tab=menu]'); await page.click('#movephone');
+  await page.waitForSelector(`${open} #mvqr svg.qr`);
+  const first = await page.textContent('#mvpart');
+  assert(/^Part \d+ of (\d+)$/.test(first) && +first.match(/of (\d+)/)[1] > 1, `part label: ${first}`);
+  await page.waitForFunction(f => document.querySelector('#mvpart').textContent !== f, first, { timeout: 3000 });
+  await page.click('#mvpause');
+  const paused = await page.textContent('#mvpart'); await page.waitForTimeout(800);
+  assert(await page.textContent('#mvpart') === paused, 'Pause did not stop the loop');
+  assert((await page.getAttribute('#mvqr svg', 'aria-label')).includes('part'), 'the QR has no label');
+  await page.click('#mvnext');
+  await page.waitForSelector(`${open} ol.steps`);
+  assert((await page.textContent('#sheet')).includes("I'm the new phone"), 'step 2 should name the title button');
+  await page.click('#back'); await page.waitForSelector('#mvqr svg');
+  await page.click(`${open} #close`);
+  assert(await page.evaluate(() => MOVE === null), 'the QR loop kept running after closing');
+});
+
+await t.check('i63-b15/b12: the new phone scans the frames in any order (progress bar) and restores the lives', async () => {
+  const c2 = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  // a stand-in camera: BarcodeDetector hands back the old phone's frames, shuffled, one per look
+  await c2.addInitScript(() => {
+    window.__frames = [];
+    window.BarcodeDetector = class { constructor(){} async detect(){ const f = window.__frames.shift(); return f ? [{ rawValue: f }] : []; } };
+    navigator.mediaDevices.getUserMedia = async () => { const c = document.createElement('canvas'); c.width = 8; c.height = 8; return c.captureStream(); };
+  });
+  const p2 = await c2.newPage(); p2.on('pageerror', e => errors.push(String(e)));
+  try {
+    const code = await page.evaluate(() => backupCode(backupData()));
+    const frames = await page.evaluate(c => qrParts(c), code);
+    await p2.goto(srv.url, { waitUntil: 'load' });
+    await p2.click('#newphone');
+    await p2.waitForSelector('#modal:not(.hidden) #npscan');
+    const shuffled = frames.map((f, i) => [f, (i * 7919) % 13]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
+    await p2.evaluate(f => { window.__frames = [f[0], f[0], ...f.slice(1)]; }, shuffled);
+    await p2.click('#npscan');
+    await p2.waitForSelector('#rsadd', { timeout: 10000 });
+    assert(await p2.evaluate(() => { const p = document.querySelector('#npprog'); return p.value === p.max && p.max > 1; }), 'progress bar not full');
+    assert(await p2.evaluate(() => SCAN === null), 'the camera stayed on');
+    await p2.click('#rsadd');
+    const names = await p2.evaluate(() => slots().map(g => g && g.name).join());
+    assert(names === 'Flow,Copy1,Copy2,Copy3,', `new phone has ${names}`);
+  } finally { await c2.close(); }
+});
+
+await t.check('i63-b15: without a camera scanner the new phone pastes the code; a cut-off code names the missing part', async () => {
+  await page.evaluate(() => { S = null; renderTitle(); });
+  const code = await page.evaluate(() => backupCode(backupData()));
+  await page.click('#newphone');
+  await page.waitForSelector(`${open} #rscode`);
+  assert(!(await page.$('#npscan')) && (await page.textContent('#sheet')).includes("can't scan"), 'should explain there is no scanner');
+  await page.fill('#rscode', code.slice(0, -25));
+  await page.click('#rscheck');
+  await page.waitForSelector('#rsout .warnline');
+  assert((await page.textContent('#rsout')).includes('last part'), await page.textContent('#rsout'));
+  await page.click(`${open} #no`);
+});
+
+await t.check('i63-b02: a backup from a newer Burg offers Check for an update', async () => {
+  await page.click('#restore');
+  await page.fill('#rscode', JSON.stringify({ app: 'theburg', v: 5, minReader: 5, slots: [{ name: 'Later', len: 'two' }] }));
+  await page.click('#rscheck');
+  await page.waitForSelector('#rsupd');
+  assert((await page.textContent('#rsout')).includes('newer Burg'), await page.textContent('#rsout'));
+  await page.click('#rsupd');
+  await page.waitForFunction(() => /internet|newer version|update/i.test(document.querySelector('#rsupdout').textContent));
+  await page.click(`${open} #no`);
+});
+
+await t.check('i63-b22: restoring an older week of a life here asks first and marks it rewound', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => { S.turn = 5; save(); });
+  const code = await page.evaluate(() => backupCode(backupData()));
+  await page.evaluate(() => { S.turn = 40; save(); S = null; renderTitle(); });
+  await page.click('#restore'); await page.fill('#rscode', code); await page.click('#rscheck');
+  await page.waitForSelector('#rsadd'); await page.click('#rsadd');
+  await page.waitForSelector('#rsrw');
+  const txt = await page.textContent('#rsout');
+  assert(txt.includes('older copy') && txt.includes('week 5') && txt.includes('week 40'), txt);
+  await page.click('#rsback'); await page.waitForSelector('#rsadd');
+  await page.click('#rsadd'); await page.click('#rsrw');
+  const sl = await page.evaluate(() => slots().map(g => g && [g.turn, !!g.rewound]));
+  assert(JSON.stringify(sl.slice(0, 2)) === '[[40,false],[5,true]]', JSON.stringify(sl));
+});
+
+await t.check('i63-b05: lives cleared from localStorage (but not the flag) show a note on the title screen', async () => {
+  const c2 = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+  const p2 = await c2.newPage(); p2.on('pageerror', e => errors.push(String(e)));
+  try {
+    await p2.goto(srv.url, { waitUntil: 'load' });
+    assert(!(await p2.$('#tn-cleared')), 'a first visit should not say anything was cleared');
+    await p2.evaluate(async () => { newGame('Kept', 'two', 0); save(); await playedFlag(true); });
+    await p2.evaluate(() => localStorage.clear());                 // the browser wipes localStorage only
+    await p2.reload({ waitUntil: 'load' });
+    await p2.waitForSelector('#tn-cleared');
+    assert((await p2.textContent('#tn-cleared')).includes('cleared from this browser'), 'note text');
+    await p2.click('#tn-cleared [data-tn=restore]');
+    await p2.waitForSelector('#modal:not(.hidden) #rscode');
+  } finally { await c2.close(); }
+});
+
+await t.check('i73-b12: a private window (small quota, no persisted) gets a calm warning on the title and once on Home', async () => {
+  const mk = async sign2 => {
+    const c2 = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
+    await c2.addInitScript(s2 => { navigator.storage.estimate = async () => ({ quota: 80 * 1024 * 1024, usage: 0 }); if (s2) delete StorageManager.prototype.persisted; }, sign2);
+    const p2 = await c2.newPage(); p2.on('pageerror', e => errors.push(String(e)));
+    await p2.goto(srv.url, { waitUntil: 'load' }); await p2.waitForSelector('#tn-private');
+    return [c2, p2];
+  };
+  const [c1, p1] = await mk(true), [c2, p2] = await mk(false);
+  try {
+    assert((await p1.textContent('#tn-private')).includes('This window forgets your lives'), await p1.textContent('#tn-private'));
+    assert((await p2.textContent('#tn-private')).includes('may forget'), await p2.textContent('#tn-private'));
+    await p1.fill('#nm', 'Priv'); await p1.click('#start'); await p1.evaluate(() => { tab = 'home'; render(); });
+    await p1.waitForSelector('#privcard');
+    await p1.click('#privok');
+    await p1.evaluate(() => render());
+    assert(!(await p1.$('#privcard')), 'the Home card came back after Got it');
+  } finally { await c1.close(); await c2.close(); }
+  assert(!(await page.$('#tn-private')), 'a normal window was warned');
+});
+
+await t.check('i73-b13 + i63-b04: iPhone Safari tab warns about 7 days; the home-screen app with no lives offers to bring them over', async () => {
+  const ios = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
+  const c2 = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block', userAgent: ios });
+  const p2 = await c2.newPage(); p2.on('pageerror', e => errors.push(String(e)));
+  try {
+    await p2.goto(srv.url, { waitUntil: 'load' });
+    assert(!(await p2.$('#tn-ios')), 'no lives yet: nothing to lose');
+    await p2.evaluate(() => { newGame('Tab', 'two', 0); save(); S = null; renderTitle(); });
+    await p2.waitForSelector('#tn-ios');
+    assert((await p2.textContent('#tn-ios')).includes('Add to Home Screen'), 'steps missing');
+    await p2.click('#tn-ios [data-tn=iosok]');
+    await p2.reload({ waitUntil: 'load' }); await p2.waitForTimeout(300);
+    assert(!(await p2.$('#tn-ios')), 'Got it should hide it on the next visit');
+    await p2.evaluate(() => setPref('lastSeen', Date.now() - 5 * 864e5));
+    await p2.reload({ waitUntil: 'load' }); await p2.waitForSelector('#tn-ios');   // away more than 4 days: it's back
+    await p2.click('#tn-ios [data-tn=backup]');
+    await p2.waitForSelector('#modal:not(.hidden) #bkcode');
+  } finally { await c2.close(); }
+  // the installed app (standalone) on iPhone, with an empty storage
+  const c3 = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block', userAgent: ios });
+  await c3.addInitScript(() => { Object.defineProperty(navigator, 'standalone', { value: true }); });
+  const p3 = await c3.newPage(); p3.on('pageerror', e => errors.push(String(e)));
+  try {
+    await p3.goto(srv.url, { waitUntil: 'load' });
+    await p3.waitForSelector('#tn-safari');
+    assert((await p3.textContent('#tn-safari')).includes('Played in Safari before?'), 'Safari note text');
+    assert(!(await p3.$('#tn-ios')), 'the installed app should not get the Safari-tab warning');
+  } finally { await c3.close(); }
+});
+
+await t.check('i73-b18: where a picture can\'t be shared, the score card downloads and offers to copy its text', async () => {
+  await life({ jobId: 'farmhand' }, 'home', 'half');
+  await page.evaluate(() => { S.turn = 26; finish('done'); });
+  await page.waitForSelector(`${open} #share`);
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#share')]);
+  assert(/\.png$/.test(dl.suggestedFilename()), dl.suggestedFilename());
+  await page.waitForSelector('#sharetext');
+  await page.click('#sharetext');
+  await page.waitForSelector('#sharetextout:not(.hidden)');
+  assert((await page.textContent('#sharetextout')).includes('in a 6-month life in The Burg'), await page.textContent('#sharetextout'));
+  await page.evaluate(() => { closeSheet(); S = null; renderTitle(); });
+});
+
+await t.check('i57-a23: Help says what the game keeps on this device, and Erase everything (typed) clears only this game', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => { store.set(BEST_KEY, { two: 55 }); localStorage.setItem('otherapp.data', 'keep me'); S = null; renderTitle(); });
+  await page.click('#how');
+  await page.waitForSelector('#g-device');
+  const txt = await page.textContent('#g-device');
+  assert(txt.includes('Nothing is sent anywhere') && /1 of 5 slots/.test(txt) && /about \d+ KB/.test(txt), txt);
+  await page.click('[data-call=helpgo][data-arg=g-device]');
+  await page.click('#eraseall');
+  await page.waitForSelector(`${open} #erasetype`);
+  assert(await page.isDisabled('#yes'), 'Erase should wait for the typed word');
+  await page.fill('#erasetype', 'erase');
+  await page.click('#yes');
+  await page.waitForSelector('.title h1');
+  const left = await page.evaluate(() => Object.keys(localStorage).sort().join());
+  assert(left === 'otherapp.data', `left behind: ${left}`);
+  await page.evaluate(() => localStorage.removeItem('otherapp.data'));
+});
+
+await t.check('i57-a10: the page has a content security policy, and map pins work by tap and keyboard without inline handlers', async () => {
+  const csp = await page.getAttribute('meta[http-equiv="Content-Security-Policy"]', 'content');
+  assert(/script-src 'self'(;|$)/.test(csp) && /object-src 'none'/.test(csp), csp);
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => { setPref('mapView', false); render(); });
+  await page.click('[data-call=MAPPREF][data-arg="1"]');
+  await page.waitForSelector('.mpin[data-call=MAPTAP]');
+  const k = await page.getAttribute('.mpin[data-call=MAPTAP]', 'data-arg');
+  await page.click(`.mpin[data-arg="${k}"]`);
+  assert(await page.evaluate(() => MAPSEL) === k, 'tap did not select the pin');
+  await page.focus(`.mpin[data-arg="${k}"]`); await page.keyboard.press('Enter');
+  assert(await page.evaluate(() => MAPSEL) === null, 'Enter on a pin did nothing');
+  assert(await page.evaluate(() => document.querySelectorAll('[onclick],[onkeydown]').length) === 0, 'inline handlers left in the page');
+  await page.evaluate(() => { setPref('mapView', false); render(); });
+});
+
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });
 
 await browser.close();

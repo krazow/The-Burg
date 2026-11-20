@@ -14,7 +14,8 @@
   ],
   "android": {
     "enabled": true,
-    "appId": "com.krazow.theburg"
+    "appId": "com.krazow.theburg",
+    "camera": true
   },
   "windows": {
     "enabled": true,
