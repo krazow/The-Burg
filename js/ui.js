@@ -109,7 +109,7 @@ function hasRecords(){
   const best = store.get(BEST_KEY) || {};
   return Object.keys(best).some(k => bestLabel(k)) || Object.keys(store.get(CHALLENGE_KEY) || {}).length > 0;
 }
-// the best-score table (records sheet and the Challenges sheet)
+// the best-score table, shown in the Challenges sheet
 function recordsTable(){
   const best = store.get(BEST_KEY) || {}, mds = ['relaxed', 'normal', 'hard'];
   const cell = v => v == null ? '<span class="muted" aria-label="none yet">–</span>' : `<b>${v}</b>`;
@@ -119,19 +119,6 @@ function recordsTable(){
 }
 const badgeLine = () => { const got = store.get(BADGE_KEY) || {}, n = Object.keys(got).length;
   return n ? `<p class="muted" style="font-size:0.8125rem">🏅 Badges collected across your lives: ${BADGES.filter(b => got[b.id]).map(b => b.ic).join(' ')} (${n}/${BADGES.length})</p>` : ''; };
-function recordsSheet(){
-  const best = store.get(BEST_KEY) || {}, won = store.get(CHALLENGE_KEY) || {};
-  const nWon = Object.keys(SCENARIOS).filter(k => won[k]).length, wk = best[`wk-${isoWeek()}`];
-  sheet(`<h2>🏆 Your records</h2>
-    <p class="muted">Your best Life Scores on this device.</p>
-    ${recordsTable()}
-    <h3 style="margin-top:14px">🏁 Challenges <span class="tag">${nWon}/${Object.keys(SCENARIOS).length} completed</span></h3>
-    ${Object.entries(SCENARIOS).map(([k, sc]) => `<div class="kv"><span>${sc.ic} ${sc.name}${won[k] ? ' ✅' : ''}</span><span>${best['sc-' + k] != null ? `best <b>${best['sc-' + k]}</b>` : '<span class="muted">not played</span>'}</span></div>`).join('')}
-    <h3 style="margin-top:14px">📅 This week's challenge (${isoWeek()})</h3>
-    <div class="kv"><span>Your best this week</span><span>${wk != null ? `<b>${wk}</b>` : '<span class="muted">not played yet</span>'}</span></div>
-    <button class="btn primary" id="ok">Close</button>`);
-  $('#ok').onclick = closeSheet;
-}
 /* ---------- ✨ What's new (G6): a one-time card after an update, once per version ---------- */
 const SEEN_KEY = KEY_PREFIX + 'seenVersion';
 const WHATS_NEW = {

@@ -456,7 +456,7 @@ await t.check('title screen: Start comes before a closed "More options" panel, w
   assert(await page.isHidden('#morepanel'), 'closed panel not remembered');
 });
 
-await t.check('title screen: "Your records" shows best scores by length and mode, challenges, and only this week\'s weekly best', async () => {
+await t.check('title screen: Challenges and records shows best scores by length and mode, challenges, and only this week\'s weekly best', async () => {
   await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); renderTitle(); });
   assert(!(await page.$('#records')) && !(await page.$('#weekly')), 'i50-a05: no records or weekly buttons on the title screen');
   assert(!/records/.test(await page.textContent('#chal')), 'Challenges should not mention records before any life is finished');
@@ -471,13 +471,8 @@ await t.check('title screen: "Your records" shows best scores by length and mode
   const ch = await page.textContent(open);
   assert(/Weekly challenge/.test(ch) && /Your best 59/.test(ch) && /Your best 80/.test(ch) && /1\/4 completed/.test(ch) && /Your records/.test(ch), ch.slice(0, 400));
   const crow = await page.$$eval(`${open} table.rec tbody tr`, trs => trs.map(tr => [...tr.children].map(c => c.textContent.trim())));
-  assert(crow.length === 4 && crow[1][2] === '66', JSON.stringify(crow));
-  await page.evaluate(() => closeSheet());
-  await page.evaluate(() => recordsSheet());
-  const rows = await page.$$eval(`${open} table.rec tbody tr`, trs => trs.map(tr => [...tr.children].map(c => c.textContent.trim())));
-  assert(rows.length === 4 && rows[1][0] === '2 Years' && rows[1][2] === '66' && rows[0][3] === '48' && rows[3][1] === '71' && rows[0][1] === '–', JSON.stringify(rows));
-  const txt = await page.textContent(open);
-  assert(/1\/4 completed/.test(txt) && /Save the family farm ✅/.test(txt) && /best 80/.test(txt) && /Your best this week59/.test(txt) && !/99/.test(txt), txt.slice(0, 300));
+  assert(crow.length === 4 && crow[1][0] === '2 Years' && crow[1][2] === '66' && crow[0][3] === '48' && crow[3][1] === '71' && crow[0][1] === '–', JSON.stringify(crow));
+  assert(/Save the family farm ✅/.test(ch) && !/99/.test(ch), ch.slice(0, 300));
   await page.keyboard.press('Escape');
   assert(await page.isHidden('#modal'), 'Escape should close the records');
 });
