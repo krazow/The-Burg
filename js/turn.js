@@ -385,6 +385,7 @@ function weekTick(auto){
   S.recentF = [S.focus, ...(S.recentF || [])].slice(0, 4);
   const eff = focusEffect();
   adj(focusFx(S.focus, eff, trip && trip.away ? (trip.van ? VAN_TIME : true) : false));
+  if (skiWeek()) { adj({happy:2, health:1}); why.push('⛷️ A ski day at Bluewood on your season pass: ▲ happiness and health, no lift ticket.'); }   // i66-b16
   S.last.why = why;
   if (S.focus !== 'study' && S.streakN > RUT_WEEKS) {
     adj({happy: -1.2});
@@ -443,7 +444,7 @@ function weekTick(auto){
     if (S.yearStart) S.years = [...(S.years || []), { year: oldYear, age: age(), start: S.yearStart, end: snap, m: yearMilestones(oldYear) }].slice(-120);   // i2-a29: for the life story
     S.yearStart = snap; S.yearEvents = 0;
     // i3-a10: union jobs get a step raise every January after 6 months on the job
-    if (working() && job().union && !S.strike && (S.tenure || 0) >= 6) { bumpPay(1.015); log(`Union step raise: 1.5% at the ${job().title.toLowerCase()} job.`); }
+    if (working() && job().union && !S.strike && (S.tenure || 0) >= 6) { const g = bumpPay(1.015); if (g > 0.0005) log(`Union step raise: ${pctTxt(g)} at the ${job().title.toLowerCase()} job.`); }
   }
 
   badgeWeek(notes); scenarioWeek(notes);
