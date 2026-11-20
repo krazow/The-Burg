@@ -10,7 +10,6 @@ function eventOdds(trip){
   return { town: EVENT_ODDS.town * hard, road: trip || commuteOneWay() >= 20 ? EVENT_ODDS.road * hard : 0, work: hasJob ? EVENT_ODDS.work * hard : 0 };
 }
 function rollEvent(month, trip){
-  eventUpkeep();
   S.roadTo = trip && trip.city ? trip.city : commuteOneWay() >= 20 ? job().city : null;   // where this week's drive goes
   const due = planDue(month); if (due) return due;   // i3-a30/a31/a32: life decisions that come when they're due
   const odds = eventOdds(trip);
@@ -385,7 +384,7 @@ function classWeeks(n){
   return true;
 }
 const studying = () => S.focus === 'study' && S.edu < 3;
-// what event choices keep doing week to week (runs each week, before the event roll)
+// what event choices keep doing week to week (weekTick runs it every week before the event roll, even with events off: i71-b04)
 function eventUpkeep(){
   if (S.promo && (S.promo.job !== S.jobId || S.retired)) S.promo = null;
   if (S.promo) adj({happy: -0.3 * S.promo.n * W});          // J2: a promotion adds job stress
