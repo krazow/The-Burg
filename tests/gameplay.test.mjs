@@ -35,6 +35,7 @@ await t.check('a new 6-month game starts in week one, age 18, on the Jobs tab', 
   await page.fill('#nm', 'Tester');
   await page.click('[data-len=half]');
   await page.click('#start');
+  await page.click('#modal:not(.hidden) #jumpin');                // i23-a01: the very first start offers a practice life
   const s = await S();
   assert(s.name === 'Tester' && s.len === 'half' && s.turn === 0, 'wrong new-game state');
   assert(Math.floor(s.ageMonths / 12) === 18, 'should start at 18');
@@ -566,7 +567,7 @@ await t.check('i73-b01/b02: finished lives leave a stub, travel in backups, and 
     for (let i = 0; i < 12; i++) { newGame('Life' + i, 'half', 0); S.noEvents = true; S.happySum = 0; S.happy = 30 + i * 5; finish('Six months in the Burg is in the books.'); closeSheet(); }
     newGame('Keep', 'two', 0); save(); const list = ends(), bk = backupData();
     localStorage.clear(); restoreBackup(await readBackup(JSON.stringify(bk)), 'add');
-    S = null; renderTitle(); document.querySelector('#records').click();
+    S = null; renderTitle(); document.querySelector('#chal').click();   // i50-a05: records live in Challenges
     const rows = document.querySelectorAll('#sheet [data-end]').length, first = document.querySelector('#sheet [data-end="0"]').textContent;
     document.querySelector('#sheet [data-end="0"]').click();
     return { n: list.length, keys: Object.keys(list[0]).sort().join(), size: JSON.stringify(list[0]).length, inBackup: bk.ends.length, back: ends().length, rows, first, summary: document.querySelector('#sheet').textContent };
