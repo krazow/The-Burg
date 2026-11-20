@@ -110,6 +110,7 @@ function tripWeek(lines){
 /* ---- trip screens ---- */
 function tripPicker(){
   if (!on('trips')) return;
+  openSystem('trip', { quiet:true, how:'used' });
   sheet(`<h2>🚗 Plan a trip</h2>
     ${firstTime('trips')}<p class="muted">One trip a week, up to ${tripMax()} stop${tripMax() === 1 ? '' : 's'}. It happens when you end the week.${S.trip ? ` You have a trip to ${CITIES[S.trip.city].name} planned.` : ''}</p>${debtTripNote()}
     ${Object.entries(CITIES).filter(([k]) => k !== 'waitsburg').map(([k,c]) => {
@@ -243,7 +244,7 @@ function goalsSheet(){
 }
 function goalsCard(){
   const got = Object.keys(S.badges || {}).length;
-  return `${firstTime('goals')}<div class="card"><h3>🎯 Life goals <span class="tag">${got}/${BADGES.length} badges</span></h3>
+  return `${firstTime('goals')}<div class="card" id="goalscard"><h3>🎯 Life goals${newTag('goals')} <span class="tag">${got}/${BADGES.length} badges</span></h3>
     ${(S.goals || []).length ? S.goals.map(id => { const b = badgeById(id); const got = S.badges && S.badges[id] != null;
       return b ? `<div class="kv"><span>${b.ic} ${b.name}<br><small class="muted">${b.desc}</small></span><span>${goalCounts(id) ? `✅ +${GOAL_POINTS}` : got ? '✅ (earned before you pinned it)' : 'Not yet'}</span></div>` : ''; }).join('')
       : `<p class="muted" style="margin:0 0 6px">Pin up to ${GOAL_MAX} goals for this life. Each one you reach after pinning it adds ${GOAL_POINTS} points to your Life Score.</p>`}
@@ -404,7 +405,7 @@ function skillWeek(notes, gig){
   if (carpooling()) practice('people', 0.3, notes);
 }
 function skillsCard(){
-  return `${firstTime('skills')}<div class="card"><h3>🧰 Skills</h3>${Object.entries(SKILLS).map(([k,x]) => { const lv = skillLv(k), pts = (S.skills || {})[k] || 0, next = SKILL_STEPS[lv];
+  return `${firstTime('skills')}<div class="card" id="skillscard"><h3>🧰 Skills${newTag('skills')}</h3>${Object.entries(SKILLS).map(([k,x]) => { const lv = skillLv(k), pts = (S.skills || {})[k] || 0, next = SKILL_STEPS[lv];
     return `<div class="kv"><span>${x.ic} ${x.name} <b>${'★'.repeat(lv)}${'☆'.repeat(3 - lv)}</b><br><small class="muted">${x.how}. ${x.perk}.</small></span><span>${lv >= 3 ? 'Max' : `${Math.floor(pts)}/${next}`}</span></div>`; }).join('')}</div>`;
 }
 
@@ -536,12 +537,12 @@ function bizCard(){
     const herd = B.type === 'cattle' ? `<div class="kv"><span>Herd</span><span>${B.cows ?? CATTLE_COWS} cows${B.calves ? `, ${B.calves} calves` : ''}</span></div>
       <div class="kv"><span>Last check on the herd</span><span>${B.check == null ? 'never' : S.turn - B.check === 0 ? 'this week' : `${S.turn - B.check} week${S.turn - B.check === 1 ? '' : 's'} ago`}</span></div>
       <p class="muted" style="margin:4px 0">${herdChecked(6) ? 'The herd is doing fine.' : '⚠️ Nobody has checked the herd lately: pick 🎣 Get outside to ride out and look them over.'}</p>` : '';
-    return `${B.stored ? firstTime('wheat') : ''}<div class="card"><h3>🏪 Your business</h3><div class="kv"><span>${b.ic} ${b.name}<br><small class="muted">${b.desc}</small></span><span></span></div>
+    return `${B.stored ? firstTime('wheat') : ''}<div class="card" id="bizcard"><h3>🏪 Your business</h3><div class="kv"><span>${b.ic} ${b.name}<br><small class="muted">${b.desc}</small></span><span></span></div>
       <div class="kv"><span>Earned so far</span><span><b>${fmt(B.earned)}</b></span></div>${b.needs ? (() => { const y = B.yr && B.yr.y === new Date(S.date).getFullYear() ? B.yr.in : 0;   // i15-a04
         return `<div class="kv"><span>This season</span><span${y < 1 ? ' style="color:var(--down)"' : ''}><b>${fmt(y)}</b></span></div>${y < 1 ? `<p class="muted" style="margin:4px 0">${b.needs}</p>` : ''}`; })() : ''}
       <div class="kv"><span>Worth if you sell</span><span>${fmt(bizValue())}</span></div>${lease}${wheat}${herd}
       <button class="sm alt" id="bizsell">Sell the business</button></div>`; }
-  return `${firstTime('biz')}<div class="card"><h3>🏪 Start a business</h3><p class="muted" style="margin:0 0 6px">Small, risky, and it can grow. One at a time.</p>
+  return `${firstTime('biz')}<div class="card" id="bizcard"><h3>🏪 Start a business${newTag('biz')}</h3><p class="muted" style="margin:0 0 6px">Small, risky, and it can grow. One at a time.</p>
     ${Object.entries(BIZ).map(([k,b]) => `<div class="kv job"><div><div class="t">${b.ic} ${b.name}</div><div class="s">${b.desc}</div></div><button class="sm" data-biz="${k}">${fmt(cost(b.cost))}</button></div>`).join('')}</div>`;
 }
 function startBiz(k){
@@ -979,11 +980,11 @@ function wealthTrack(real){
   return `<div class="kv"><span>${ok ? '✅' : '⏳'} Net worth on track?<br><small class="muted">By now (${Math.round(p * 100)}% of the way) you'd want about ${fmt(want)} in ${term('dollars')}</small></span><span><b>${ok ? 'On track' : `${Math.round(real / want * 100)}% there`}</b></span></div>`;
 }
 function scoreButton(){
-  if (S.practice && !TUT) return '';                // i44-b05: the tutorial shows how the score adds up
+  if (S.practice ? !TUT : !isOpen('score')) return '';   // i31: opens as you go; i44-b05: the tutorial shows how the score adds up
   const sc = lifeScore(), d = S.scoreQ == null ? 0 : sc.score - S.scoreQ;
   const title = S.turn < 4 ? 'Just getting started' : sc.title;   // i5-a02: no verdict in the first weeks
-  return `<button class="scorebtn" id="scorenow" aria-label="Life Score so far ${sc.score}, ${title}: see how it adds up">
-    <span>🏆 Life Score so far</span><span><b>${sc.score}</b> ${title}${S.scoreQ != null && d ? ` <span class="delta ${d>0?'up':'down'}">${d>0?'▲':'▼'}${Math.abs(d)}</span>` : ''} ›</span></button>`;
+  return `<button class="scorebtn" id="scorenow" aria-label="Life Score so far ${sc.score}, ${title}: see how it adds up${isNew('score') ? '. New' : ''}">
+    <span>🏆 Life Score so far${newTag('score')}</span><span><b>${sc.score}</b> ${title}${S.scoreQ != null && d ? ` <span class="delta ${d>0?'up':'down'}">${d>0?'▲':'▼'}${Math.abs(d)}</span>` : ''} ›</span></button>`;
 }
 const SCORE_TIPS = {
   happy:'Happiness is your weakest part. Rest, Get outside and trips with friends help; long commutes, overtime and debt hurt.',
@@ -1017,6 +1018,7 @@ function scoreLines(sc, end){
 }
 const weakestPart = sc => Object.entries(sc.parts).sort((a, b) => a[1] - b[1])[0][0];
 function showScoreNow(){
+  openSystem('score', { quiet:true, how:'used' });
   const sc = lifeScore(), dc = debtCost(sc);
   const tip = dc && dc.cost >= 3 ? 'debt' : weakestPart(sc);
   const title = S.turn < 4 ? 'Just getting started' : sc.title;

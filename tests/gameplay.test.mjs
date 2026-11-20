@@ -303,7 +303,7 @@ await t.check('Help on the title screen opens the guide, and its contents jump t
 });
 
 await t.check('the gameplay tutorial walks through every step by tapping, then leaves saves and settings alone', async () => {
-  await page.evaluate(() => { localStorage.clear(); setPref('mapView', false); newGame('Mine', 'two', 0); S.turn = 7; save(); tab = 'home'; render(); });
+  await page.evaluate(() => { localStorage.clear(); setPref('mapView', false); newGame('Mine', 'two', 0); S.turn = 7; tab = 'home'; render(); save(); });   // i31: drawing opens what's due by week 7, then it's saved
   const before = await page.evaluate(() => JSON.stringify(slots().map(g => g && { ...g, savedAt: 0, saveN: 0 })));
   await page.click('#helpbtn');
   await page.click('#tutstart');
