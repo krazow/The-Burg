@@ -1804,7 +1804,7 @@ await t.check('i59-a03 / i59-a06 / i59-a11: Back shakes an event; no pull-to-ref
   await page.click(`${open} [data-i="0"]`); await clearSheets();
   const ob = await page.evaluate(() => [document.documentElement, document.body, $('#helpview')].map(e => getComputedStyle(e).overscrollBehaviorY));
   assert(ob.every(v => v === 'contain'), ob.join());
-  await page.evaluate(() => { localStorage.clear(); S = null; renderTitle(); });
+  await page.evaluate(() => { localStorage.clear(); setPref('newHere', 1); S = null; renderTitle(); });
   const at = await page.$eval('#nm', e => [e.enterKeyHint, e.autocapitalize, e.spellcheck, e.getAttribute('autocorrect')].join());
   assert(at === 'go,words,false,off', at);
   await page.fill('#nm', 'Wren'); await page.press('#nm', 'Enter');
