@@ -2,11 +2,11 @@
 /* ---------- events ---------- */
 // G5: events are paced by category so new ones don't crowd out the old. Each week one roll decides which category
 // (if any) gets an event: town 14%, road 8% (only in weeks you commute 20+ miles each way or take a trip),
-// work 8% (only with a job). At most one event a week; Hard mode adds 25% to each.
+// work 8% (only with a job). At most one event a week; Hard mode adds 25% to each, and the events rule (i19-b01) scales them all.
 const EVENT_ODDS = { town: 0.14, road: 0.08, work: 0.08 };
 const evCat = e => e.cat || 'town';
 function eventOdds(trip){
-  const hard = mode() === 'hard' ? 1.25 : 1, hasJob = !!job() && !S.retired;
+  const hard = (mode() === 'hard' ? 1.25 : 1) * rule('evMult'), hasJob = !!job() && !S.retired;
   return { town: EVENT_ODDS.town * hard, road: trip || commuteOneWay() >= 20 ? EVENT_ODDS.road * hard : 0, work: hasJob ? EVENT_ODDS.work * hard : 0 };
 }
 function rollEvent(month, trip){
@@ -44,27 +44,49 @@ function pickEvent(month, cat = 'town'){
   for (const e of ok) { r -= wt(e); if (r <= 0) return e; }
   return null;
 }
+// i19-b15: routine events and the choice a careful player makes (first label found among the choices you have)
+const ROUTINE = {
+  'Flat tire on US-12': ['Change it yourself', 'Call a tow'], 'Stuck behind a wheat truck': ['Wait it out'], 'Train crossing in Pasco': ['Wait'],
+  'Fog in the Touchet Valley': ['Drive slow'], 'Speeding ticket': ['Traffic school'], 'Road-construction detour': ['Take the long way'],
+  'Pothole season': ['Swerve and slow down'], 'Wrong pump at the gas station': ['Drain and refill'], 'Payroll error: a late paycheck': ['Wait it out'],
+  'Safety inspection': ['Prep the crew'], 'New software rollout': ['Learn it early'], 'Mice in the walls': ['Set traps'],
+  'Frozen pipes': ['Fix it yourself', 'Call a plumber', 'Call the landlord']
+};
+function routinePick(ev){
+  const want = ROUTINE[ev.title]; if (!want) return null;
+  const ch = ev.choices().filter(c => !c.if || c.if());
+  for (const w of want) { const c = ch.find(x => String(x.label).startsWith(w)); if (c) return c; }
+  return null;
+}
+// i71-b03: one way to settle an event, for a tapped choice and for one resolved on its own during a skip: the choice,
+// the weather bill, the Journal, the week strip and the map pin, and only now the event's cooldown (i22-a01)
+function resolveChoice(ev, choice, auto = false){
+  const m0 = S.money, result = choice.go() || '', dm = S.money - m0;
+  wxTrack(ev, dm);                          // i75-a30: the weather bill
+  if (result) { log(`${ev.title}: ${result}`); if (S.evLabel) S.log[0].d = S.evLabel; }   // dated the week it happened
+  if (S.run) S.run.happened.push({ ic: ev.ic, title: ev.title, money: dm, wx: !!ev.wx, ...(auto ? { auto: 1 } : {}) });
+  if (S.evPins && S.evPins[0] && S.evPins[0].t === ev.title) S.evPins[0].r = result;
+  const at = S.evAt ?? S.turn;
+  S.evCd[ev.title] = at + (ev.yr ? 40 : 8);
+  if (ev.once) S.evDone[ev.title] = 1;
+  S.pendingEv = null; S.evAt = null;
+  return { result, dm };
+}
 function showEvent(ev, then = null){
   const before = {happy:S.happy, health:S.health, community:S.community};
   const choices = ev.choices().filter(c => !c.if || c.if());
   const pin = S.evPins && S.evPins[0] && S.evPins[0].t === ev.title ? [S.evPins[0].m, S.evPins[0].k] : eventPlace(ev);
-  sheet(`<div class="big">${ev.ic}</div><h2 style="text-align:center">${ev.title}</h2><p class="evplace">📍 ${esc(placeName(pin))}${pin[0] === 'R' ? ' · on the region map' : ''}</p><p>${typeof ev.text==='function'?ev.text():ev.text}</p>
+  sheet(`<div class="big">${ev.ic}</div><h2 style="text-align:center">${ev.title}</h2><p class="evplace">📍 ${esc(placeName(pin))}${pin[0] === 'R' ? ' · on the region map' : ''}</p><p id="evtext" data-desc>${typeof ev.text==='function'?ev.text():ev.text}</p>
     <div class="evchoices">${choices.map((c,i) => `<button class="btn ${i===0?'primary':'ghost'}" data-i="${i}">${c.label}</button>`).join('')}</div>`);
   $('#sheet').classList.add('ev');            // i2-a24: the choices sit at the bottom of the pop-up, in thumb reach
   sfx('event'); buzz('event');
   document.querySelectorAll('#sheet [data-i]').forEach(b => b.onclick = () => {
-    const mBefore = S.money;
-    const result = choices[+b.dataset.i].go() || '';
-    const dm = S.money - mBefore;
-    wxTrack(ev, dm);                          // i75-a30: the weather bill
-    if (result) S.log.unshift({d: S.evLabel || dateLabel(), m: `${ev.title}: ${result}`});
-    if (S.run) S.run.happened.push({ ic: ev.ic, title: ev.title, money: dm, wx: !!ev.wx });
-    if (S.evPins && S.evPins[0] && S.evPins[0].t === ev.title) S.evPins[0].r = result;
+    const { result, dm } = resolveChoice(ev, choices[+b.dataset.i]);
     save();
     const st = ['happy', 'health', 'community'].reduce((a, k) => a + S[k] - before[k], 0);
     sfx(dm < 0 || st < -1 ? 'bad' : dm > 0 || st > 1 ? 'good' : 'tap');
     if (choices.length === 1) { closeSheet(); render(); toast(`${ev.ic} ${result}${dm ? ` (${dm>0?'+':''}${fmt(dm)})` : ''}`); if (then) showReview(then); return; }
-    sheet(`<div class="big">${ev.ic}</div><p>${result}</p>
+    sheet(`<div class="big">${ev.ic}</div><h2 style="text-align:center">${ev.title}: how it went</h2><p id="evresult" data-desc>${result}</p>
       <p>${dm ? `<span class="delta ${dm>0?'up':'down'}">${dm>0?'+':''}${fmt(dm)}</span>` : ''}${deltaChips(before)}</p>
       <div class="evchoices"><button class="btn primary" id="ok">Continue</button></div>`);
     $('#sheet').classList.add('ev');          // the result keeps the same layout, so Continue is where the choice was
@@ -811,7 +833,7 @@ const TODDLER_EVENTS = [
       {label:'Back off for a month', go:() => { adj({happy:-1}); return 'Diapers for a while longer. They\'ll get there.'; }}
     ]},
   { ic:'📚', title:'Story time at the library', yr:1, w:3, when:() => toddlerHome(),
-    text:'The Weller Public Library has toddler story time on Wednesday mornings: songs, a puppet and a pile of picture books.',
+    text:'The Weller Public Library has story time for small kids each Wednesday. There are songs, a puppet and a big pile of books.',
     choices:() => [
       {label:working() ? `Go every Wednesday this month (-${fmt(dayPay() * 2)} in missed work)` : 'Go every Wednesday this month', go:() => { adj({money:-Math.round(dayPay() * 2), happy:2, community:3}); return 'Your toddler knows every song now, and you know every parent in town.'; }},
       {label:'Read at home instead', go:() => { adj({happy:1}); return 'The same dinosaur book, eleven nights in a row.'; }}
