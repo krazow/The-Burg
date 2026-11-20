@@ -408,4 +408,5 @@ const TATTLER = [
   'Wheat prices tick up at the elevator.', 'The levee committee wants volunteers.', 'A letter to the editor about loose dogs.',
   'The fairgrounds get a fresh coat of paint.', 'Classifieds: a good used truck, cheap.', 'Bluegrass jam draws a crowd at Tonnage.'
 ];
-const tattlerLine = () => S && !S.practice && on('out.extras') ? `<p class="muted" style="margin-top:10px">📰 In The Touchet Tattler this week: ${TATTLER[S.turn % TATTLER.length]}</p>` : '';
+// i7-a20: every fifth week the paper writes about you, in your pronouns
+const tattlerLine = () => S && !S.practice && on('out.extras') ? `<p class="muted" style="margin-top:10px">📰 In The Touchet Tattler this week: ${esc(S.turn % 5 === 4 ? tattlerAboutYou() : TATTLER[S.turn % TATTLER.length])}</p>` : '';
