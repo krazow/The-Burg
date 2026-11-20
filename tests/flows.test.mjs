@@ -406,7 +406,7 @@ await t.check('the title screen starts a life with a background and a mode', asy
 });
 
 await t.check('i19-b02..b05: Change the rules on the start sheet: grouped knobs with Normal values, a live preview and a record badge', async () => {
-  await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); renderTitle(); });
+  await page.evaluate(() => { localStorage.clear(); setPref('newHere', 1); S = null; closeSheet(); renderTitle(); });
   await page.click('#moreopts');
   assert(/Normal rules/.test(await page.textContent('#rulesum')), await page.textContent('#rulesum'));
   await page.click('#rulesbtn');
@@ -1431,7 +1431,7 @@ await t.check('i73-b12: a private window (small quota, no persisted) gets a calm
   try {
     assert((await p1.textContent('#tn-private')).includes('This window forgets your lives'), await p1.textContent('#tn-private'));
     assert((await p2.textContent('#tn-private')).includes('may forget'), await p2.textContent('#tn-private'));
-    await p1.fill('#nm', 'Priv'); await p1.click('#start'); await p1.evaluate(() => { tab = 'home'; render(); });
+    await p1.fill('#nm', 'Priv'); await p1.click('#start'); await p1.click('#modal:not(.hidden) #jumpin'); await p1.evaluate(() => { tab = 'home'; render(); });
     await p1.waitForSelector('#privcard');
     await p1.click('#privok');
     await p1.evaluate(() => render());
