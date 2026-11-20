@@ -1394,11 +1394,142 @@ await t.check('i54-a03 / i43-b03: money is $1,500 on a German phone, and Help se
   const de = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block', locale: 'de-DE' });
   const p2 = await de.newPage();
   await p2.goto(srv.url, { waitUntil: 'load' });
-  const r = await p2.evaluate(() => { showHelp(); const sec = document.querySelector('#helpview .guide section');
-    return { a: fmt(1500), b: fmt(-1234567), help: document.querySelector('#helpview').textContent.includes('$1,500'), cv: getComputedStyle(sec).contentVisibility, de: (1500).toLocaleString() }; });
+  const r = await p2.evaluate(() => { showHelp(); const secs = [...document.querySelectorAll('#helpview .guide details.gsec')];
+    return { a: fmt(1500), b: fmt(-1234567), help: document.querySelector('#helpview').textContent.includes('$1,500'), closed: secs.length > 10 && secs.every(d => !d.open), de: (1500).toLocaleString() }; });
   await de.close();
   assert(r.a === '$1,500' && r.b === '-$1,234,567' && r.help, JSON.stringify(r));
-  assert(r.cv === 'auto', `help sections: ${r.cv}`);
+  assert(r.closed, 'help sections should start folded (closed sections lay nothing out)');
+});
+
+/* ---- Help guide rework (wave 1): one order, folding, search, deep links, questions, tip links, bottom bar ---- */
+const helpReset = () => page.evaluate(() => { closeHelp(); hideCoach(); closeSheet(); });
+const helpOpen = () => page.evaluate(() => [...document.querySelectorAll('#helpview details.gsec[open]')].map(d => d.id));
+await t.check('i68-b01 / i50-a25 / i44-b20: Help has one order, in six groups, and each section folds with a one-line summary', async () => {
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => showHelp());
+  const r = await page.evaluate(() => ({
+    ids: [...document.querySelectorAll('#helpview details.gsec')].map(d => d.id.slice(2)),
+    sums: [...document.querySelectorAll('#helpview details.gsec')].every(d => d.querySelector('summary .gsum').textContent.length > 15),
+    groups: document.querySelectorAll('#helpview .toc button').length, totop: document.querySelectorAll('#helpview .totop').length
+  }));
+  const want = ['start', 'week', 'way', 'stats', 'money', 'hired', 'work', 'school', 'home', 'savings', 'later', 'family', 'events', 'maps', 'trips', 'out', 'farm', 'goals', 'score', 'saves', 'settings', 'install'];
+  const order = r.ids.filter(id => want.includes(id));
+  assert(JSON.stringify(order) === JSON.stringify(want), `order: ${order.join(', ')}`);
+  assert(r.sums && r.groups === 6 && !r.totop, JSON.stringify(r));
+  assert(!(await helpOpen()).length, 'sections should start folded');
+  await page.click('#helpview summary:has-text("Money")');
+  await page.click('#helpview summary:has-text("Getting started")');
+  assert(JSON.stringify(await helpOpen()) === '["g-start"]', `only the one you open stays open: ${await helpOpen()}`);
+  await page.click('#helpview [data-helpgrp="app"]');
+  await page.waitForFunction(() => { const y = document.querySelector('#gg-app').getBoundingClientRect().top; return y >= 60 && y < innerHeight - 100; });
+  await page.evaluate(() => closeHelp());
+});
+await t.check('i44-b19: ? opens Help at the part you are looking at, and old anchors still land', async () => {
+  await helpReset();
+  for (const [tabName, sec] of [['jobs', 'g-hired'], ['life', 'g-home'], ['home', 'g-week'], ['log', 'g-score']]) {
+    await life({ jobId: 'farmhand' }, tabName);
+    await page.click('#helpbtn');
+    await page.waitForSelector('#helpview:not(.hidden)');
+    assert(JSON.stringify(await helpOpen()) === JSON.stringify([sec]), `${tabName}: ${await helpOpen()}`);
+    const top = await page.evaluate(id => document.getElementById(id).getBoundingClientRect().top, sec);
+    assert(top < 120, `${tabName}: ${sec} is at ${Math.round(top)}px, not in view`);
+    assert(await page.evaluate(id => document.activeElement === document.querySelector(`#${id} summary`), sec), `${tabName}: focus not on the section`);
+    await page.click('#helpclose');
+  }
+  assert(await page.evaluate(() => { showHelp('jobs'); const ok = document.querySelector('#g-hired').open; closeHelp(); return ok; }), 'the old #g-jobs anchor should open Getting a job');
+  await page.evaluate(() => { tab = 'home'; render(); });
+  await page.click('#tripchip');
+  await page.click(`${open} [data-helpsec="trips"]`);
+  await page.waitForSelector('#helpview:not(.hidden)');
+  assert(JSON.stringify(await helpOpen()) === '["g-trips"]', `trip sheet: ${await helpOpen()}`);
+  await page.click('#helpclose');
+});
+await t.check('i44-b17 / i68-b30: the search box filters the guide, highlights words and jumps to the paragraph', async () => {
+  await helpReset();
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => showHelp());
+  await page.fill('#helpq', 'carpool');
+  const r = await page.evaluate(() => ({ hits: document.querySelectorAll('#helpres .hres').length, marks: document.querySelectorAll('#helpres mark').length,
+    guide: getComputedStyle(document.querySelector('#guide')).display, secs: [...document.querySelectorAll('#helpres h3')].map(h => h.textContent) }));
+  assert(r.hits >= 2 && r.marks >= 2 && r.guide === 'none' && r.secs.some(s => s.includes('Getting a job')), JSON.stringify(r));
+  await page.click('#helpres .hres:has-text("join a carpool")');
+  const j = await page.evaluate(() => ({ q: document.querySelector('#helpq').value, open: [...document.querySelectorAll('#helpview details.gsec[open]')].map(d => d.id),
+    at: document.activeElement.dataset.hb && document.activeElement.textContent.includes('carpool'), guide: getComputedStyle(document.querySelector('#guide')).display }));
+  assert(!j.q && JSON.stringify(j.open) === '["g-hired"]' && j.at && j.guide !== 'none', JSON.stringify(j));
+  await page.fill('#helpq', 'zzqx');
+  assert((await page.textContent('#helpres')).includes('Nothing in the guide'), 'no-match message missing');
+  const miss = await page.evaluate(() => ['pension', 'vest', 'Social Security', 'will', 'probate', 'deductible', 'renters', 'property tax', 'refinance', 'rate', 'hot market', 'cattle', 'calves', 'hay', 'bushel',
+    'elevator', 'crop insurance', 'index fund', 'market drop', 'collections', 'bankruptcy', 'union', 'strike', 'dues', 'furlough', 'shutdown', 'clearance', 'apprentice', 'CDL', 'welding', 'notary',
+    'major', 'program', 'promotion', 'ladder', 'interview', 'reference', 'bonus', 'bus', 'remote', 'theme', 'dark mode', 'text size', 'sound', 'swipe', 'plan', 'rotation', 'auto', 'undo', 'gas', 'retire']
+    .filter(w => { helpSearch(w); return !document.querySelector('#helpres .hres'); }));
+  assert(!miss.length, `search finds nothing for: ${miss.join(', ')}`);
+  await page.fill('#helpq', '');
+  assert(await page.isVisible('#guide'), 'clearing the search should bring the guide back');
+  await page.click('#helpclose');
+});
+await t.check('i7-a08: Help opens on 12 question cards, and every Show me rings a spot that exists', async () => {
+  await helpReset();
+  await life({ jobId: 'farmhand', k401rate: 0 });
+  await page.evaluate(() => showHelp());
+  const n = await page.evaluate(() => document.querySelectorAll('#helpview .qcard').length);
+  assert(n === 12, `${n} question cards`);
+  const bad = await page.evaluate(() => QUESTIONS.filter(q => { tab = q.tab; render(); return !q.sel.map(s => document.querySelector(s)).find(Boolean) || !document.getElementById('g-' + q.sec) || q.a().split(/[.!?](\s|$)/).filter(x => x && x.trim()).length > 3; }).map(q => q.q));
+  assert(!bad.length, `questions with no target, no section or too long an answer: ${bad.join('; ')}`);
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => showHelp());
+  await page.click('#helpview summary:has-text("How do I save money?")');
+  await page.click('#helpview [data-showme="4"]');
+  await page.waitForSelector('#coach:not(.hidden) .cring');
+  await page.waitForFunction(() => document.activeElement && document.activeElement.id === 'cnext', null, { timeout: 2000 }).catch(() => {});
+  const s = await page.evaluate(() => { const r = document.querySelector('#coach .cring').getBoundingClientRect(), k = document.querySelector('[data-hs="k401"]').getBoundingClientRect();
+    return { tab, help: document.querySelector('#helpview').classList.contains('hidden'), on: Math.abs(r.top + 6 - k.top) < 2, f: document.activeElement.id }; });
+  assert(s.tab === 'life' && s.help && s.on && s.f === 'cnext', JSON.stringify(s));
+  await page.keyboard.press('Escape');
+  assert(await page.isHidden('#coach'), 'Escape should close Show me');
+  assert((await S()).name === 'Flow' && !(await S()).practice, 'Show me changed the life');
+  await page.evaluate(() => { S = null; renderTitle(); showHelp(); });
+  assert(!(await page.$('#helpview [data-showme]')) && (await page.$$('#helpview .qcard [data-helpsec]')).length === 12, 'from the title screen, cards read more but cannot show');
+  await page.evaluate(() => closeHelp());
+});
+await t.check('i44-b11: tip cards say More in Help and open the matching section', async () => {
+  await helpReset();
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => { setPref('first', {}); tab = 'life'; render(); });
+  const key = await page.evaluate(() => document.querySelector('[data-firstcard]').dataset.firstcard);
+  await page.click(`[data-firstcard="${key}"] [data-helpsec]`);
+  await page.waitForSelector('#helpview:not(.hidden)');
+  const want = await page.evaluate(k => 'g-' + FIRST[k].help, key);
+  assert(JSON.stringify(await helpOpen()) === JSON.stringify([want]), `${key}: ${await helpOpen()}`);
+  assert(await page.evaluate(() => Object.values(FIRST).every(x => document.getElementById('g-' + x.help))), 'every tip card points at a real section');
+  await page.click('#helpclose');
+});
+await t.check('i70-b07: a bottom bar holds Close and Contents within thumb reach, and never covers the last line', async () => {
+  await helpReset();
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => showHelp('install'));
+  const r = await page.evaluate(() => { const v = document.querySelector('#helpview'); v.scrollTop = v.scrollHeight;
+    const bar = document.querySelector('.helpfoot').getBoundingClientRect(), last = [...document.querySelectorAll('#g-install .gbody p')].pop().getBoundingClientRect();
+    return { bottom: Math.round(innerHeight - bar.bottom), clear: last.bottom <= bar.top, h: bar.height }; });
+  assert(r.bottom <= 1 && r.clear && r.h < 90, JSON.stringify(r));
+  await page.click('.helpfoot [data-helptop]');
+  await page.waitForFunction(() => document.querySelector('#helpview').scrollTop < 5);
+  await page.click('.helpfoot #helpclose2');
+  assert(await page.isHidden('#helpview'), 'the bottom Close should close Help');
+});
+await t.check('i68-b28 / b04 / b07 / b14 / b18 / b19: new words explain themselves, and the rewritten parts read their numbers from the game', async () => {
+  await helpReset();
+  await life({ jobId: 'farmhand' });
+  await page.evaluate(() => showHelp());
+  const r = await page.evaluate(() => ({
+    gl: ['vesting', 'probate', 'deductible', 'liability', 'heloan', 'refi', 'collections', 'dues', 'apprentice', 'major', 'cert'].filter(k => !GLOSSARY[k] || /undefined|NaN/.test(GLOSSARY[k].d()) || !document.querySelector(`#helpview [data-term="${k}"]`)),
+    work: document.querySelector('#g-work').textContent, later: document.querySelector('#g-later').textContent, money: document.querySelector('#g-money').textContent,
+    farm: document.querySelectorAll('#g-farm table tr').length, grow: document.querySelector('#g-grow').textContent, sav: document.querySelector('#g-savings').textContent,
+    ladder: ladderOf(jobById('farmhand'))[2].title.toLowerCase(), pr: PENSION_RATE * 100, cw: CLEAR_WEEKS, ss: SS_FULL_YEARS, cf: COLLECT_FEE }));
+  assert(!r.gl.length, `glossary words missing or not used: ${r.gl.join(', ')}`);
+  assert(r.work.includes(`then ${r.ladder}`) && r.work.includes(`${r.pr}% of your best pay`) && r.work.includes(`${r.cw} weeks at`), 'ladder or public-job text');
+  assert(r.later.includes(`${r.ss} years is a full career`) && r.money.includes(`$${r.cf} fee`), 'Social Security or debt steps');
+  assert(r.farm >= 9 && !/bushel/.test(r.grow) && /Working for the government/.test(r.sav), 'farm calendar, or a leftover in skills/savings');
+  await page.evaluate(() => closeHelp());
 });
 
 await t.check('no errors in the console the whole time', async () => { assert(!errors.length, errors.join('; ')); });

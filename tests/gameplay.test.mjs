@@ -288,15 +288,16 @@ await t.check('Help on the title screen opens the guide, and its contents jump t
   await page.evaluate(() => { S = null; renderTitle(); });
   await page.click('#how');
   await page.waitForSelector('#helpview:not(.hidden) #tutstart');
-  const sections = await page.$$eval('#helpview .guide section', els => els.map(e => e.id));
+  const sections = await page.$$eval('#helpview .guide details.gsec', els => els.map(e => e.id));
   assert(sections.length >= 14, `guide has only ${sections.length} sections`);
-  assert((await page.$$('#helpview .toc button')).length === sections.length, 'contents should list every section');
+  assert((await page.$$('#helpview .toc button')).length === 6, 'contents should list the six groups');
   try {
-    await page.click('#helpview .toc button:has-text("Jobs")');
+    await page.click('#helpview .toc button:has-text("Money, work")');
+    await page.click('#helpview summary:has-text("Getting a job")');
     let top = 9999;
-    for (let i = 0; i < 20 && top > 160; i++) { await page.waitForTimeout(150); top = await page.$eval('#g-jobs', e => e.getBoundingClientRect().top); }
-    assert(top < 160, `Jobs section not scrolled into view (top ${Math.round(top)})`);
-    assert((await page.textContent('#g-jobs')).includes('National lab scientist'), 'job table missing');
+    for (let i = 0; i < 20 && top > 400; i++) { await page.waitForTimeout(150); top = await page.$eval('#g-hired', e => e.getBoundingClientRect().top); }
+    assert(top < 400 && top > 0, `Getting a job not in view (top ${Math.round(top)})`);
+    assert(await page.isVisible('#g-hired td:has-text("National lab scientist")'), 'job table missing');
   } finally { await page.click('#helpclose'); }
   assert(await page.isHidden('#helpview'), 'Close should hide help');
 });

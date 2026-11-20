@@ -529,7 +529,7 @@ function render(){
     if (b.dataset.tab === 'menu') return showMenu();
     tab = b.dataset.tab; MAPSIDE = null; MAPSEL = null; render(); window.scrollTo(0,0);
   });
-  $('#helpbtn').onclick = showHelp;
+  $('#helpbtn').onclick = () => showHelp(helpHere());   // i44-b19: opens at the part you're on
   if ($('#end')) { $('#end').onclick = e => { if (holdDone(e)) return; tapPlay(1, e); }; holdOpens($('#end'), skipSheet); }
   if ($('#ff4')) $('#ff4').onclick = e => tapPlay(4, e);
   if ($('#ff13')) $('#ff13').onclick = e => tapPlay(13, e);
@@ -837,7 +837,7 @@ function myJobCard(){
     S.notice != null ? `👋 You gave notice: your last day is in ${Math.max(0, S.notice - S.turn)} week${S.notice - S.turn === 1 ? '' : 's'}.` : ''].filter(Boolean);
   const bus = busOK(j) ? `<p class="muted" style="margin:6px 0">🚌 ${S.bus ? 'You ride the county bus' : 'County bus'} to ${CITIES[j.city].name}: ${wk(cost(BUS_PASS))} pass, 90% less commute gas and half the truck wear, but longer days (▼ a little happiness).</p>
     <button class="sm${S.bus ? ' alt' : ''}" id="bus" aria-pressed="${!!S.bus}">${S.bus ? '🚙 Drive instead' : '🚌 Ride the bus'}</button>` : '';
-  return `<div class="card"><h3>💼 ${esc(jobTitle(j))}</h3>${wait}
+  return `<div class="card" data-hs="myjob"><h3>💼 ${esc(jobTitle(j))}</h3>${wait}
     <p class="muted" style="margin:0 0 4px">${esc(j.where ? j.where + ', ' : '')}${CITIES[j.city].name} · ${wk(payNow(j))} · ${Math.floor(S.tenure || 0)} months on the job</p>
     <ol class="ladder" aria-label="Job ladder">${steps}</ol>
     ${next ? `<p class="muted" style="margin:4px 0">Next step up: ${esc(next.title)}. ${rungNeeds(next) ? `Needs ${rungNeeds(next)}.` : 'You qualify: watch for a promotion offer.'}</p>` : '<p class="muted" style="margin:4px 0">You\'re at the top of this ladder.</p>'}
@@ -851,11 +851,11 @@ function renderJobs(){
     .sort((a, b) => (b.id === cur) - (a.id === cur) || (a.edu > S.edu || !!extraLock(a)) - (b.edu > S.edu || !!extraLock(b)) || (a.edu > S.edu ? a.edu - b.edu : 0) || takeHome(b) - takeHome(a));
   const mapOn = !!prefs().mapView;
   $('#main').innerHTML = `${myJobCard()}${mapToggle()}
-  ${mapOn ? `<div class="card"><h3>Job board <span class="tag">${S.applied ? 'Applied this week' : '1 application per week'}</span></h3>${mapBlock('R')}</div>` : `
+  ${mapOn ? `<div class="card" data-hs="jobboard"><h3>Job board <span class="tag">${S.applied ? 'Applied this week' : '1 application per week'}</span></h3>${mapBlock('R')}</div>` : `
   <div class="chips"><button class="chip ok ${jobOK?'on':''}" id="jobok" aria-pressed="${jobOK}">✅ Can apply</button>${[['all','All towns'], ...Object.entries(CITIES).map(([k,c]) => [k,c.name])].map(([k,l]) =>
     `<button class="chip ${jobCity===k?'on':''}" data-c="${k}">${l}</button>`).join('')}</div>
   ${jobCity!=='all' ? `<div class="card muted">${CITIES[jobCity].blurb}</div>` : ''}
-  <div class="card">
+  <div class="card" data-hs="jobboard">
     <h3>Job board <span class="tag">${S.applied ? 'Applied this week' : '1 application per week'}</span></h3>
     <p class="muted" style="margin:0 0 4px;font-size:0.8125rem">${term('takehome')} is pay after taxes and gas${job() && !S.retired ? ', with ▲▼ against your current job' : ''}.</p>
     ${list.map(jobRow).join('') || '<p class="muted">No jobs match.</p>'}
@@ -912,7 +912,7 @@ function apply(id){
 // i3-a02 programs and i3-a03 certificates on the Life tab
 function eduCard(){
   const pr = PROGRAMS[S.program], cs = S.certStudy && CERTS[S.certStudy.id];
-  return `<div class="card"><h3>📚 Education</h3>
+  return `<div class="card" data-hs="edu"><h3>📚 Education</h3>
     <div class="kv"><span>Highest</span><span><b>${EDU[S.edu]}</b>${S.major ? ` <small>(${PROGRAMS[S.major].ic} ${PROGRAMS[S.major].name})</small>` : ''}</span></div>
     ${S.edu < 3 ? `<div class="kv"><span>Next: ${EDU[S.edu+1]}${pr ? ` in ${pr.name.toLowerCase()}` : ''}</span><span>${studyDone()}/${STUDY_NEED[S.edu]} weeks</span></div>
     <div class="bar"><i style="width:${S.studyProg/STUDY_NEED[S.edu]*100}%;background:var(--sky)"></i></div>
@@ -935,7 +935,7 @@ function renderLife(){
   const h = HOMES[S.home], u = undoTop();
   $('#main').innerHTML = `${u ? `<div class="card undo" role="status"><span>↩ ${esc(u.label)}</span><button class="sm" id="undo" aria-label="Undo: ${esc(u.label)}">Undo</button></div>` : ''}${S.practice ? '' : goalsCard()}${S.practice ? '' : aimCard()}${S.practice ? '' : skillsCard()}${S.practice ? '' : bizCard()}${S.practice ? '' : townLifeCard()}${healthCard()}
 ${S.edu < 3 ? firstTime('school') : ''}${eduCard()}
-  <div class="card"><h3>🏡 Home in Waitsburg</h3>
+  <div class="card" data-hs="home"><h3>🏡 Home in Waitsburg</h3>
     ${Object.entries(HOMES).map(([k,x]) => {
       const cur = S.home === k;
       let btn = cur ? '<span class="tag cur">Home</span>' : `<button class="sm ${x.own?'':'alt'}" data-home="${k}">${x.own ? `Buy (${fmt(homeDown(k))} down)` : 'Move'}</button>`;
@@ -961,7 +961,7 @@ ${S.edu < 3 ? firstTime('school') : ''}${eduCard()}
     <p class="muted">Trade-in value of your ride: ${fmt(S.carValue)}${tradeBonus() ? ` (+${fmt(tradeBonus())} dealer bonus this week)` : ''}${S.loanLeft>0?` · ${Math.ceil(S.loanLeft/W)} weekly payments left`:''}</p>
     <p class="muted">🔧 ${S.turn - (S.svc ?? 0) <= 26 ? 'Oil changed recently: fewer breakdowns.' : S.turn - (S.svc ?? 0) <= 52 ? `Last oil change ${S.turn - (S.svc ?? 0)} weeks ago.` : 'Overdue for an oil change: breakdowns are more likely.'} ${S.tires === S.car ? '❄️ Winter tires on.' : ''} Get car care on a trip to Dayton, Walla Walla or the Tri-Cities.</p>
   </div>
-  ${S.retired ? '' : firstTime('k401')}<div class="card"><h3>🏦 Retirement savings (${term('k401')})</h3>
+  ${S.retired ? '' : firstTime('k401')}<div class="card" data-hs="k401"><h3>🏦 Retirement savings (${term('k401')})</h3>
     <div class="kv"><span>Balance</span><span><b>${fmt(S.k401)}</b></span></div>
     <div class="kv"><span>After tax (counts in net worth)</span><span>${fmt(S.k401 * K401_AFTER_TAX)}</span></div>
     ${(S.k401match || 0) >= 1 && !S.retired ? `<div class="kv"><span>Employer match not yours yet<br><small class="muted">Vests after ${K401_VEST_MONTHS / 12} years at this job (${Math.max(0, Math.ceil((K401_VEST_MONTHS - (S.tenure || 0)) / 12 * 10) / 10)} years to go). Leave sooner and it goes back.</small></span><span>${fmt(S.k401match)}</span></div>` : ''}
@@ -1268,7 +1268,7 @@ addEventListener('popstate', () => {
   histSync();
 });
 const sheetCloser = (sh = $('#sheet')) => sh.querySelector('[data-i]') ? null : ['#no', '#close', '#back', '#ok'].map(q => sh.querySelector(q)).find(Boolean) || null;
-const focusables = root => [...root.querySelectorAll('button:not([disabled]), [tabindex="0"], input, a[href]')].filter(e => e.offsetParent !== null || e.closest('svg'));
+const focusables = root => [...root.querySelectorAll('button:not([disabled]), [tabindex="0"], input, a[href], summary')].filter(e => e.offsetParent !== null || e.closest('svg'));
 // say something to screen readers without showing it
 function announce(msg){ const r = $('#sr'); if (!r) return; r.textContent = ''; setTimeout(() => { r.textContent = msg; }, 60); }
 document.addEventListener('keydown', e => {

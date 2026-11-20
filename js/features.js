@@ -108,13 +108,14 @@ function tripWeek(lines){
 
 /* ---- trip screens ---- */
 function tripPicker(){
-  sheet(`<h2>🚗 Plan a trip</h2>
+  sheet(`<h2 data-helpfor="trips">🚗 Plan a trip</h2>
     ${firstTime('trips')}<p class="muted">One trip a week, up to ${tripMax()} stop${tripMax() === 1 ? '' : 's'}. It happens when you end the week.${S.trip ? ` You have a trip to ${CITIES[S.trip.city].name} planned.` : ''}</p>${debtTripNote()}
     ${Object.entries(CITIES).filter(([k]) => k !== 'waitsburg').map(([k,c]) => {
       const gas = tripGas(k);
       return `<button class="kv job tripto" data-town="${k}"><span><span class="t">${TOWNIC[k]} ${c.name}</span><span class="s">${c.miles} mi each way · ${gas ? `gas about ${fmt(gas)}` : 'on your way home from work: no extra gas'}</span></span><span aria-hidden="true">›</span></button>`;
     }).join('')}
-    <button class="btn ghost" id="n">Close</button>`);
+    <button class="btn ghost" id="n">Close</button>
+    <button class="sm alt helplink" data-helpsec="trips">More in Help: Trips →</button>`);
   document.querySelectorAll('[data-town]').forEach(b => b.onclick = () => tripSheet(b.dataset.town));
   $('#n').onclick = closeSheet;
 }
@@ -133,7 +134,7 @@ function tripSheet(city){
         <span class="t">${s.ic} ${s.name}</span><span class="s">${why ? why : what}${s.date && S.partner && !why ? ' · for two' : ''}</span>${s.note && !why ? `<span class="s">${s.note}</span>` : ''}</button>`;
     }).join('');
   }).join('');
-  sheet(`<h2>${TOWNIC[city]} Trip to ${c.name}</h2>
+  sheet(`<h2 data-helpfor="trips">${TOWNIC[city]} Trip to ${c.name}</h2>
     <p class="muted">${c.miles} mi each way · ${gas ? `gas about ${fmt(gas)}. A trip takes part of your week: your focus works at ${TRIP_TIME*100}%.` : 'You work here, so you\'ll stop on the way home: no extra gas or time.'}</p>
     ${debtTripNote()}
     ${S.trip && S.trip.city !== city ? `<p class="muted">This replaces your trip to ${CITIES[S.trip.city].name}.</p>` : ''}
@@ -142,7 +143,8 @@ function tripSheet(city){
     <p id="tripsum" class="tripsum" aria-live="polite"></p>
     <button class="btn primary" id="go">Plan this trip</button>
     ${S.trip ? '<button class="btn ghost" id="cancel">Cancel my trip</button>' : ''}
-    <button class="btn ghost" id="back">Other towns</button>`);
+    <button class="btn ghost" id="back">Other towns</button>
+    <button class="sm alt helplink" data-helpsec="trips">More in Help: Trips →</button>`);
   const sum = () => {
     const vanOn = van && vanFits(city, sel);
     if ($('#van')) { $('#van').classList.toggle('on', vanOn); $('#van').setAttribute('aria-pressed', vanOn); $('#van').disabled = !!sel.length && !vanFits(city, sel); }
@@ -970,7 +972,7 @@ function showScoreNow(){
     ${scoreLines(sc, false)}
     ${wealthTrack(sc.real)}
     ${modeScoreNote()}
-    <div class="card tip" style="margin-top:10px"><div>💡 ${SCORE_TIPS[tip]}</div></div>
+    <div class="card tip" style="margin-top:10px"><div>💡 ${SCORE_TIPS[tip]}</div><button class="sm alt" data-helpsec="score" aria-label="More in Help about the Life Score">More in Help →</button></div>
     <p class="muted">A report card goes in your Journal every 13 weeks, and the report cards count for ${CARD_SHARE * 100}% of the final score.</p>
     <button class="btn primary" id="ok">Close</button>`);
   $('#ok').onclick = closeSheet;
