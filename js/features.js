@@ -1357,6 +1357,7 @@ function finish(reason, opts = {}){
   const isBest = tier !== 'sandbox' && (!best[bk] || score > best[bk]) && !S.rewound;     // i63-b22: a rewound life sets no best score
   if (isBest && !S.practice) { best[bk] = score; store.set(BEST_KEY, best); const nt = store.get(BEST_NOTE_KEY) || {}; if (back) nt[bk] = back; else delete nt[bk]; store.set(BEST_NOTE_KEY, nt); }
   const heir = heirOK(opts), stub = endStub(reason, { score, title, parts });
+  if (S.flagsEdited && !sc && !S.weekly) stub.owner = true;   // owner panel: a marked life joins no Easy, Normal, Hard or Classic list
   // i73-b25: the family line so far, carried into the grandkid's save
   const line = [...(S.line || []), { name:S.name, years:`${stub.from}–${stub.to}`, job:stub.job, home:stub.home, score, title, epitaph:stub.cause }].slice(-40);
   const parent = { id:S.lifeId, name:S.name, nw:netWorth(), community:S.community, slot:S.slot === WEEKLY_SLOT ? 0 : S.slot, mode:mode(), diff:diff(), classic:!!S.classic, aim:S.aim, gen:S.gen || 1, date:S.date, ageMonths:S.ageMonths, col:S.col, wage:S.wage,
@@ -1378,7 +1379,7 @@ function finish(reason, opts = {}){
     ${back ? `<p class="comeback" style="text-align:center;margin-top:-6px">${back}</p>` : ''}
     <p class="goodweeks" style="text-align:center"><b>☀️ ${goodLine()}.</b>${on('score.aims') ? `<br><span class="muted">Played for: ${aimLabel()}</span>` : ''}</p>
     ${modeScoreNote()}
-    ${tier !== 'standard' && !S.practice ? `<p class="muted" style="text-align:center" id="tiernote">${TIERS[tier].ic} This life counted toward ${TIERS[tier].shelf}. ${esc(rulesSummary(S.rules))}.</p>` : ''}
+    ${tier !== 'standard' && !S.practice ? `<p class="muted" style="text-align:center" id="tiernote">${TIERS[tier].ic} This life counted toward ${TIERS[tier].shelf}. ${esc(rulesSummary(S.rules))}.${S.flagsEdited ? ' Owner settings were on.' : ''}</p>` : ''}
     ${S.rewound ? '<p class="muted" style="text-align:center">⏪ This life was rewound from an older backup, so its score and badges don\'t go in your records.</p>' : ''}
     <h3 style="margin-top:10px">How the score adds up</h3>
     ${scoreLines(scr, true)}

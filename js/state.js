@@ -319,7 +319,7 @@ function blankLife(name, len, slot = 0){
     focus:'rest', applied:false, happySum:0, healthSum:0, monthsPlayed:0,
     log:[], over:false, cause:null, streakF:null, streakN:0, run:null, yearEvents:0,
     trip:null, svc:0, tires:null, stockUntil:-1, redLow:{}, moneyTalk:false, dentist:0, stopLast:{}, tabsYear:2027, carpool:false, hustleWeeks:0, scoreQ:null,
-    bg:'fresh', mode:'normal', diff:'normal', classic:false, flagsEdited:false, sloanLeft:0,   // to-do 2 D1: difficulty
+    bg:'fresh', mode:'normal', diff:'normal', classic:false, flagsEdited:false, flags:null, sloanLeft:0,   // to-do 2 D1: difficulty
     sloanPay:0, sgoal:null, seasonWins:0,
     badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false,
     earnYears:0, earnSum:0, pensionYears:0, pensionPay:0, ltc:null, care:null, snowbird:null, scholar:null, will:false, probate:null, roomHost:false, hostLast:-99,
@@ -407,6 +407,9 @@ function migrate(s){
   if (s.diff === undefined) { s.diff = 'hard'; s.classic = true; }
   if (s.classic === undefined) s.classic = false;
   if (s.flagsEdited === undefined) s.flagsEdited = false;
+  // owner panel: the copy of the owner's overrides this life started with (null = none)
+  s.flags = s.flags && typeof s.flags === 'object' && !Array.isArray(s.flags) && typeof cleanFlags === 'function' ? cleanFlags(s.flags) : null;
+  if (s.flags && !Object.keys(s.flags).length && !s.flagsEdited) s.flags = null;
   const d = { hist:[], spend4:[], ansRules:{}, slot:0, evPins:[], streakF:null, streakN:0, run:null, yearEvents:0, yearStart:null, evCd:{}, evDone:{}, evSeen:{}, seenOT:true, ui:0, col:1, wage:1, kids:[], k401:0, k401rate:0, k401match:0, uiPay:null, mortgage:null, loanPay:0 };   // i75: an older 401(k) counts as vested; old benefits pay the floor
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
   s.rules = cleanRules(s.rules); if (!TIERS[s.tier0]) s.tier0 = recordTier(s.rules);   // i19-b01: unknown knobs fall back to Normal
@@ -841,7 +844,7 @@ const tierMax = (a, b) => TIER_ORDER[Math.max(TIER_ORDER.indexOf(a), TIER_ORDER.
 // i19-b03: where a life with these rules is recorded
 const recordTier = (r = S && S.rules) => Object.keys(RULES).reduce((t, id) => tierMax(t, RULES[id].opts[ruleOpt(id, r)].tier || 'standard'), 'standard');
 // i19-b19: a life keeps the tier it started with, so turning an assist off never moves it to a better shelf
-const lifeTier = (s = S) => tierMax(s && s.tier0 || 'standard', recordTier(s && s.rules));
+const lifeTier = (s = S) => tierMax(tierMax(s && s.tier0 || 'standard', recordTier(s && s.rules)), s && s.flagsEdited ? 'custom' : 'standard');   // owner panel: a marked life is Custom
 // the money a background starts with, before the money rule
 const bgMoney = bg => { const s = { money:1500, kids:[], ageMonths:216 }; if (BACKGROUNDS[bg] && BACKGROUNDS[bg].set) BACKGROUNDS[bg].set(s); return s.money; };
 // i19-b04: an option's value in plain words; ctx = { bg, mode } of the life being set up (or played)
@@ -878,7 +881,7 @@ const bestKey = (len, m) => m && m !== 'normal' ? `${len}-${m}` : len;
    every key stored before then has no such start, so it reads as Classic and keeps its old form ("two-relaxed", "sc-farm"). */
 const SHELVES = ['easy', 'normal', 'hard', 'classic'];
 const shelfOf = (s = S) => !s || s.classic || !DIFFS[s.diff] ? 'classic' : s.diff;
-const endShelf = e => !e || e.classic || !DIFFS[e.diff] ? 'classic' : e.diff;
+const endShelf = e => e && e.owner ? 'owner' : !e || e.classic || !DIFFS[e.diff] ? 'classic' : e.diff;   // owner panel: a marked life is on no shelf
 const shelfName = sh => sh === 'classic' ? '🏛️ Classic' : `${DIFFS[sh].ic} ${DIFFS[sh].label}`;
 const recKey = (sh, rest) => sh === 'classic' ? rest : `${sh}.${rest}`;
 function parseRecKey(k){

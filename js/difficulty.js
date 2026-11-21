@@ -115,10 +115,12 @@ const EASY_BAD_W = 0.6;
 const DIFF_FLAGS_KEY = KEY_PREFIX + 'flags';
 const diff = (s = S) => (s && DIFFS[s.diff] ? s.diff : 'hard');
 const diffAtLeast = (t, s = S) => DIFF_ORDER[t] <= DIFF_ORDER[diff(s)];
-// the owner's device overrides ({ key: true|false }); no panel yet. They never touch a weekly challenge, and a life
-// that could go on the records only uses them once it is marked (S.flagsEdited)
+// the owner's device overrides ({ key: true|false }), set in the owner panel (owner.js). A life takes a copy when it
+// starts (S.flags) and is marked (S.flagsEdited). They never touch a weekly or story challenge. A life without a copy
+// that could go on the records only reads the device's overrides once it is marked
 function flagOverrides(s = S){
-  if (!s || s.weekly) return {};
+  if (!s || s.weekly || (s.scenario && typeof SCENARIOS !== 'undefined' && SCENARIOS[s.scenario])) return {};
+  if (s.flags && typeof s.flags === 'object' && !Array.isArray(s.flags)) return s.flags;
   const free = s.flagsEdited || s.practice || (typeof lifeTier === 'function' && lifeTier(s) === 'sandbox');
   if (!free) return {};
   try { const o = JSON.parse(localStorage.getItem(DIFF_FLAGS_KEY) || 'null'); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch (e) { return {}; }
