@@ -1,7 +1,11 @@
-# Runs the shared Krazow release kit's QA (tests + release checks) on every pull request and push to main.
-# Simulation scale (T2): the QA job runs `npm test`, and tests/sim.test.mjs plays the simulation at half scale
-# (SIM_SCALE=0.5) when GITHUB_EVENT_NAME is pull_request, and at full scale on pushes to main and in releases.
-# (A reusable workflow doesn't inherit this file's env, so the switch lives in the test itself.)
+# CI on every pull request and push to main: the shared Krazow release kit's release checks, plus the app's tests.
+# `npm test` got close to GitHub's 30-minute job limit, so the tests run here as four parallel jobs (package.json
+# test:group1..4; group1 and group2 are the two halves of the screens suite), and the kit's release checks
+# (version, service worker, manifest, both site builds, the browser smoke test) run in their own job. The steps are
+# the same ones the kit's QA (krazow/release-kit .github/workflows/qa.yml) runs; releases still run that QA as is.
+# The last job, "Tests and release checks", passes only when every other job passed.
+# Simulation scale (T2): tests/sim.test.mjs plays the simulation at half scale (SIM_SCALE=0.5) when
+# GITHUB_EVENT_NAME is pull_request, and at full scale on pushes to main and in releases.
 name: CI
 
 on:
@@ -15,5 +19,101 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  checks:
+    name: Release checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/checkout@v4
+        with: { repository: krazow/release-kit, ref: v1, path: .kit }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+
+      - name: Release checks (version, service worker, manifest)
+        run: python3 .kit/scripts/kit.py check
+
+      - name: The test groups run everything npm test runs
+        run: node tools/check-test-groups.mjs
+
+      - name: Build the site (beta and production) to make sure both work
+        id: build
+        run: |
+          python3 .kit/scripts/kit.py build-web --channel beta --out /tmp/site-beta
+          python3 .kit/scripts/kit.py build-web --channel prod --out /tmp/site-prod
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('package.json') }}
+          restore-keys: npm-${{ runner.os }}-
+      - name: Install test tools
+        id: tools
+        run: |
+          npm install --no-audit --no-fund
+          echo "pw=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.tools.outputs.pw }}
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Kit smoke test (opens the built site in a browser)
+        run: node .kit/scripts/site-check.mjs /tmp/site-prod "${{ steps.build.outputs.app_dir }}"
+
+  tests:
+    name: Tests (group ${{ matrix.group }})
+    runs-on: ubuntu-latest
+    # each group takes about 6 to 10 minutes (see the pull request that split them); the limit leaves room to grow
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('package.json') }}
+          restore-keys: npm-${{ runner.os }}-
+      - name: Install test tools
+        id: tools
+        run: |
+          npm install --no-audit --no-fund
+          echo "pw=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.tools.outputs.pw }}
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Tests (group ${{ matrix.group }})
+        run: npm run test:group${{ matrix.group }}
+      - name: Keep the screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-group${{ matrix.group }}
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
   qa:
-    uses: krazow/release-kit/.github/workflows/qa.yml@v1
+    name: Tests and release checks
+    needs: [checks, tests]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every test group and the release checks passed
+        run: |
+          echo "Release checks: ${{ needs.checks.result }}"
+          echo "Tests (all groups): ${{ needs.tests.result }}"
+          [ "${{ needs.checks.result }}" = success ] && [ "${{ needs.tests.result }}" = success ]

@@ -15,6 +15,13 @@ const SIZES = [
 ];
 // for a quick look at some sizes: SCREENS_ONLY=night-xl npm run test:screens (matches the size labels)
 if (process.env.SCREENS_ONLY) SIZES.splice(0, SIZES.length, ...SIZES.filter(x => x[0].includes(process.env.SCREENS_ONLY)));
+// CI runs this file in two parallel halves (npm run test:group1 / test:group2): --part=1 is every other screen size,
+// --part=2 the other sizes plus the Help, tutorial, keyboard and screen-reader checks. With neither (npm test) it runs it all.
+// (SCREENS_PART=1 or 2 does the same.)
+const PART = (process.argv.find(a => a.startsWith('--part=')) || '').slice(7) || process.env.SCREENS_PART || '';
+if (PART && !['1', '2'].includes(PART)) throw new Error(`--part must be 1 or 2, not ${PART}`);
+if (PART) SIZES.splice(0, SIZES.length, ...SIZES.filter((x, i) => i % 2 === (PART === '1' ? 0 : 1)));
+const REST = PART !== '1';   // the checks that aren't per screen size
 const srv = await serve();
 const browser = await launch();
 const t = runner();
@@ -181,7 +188,7 @@ const uniq = a => [...new Set(a.map(x => x.replace(/^[^/]+\/ /, '')))];
 
 await t.check('nothing is wider than the screen at any size', async () => { assert(!problems.overflow.length, problems.overflow.slice(0, 5).join('; ')); });
 await t.check('End Week, the week strip and the tab bar stay on-screen and never overlap', async () => { assert(!problems.bars.length, problems.bars.slice(0, 5).join('; ')); });
-await t.check('the Help guide scrolls normally: its contents list and sections are not pinned over the text', async () => {
+if (REST) await t.check('the Help guide scrolls normally: its contents list and sections are not pinned over the text', async () => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
   const page = await ctx.newPage();
   await page.goto(srv.url, { waitUntil: 'load' });
@@ -204,7 +211,7 @@ await t.check('no text smaller than 11 px', async () => { assert(!problems.small
 await t.check('text contrast meets WCAG AA (4.5:1, or 3:1 for large text)', async () => { assert(!problems.contrast.length, uniq(problems.contrast).slice(0, 10).join('; ')); });
 // G1: walk the whole tutorial at a small phone, a phone held sideways, a tablet and a computer: every tap step's ring
 // sits on a spot a finger can reach (not under the bubble or the dimmer, inside the screen), and no step is skipped
-await t.check("the tutorial's touch highlights work at every screen size, and no step is skipped", async () => {
+if (REST) await t.check("the tutorial's touch highlights work at every screen size, and no step is skipped", async () => {
   const bad = [];
   for (const [label, w, h] of [['small-phone', 320, 568], ['landscape', 844, 390], ['tablet', 768, 1024], ['desktop', 1280, 800]]) {
     const ctx = await browser.newContext({ viewport: { width: w, height: h }, serviceWorkers: 'block', hasTouch: w < 900, isMobile: w < 900 });
@@ -240,7 +247,7 @@ await t.check("the tutorial's touch highlights work at every screen size, and no
 });
 
 // ---------- keyboard and screen readers ----------
-{
+if (REST) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
   await ctx.addInitScript(seedScript(78));
   const page = await ctx.newPage();
@@ -253,7 +260,8 @@ await t.check("the tutorial's touch highlights work at every screen size, and no
     assert(await tabTo(() => document.activeElement && document.activeElement.id === 'end'), 'never reached End Week with Tab');
     const turn = await page.evaluate(() => S.turn);
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(250);
+    // wait for the week and its announcement (set on a 60 ms timer) instead of a fixed 250 ms, which a busy CI machine can miss
+    await page.waitForFunction(t => S.turn === t + 1 && /^Week \d+ done\./.test(document.querySelector('#sr').textContent), turn, { timeout: 3000 }).catch(() => {});
     assert((await page.evaluate(() => S.turn)) === turn + 1, 'Enter did not end the week');
     const said = await page.textContent('#sr');
     assert(/^Week \d+ done\. (You earned|You spent|Your cash)/.test(said), `screen-reader message: "${said}"`);   // i7-a02: one short sentence by default
@@ -328,7 +336,7 @@ await t.check("the tutorial's touch highlights work at every screen size, and no
 }
 
 // ---------- accessibility audit fixes (wave 1) ----------
-{
+if (REST) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, serviceWorkers: 'block' });
   await ctx.addInitScript(seedScript(91));
   const page = await ctx.newPage();
@@ -414,6 +422,8 @@ await t.check("the tutorial's touch highlights work at every screen size, and no
   });
 
   await t.check('i43-a04: a button reached with Tab is never left under the bottom bars', async () => {
+    // this starts right after the last check closed a sheet, so its history step can land mid-loop: that used to jump the
+    // page back up (fixed with history.scrollRestoration = 'manual' in ui.js)
     await page.evaluate(() => { tab = 'home'; render(); window.scrollTo(0, 0); $('#end').focus(); });
     const bad = [];
     for (let i = 0; i < 60; i++) {
@@ -424,6 +434,14 @@ await t.check("the tutorial's touch highlights work at every screen size, and no
       if (r && (r.under || r.over)) bad.push(`${r.name} ${r.under ? 'under the bars' : 'under the header'}`);
     }
     assert(!bad.length, bad.slice(0, 5).join('; '));
+  });
+
+  await t.check('i43-a04: closing a sheet never moves the page a moment later (the history step it takes)', async () => {
+    await page.evaluate(() => { tab = 'home'; render(); window.scrollTo(0, 0); restoreSheet(); });
+    await page.waitForTimeout(150);
+    const r = await page.evaluate(async () => { closeSheet(); window.scrollTo(0, document.documentElement.scrollHeight); const y = scrollY;
+      await new Promise(res => setTimeout(res, 400)); return { y, now: scrollY }; });
+    assert(r.y > 0 && r.now === r.y, `page went from ${r.y} to ${r.now} after the sheet closed`);
   });
 
   await t.check('i43-a05: during the tutorial Tab stays on the lit spot, Next and Skip', async () => {
@@ -477,7 +495,7 @@ await t.check("the tutorial's touch highlights work at every screen size, and no
   });
 }
 
-const md = `## Screens and accessibility\n\n${SIZES.length} screen sizes × ${SCREEN_COUNT} screens, plus keyboard and screen-reader checks.\nScreenshots: \`test-results/screens/\`.\n`;
+const md = `## Screens and accessibility${PART ? ` (part ${PART} of 2)` : ''}\n\n${SIZES.length} screen sizes × ${SCREEN_COUNT} screens${REST ? ', plus keyboard and screen-reader checks' : ''}.\nScreenshots: \`test-results/screens/\`.\n`;
 console.log(md);
 if (process.env.GITHUB_STEP_SUMMARY) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, md + '\n');
 
