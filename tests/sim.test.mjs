@@ -6,6 +6,7 @@
 // On GitHub pull requests the simulation runs at half scale (T2); pushes to main and releases run it in full.
 import fs from 'node:fs';
 import { serve, launch, runner, seedScript } from './helpers.mjs';
+import { guardJobs, guardChecks } from './sim-guards.mjs';
 
 const SCALE = Number(process.env.SIM_SCALE || (process.env.GITHUB_EVENT_NAME === 'pull_request' ? 0.5 : 1));
 const FILTERED = !!(process.env.SIM_DIFF || process.env.SIM_ONLY || process.env.SIM_LEN || process.env.SIM_VARIANTS || process.env.SIM_AIMS || process.env.SIM_DIFFS);   // a tuning run: no balance ceilings
@@ -73,10 +74,27 @@ for (const len of Object.keys(GAMES)) for (const strat of STRATEGIES) for (let g
 for (const v of [...VARIANTS, ...AIM_RUNS, ...DIFF_RUNS]) for (let g = 0; g < (v.n || 4); g++) JOBS_LIST.push({ ...v, g });
 for (const rs of RULE_SETS) for (const [strat, lens] of [['planner', { five: 1 }], ['careless', RULE_LENS], ['idle', RULE_LENS]]) for (const [len, n] of Object.entries(lens)) for (let g = 0; g < n; g++)
   JOBS_LIST.push({ len, strat, g, opts: { rules: rs.rules }, label: `rules:${rs.label}`, tier: rs.tier });
-for (const { len, strat, g, opts, label, tier } of JOBS_LIST) {
+// wave 1 balance guards (tests/sim-guards.mjs): extra bots, challenges, per-length ceilings and the swap table, for
+// the difficulty in SIM_DIFF (default: Classic, today's game), measured against the main games played in it. They run in
+// the full sim; in a filtered tuning run (SIM_DIFF is one) only
+// with SIM_GUARDS=1 (or a list: bots,lengths,challenges,swap). The swap table runs only off pull requests, or with SIM_SWAP=1.
+const GUARD_DIFFS = [process.env.SIM_DIFF || 'classic'];
+const GUARD_GROUPS = new Set(process.env.SIM_GUARDS && process.env.SIM_GUARDS !== '1' ? process.env.SIM_GUARDS.split(',')
+  : !FILTERED || process.env.SIM_GUARDS ? ['bots', 'lengths', 'challenges', 'swap'] : []);
+if (process.env.GITHUB_EVENT_NAME === 'pull_request' && !process.env.SIM_SWAP) GUARD_GROUPS.delete('swap');
+const SEED_ORDER = ['planner', 'homebody', 'commuter', 'student', 'hustler', 'careless', 'idle', 'tripper', 'roadie', 'rotation'];   // guard bots reuse these bots' dice
+let SCENARIO_LIST = {};
+if (GUARD_GROUPS.has('challenges')) {
+  const p0 = await browser.newPage();
+  await p0.goto(srv.url, { waitUntil: 'load' });
+  SCENARIO_LIST = await p0.evaluate(() => Object.fromEntries(Object.entries(SCENARIOS).map(([k, sc]) => [k, { name: sc.name, len: sc.len, bg: sc.bg }])));
+  await p0.close();
+}
+if (GUARD_GROUPS.size) for (const d of GUARD_DIFFS) JOBS_LIST.push(...guardJobs(d, { scale: SCALE, groups: GUARD_GROUPS, scenarios: SCENARIO_LIST }));
+for (const { len, strat, g, opts, label, tier, seedAs, bot, diff, bg, scenario, swap, extraLen } of JOBS_LIST) {
   {
     {
-      const seed = (len.length * 7919 + STRATEGIES.indexOf(strat) * 104729 + g * 1299709) >>> 0;   // backgrounds and modes reuse the normal games' dice, so they compare directly
+      const seed = (len.length * 7919 + (seedAs ? SEED_ORDER.indexOf(seedAs) : STRATEGIES.indexOf(strat)) * 104729 + g * 1299709) >>> 0;   // backgrounds and modes reuse the normal games' dice, so they compare directly
       const ctx = await browser.newContext({ serviceWorkers: 'block' });
       await ctx.addInitScript(seedScript(seed));
       const page = await ctx.newPage();
@@ -87,6 +105,8 @@ for (const { len, strat, g, opts, label, tier } of JOBS_LIST) {
         // ---- the bot, running inside the game page ----
         render = () => {}; toast = () => {};   // skip redrawing the screen: just the rules
         const debt = opts.debt; delete opts.debt; const aimK = opts.aim || 'all', aimRun = !!opts.aim;
+        // wave 1 guard bots (tests/sim-guards.mjs): which bot this is, and the planner's swapped slot or add-on (i59-b04)
+        const bot = opts.bot || strat, swap = opts.swap; delete opts.bot; delete opts.swap;
         // to-do 2 stage 1: the sim plays today's full game (a Classic life with the mode's numbers) until stage 4 adds
         // runs for each difficulty, so the balance targets below measure the same game as before
         newGame('Bot', len, 0, opts.diff ? opts : { classic: true, ...opts });
@@ -95,12 +115,17 @@ for (const { len, strat, g, opts, label, tier } of JOBS_LIST) {
         const bad = [], events = {}, choiceFx = {};
         const best = () => JOBS.filter(x => x.edu <= S.edu).sort((a, b) =>
           (b.pay - commuteCost(CITIES[b.city].miles) * (strat === 'homebody' ? 4 : 1)) - (a.pay - commuteCost(CITIES[a.city].miles) * (strat === 'homebody' ? 4 : 1)))[0];
-        let ending = null, weeks = 0, nw65 = null, climbed = false, lastTrip = -99;
+        let ending = null, weeks = 0, nw65 = null, climbed = false, lastTrip = -99, scWeek = null;
         // i75-b30: where the money came from, in 2027 dollars
         const src = { pay: 0, overtime: 0, hustle: 0, business: 0, retirement: 0, k401: 0, market: 0, equity: 0 }, bizIc = Object.values(BIZ).map(b => b.ic);
         while (!ending && weeks < 6000) {
+          if (bot === 'comeback') strat = weeks < 40 ? 'jobless' : 'planner';   // i63-a06: no job for 40 weeks, then the planner
           // job hunting
-          if (strat === 'idle') { if (!S.jobId && !S.retired) apply('farmhand'); }
+          if (bot === 'drifter') {                                    // i38-a19: hops to a random job it qualifies for
+            if (!S.retired && Math.random() < 0.3) { const js = JOBS.filter(x => x.edu <= S.edu && x.id !== S.jobId), j = js[Math.floor(Math.random() * js.length)]; if (j) apply(j.id); }
+          }
+          else if (strat === 'jobless') { if (S.jobId) S.jobId = null; }   // i63-a06: never works
+          else if (strat === 'idle') { if (!S.jobId && !S.retired) apply('farmhand'); }
           else if (strat === 'struggler') { if (S.edu >= 1 && !S.retired) { const want = best(); if (want && want.id !== S.jobId && (!job() || want.pay > job().pay * S.raise * 1.1)) apply(want.id); } }
           else if (!S.retired && (strat !== 'careless' || Math.random() < 0.3)) {
             const want = strat === 'homebody' ? JOBS.filter(x => x.city === 'waitsburg' && x.edu <= S.edu).sort((a, b) => b.pay - a.pay)[0] : best();
@@ -110,7 +135,8 @@ for (const { len, strat, g, opts, label, tier } of JOBS_LIST) {
           // this week's focus
           const opts = Object.keys(FOCUS).filter(k => !(FOCUS[k].needsJob && (!job() || S.retired)) && !(FOCUS[k].study && S.edu >= 3));
           let f;
-          if (strat === 'idle') f = 'rest';                          // never touches the focus
+          if (strat === 'jobless') f = ['community', 'outdoors', 'rest'][weeks % 3];
+          else if (strat === 'idle') f = 'rest';                     // never touches the focus
           else if (strat === 'careless') f = opts[Math.floor(Math.random() * opts.length)];
           else if (strat === 'rotation') {                            // i2-a12: sets a 🗓 focus plan once and lets End Week follow it
             if (!S.plan.length) { S.plan = ['work', 'community', 'outdoors', 'rest']; S.planI = 0; S.focus = planFocus(); }
@@ -126,6 +152,7 @@ for (const { len, strat, g, opts, label, tier } of JOBS_LIST) {
           else if (strat === 'commuter') f = weeks % 4 === 3 ? 'community' : (job() && !S.retired ? 'work' : 'rest');
           else if (strat === 'roadie') f = ['work', 'community', 'outdoors', 'rest'][weeks % 4];   // a long commute, but a balanced week
           else f = ['community', 'outdoors', 'rest', 'community'][weeks % 4];
+          if (swap && FOCUS[swap] && f === 'rest' && weeks % 6 === 5) f = swap;   // i59-b04: the planner's Rest slot, swapped
           S.focus = opts.includes(f) ? f : 'rest';
           if (!['careless', 'idle'].includes(strat) && canCarpool()) { S.carpool = true; S.carpoolJob = S.jobId; }   // sensible players share the drive
           if (strat === 'planner' && aimK === 'roots' && !HOMES[S.home].own && S.money > homeDown('fixer') + cost(4000)) { moveHome('fixer'); const y = document.querySelector('#y'); if (y) y.click(); }
@@ -142,7 +169,7 @@ for (const { len, strat, g, opts, label, tier } of JOBS_LIST) {
           if (strat === 'planner' && S.biz && S.biz.type === 'wheat') S.biz.ins = true;          // i75-a31: the planner gets ready for weather (crop insurance; prep choices come first in weather cards)
           if (!S.biz && strat === 'homebody' && S.money > cost(12000)) startBiz('shop');       // a homebody opens a woodshop ($6,000, i75-b15)
           // trips around the region: the planner shops and keeps up car care monthly; the tripper goes out every week
-          if (strat === 'planner' && weeks - lastTrip >= 4 && S.focus !== 'work' && S.money > 300) {   // i42-a01: about monthly, never in an overtime week
+          if (strat === 'planner' && swap !== 'noTrip' && (swap === 'weeklyTrip' || (weeks - lastTrip >= 4 && S.focus !== 'work')) && S.money > 300) {   // i42-a01: about monthly, never in an overtime week
             lastTrip = weeks;
             const ids = ['stock']; if (S.turn - S.svc > 22) ids.push('oil'); else if (S.turn - S.dentist > 45) ids.push('dentist');
             else { const f = weeks % 8 < 4 ? 'movies' : 'college'; ids.push(stopBlocked(STOPS.find(x => x.id === f)) ? 'bistro' : f); }
@@ -155,7 +182,22 @@ for (const { len, strat, g, opts, label, tier } of JOBS_LIST) {
             planTrip(town, townStops(town).filter(s => !stopBlocked(s)).sort((a, b) => fun(b) - fun(a)).slice(0, TRIP_MAX).map(s => s.id));
           }
           // Out and about: the planner gets coffee most weeks and a night out now and then
-          if (strat === 'planner' && S.money > 1000) { visit('bean', 'coffee'); if (weeks % 6 === 2) visit('gulch', 'game'); }
+          if (strat === 'planner' && S.money > 1000 && swap !== 'noCoffee') { visit('bean', 'coffee'); if (weeks % 6 === 2) visit('gulch', 'game'); else if (swap === 'twoVisits') visit(['tonnage', 'mrq', 'yoga'][weeks % 3], ['jam', 'bbq', 'class'][weeks % 3]); }
+          // wave 1 guard bots: Out and about, trips and the early truck
+          if (bot === 'idleV') { visit('mcgrub', 'counter'); visit('basket', 'shop'); }   // i26-b01
+          if (bot === 'carelessV') for (let i = 0; i < 2; i++) {                        // i38-a20: 2 random open places a week
+            const ps = PLACES.filter(p => !placeClosed(p)), p = ps[Math.floor(Math.random() * ps.length)], as = p ? shownActs(p).filter(a => !a.info) : [];
+            if (as.length) visit(p.id, as[Math.floor(Math.random() * as.length)].id);
+          }
+          if (bot === 'idleTripper') planTrip('dayton', ['depot', 'cafe']);            // i42-a30: the same Dayton stops every week
+          if (bot === 'workTripper' && job() && !S.retired && CITIES[job().city].miles > 0) {   // i42-a30: a trip to the work town every week
+            const town = job().city, fun = s => Object.values(s.fx || {}).reduce((a, v) => a + v, 0);
+            const ids = townStops(town).filter(s => !stopBlocked(s)).sort((a, b) => fun(b) - fun(a)).slice(0, TRIP_MAX).map(s => s.id);
+            if (ids.length) planTrip(town, ids);
+          }
+          if (bot === 'diver' && S.car !== 'truck' && !(S.loanLeft > 0) && S.money >= cost(CARS.truck.down) - S.carValue) {   // i63-a06
+            buyCar('truck'); const y = document.querySelector('#y'); if (y) y.click();
+          }
           // play the week
           const k0 = S.k401 || 0, e0 = S.equity || 0, s0 = S.stocks || 0;
           const res = weekTick(false); weeks++;
@@ -171,6 +213,7 @@ for (const { len, strat, g, opts, label, tier } of JOBS_LIST) {
             src.k401 += ((S.k401 || 0) - k0 - contrib + draw) / c; src.market += ((S.stocks || 0) - s0) / c; src.equity += ((S.equity || 0) - e0) / c; }
           if (nw65 == null && LENGTHS[S.len].turns === Infinity && age() >= 65) nw65 = Math.round(netWorth() / (S.col || 1));   // i75-b31
           if (S.money >= 0) climbed = true;
+          if (S.scenario && scWeek == null && S.scWon) scWeek = weeks;   // i35-b04
           if (res.ev) {
             events[res.ev.title] = (events[res.ev.title] || 0) + 1;
             // i66-b27: replay each choice from a copy of this week (same side dice for every choice, so the game's own
@@ -198,14 +241,16 @@ for (const { len, strat, g, opts, label, tier } of JOBS_LIST) {
           for (const k of ['money', 'equity', 'carValue', 'ageMonths', 'date']) if (!Number.isFinite(S[k])) bad.push(`${k}=${S[k]} in week ${S.turn}`);
           if (bad.length) break;
         }
-        const sc = lifeScore();
-        return { weeks, ending, bad, events, score: sc.score, parts: sc.parts, cardAvg: sc.cardAvg, snap: sc.snap, aimPart: Math.round(sc.aim), drag: sc.drag, bonus: sc.bonus, good: S.goodWeeks, nw: Math.round(sc.real), age: age(), edu: S.edu, kids: S.kids.length,
+        const sc = lifeScore(), scen = SCENARIOS[S.scenario], scWin = scen ? !!(S.scWon || scen.win()) : null;
+        if (scWin && scWeek == null) scWeek = weeks;
+        return { scWin, scWeek, weeks, ending, bad, events, score: sc.score, parts: sc.parts, cardAvg: sc.cardAvg, snap: sc.snap, aimPart: Math.round(sc.aim), drag: sc.drag, bonus: sc.bonus, good: S.goodWeeks, nw: Math.round(sc.real), age: age(), edu: S.edu, kids: S.kids.length,
                  debt: /debt/.test(ending || ''), endedOk: !!ending, cash: Math.round(S.money), bk: S.bk != null, climbed, nw65,
                  src: Object.fromEntries(Object.entries(src).map(([k, v]) => [k, Math.round(v)])),
                  choiceFx, wxCost: Math.round((S.wxLife || {}).cost || 0), wxSaved: Math.round((S.wxLife || {}).saved || 0), yrs: Math.max(0.5, S.turn / 52),
                  opened: Object.fromEntries(Object.entries(S.opened || {}).map(([k, v]) => [k, v.how])) };
-      }, [len, strat, opts]);
+      }, [len, strat, bot ? { ...opts, bot } : opts]);
       r.len = len; r.strat = strat; r.errors = errors; r.label = label; r.g = g; r.tier = tier;
+      Object.assign(r, { bot, diff, bg, scenario, swap, extraLen });
       results.push(r);
       await ctx.close();
     }
@@ -509,6 +554,13 @@ if (!process.env.SIM_ONLY || process.env.SIM_ONLY.split(',').includes('rotator')
     }
     if (bad.length) throw new Error(bad.join('; '));
   });
+}
+
+// ---- wave 1 balance guards, per difficulty (tests/sim-guards.mjs) ----
+if (GUARD_GROUPS.size) for (const d of GUARD_DIFFS) {
+  // the plain bots this difficulty is measured against: the main games above (played in SIM_DIFF when it's set)
+  const base = (st, l) => results.filter(r => r.label === 'normal' && r.strat === st && (!l || r.len === l));
+  md += await guardChecks(t, results, d, { base, scenarios: SCENARIO_LIST, check: !FILTERED || !!process.env.SIM_GUARDS });
 }
 
 fs.mkdirSync('test-results', { recursive: true });
