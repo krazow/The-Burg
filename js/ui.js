@@ -396,18 +396,18 @@ const WHATS_NEW = {
     ['📒', 'Your records and Journal filters', 'see your best scores by length and mode, and filter the Journal.', 'score.history']
   ],
   '0.2.1': [
+    ['🎚️', 'Easy, Normal and Hard', 'pick how much is in your life when you start. Older lives keep everything and show as Classic.'],
+    ['✨', 'Things open as you go', 'new parts of the game open when you need them, each with a short Show me tour.'],
+    ['🔎', 'A searchable Help guide', 'find what you need fast, with sections you can fold.'],
+    ['📈', 'Trend lines and Up next', 'see how your stats and money moved, and what is coming in the next 8 weeks.'],
     ['🛡️', 'Safer saves', 'a damaged save no longer blanks the game, and ending or replacing a life asks first.'],
     ['⚙️', 'Settings', 'sounds, vibration, bigger text and a night theme that follows your phone. Find them in the Menu.'],
-    ['👆', 'Easier on a phone', 'swipe to change tabs, pull a pop-up down to close it, and choices sit near your thumb.'],
     ['🧓', 'Retirement and planning', 'pensions, Social Security that follows your work, a will, and a 13-week money outlook.', 'retire.income'],
     ['🏡', 'Homes, farm and investing', 'insurance, property tax, moving home prices, wheat prices, cattle and index funds.', 'home.market'],
     ['💵', 'Washington prices', 'pay, rent, taxes, tuition and childcare follow 2027 numbers, with state help for low earners.'],
     ['🪜', 'Jobs with a ladder', 'promotions, certificates, apprenticeships, interviews, unions and 13 new jobs.', 'jobs.ladder'],
     ['🌦️', 'Weather and hard years', 'each year has its own weather, from smoke summers to ice storms. Get ready and help your neighbors.', 'weather'],
-    ['🩺', 'Health and aging', 'jobs wear on your body, with sick hours, family leave, dental and care for your dad.', 'health.agingDrift'],
-    ['🏘️', '30 Waitsburg events', 'the parade, the barn dance, snow days, Little League and more around town.'],
     ['🏆', 'A fairer Life Score', 'it averages your report cards, weighs your weakest part, counts debt, and you can pick a life aim.', 'score.reportCards'],
-    ['🧭', 'Smoother weeks', 'Auto until you choose, a focus plan, undo, tap-to-explain words and your life story at the end.']
   ]
 };
 // to-do 2 D6: a bullet tagged with a feature (its 4th item) shows only when that feature is on

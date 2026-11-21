@@ -3,7 +3,15 @@
 Release notes for The Burg. `/release now` turns the Unreleased section into a dated `## X.Y.Z (YYYY-MM-DD)`
 entry for every release, and the GitHub release notes are taken from it.
 
-## Unreleased
+## 0.2.1 (2026-11-20)
+
+**Pick how hard your life is.** New lives start on Easy, Normal or Hard. Easy is a calm town life with the basics and
+friendly events. Normal adds careers, investing, kids, weather and a small business. Hard is the full game, setbacks and
+all. Each mode has its own tutorial, Help, records and score targets. Lives you started before this update keep every
+feature and show as 🏛️ Classic.
+
+New players can try a short practice life first, and the game opens new parts as you need them. Help is searchable,
+the phone's Back button works the way you expect, and you can see trend lines for your stats and money.
 
 Your saves are safer: a damaged save won't blank the game, and nothing deletes a life without asking.
 New ⚙️ Settings let you choose sounds, vibration, text size and a night theme.
@@ -13,6 +21,38 @@ follows Washington's 2027 prices, and each year brings its own weather. Your bod
 30 new town events. Your lives carry over. Back them up first if you like: Menu → 📤 Back up or restore.
 
 ### Added
+- **🎚️ Easy, Normal and Hard:** pick on the start screen, with a "Which mode is for me?" card and Help section.
+  - **Easy:** the core week, school, homes and cars, a partner and pets, trips and Out and about, with 79 friendly
+    events. Prices stay at 2027 levels, there's a small raise each January, the standard insurance plan, and debt
+    never ends the game. 6-month, 2-year and 5-year lives, from a Fresh start.
+  - **Normal** adds job ladders and interviews, certificates, the 401(k) and investing, kids, the housing market,
+    weather, the food truck and woodshop, skills, life aims, report cards, Lifetime games and the other starts.
+  - **Hard** adds layoffs, strikes, insurance choices, collections and bankruptcy, injuries and care for your dad,
+    smoke and storm damage, the wheat lease and cattle, and the story challenges.
+  - Help, the glossary, tips, badges, the checklist and What's new only show what your mode has. The tutorial is
+    17 steps on Easy, 38 on Normal and 41 on Hard.
+  - Records are kept per mode, plus 🏛️ Classic for lives from before this update. The end screen, score card and
+    life story name the mode.
+- **First hour:** a 3-minute practice life on your first start, a "New to games like this?" setup, first-time tips
+  for jobs, school and money, "Good first job" tags, and a note on how many weeks your cash lasts without a paycheck.
+- **Things open as you go:** week 1 shows four focuses and the basics. The rest opens at the right moment with a
+  short "Show me" tour, or by a set week. "I know this one" opens things early, or pick "Everything open".
+- **Starts and looks:** a graduation night choice, a first-week card (a starter job, a program or a place), staying
+  with family, FAFSA and Pell grants, pronouns for you and your partner, a disability start with job
+  accommodations, a "Help you can get" card, a portrait that ages with you, a drawing of your house, and season
+  colors.
+- **Planning views:** trend lines for happiness, health, community, cash and net worth; the last 4 weeks of spending
+  by kind; an "Up next" list for the next 8 weeks; and ⚖️ Compare two jobs side by side.
+- **Week flow:** "Next week →" right from an event's result, small repeat events can answer themselves during
+  skips, and Menu → 👋 Done for now sums up your sitting.
+- **Custom rules** (More options → Change the rules): starting money, how fast prices and pay rise, where debt ends
+  the game and how often things happen, with plain previews. Custom lives go on their own records shelf. An
+  optional assist takes care of routine events.
+- **Help guide:** searchable, with folding sections in the order you need them.
+- **Accessibility:** screen readers hear each week's changes, event stories and stat levels (Low, OK, Good, Great);
+  stronger contrast; text size follows your phone; the safe answer comes first in yes/no questions.
+- Chips on Home for perks that run out, and a calm help sheet the first time you're $1,000 in debt.
+- Tap your cash to see last week's pay and bills.
 - **⚙️ Settings** (Menu or the title screen): sounds (off to start, made in the game so they work offline), vibration,
   Normal, Large or Larger text, and a night theme that follows your phone (or pick Day or Night). Menu → ✨ Animations
   turns off the sliding bars and counting cash.
@@ -65,6 +105,24 @@ follows Washington's 2027 prices, and each year brings its own weather. Your bod
   getting back to $0 would win back. Coming back from deep debt is noted on the end screen, score card and records.
 
 ### Changed
+- About 60% of jobs are hiring in a given week (more in harvest and ski months, fewer on Hard). Jobs paying
+  $6,000 a month or more start 6 weeks after you're hired. The weaker jobs were given better pay or less stress so
+  each one is worth picking for someone.
+- The Farm kid starts at the folks' place for $400 a month. Starting hints were rewritten from new play results.
+- Retiring asks first and shows your weekly money before and after. Retirees can't apply for jobs.
+- Challenges show their progress and weeks left. Debt-free starts at -$20,000 and asks for $20,000 saved; the
+  family farm is a 2-year game. Story challenges play as Hard lives, and the weekly challenge as a Normal life.
+- Stats level off more gently near the top, a new job's happiness boost comes at most twice a year, health has an
+  age cap, and visits give less when you're already doing well.
+- A trip week pays 75% of overtime and side-hustle money. The same stop is less fun if you go often, and a 4th trip
+  in a month feels less special. Road events tied to a town only happen when you drive there. A carpool only saves
+  gas on that job, and commute childcare is only for kids under 13.
+- In 6-month games the net-worth part of the score starts counting at half the target.
+- ⏩ 13 weeks is gone; use Auto. Good news no longer stops a skip, but a low stat or a long rut does.
+- The phone's Back button closes pop-ups, steps out of Help and asks before leaving the game. Toasts are shorter and
+  sit above the bottom bar, which is slimmer on small phones. No more pull-to-refresh.
+- The job board is grouped by what you can apply for, event choices show a small hint, and the Life tab and title
+  screen are tidier.
 - **Money follows Washington's 2027 prices:** every job pays at least the state minimum wage, nurses, aides, techs and
   mechanics are paid at valley rates, and food, rent, insurance, kids, childcare and tuition cost what they do here.
   Taxes go by bracket so a raise never lowers your take-home, and the state helps low earners with health care,
@@ -95,6 +153,11 @@ follows Washington's 2027 prices, and each year brings its own weather. Your bod
 - The town scene and map change with the seasons, and the coach bubble in the tutorial never covers what you tap.
 
 ### Fixed
+- Saves are safer: the game asks the phone to protect them, keeps last week's copy of each life, and shows a calm
+  screen with your last save if something goes wrong. A new version waits for you to tap 🔄 Update.
+- Backup codes and files restore even when pasted with extra words or line breaks, never make twin lives, and keep
+  every setting.
+- An event left open comes back with the same choices and outcome.
 - A damaged save or a thin backup no longer leaves you with a blank screen: broken slots are skipped, missing or
   unknown details (home, car, job, length, mode, date) are filled with safe defaults, and a backup's date is only
   shown when it makes sense.
