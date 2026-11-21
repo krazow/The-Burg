@@ -36,7 +36,8 @@ export function loadGame(){
   return ctx;
 }
 
-const plain = h => String(h).replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim();
+const plain = h => String(h).replace(/<span class="sr-only"[^>]*>[\s\S]*?<\/span>/g, ' ').replace(/<[^>]+>/g, ' ')   // a tap-to-explain word's hidden meaning is scored as a word, not here
+  .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim();
 // the lines to score, each { where, text }
 export function gameLines(ctx = loadGame()){
   const out = [], add = (where, t) => { const x = plain(t); if (/[a-z]{3}/i.test(x)) out.push({ where, text: x }); };
@@ -53,8 +54,9 @@ export function gameLines(ctx = loadGame()){
   // the guide as the title screen shows it, then as an Easy and a Normal life see it (to-do 2 D6: their own lines)
   const guides = [get('guideHTML()') || ''];
   for (const d of ['easy', 'normal']) guides.push(get(`(() => { try { newGame('Read', 'two', 0, { diff: '${d}' }); return guideHTML() + Object.values(GLOSSARY).map(g => '<p>' + g.d() + '</p>').join(''); } catch (e) { return ''; } finally { S = null; } })()`) || '');
-  for (const guide of guides) for (const sec of guide.split(/<section /).slice(1)) {
-    const title = plain((sec.match(/<h2>(.*?)<\/h2>/) || [])[1] || '');
+  for (const [i, q] of (get('QUESTIONS') || []).entries()) { try { add(`help question ${i + 1}`, q.a()); } catch {} }
+  for (const guide of guides) for (const sec of guide.split(/<(?:section|details class="gsec") /).slice(1)) {
+    const title = plain((sec.match(/<h2>(.*?)<\/h2>|<span class="gst">(.*?)<\/span>/) || []).slice(1).find(Boolean) || '');
     for (const [, body] of sec.matchAll(/<(?:p|li)[^>]*>([\s\S]*?)<\/(?:p|li)>/g)) add(`help: ${title}`, body);
   }
   const seen = new Set();

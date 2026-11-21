@@ -187,6 +187,7 @@ await t.check('the Help guide scrolls normally: its contents list and sections a
   await page.goto(srv.url, { waitUntil: 'load' });
   await page.click('#how');
   const r = await page.evaluate(() => {
+    document.querySelector('#g-start').open = true;
     const toc = document.querySelector('#helpview .toc'), first = document.querySelector('#g-start p');
     first.scrollIntoView({ block: 'center' });
     const b = first.getBoundingClientRect(), top = document.elementFromPoint(b.left + 20, b.top + b.height / 2);
@@ -288,12 +289,14 @@ await t.check("the tutorial's touch highlights work at every screen size, and no
     await page.click('#main .maptog button:nth-child(1)');
   });
 
-  await t.check('keyboard: Help opens with focus on Close, and Escape closes it back to the ? button', async () => {
+  await t.check('keyboard: ? opens Help with focus on the part you were on (i44-b19), and Escape closes it back to the ? button', async () => {
     await page.focus('#helpbtn');
     await page.keyboard.press('Enter');
     await page.waitForSelector('#helpview:not(.hidden)');
-    await page.waitForFunction(() => document.activeElement && document.activeElement.id === 'helpclose', null, { timeout: 2000 }).catch(() => {});
-    assert((await active()) === 'helpclose', `focus on ${await active()}`);
+    const at = await page.evaluate(() => { const a = document.activeElement, d = a && a.closest('details.gsec'); return a && a.tagName === 'SUMMARY' && d && d.open ? d.id : null; });
+    assert(at === 'g-' + (await page.evaluate(() => helpHere())), `focus on ${await active()} (${at})`);
+    await page.keyboard.press('Tab');
+    assert(await page.evaluate(() => !!document.activeElement.closest('#helpview')), 'Tab left Help');
     await page.keyboard.press('Escape');
     await page.waitForTimeout(100);
     assert(await page.isHidden('#helpview'), 'Escape did not close Help');

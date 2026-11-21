@@ -25,15 +25,15 @@ await t.check('Help: every tagged part shown is on, and switched-off systems are
       showHelp();
       const v = document.querySelector('#helpview');
       const tags = [...v.querySelectorAll('[data-feat]')].flatMap(e => e.dataset.feat.split(' '));
-      out[d] = { tags: [...new Set(tags)], off: tags.filter(k => !on(k)), sections: [...v.querySelectorAll('.guide section')].map(s => s.id.slice(2)),
-        toc: v.querySelectorAll('.toc button').length, text: v.textContent };
+      out[d] = { tags: [...new Set(tags)], off: tags.filter(k => !on(k)), sections: [...v.querySelectorAll('.guide details.gsec')].map(s => s.id.slice(2)),   // i44-b20: the guide's sections fold up, under group headings
+        groups: v.querySelectorAll('.guide .ggrp').length, toc: v.querySelectorAll('.toc button').length, text: v.textContent };
       closeHelp();
     }
     return out;
   });
   for (const d of ['easy', 'normal', 'hard']) {
     assert(!r[d].off.length, `${d}: shows parts for switched-off systems: ${r[d].off}`);
-    assert(r[d].toc === r[d].sections.length, `${d}: contents and sections differ`);
+    assert(r[d].toc === r[d].groups && r[d].sections.length >= r[d].groups, `${d}: contents and sections differ`);
   }
   assert(r.hard.tags.length >= 40, `hard should show every tagged part (${r.hard.tags.length})`);
   for (const s of ['savings', 'grow', 'weather']) assert(!r.easy.sections.includes(s) && r.hard.sections.includes(s), `easy section ${s}`);
