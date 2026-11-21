@@ -2119,6 +2119,10 @@ function pickOne(){
 // i59-a01: in a life, one more entry sits under Home, so Back on Home asks first instead of leaving.
 // i59-a02: the tutorial counts as a layer too, so Back there asks to skip the tour.
 let HIST_T = null, HIST_SKIP = 0, HIST_BOOTED = false, LEAVE_ARMED = null;
+// The game puts the page back where it was itself (lockScroll). Left to the browser, the history step a closing sheet
+// takes (history.go, which lands a moment later) also jumped the page back to where it was when the sheet opened, so
+// a button reached with Tab right after closing a sheet could end up under the bottom bars (i43-a04, flaky in CI).
+try { history.scrollRestoration = 'manual'; } catch(_){}
 const LEAVE_MS = 3000;
 const histDepth = () => (S && !S.over && !LEAVE_ARMED ? 1 : 0) + (S && !S.over && tab !== 'home' ? 1 : 0)
   + (typeof TUT !== 'undefined' && TUT ? 1 : 0)
