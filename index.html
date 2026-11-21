@@ -353,6 +353,12 @@ main{flex:1;padding:14px 14px calc(var(--safe-b) + 32px + 12rem)}   /* i43-a04: 
 .seg{display:flex;flex-wrap:wrap;gap:6px}
 .seg button{flex:1 1 auto;min-height:44px;min-width:44px;padding:8px 10px;border:1.5px solid var(--edge);background:var(--card);border-radius:10px;font-size:.9375rem;font-weight:600}
 .seg button.on{border-color:var(--barn);background:var(--tint);color:var(--accent-d)}
+/* owner panel (owner.js) */
+.ownchip{display:inline-block;margin:0 0 8px;font-size:0.75rem;padding:4px 10px;min-height:32px}
+.tag.ownbal{background:var(--tint);color:var(--accent-d)}
+.ownrow.blocked .setl{opacity:.7}.ownblock{color:var(--accent)}
+.seg button:disabled{opacity:.45}
+.verline{user-select:none;-webkit-user-select:none}
 /* i2-a22: swipes. Sideways moves on the page are ours; up and down still scroll */
 main{touch-action:pan-y pinch-zoom}
 .grab{display:flex;justify-content:center;align-items:center;height:30px;margin:-16px -18px 2px;touch-action:none;cursor:grab}
@@ -466,6 +472,7 @@ html,body,.helpview{overscroll-behavior-y:contain}
 <script src="js/starts.js"></script>
 <script src="js/maps.js"></script>
 <script src="js/help.js"></script>
+<script src="js/owner.js"></script>
 <script src="js/boot.js"></script>
 </body>
 </html>

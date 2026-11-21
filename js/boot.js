@@ -11,7 +11,7 @@ window.addEventListener('appinstalled', () => { INSTALL_EVT = null; setPref('ins
 // name a game function in data-call (and its argument in data-arg); pins drawn as SVG also answer Enter and Space.
 const CALLS = { MAPTAP: k => MAPTAP(k), MAPTAB: k => MAPTAB(k), MAPPREF: v => MAPPREF(v === '1'), TRIPTO: k => TRIPTO(k), MAPFOCUS: f => MAPFOCUS(f),
   BIZTAP: id => BIZTAP(id), outSheet: () => outSheet(), teaserSheet: id => teaserSheet(id), retireSheet: () => retireSheet(),
-  helpgo: id => helpJump(id),
+  helpgo: id => helpJump(id), ownerPanel: () => ownerPanel(),
   helptop: () => $('#helpview').scrollTo({ top: 0, behavior: calmMotion() ? 'auto' : 'smooth' }) };
 document.addEventListener('click', e => {
   const el = e.target && e.target.closest && e.target.closest('[data-call]');
@@ -45,6 +45,7 @@ renderTitle();
 setPref('lastSeen', Date.now());                 // i73-b13: the next visit can tell how long you were away
 if (slots().some(Boolean)) playedFlag(true);     // i63-b05: remember, in a second place, that this browser has lives
 whatsNew();
+if (ownerAsked()) ownerPanel();                  // owner panel: ?owner in the address
 // i3-b03: if the browser already keeps this game's storage, the backup sheet can say so without asking
 try { if (navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(p => { if (p) PERSIST = true; }).catch(() => {}); } catch(e){}
 // i3-b08: a new version installs in the background and waits; "Update ready" on Home or the title screen swaps it in

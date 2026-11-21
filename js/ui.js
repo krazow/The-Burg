@@ -103,7 +103,7 @@ function renderTitle(){
     <button class="btn ghost" id="restore">📥 Restore from a backup</button>
     <button class="btn ghost" id="newphone">📱 I'm the new phone</button>
     <button class="btn ghost" id="settings">⚙️ Settings</button>
-    <div class="muted" style="margin-top:14px;font-size:0.75rem">v${APP_VERSION}</div>
+    <div class="muted verline" data-ver style="margin-top:14px;font-size:0.75rem">v${APP_VERSION}</div>
     ${updateNote()}
   </div>`;
   let bg = 'fresh', dif = 'normal', aim = 'all', rules = {}, pr = 'they', dsel = 'wheel', face = okFace(null);
@@ -131,7 +131,7 @@ function renderTitle(){
     const k = Object.keys(d)[0]; $('#lookwrap').innerHTML = lookPicker(face); wireLook(); const n = $(`#lookwrap [data-${k}="${d[k]}"]`); if (n) n.focus(); });
   wireLook();
   // to-do 2 D2: the picks a difficulty doesn't have are hidden (Easy: no Lifetime, Fresh start only, All-around only)
-  const limits = () => { const ds = { diff: dif };
+  const limits = () => { const ds = { diff: dif, ...ownerCtx() };
     const gate = (attr, key, keep, only) => document.querySelectorAll(`.title [data-${attr}]`).forEach(x => {
       const v = x.dataset[attr], off = !on(key, ds) && (only ? v === only : v !== keep);
       x.classList.toggle('hidden', off);
@@ -139,7 +139,7 @@ function renderTitle(){
     gate('len', 'lengths.life', 'five', 'life'); gate('bg', 'backgrounds', 'fresh'); gate('aim', 'score.aims', 'all'); };
   document.querySelectorAll('[data-diff]').forEach(b => b.onclick = () => { dif = b.dataset.diff;   // to-do 2 D1
     document.querySelectorAll('[data-diff]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
-    const pc = document.querySelector('[data-bg="parent"]'); if (pc) { pc.hidden = !on('family.kids', { diff: dif }); if (pc.hidden && bg === 'parent') document.querySelector('[data-bg="fresh"]').click(); }   // to-do 2: no kids in Easy
+    const pc = document.querySelector('[data-bg="parent"]'); if (pc) { pc.hidden = !on('family.kids', { diff: dif, ...ownerCtx() }); if (pc.hidden && bg === 'parent') document.querySelector('[data-bg="fresh"]').click(); }   // to-do 2: no kids in Easy
     limits(); moreSum(); });
   document.querySelectorAll('[data-aim]').forEach(b => b.onclick = () => { aim = b.dataset.aim;   // i20-b01
     document.querySelectorAll('[data-aim]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#aimdesc').textContent = aimDesc(aim); moreSum(); });
@@ -864,9 +864,11 @@ function resetFilters(){ logFilter = 'all'; jobCity = 'all'; jobNear = false; }
 function newGame(name, len, slot = 0, opts = {}){
   LIFE_UNDO = []; PLAY_AT = -1e9; resetFilters();
   // to-do 2 D2: what the difficulty doesn't have can't be picked (Easy: no Lifetime, Fresh start only, All-around only)
-  const ds = { diff: opts.classic || SCENARIOS[opts.scenario] ? 'hard' : DIFFS[opts.diff] ? opts.diff : MODE_DIFF[opts.mode] || 'normal' };   // story challenges are Hard
+  const own = newLifeFlags(opts);                 // owner panel: the device's overrides, copied into this life (never weekly or story challenges)
+  const ds = { diff: opts.classic || SCENARIOS[opts.scenario] ? 'hard' : DIFFS[opts.diff] ? opts.diff : MODE_DIFF[opts.mode] || 'normal', ...(own ? { flags: own, flagsEdited: true } : {}) };   // story challenges are Hard
   if (len === 'life' && !on('lengths.life', ds)) len = 'five';
-  S = blankLife(name, len, slot);                 // road and work events (health plan, ski pass, job-hunt help and more) included
+  S = blankLife(name, len, slot);
+  if (own) { S.flags = own; S.flagsEdited = true; } else if (opts.practice || opts.weekly || SCENARIOS[opts.scenario]) S.flags = {};   // road and work events (health plan, ski pass, job-hunt help and more) included
   S.bg = BACKGROUNDS[opts.bg] && on('backgrounds', ds) ? opts.bg : 'fresh'; S.aim = AIMS[opts.aim] && on('score.aims', ds) ? opts.aim : 'all';
   // to-do 2 D1: the difficulty sets the mode's numbers (Easy plays Relaxed's); an heir of a Classic life stays Classic
   if (opts.classic) { S.diff = 'hard'; S.classic = true; S.mode = MODES[opts.mode] ? opts.mode : 'normal'; }
@@ -938,7 +940,7 @@ function rulesCard(){
     <p class="muted">Everything else: Normal.</p></div>`;
 }
 function assistOffSheet(id){
-  const after = cleanRules({ ...S.rules, [id]: RULES[id].def }), t = tierMax(S.tier0 || 'standard', recordTier(after));
+  const after = cleanRules({ ...S.rules, [id]: RULES[id].def }), t = tierMax(tierMax(S.tier0 || 'standard', recordTier(after)), S.flagsEdited ? 'custom' : 'standard');
   sheet(`<h2>Turn off "${esc(RULES[id].name)}"?</h2><p>You can't turn it back on in this life.</p>
     <p>${TIERS[t].ic} This life ${t === lifeTier() ? 'stays on' : 'moves to'} <b>${TIERS[t].shelf}</b>.</p>
     <button class="btn primary" id="y">Turn it off</button><button class="btn ghost" id="n">Keep it on</button>`);
@@ -1210,7 +1212,7 @@ function renderHome(){
     : `<div class="card warn">${why} <button class="sm" data-sugg="${fk}">${FOCUS[fk].ic} ${FOCUS[fk].name} this week</button></div>`;
   $('#main').innerHTML = `<div class="homegrid"><div class="hmain">
   ${S.practice ? '' : `<div class="homeart" id="homeart">${myFace(60)}${houseArt()}</div>`}
-  ${gradCard()}${doorsCard()}
+  ${S.practice ? '' : ownerChip()}${gradCard()}${doorsCard()}
   <div class="card"><div class="stats">
     ${statBtn('happy','Happiness', S.happy)}${statBtn('health','Health', S.health, maxHealth())}
     ${statBtn('community','Community', S.community)}
@@ -1954,7 +1956,8 @@ function showMenu(){
     <button class="btn ghost" id="done">👋 Done for now</button>
     <button class="btn ghost" id="title">Back to title screen</button>
     <button class="btn ghost" id="retireNow">End this life now (see score)</button>
-    <button class="btn ghost" id="close">Close</button>`);
+    <button class="btn ghost" id="close">Close</button>
+    <div class="muted verline" data-ver style="margin-top:14px;font-size:0.75rem;text-align:center">v${APP_VERSION}</div>`);
   $('#save').onclick = saveCopySheet;
   $('#load').onclick = loadSheet;
   $('#backup').onclick = () => backupSheet();
