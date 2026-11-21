@@ -47,11 +47,15 @@ export function gameLines(ctx = loadGame()){
   }
   for (const [k, v] of Object.entries(get('SCORE_TIPS') || {})) add(`tip: ${k}`, v);
   for (const [k, d] of Object.entries(get('DIFFS') || {})) add(`difficulty: ${k}`, d.blurb);   // to-do 2 D1: the start screen's difficulty cards
+  for (const [k, d] of Object.entries(get('DIFF_WHO') || {})) add(`which mode: ${k}`, d);   // D9: Which mode is for me?
+  add('which mode: note', get('DIFF_WHO_NOTE') || '');
   for (const [k, g] of Object.entries(get('GLOSSARY') || {})) { try { add(`word: ${g.w}`, typeof g.d === 'function' ? g.d() : g.d); } catch {} }
   for (const [i, st] of (get('TSTEPS') || []).entries()) add(`tutorial step ${i + 1}`, st.text);
-  let guide = ''; try { guide = get('guideHTML()') || ''; } catch {}
+  // the guide as the title screen shows it, then as an Easy and a Normal life see it (to-do 2 D6: their own lines)
+  const guides = [get('guideHTML()') || ''];
+  for (const d of ['easy', 'normal']) guides.push(get(`(() => { try { newGame('Read', 'two', 0, { diff: '${d}' }); return guideHTML() + Object.values(GLOSSARY).map(g => '<p>' + g.d() + '</p>').join(''); } catch (e) { return ''; } finally { S = null; } })()`) || '');
   for (const [i, q] of (get('QUESTIONS') || []).entries()) { try { add(`help question ${i + 1}`, q.a()); } catch {} }
-  for (const sec of guide.split(/<(?:section|details class="gsec") /).slice(1)) {   // Help sections fold up (i44-b20)
+  for (const guide of guides) for (const sec of guide.split(/<(?:section|details class="gsec") /).slice(1)) {
     const title = plain((sec.match(/<h2>(.*?)<\/h2>|<span class="gst">(.*?)<\/span>/) || []).slice(1).find(Boolean) || '');
     for (const [, body] of sec.matchAll(/<(?:p|li)[^>]*>([\s\S]*?)<\/(?:p|li)>/g)) add(`help: ${title}`, body);
   }

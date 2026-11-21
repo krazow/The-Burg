@@ -73,6 +73,9 @@ input[type=text]:focus{outline:none;border-color:var(--wheat-d)}
 .dcard{padding:10px 12px;border-radius:12px;border:2px solid var(--edge);background:var(--paper);text-align:left;color:inherit;font:inherit}
 .dcard b{display:block;font-size:1.0625rem}.dcard span{display:block;font-size:0.8125rem;color:var(--muted);margin-top:2px}
 .dcard.on{border-color:var(--barn);background:var(--tint)}
+.whichmode{margin:8px 0 2px;padding:0 12px;border-radius:12px;border:1px solid var(--edge);background:var(--paper);text-align:left}
+.whichmode summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:600}
+.whichlist{margin:0 0 8px;padding-left:18px}.whichlist li{margin:4px 0}.whichnote{margin:0 0 10px}
 .btn{display:block;width:100%;padding:15px;border-radius:14px;font-weight:700;font-size:1.0625rem;margin-top:12px}
 .btn.primary{background:var(--barn);color:#fff;box-shadow:0 3px 0 var(--barn-d)}
 .btn.primary:active{transform:translateY(2px);box-shadow:0 1px 0 var(--barn-d)}
@@ -98,6 +101,25 @@ input[type=text]:focus{outline:none;border-color:var(--wheat-d)}
 .top .meta{font-size:0.8125rem;opacity:.85;margin-top:2px;display:flex;justify-content:space-between}
 .progress{height:4px;background:rgba(255,255,255,.25);border-radius:2px;margin-top:8px;overflow:hidden}
 .progress i{display:block;height:100%;background:var(--wheat)}
+/* i6-b11: a touch of the season in the header band and the main buttons (decoration only, never text) */
+body[data-season=Spring]{--wheat:#f2a7b8;--season:#f2a7b8;--season-d:#7a3346}
+body[data-season=Summer]{--wheat:#e9c46a;--season:#e9c46a;--season-d:#6f1f14}
+body[data-season=Fall]{--wheat:#e0a03a;--season:#c8642a;--season-d:#5a2a12}
+body[data-season=Winter]{--wheat:#b9d4ea;--season:#9cc3e0;--season-d:#2f4a63}
+.top{box-shadow:inset 0 -3px 0 var(--season,var(--wheat))}
+.btn.primary{box-shadow:0 3px 0 var(--season-d,var(--barn-d))}
+/* i6-b01 a drawn portrait, i6-b02 your house on Home */
+.homeart{display:flex;align-items:flex-end;gap:10px;margin:0 0 10px}
+.homeart .face{flex:0 0 auto}
+.houseart{flex:1 1 auto;min-width:0;width:100%;max-height:120px;border-radius:12px}
+.face{display:block;border-radius:50%}
+.endface{display:flex;justify-content:center;margin:4px 0}
+.lookrow{display:flex;gap:10px;align-items:flex-start;text-align:left}
+.lookrow .lookopts{flex:1;min-width:0}
+.lookrow .bgs{margin-bottom:6px}
+.swatch{display:inline-block;width:16px;height:16px;border-radius:50%;border:1px solid rgba(61,43,31,.4);vertical-align:middle}
+.pronline{font-size:0.9375rem}
+.gradcard{border-left:4px solid var(--season,var(--wheat))}.gradbtns{display:grid;gap:8px;margin-bottom:8px}.gradbtns .btn{margin:0}
 main{flex:1;padding:14px 14px calc(var(--safe-b) + 32px + 12rem)}   /* i43-a04: room for the last button to scroll above the strip, End Week and the tabs */
 .card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
 .card.wxcard{padding:8px 10px;margin:6px 0;border-left:4px solid #4f7da8}
@@ -273,6 +295,7 @@ main{flex:1;padding:14px 14px calc(var(--safe-b) + 32px + 12rem)}   /* i43-a04: 
 .sumchip.on{border-color:var(--barn);background:var(--tint)}
 .bgs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}.bgs .chip{min-height:44px}.chip:disabled{opacity:.55}.kv.debt span,.kv.debt small{color:var(--down)}.comeback{font-style:italic}.bgdesc{font-size:0.8438rem;margin:6px 4px 0;min-height:36px}
 .sgoal{font-size:0.8438rem;background:var(--pale);border:1.5px dashed var(--line);border-radius:10px;padding:8px 10px;margin:0 0 10px}
+.sgoal .scprog{margin-top:4px}
 .scorebtn{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;margin-top:10px;padding:10px 12px;border:1.5px solid var(--edge);border-radius:12px;background:var(--pale);font-size:0.9062rem;min-height:44px;text-align:left}.scorebtn b{font-size:1.0625rem;color:var(--accent)}
 .tripto{width:100%;text-align:left;background:var(--card);border:0;border-bottom:1px dashed var(--line);min-height:52px;font:inherit;color:inherit;cursor:pointer}.tripto > span:first-child{display:flex;flex-direction:column}
 #helpbtn{width:44px;height:44px}
@@ -440,6 +463,7 @@ html,body,.helpview{overscroll-behavior-y:contain}
 <script src="js/townpack1.js"></script>
 <script src="js/health.js"></script>
 <script src="js/weather.js"></script>
+<script src="js/starts.js"></script>
 <script src="js/maps.js"></script>
 <script src="js/help.js"></script>
 <script src="js/boot.js"></script>
