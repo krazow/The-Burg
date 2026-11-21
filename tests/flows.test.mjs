@@ -2043,7 +2043,7 @@ await t.check('i70-b07: a bottom bar holds Close and Contents within thumb reach
 });
 await t.check('i68-b28 / b04 / b07 / b14 / b18 / b19: new words explain themselves, and the rewritten parts read their numbers from the game', async () => {
   await helpReset();
-  await life({ jobId: 'farmhand' });
+  await life({ jobId: 'farmhand', diff: 'hard' });   // to-do 2 D6: Help only shows what a life has, so these words need a Hard life
   await page.evaluate(() => showHelp());
   const r = await page.evaluate(() => ({
     gl: ['vesting', 'probate', 'deductible', 'liability', 'heloan', 'refi', 'collections', 'dues', 'apprentice', 'major', 'cert'].filter(k => !GLOSSARY[k] || /undefined|NaN/.test(GLOSSARY[k].d()) || !document.querySelector(`#helpview [data-term="${k}"]`)),
