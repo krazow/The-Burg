@@ -43,8 +43,9 @@ const AIM_RUNS = process.env.SIM_ONLY && !process.env.SIM_AIMS ? [] : [
   ...AIM_KEYS.map(aim => ({ len: 'two', strat: 'idle', opts: { aim }, label: `aim-${aim}`, n: 3 }))];
 // to-do 2 D8: every difficulty played as new lives on the main games' dice (label diff-<d>). Careless and idle play every
 // length (one Lifetime each on Normal and Hard, as the main games); the planner adds 5-year games; the other bots one 2-year game each.
-// Targets (DIFF_TARGETS below) fail the full run; SIM_DIFFS=1 runs only these in a tuning run (with SIM_ONLY/SIM_LEN).
-const DIFF_KEYS = ['easy', 'normal', 'hard'];
+// Targets (DIFF_TARGETS below) fail the full run; SIM_DIFFS=1 runs only these in a tuning run (with SIM_ONLY/SIM_LEN),
+// and SIM_DIFFS=easy (or easy,normal) only those difficulties.
+const DIFF_KEYS = ['easy', 'normal', 'hard'].filter(d => !/[a-z]/.test(process.env.SIM_DIFFS || '') || process.env.SIM_DIFFS.split(',').includes(d));   // SIM_DIFFS=easy plays only those
 const DIFF_RUNS = (FILTERED && !process.env.SIM_DIFFS) || SIM_DIFF || process.env.SIM_AIMS ? [] : DIFF_KEYS.flatMap(diff => {
   const n = k => Math.max(1, Math.round(k * SCALE)), runs = [];
   const add = (len, strat, k) => { if (STRATEGIES.includes(strat) && (!process.env.SIM_LEN || process.env.SIM_LEN.split(',').includes(len))) runs.push({ len, strat, opts: { diff }, label: `diff-${diff}`, n: k }); };

@@ -127,9 +127,9 @@ const LENGTHS = {
   // target: net worth for full points on Normal and Hard; easy: on Easy (to-do 2 D7, fitted to Easy sim runs: no investing,
   // no price growth, no business, no report cards). Easy has no Lifetime.
   // wave 1 (b-idle): in 26 weeks a full-time paycheck alone brings in about half the target, so net worth counts only above that (free)
-  half: { label:'6 Months', sub:'26 weeks',  turns:26,       target:16000,   easy:14000,  free:0.5, mins:'about 4 min' },
-  two:  { label:'2 Years',  sub:'104 weeks', turns:104,      target:90000,   easy:80000,  mins:'about 11 min (7 with ⏩)' },
-  five: { label:'5 Years',  sub:'260 weeks', turns:260,      target:400000,  easy:475000, mins:'about 25 min' },   // B1: raised so careless long games don't coast on pay growth
+  half: { label:'6 Months', sub:'26 weeks',  turns:26,       target:16000,   easy:12600,  free:0.5, mins:'about 4 min' },
+  two:  { label:'2 Years',  sub:'104 weeks', turns:104,      target:90000,   easy:72000,  mins:'about 11 min (7 with ⏩)' },
+  five: { label:'5 Years',  sub:'260 weeks', turns:260,      target:400000,  easy:430000, mins:'about 25 min' },   // B1: raised so careless long games don't coast on pay growth
   life: { label:'Lifetime', sub:'18 to the end', turns:Infinity, target:4000000, mins:'about 4 hours, over many sittings' }
 };
 // to-do 2 D7: the net worth for full points in this length on this difficulty (Classic lives play Hard, so they keep the old targets)
@@ -321,6 +321,7 @@ function blankLife(name, len, slot = 0){
     trip:null, svc:0, tires:null, stockUntil:-1, redLow:{}, moneyTalk:false, dentist:0, stopLast:{}, tabsYear:2027, carpool:false, hustleWeeks:0, scoreQ:null,
     bg:'fresh', mode:'normal', diff:'normal', classic:false, flagsEdited:false, flags:null, sloanLeft:0,   // to-do 2 D1: difficulty
     sloanPay:0, sgoal:null, seasonWins:0,
+    neighborsHelped:false, easyEra:true,           // Easier start: the neighbors' one-time gift (Easy); a life started once Easy is the default
     badges:{}, goals:[], chains:{}, towns:{}, storiesDone:0, scenario:null, scWon:false, paidOff:false,
     earnYears:0, earnSum:0, pensionYears:0, pensionPay:0, ltc:null, care:null, snowbird:null, scholar:null, will:false, probate:null, roomHost:false, hostLast:-99,
     skills:{}, biz:null, weekly:null, rng:null, rngEv:null, gen:1, goalAt:{}, carpoolJob:null, hustleLast:0, highWater:null, recentF:[], out:outDefault(), years:[],
@@ -407,6 +408,8 @@ function migrate(s){
   if (s.diff === undefined) { s.diff = 'hard'; s.classic = true; }
   if (s.classic === undefined) s.classic = false;
   if (s.flagsEdited === undefined) s.flagsEdited = false;
+  if (s.neighborsHelped === undefined) s.neighborsHelped = false;
+  if (s.easyEra === undefined) s.easyEra = false;   // started before Easy was the default (the fresh-start card may offer Easy)
   // owner panel: the copy of the owner's overrides this life started with (null = none)
   s.flags = s.flags && typeof s.flags === 'object' && !Array.isArray(s.flags) && typeof cleanFlags === 'function' ? cleanFlags(s.flags) : null;
   if (s.flags && !Object.keys(s.flags).length && !s.flagsEdited) s.flags = null;

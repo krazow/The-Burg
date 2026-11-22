@@ -12,13 +12,17 @@ const DIFFS = {
   hard:   { ic:'🔥', label:'Hard', mode:'hard', blurb:'The full game: adds layoffs and strikes, home damage, caring for Dad, farming and more. Stats wear down faster, costs are 10% higher, and debt ends the game at -$25,000.' }
 };
 const DIFF_ORDER = { easy:0, normal:1, hard:2 };
+// Easier start: Easy's safety net (half-speed wear, quiet first weeks, the neighbors' one-time gift; see neighborsWeek)
+const EASY_DRIFT = 0.5, EASY_SAFE_WEEKS = 8, EASY_GIFT = 500, EASY_GIFT_MAX = 1500;
 // to-do 2 D9: "Which mode is for me?" in plain words, shared by the start screen's card and the Help section
 const DIFF_WHO = {
   easy:   'New to games like this, or want a calm game. There is less to keep track of, fewer bad surprises, and debt never ends your life.',
   normal: 'Want the game as it was made. You plan for kids, savings, weather and rising prices, and deep debt can end your life.',
   hard:   'Know the game well and want a test. Everything is on, money is tighter, and the same good play scores a few points lower.'
 };
-const DIFF_WHO_NOTE = 'Not sure? Start on Easy or Normal. You pick a mode for each new life, and each mode keeps its own records.';
+const DIFF_WHO_NOTE = 'Not sure? Start on Easy. Your first life is set to Easy. After that, the start screen picks the mode of the life you started last. You pick a mode for each new life, and each mode keeps its own records.';
+// Easier start: Easy's safety net, in Help
+const EASY_NET = `On Easy, your first ${EASY_SAFE_WEEKS} weeks bring no bad-luck events, and your stats wear down at half speed. A 6-month life starts fresh, not worn. Once in your first year, if your cash drops below $0, your neighbors pitch in (up to ${fmt(EASY_GIFT_MAX)}).`;
 const whichModeHTML = () => `<ul class="whichlist">${DIFF_LIST.map(k => `<li><b>${DIFFS[k].ic} ${DIFFS[k].label}:</b> ${DIFF_WHO[k]}</li>`).join('')}</ul><p class="whichnote">${DIFF_WHO_NOTE}</p>`;
 
 const DIFF_LIST = ['easy', 'normal', 'hard'];
@@ -112,6 +116,22 @@ const EVENT_BAD = new Set([
   'An ice storm in calving season'
 ]);
 const EASY_BAD_W = 0.6;
+// Easier start: on Easy, stats wear down at half speed (Relaxed's 0.6 elsewhere), the first weeks bring no bad-luck
+// events, and the first time cash drops below $0 in year one, the neighbors pitch in once
+const easyLife = (s = S) => !!s && !s.classic && diff(s) === 'easy';
+// the first weeks of an Easy life skip events that cost money or stats
+const easySafe = (s = S) => easyLife(s) && (s.turn || 0) < EASY_SAFE_WEEKS;
+const evSafeOK = (e, s = S) => !easySafe(s) || !EVENT_BAD.has(e.title);
+// once in the first year of an Easy life: cash below $0 brings a gift from the neighbors (enough to get back above $0)
+function neighborsWeek(notes, s = S){
+  if (!easyLife(s) || s.practice || s.neighborsHelped || (s.turn || 0) >= 52 || !(s.money < 0)) return 0;
+  const gift = Math.min(cost(EASY_GIFT_MAX), Math.max(cost(EASY_GIFT), -s.money + cost(100)));
+  s.money += gift; s.neighborsHelped = true;
+  const m = `🤝 Your neighbors heard you were short and pitched in ${fmt(gift)}. It only happens once, so keep an eye on your cash.`;
+  if (notes) notes.push(m);
+  log(`Your neighbors pitched in ${fmt(gift)} when your cash ran out.`, 'money');
+  return gift;
+}
 const DIFF_FLAGS_KEY = KEY_PREFIX + 'flags';
 const diff = (s = S) => (s && DIFFS[s.diff] ? s.diff : 'hard');
 const diffAtLeast = (t, s = S) => DIFF_ORDER[t] <= DIFF_ORDER[diff(s)];

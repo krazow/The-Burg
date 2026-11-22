@@ -50,11 +50,14 @@ function seasonAccent(m){ try { document.body.dataset.season = SEASON(((m % 12) 
 
 // to-do 2 D1: a difficulty card on the start screen says in plain words what that difficulty includes
 const diffCard = (k, on) => `<button class="dcard${on ? ' on' : ''}" data-diff="${k}" aria-pressed="${on}"><b>${DIFFS[k].ic} ${DIFFS[k].label}</b><span>${DIFFS[k].blurb}</span></button>`;
-function renderTitle(){
+// Easier start: a first life on this device starts on Easy; after that, the difficulty of the life started last
+const startDiff = () => { const p = prefs().lastDiff; return DIFFS[p] ? p : !slots().some(Boolean) && !hasRecords() ? 'easy' : 'normal'; };
+function renderTitle(o = {}){
   histSync();
   const all = slots(), used = all.filter((g, i) => g || prevLife(i)).length;
   const more = !!prefs().moreOpts;
   let len = 'half', um = prefs().unlockMode === 'all' ? 'all' : 'go';   // i31-b20: open as I go, or everything open
+  const dif0 = o && DIFFS[o.diff] ? o.diff : startDiff();   // the fresh-start card opens this with Easy picked
   seasonAccent(titleMonth());
   $('#app').innerHTML = `<div class="title">
     ${scene(titleMonth(), titleHour())}
@@ -73,7 +76,7 @@ function renderTitle(){
     <div class="lengths">${Object.entries(LENGTHS).map(([k,L]) =>
       `<button class="len ${k===len?'on':''}" data-len="${k}" aria-pressed="${k===len}"><b>${L.label}</b><span>${L.sub}</span><small>⏱ ${L.mins}</small></button>`).join('')}</div>
     <label class="field" id="difflbl">Difficulty</label>
-    <div class="diffs" role="group" aria-labelledby="difflbl">${DIFF_LIST.map(k => diffCard(k, k === 'normal')).join('')}</div>
+    <div class="diffs" role="group" aria-labelledby="difflbl">${DIFF_LIST.map(k => diffCard(k, k === dif0)).join('')}</div>
     <details class="whichmode" id="whichmode"><summary>🤔 Which mode is for me?</summary>${whichModeHTML()}</details>
     <button class="btn primary bigstart" id="start">Start a new life</button>
     ${used ? '' : '<button class="btn ghost" id="newbie">🌱 Never played one of these?</button>'}
@@ -106,7 +109,7 @@ function renderTitle(){
     <div class="muted verline" data-ver style="margin-top:14px;font-size:0.75rem">v${APP_VERSION}</div>
     ${updateNote()}
   </div>`;
-  let bg = 'fresh', dif = 'normal', aim = 'all', rules = {}, pr = 'they', dsel = 'wheel', face = okFace(null);
+  let bg = 'fresh', dif = dif0, aim = 'all', rules = {}, pr = 'they', dsel = 'wheel', face = okFace(null);
   const md = () => DIFF_MODE[dif];
   const moreSum = () => { const t = recordTier(rules), cu = Object.keys(rules).length;
     $('#moresum').textContent = `${BACKGROUNDS[bg].ic} ${BACKGROUNDS[bg].name} · ${DIFFS[dif].ic} ${DIFFS[dif].label} · ${AIMS[aim].ic} ${AIMS[aim].name}${cu ? ` · 🎛️ ${TIERS[t].name} rules` : ''}${um === 'all' ? ` · ${UNLOCK_MODES.all.ic} ${UNLOCK_MODES.all.name}` : ''}`;
@@ -145,6 +148,8 @@ function renderTitle(){
     document.querySelectorAll('[data-aim]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#aimdesc').textContent = aimDesc(aim); moreSum(); });
   document.querySelectorAll('[data-um]').forEach(b => b.onclick = () => { um = b.dataset.um; setPref('unlockMode', um);
     document.querySelectorAll('[data-um]').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); }); $('#umdesc').textContent = UNLOCK_MODES[um].desc; moreSum(); });
+  if (dif !== 'normal') limits();   // the picked difficulty hides what it doesn't have (the cards' own tap does this later)
+  { const pc = document.querySelector('[data-bg="parent"]'); if (pc) pc.hidden = !on('family.kids', { diff: dif, ...ownerCtx() }); }
   $('#rulesbtn').onclick = () => rulesSheet(rules, { bg, mode: md() }, r => { rules = r; moreSum(); });   // i19-b02
   document.querySelectorAll('.len').forEach(b => b.onclick = () => {
     len = b.dataset.len; document.querySelectorAll('.len').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
@@ -235,6 +240,27 @@ function privateCard(){
   if (!PRIVATE_SIGNS || PRIVATE_HOME_SEEN || !S || S.practice) return '';
   return `<div class="card warn" id="privcard">🕶️ <b>${privateText(PRIVATE_SIGNS)}</b> Back up before you close it (Menu → 📤 Back up or restore). <span class="slotbtns"><button class="sm" id="privbk">📤 Back up</button><button class="sm alt" id="privok">Got it</button></span></div>`;
 }
+/* ---------- Easier start: once, a player on an older Hard life who never played Easy hears that new lives can be Easy ---------- */
+let FRESH_CARD = null;                             // 'on' once drawn this visit (the pref marks it for good), 'off' once answered
+const hadEasy = () => !!prefs().easyPlayed || slots().some(g => g && g.diff === 'easy' && !g.classic)
+  || ends().some(e => e.diff === 'easy' && !e.classic) || Object.keys(store.get(BEST_KEY) || {}).some(k => parseRecKey(k).shelf === 'easy');
+// an older life: Classic, or Hard and started before Easy was the default; never in practice, the tutorial or a challenge
+const freshFor = (s = S) => !!s && !s.over && !s.practice && !s.scenario && !s.weekly && !(typeof TUT !== 'undefined' && TUT)
+  && diff(s) === 'hard' && (s.classic || !s.easyEra);
+function freshCard(){
+  if (FRESH_CARD === 'off' || !freshFor() || hadEasy()) return '';
+  if (FRESH_CARD !== 'on') { if (prefs().freshSeen) return ''; FRESH_CARD = 'on'; setPref('freshSeen', 1); }
+  return `<div class="card tip" id="freshcard">🌱 <b>Try a fresh start on Easy?</b> New lives can be Easy: fewer things to keep track of, fewer bad surprises, and debt never ends your life. This life stays just as it is. <span class="slotbtns"><button class="sm" data-call="freshEasy">Start an Easy life</button><button class="sm alt" data-call="freshKeep">Keep playing</button></span></div>`;
+}
+function freshKeep(){ FRESH_CARD = 'off'; closeSheet(); if (S && tab === 'home') renderHome(); }
+// opens the start screen with Easy picked (Start then uses a free slot). With all slots full it says so: nothing is deleted
+function freshEasy(){
+  FRESH_CARD = 'off';
+  if (freeSlot() >= 0) return freshTitle();
+  sheet(`<h2>🌱 All ${SLOT_COUNT} slots are full</h2><p>To start an Easy life, one of your lives has to make room. On the start screen, tap <b>Start a new life</b> and pick a life to replace. Nothing is deleted until you pick one and say yes.</p>
+    <button class="btn primary" data-call="freshTitle">Go to the start screen</button><button class="btn ghost" data-call="freshKeep">Keep playing</button>`);
+}
+function freshTitle(){ if (S && !S.over) save(); closeSheet(); S = null; renderTitle({ diff: 'easy' }); const n = $('#nm'); if (n) n.focus({ preventScroll: true }); }
 /* ---------- i23-a01 / i7-a06: a first start offers the practice life; new players can answer three questions ---------- */
 const isBrandNew = () => !slots().some(Boolean) && !hasRecords() && !prefs().newHere;
 function newHereSheet(go){
@@ -250,7 +276,7 @@ const NEWBIE_Q = [
   ['easy', 'Want it easy?', [['normal', 'No, a normal game'], ['easy', 'Yes, go easy on me']]]
 ];
 function newbieSheet(set){
-  const pick = { len: 'half', text: setting('textSize') === 'normal' ? 'normal' : 'l', easy: 'normal' };
+  const pick = { len: 'half', text: setting('textSize') === 'normal' ? 'normal' : 'l', easy: 'easy' };   // Easier start: a first life is Easy unless you say no
   const draw = () => {
     sheet(`<h2>🌱 New to games like this?</h2><p>Three quick questions, and we'll set up a good first life. You can change any of it later.</p>
       <div class="newq">${NEWBIE_Q.map(([k, q, opts]) => `<h3 id="nq-${k}">${q}</h3><div class="maptog wrap" role="group" aria-labelledby="nq-${k}">${opts.map(([v, l]) =>
@@ -408,6 +434,11 @@ const WHATS_NEW = {
     ['🪜', 'Jobs with a ladder', 'promotions, certificates, apprenticeships, interviews, unions and 13 new jobs.', 'jobs.ladder'],
     ['🌦️', 'Weather and hard years', 'each year has its own weather, from smoke summers to ice storms. Get ready and help your neighbors.', 'weather'],
     ['🏆', 'A fairer Life Score', 'it averages your report cards, weighs your weakest part, counts debt, and you can pick a life aim.', 'score.reportCards'],
+  ],
+  '0.2.2': [
+    ['🌱', 'An easier start', 'a first life starts on Easy, and the start screen then picks the mode you played last.'],
+    ['🤝', 'A gentler Easy', 'calm first weeks, slower wear on your stats, a little lower money goals, and one hand from the neighbors if your cash runs out in year one.'],
+    ['🗝️', 'Try a fresh start', 'playing an older life? A card on Home offers an Easy life once. Your lives stay as they are.']
   ]
 };
 // to-do 2 D6: a bullet tagged with a feature (its 4th item) shows only when that feature is on
@@ -883,7 +914,7 @@ function newGame(name, len, slot = 0, opts = {}){
   S.startAge = age();
   S.weekly = opts.weekly || null; S.rng = opts.weekly ? weekSeed(opts.weekly) : null; S.rngEv = opts.weekly ? weekSeed(`${opts.weekly}:events`) : null; useDice();
   S.jobSeed = opts.weekly ? 0 : Math.floor(Math.random() * 1e9) + 1;   // i8-a06: this life's job openings (a weekly challenge's come from its week)
-  if (len === 'half') { S.happy -= HALF_START_DIP; S.health -= HALF_START_DIP; }   // B2: 26 weeks is short, so a 6-month life starts a little worn
+  if (len === 'half' && S.diff !== 'easy') { S.happy -= HALF_START_DIP; S.health -= HALF_START_DIP; }   // B2: 26 weeks is short, so a 6-month life starts a little worn
   if (SCENARIOS[opts.scenario]) { S.scenario = opts.scenario; if (SCENARIOS[S.scenario].set) SCENARIOS[S.scenario].set(S); }
   S.yearStart = { nw: netWorth(), happy: S.happy, health: S.health, community: S.community };
   if (opts.practice) { S.practice = true; S.noEvents = true; }      // the tutorial's throwaway life: never saved, no random events
@@ -897,6 +928,7 @@ function newGame(name, len, slot = 0, opts = {}){
   // i17-a02: a new life opens on Home, where three doors (a job, a program, a place) replace the old "find a job" toast
   tab = S.jobId || !opts.practice ? 'home' : 'jobs'; save(); render();
   if (!opts.practice) askPersist();
+  if (!opts.practice && !S.weekly && !S.scenario && !S.classic) { setPref('lastDiff', S.diff); if (S.diff === 'easy') setPref('easyPlayed', 1); }   // Easier start: the next life starts on this one's difficulty
   if (!opts.practice) playedFlag(true);            // i63-b05
   if (!opts.practice) toast(S.jobId ? 'Welcome home. The harvest crew starts at six.' : 'Welcome to the Burg!');   // i37-b03: the Farm kid already has work
 }
@@ -1220,7 +1252,7 @@ function renderHome(){
   </div>${scoreButton()}</div>
   ${unlockCard()}${cl}${hint ? `<div class="card next"><div>👉 <b>Next step:</b> ${hint.t}</div><button class="sm" data-next="${hint.go}">${hint.b}</button></div>` : ''}
   ${S.practice ? '' : upNextLine()}
-  ${privateCard()}
+  ${privateCard()}${freshCard()}
   ${!j && !S.retired ? noPayCard() : ''}
   ${retireOpen() ? `<div class="card tip" id="retirecard">🌅 <b>Retirement is open.</b> Social Security would pay ${wk(ssPay())}. <button class="sm" data-call="retireSheet">See what changes</button></div>` : ''}
   ${S.happy < 30 ? sugg('happy', 'outdoors', `😟 Happiness is low (${Math.round(S.happy)}).`) : ''}

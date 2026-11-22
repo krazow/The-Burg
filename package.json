@@ -3,7 +3,7 @@
   "private": true,
   "description": "The Burg: a life sim set in Waitsburg, WA",
   "scripts": {
-    "test": "node tests/smoke.test.mjs && node tools/reading-level.mjs && node tests/rules.test.mjs && node tests/gameplay.test.mjs && node tests/flows.test.mjs && node tests/screens.test.mjs && node tests/offline.test.mjs && node tests/explore.test.mjs && node tests/health.test.mjs && node tests/weather.test.mjs && node tests/bugs.test.mjs && node tests/firsthour.test.mjs && node tests/difficulty.test.mjs && node tests/difficulty-a.test.mjs && node tests/difficulty-b.test.mjs && node tests/difficulty-c.test.mjs && node tests/difficulty-d.test.mjs && node tests/difficulty-score.test.mjs && node tests/difficulty-hide.test.mjs && node tests/owner.test.mjs && node tests/sim.test.mjs",
+    "test": "node tests/smoke.test.mjs && node tools/reading-level.mjs && node tests/rules.test.mjs && node tests/gameplay.test.mjs && node tests/flows.test.mjs && node tests/screens.test.mjs && node tests/offline.test.mjs && node tests/explore.test.mjs && node tests/health.test.mjs && node tests/weather.test.mjs && node tests/bugs.test.mjs && node tests/firsthour.test.mjs && node tests/difficulty.test.mjs && node tests/difficulty-a.test.mjs && node tests/difficulty-b.test.mjs && node tests/difficulty-c.test.mjs && node tests/difficulty-d.test.mjs && node tests/difficulty-score.test.mjs && node tests/difficulty-hide.test.mjs && node tests/owner.test.mjs && node tests/easy.test.mjs && node tests/sim.test.mjs",
     "test:smoke": "node tests/smoke.test.mjs",
     "test:rules": "node tests/rules.test.mjs",
     "test:gameplay": "node tests/gameplay.test.mjs",
@@ -25,10 +25,11 @@
     "test:difficulty-score": "node tests/difficulty-score.test.mjs",
     "test:reading": "node tools/reading-level.mjs",
     "test:owner": "node tests/owner.test.mjs",
+    "test:easy": "node tests/easy.test.mjs",
     "test:group1": "node tests/screens.test.mjs --part=1",
     "test:group2": "node tests/screens.test.mjs --part=2",
     "test:group3": "node tests/smoke.test.mjs && node tools/reading-level.mjs && node tests/rules.test.mjs && node tests/gameplay.test.mjs && node tests/flows.test.mjs",
-    "test:group4": "node tests/offline.test.mjs && node tests/explore.test.mjs && node tests/health.test.mjs && node tests/weather.test.mjs && node tests/bugs.test.mjs && node tests/firsthour.test.mjs && node tests/difficulty.test.mjs && node tests/difficulty-a.test.mjs && node tests/difficulty-b.test.mjs && node tests/difficulty-c.test.mjs && node tests/difficulty-d.test.mjs && node tests/difficulty-score.test.mjs && node tests/difficulty-hide.test.mjs && node tests/sim.test.mjs && node tests/owner.test.mjs"
+    "test:group4": "node tests/offline.test.mjs && node tests/explore.test.mjs && node tests/health.test.mjs && node tests/weather.test.mjs && node tests/bugs.test.mjs && node tests/firsthour.test.mjs && node tests/difficulty.test.mjs && node tests/difficulty-a.test.mjs && node tests/difficulty-b.test.mjs && node tests/difficulty-c.test.mjs && node tests/difficulty-d.test.mjs && node tests/difficulty-score.test.mjs && node tests/difficulty-hide.test.mjs && node tests/sim.test.mjs && node tests/owner.test.mjs && node tests/easy.test.mjs"
   },
   "devDependencies": {
     "playwright": "^1.47.0"

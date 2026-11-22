@@ -3,6 +3,19 @@
 Release notes for The Burg. `/release now` turns the Unreleased section into a dated `## X.Y.Z (YYYY-MM-DD)`
 entry for every release, and the GitHub release notes are taken from it.
 
+## Unreleased
+
+### Changed
+- **🌱 Easy is the default for a first life.** On a device with no lives or records, the start screen picks Easy.
+  After that it picks the difficulty of the life you started last.
+- **🤝 A gentler Easy:** no bad-luck events in the first 8 weeks, stats wear down at half speed (was 60%), a 6-month
+  life starts fresh, the net-worth goals are about 10% lower, and once in the first year the neighbors pitch in when
+  your cash drops below $0.
+
+### Added
+- **🗝️ Try a fresh start on Easy:** players on an older Classic or Hard life who never played Easy see one card on
+  Home offering an Easy life. It never deletes a life: with all 5 slots full it says how to replace one.
+
 ## 0.2.1 (2026-11-20)
 
 **Pick how hard your life is.** New lives start on Easy, Normal or Hard. Easy is a calm town life with the basics and

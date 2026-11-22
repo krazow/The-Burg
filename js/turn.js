@@ -417,6 +417,7 @@ function weekTick(auto){
   const net = lines.reduce((a,[,v]) => a + v, 0);
   S.money += net;
   S.last = { lines: lines.filter(([,v]) => Math.round(v)).map(l => l[2] ? l : [l[0], l[1], lineWhy(l[0], f, j)]), net };
+  neighborsWeek(notes);                            // Easy: once in year one, the neighbors help when cash drops below $0
   debtWeek(notes);                                 // i3-a26: long debt goes to collections
   // i3-a21: the valley's home prices move with this year's market (2.5% a year on average); owners gain principal + appreciation
   { const hg = on('home.market') ? S.homeGrow ?? 0.025 : 0;   // to-do 2: in Easy homes keep their listed price
@@ -462,7 +463,7 @@ function weekTick(auto){
   if (S.care && CARE[S.care]) { const cr = CARE[S.care]; dh += cr.happy; dH += cr.health; dc += cr.comm; }   // i3-a31
   // worn down: pushing through low health with overtime or side hustles makes it worse, fast
   if (S.health < 35 && (S.focus === 'work' || S.focus === 'hustle')) dH -= 3.2;
-  if (mode() === 'relaxed') { if (dh < 0) dh *= 0.6; if (dH < 0) dH *= 0.6; if (dc < 0) dc *= 0.6; }
+  if (mode() === 'relaxed') { const k = easyLife() ? EASY_DRIFT : 0.6; if (dh < 0) dh *= k; if (dH < 0) dH *= k; if (dc < 0) dc *= k; }   // Easy wears down at half speed
   if (mode() === 'hard') { if (dh < 0) dh *= 1.25; if (dH < 0) dH *= 1.25; if (dc < 0) dc *= 1.25; }
   S.happy = clamp(S.happy + dh*m); S.health = clamp(S.health + dH*m); S.community = clamp(S.community + dc*m);
   if (dH > 0) S.health = Math.min(S.health, Math.max(maxHealth(), S.health - dH*m));   // i30-b03: health recovers only up to its age cap
