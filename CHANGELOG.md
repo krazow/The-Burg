@@ -3,7 +3,10 @@
 Release notes for The Burg. `/release now` turns the Unreleased section into a dated `## X.Y.Z (YYYY-MM-DD)`
 entry for every release, and the GitHub release notes are taken from it.
 
-## Unreleased
+## 0.2.2 (2026-11-21)
+
+**An easier start.** A first life now starts on Easy, and Easy itself is gentler: quiet first weeks, slower wear and
+a one-time hand from the neighbors. Players on an older life get one offer to try a fresh Easy life.
 
 ### Changed
 - **🌱 Easy is the default for a first life.** On a device with no lives or records, the start screen picks Easy.
@@ -15,6 +18,10 @@ entry for every release, and the GitHub release notes are taken from it.
 ### Added
 - **🗝️ Try a fresh start on Easy:** players on an older Classic or Hard life who never played Easy see one card on
   Home offering an Easy life. It never deletes a life: with all 5 slots full it says how to replace one.
+
+### Fixed
+- Closing a pop-up no longer makes the page jump a moment later, which could leave the button you just reached with
+  the keyboard under the bottom bars. After a reload the page now opens at the top.
 
 ## 0.2.1 (2026-11-20)
 

@@ -437,7 +437,7 @@ const WHATS_NEW = {
   ],
   '0.2.2': [
     ['🌱', 'An easier start', 'a first life starts on Easy, and the start screen then picks the mode you played last.'],
-    ['🤝', 'A gentler Easy', 'calm first weeks, slower wear on your stats, a little lower money goals, and one hand from the neighbors if your cash runs out in year one.'],
+    ['🤝', 'A gentler Easy', 'quiet first weeks, slower wear, lower money goals, and one hand from the neighbors.'],
     ['🗝️', 'Try a fresh start', 'playing an older life? A card on Home offers an Easy life once. Your lives stay as they are.']
   ]
 };

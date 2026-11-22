@@ -2,7 +2,7 @@
 /* ============================================================
    THE BURG — a life sim in Waitsburg, WA
    ============================================================ */
-const APP_VERSION = '0.2.1';   // the release kit stamps the exact version (with -beta.N) into every release
+const APP_VERSION = '0.2.2';   // the release kit stamps the exact version (with -beta.N) into every release
 // every storage key starts with KEY_PREFIX: the beta (served under /beta/) keeps its lives apart from the live game's (H3)
 const KEY_PREFIX = (typeof location !== 'undefined' && String(location.pathname).includes('/beta/')) ? 'theburgbeta.' : 'theburg.';
 const SAVE_KEY = KEY_PREFIX + 'save.v2', BEST_KEY = KEY_PREFIX + 'best.v2', BEST_NOTE_KEY = KEY_PREFIX + 'bestNote.v1';   // i63-a20: a best life's comeback line
