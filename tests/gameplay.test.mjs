@@ -28,6 +28,7 @@ async function endWeek() { await tapEnd(); await clearSheets(); }
 await page.goto(srv.url, { waitUntil: 'load' });
 
 await t.check('the title offers all four game lengths', async () => {
+  await page.click('[data-diff="normal"]');                       // a fresh device starts on Easy, which has no Lifetime
   for (const k of ['half', 'two', 'five', 'life']) await page.waitForSelector(`[data-len=${k}]`);
 });
 

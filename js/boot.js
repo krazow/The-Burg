@@ -12,6 +12,7 @@ window.addEventListener('appinstalled', () => { INSTALL_EVT = null; setPref('ins
 const CALLS = { MAPTAP: k => MAPTAP(k), MAPTAB: k => MAPTAB(k), MAPPREF: v => MAPPREF(v === '1'), TRIPTO: k => TRIPTO(k), MAPFOCUS: f => MAPFOCUS(f),
   BIZTAP: id => BIZTAP(id), outSheet: () => outSheet(), teaserSheet: id => teaserSheet(id), retireSheet: () => retireSheet(),
   helpgo: id => helpJump(id), ownerPanel: () => ownerPanel(),
+  freshEasy: () => freshEasy(), freshKeep: () => freshKeep(), freshTitle: () => freshTitle(),   // Easier start: the fresh-start card
   helptop: () => $('#helpview').scrollTo({ top: 0, behavior: calmMotion() ? 'auto' : 'smooth' }) };
 document.addEventListener('click', e => {
   const el = e.target && e.target.closest && e.target.closest('[data-call]');

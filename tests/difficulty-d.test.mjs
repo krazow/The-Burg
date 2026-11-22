@@ -61,6 +61,7 @@ await t.check('lengths, backgrounds and aims: Easy is 6 months / 2 / 5 years, Fr
   assert(r.normal.join() === 'life,farm,content' && r.hard.join() === 'life,farm,content', JSON.stringify(r));
   // the start screen hides what Easy doesn't have, and puts the picks back to ones it does
   await ev(() => { localStorage.clear(); setPref('newHere', 1); setPref('moreOpts', true); S = null; closeSheet(); render(); });
+  await page.click('[data-diff="normal"]');   // a fresh device starts on Easy
   await page.click('[data-len="life"]'); await page.click('[data-bg="farm"]'); await page.click('[data-aim="content"]');
   await page.click('[data-diff="easy"]');
   const vis = async sel => page.isVisible(sel);

@@ -25,7 +25,7 @@ function rollEvent(month, trip){
 // and for sure in the month's last week if they haven't come yet (an event's yearly cooldown says it already came)
 function fixedEvent(month){
   const last = new Date(S.date + 7 * 864e5).getMonth() !== month;
-  const e = EVENTS.find(x => x.fixed && evOn(x) && !(S.evCd[x.title] > S.turn) && !(x.once && S.evDone[x.title]) && (!x.when || x.when(month)));
+  const e = EVENTS.find(x => x.fixed && evOn(x) && evSafeOK(x) && !(S.evCd[x.title] > S.turn) && !(x.once && S.evDone[x.title]) && (!x.when || x.when(month)));
   return e && (last || chance(0.5)) ? e : null;
 }
 // i46-a02/a03: kids by birth order, and the one (if any) who turns 18 this week without a send-off yet
@@ -40,7 +40,7 @@ function kidBirthdays(m){
 function pickEvent(month, cat = 'town'){
   const wt = e => typeof e.w === 'function' ? e.w() : (e.w || 1);
   // to-do 2 D4: only events at or below this life's difficulty can come up
-  let ok = EVENTS.filter(e => evCat(e) === cat && evOn(e) && !(e.start && S.turn >= START_WEEKS) && !(S.evCd[e.title] > S.turn) && !(e.once && S.evDone[e.title]) && (!e.when || e.when(month)) && !(e.big && wxCapped()) && wt(e) > 0);   // i75-a23: at most 2 big weather hits a year
+  let ok = EVENTS.filter(e => evCat(e) === cat && evOn(e) && evSafeOK(e) && !(e.start && S.turn >= START_WEEKS) && !(S.evCd[e.title] > S.turn) && !(e.once && S.evDone[e.title]) && (!e.when || e.when(month)) && !(e.big && wxCapped()) && wt(e) > 0);   // i75-a23: at most 2 big weather hits a year
   // i52-a10: no repeats in the first year: events already seen this life sit out until week 52 (unless nothing else is left)
   if (S.turn < 52 && S.evSeen) { const fresh = ok.filter(e => !S.evSeen[e.title]); if (fresh.length) ok = fresh; }
   // to-do 2 D4: on Easy, events that cost money or stats keep only part of their weight; the rest is a quiet week

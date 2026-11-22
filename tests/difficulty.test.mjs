@@ -106,16 +106,18 @@ await t.check('an old save (no S.diff) loads as Hard and Classic, keeps its own 
   assert(r.loaded.join() === 'hard,true,relaxed,true' && r.back.join() === 'hard,true', JSON.stringify(r));
 });
 
-await t.check('start screen: three difficulty cards (Normal picked) replace the mode picker, and the pick starts the life', async () => {
+await t.check('start screen: three difficulty cards (Easy picked on a fresh device) replace the mode picker, and the pick starts the life', async () => {
   await ev(() => { localStorage.clear(); setPref('newHere', 1); S = null; closeSheet(); render(); });
   const cards = await page.$$eval('[data-diff]', bs => bs.map(b => ({ k: b.dataset.diff, on: b.getAttribute('aria-pressed'), text: b.textContent })));
   assert(cards.map(c => c.k).join() === 'easy,normal,hard', JSON.stringify(cards));
-  assert(cards.map(c => c.on).join() === 'false,true,false', 'Normal should start picked');
+  assert(cards.map(c => c.on).join() === 'true,false,false', 'Easy should start picked on a fresh device');
   assert(/never ends your game/.test(cards[0].text) && /kids/.test(cards[1].text) && /layoffs/.test(cards[2].text), JSON.stringify(cards));
   assert((await page.$$('[data-mode]')).length === 0 && !(await page.$('#modedesc')), 'the old mode picker should be gone');
   assert(await page.isVisible('[data-diff="easy"]'), 'the cards should show without opening More options');
+  await page.click('[data-diff="normal"]');
+  assert((await page.getAttribute('[data-diff="normal"]', 'aria-pressed')) === 'true' && (await page.getAttribute('[data-diff="easy"]', 'aria-pressed')) === 'false', 'the pick did not move');
   await page.click('[data-diff="easy"]');
-  assert((await page.getAttribute('[data-diff="easy"]', 'aria-pressed')) === 'true' && (await page.getAttribute('[data-diff="normal"]', 'aria-pressed')) === 'false', 'the pick did not move');
+  assert((await page.getAttribute('[data-diff="easy"]', 'aria-pressed')) === 'true' && (await page.getAttribute('[data-diff="normal"]', 'aria-pressed')) === 'false', 'the pick did not move back');
   assert(/Easy/.test(await page.textContent('#moresum')), await page.textContent('#moresum'));
   await page.fill('#nm', 'Gentle'); await page.click('#start');
   const s = await ev(() => [S.diff, S.mode, S.classic]);
@@ -163,7 +165,7 @@ await t.check('Easy pacing: events that cost money or stats come about 40% less 
   const r = await ev(() => {
     localStorage.clear(); const out = {};
     for (const d of DIFF_LIST) {
-      newGame('Pace', 'two', 0, { diff: d }); S.evSeen = {};
+      newGame('Pace', 'two', 0, { diff: d }); S.evSeen = {}; S.turn = 20;   // past Easy's quiet first weeks
       let bad = 0, good = 0, none = 0; const N = 4000;
       for (let i = 0; i < N; i++) { S.evCd = {}; const e = pickEvent(i % 12, 'town'); if (!e) none++; else if (EVENT_BAD.has(e.title)) bad++; else good++; }
       out[d] = { bad, good, none };

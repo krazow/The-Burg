@@ -136,7 +136,9 @@ await t.check('kids: Easy never has kids (no bill, no row, no Young parent start
 
 await t.check('start screen: the Young parent start hides when Easy is picked and comes back for Normal', async () => {
   await ev(() => { localStorage.clear(); setPref('newHere', 1); setPref('moreOpts', true); S = null; closeSheet(); render(); });
-  assert(await page.isVisible('[data-bg="parent"]'), 'Normal is picked first, so Young parent should show');
+  assert(!(await page.isVisible('[data-bg="parent"]')), 'a fresh device starts on Easy, so Young parent should be hidden');
+  await page.click('[data-diff="normal"]');
+  assert(await page.isVisible('[data-bg="parent"]'), 'Young parent should show once Normal is picked');
   await page.click('[data-bg="parent"]');
   await page.click('[data-diff="easy"]');
   assert(!(await page.isVisible('[data-bg="parent"]')), 'Young parent should hide in Easy');

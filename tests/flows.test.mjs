@@ -402,6 +402,7 @@ await t.check('Life Score so far opens its breakdown from Home; a commuter can j
 await t.check('the title screen starts a life with a background and a mode', async () => {
   await page.evaluate(() => { localStorage.clear(); setPref('newHere', 1); S = null; closeSheet(); render(); });
   await page.fill('#nm', 'Kid');
+  await page.click('[data-diff="hard"]');                      // a fresh device starts on Easy (Fresh start only)
   await page.click('#moreopts');
   await page.click('[data-bg="farm"]'); await page.click('[data-diff="hard"]');
   assert(/family farm/.test(await page.textContent('#bgdesc')) && (await page.getAttribute('[data-diff="hard"]', 'aria-pressed')) === 'true', 'descriptions should follow the picks');
@@ -500,6 +501,7 @@ await t.check('title screen: Start comes before a closed "More options" panel, w
   const order = await page.evaluate(() => { const y = s => document.querySelector(s).getBoundingClientRect().top; return { start: y('#start'), more: y('#moreopts'), chal: y('#chal') }; });
   assert(order.start < order.more && order.more < order.chal, JSON.stringify(order));
   assert(await page.isHidden('#morepanel') && (await page.getAttribute('#moreopts', 'aria-expanded')) === 'false', 'the panel should start closed');
+  await page.click('[data-diff="normal"]');                    // a fresh device starts on Easy (Fresh start only)
   await page.click('#moreopts');
   assert(await page.isVisible('[data-bg="grad"]') && (await page.getAttribute('#moreopts', 'aria-expanded')) === 'true', 'the panel did not open');
   await page.click('[data-bg="grad"]'); await page.click('[data-diff="hard"]');   // to-do 2 D2: Easy has Fresh start only
@@ -513,6 +515,7 @@ await t.check('title screen: Start comes before a closed "More options" panel, w
 
 await t.check('i20-b01, i20-b06: pick a life aim at setup, see it on the Life tab, and change it only once a year', async () => {
   await page.evaluate(() => { localStorage.clear(); S = null; closeSheet(); setPref('moreOpts', true); setPref('newHere', 1); renderTitle(); });
+  await page.click('[data-diff="normal"]');                    // a fresh device starts on Easy (All-around only)
   await page.click('[data-aim="roots"]');
   assert((await page.getAttribute('[data-aim="roots"]', 'aria-pressed')) === 'true' && /Roots/.test(await page.textContent('#moresum')) && /Show up for town/.test(await page.textContent('#aimdesc')), 'aim chip');
   await page.fill('#nm', 'Aimee'); await page.click('#start');
