@@ -28,5 +28,12 @@
   },
   "extras": {
     "enabled": false
-  }
+  },
+  "test_groups": [
+    "test:group1",
+    "test:group2",
+    "test:group3",
+    "test:group4"
+  ],
+  "test_timeout": 25
 }
