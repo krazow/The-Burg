@@ -1,8 +1,0 @@
-# Temporary: tries the release kit's new parallel QA (branch qa-test-groups) before it ships to v1. Removed before merge.
-name: Kit QA trial
-on: pull_request
-jobs:
-  qa:
-    uses: krazow/release-kit/.github/workflows/qa.yml@qa-test-groups
-    with:
-      kit_ref: qa-test-groups
