@@ -32,7 +32,7 @@ await page.goto(srv.url, { waitUntil: 'load' });
 
 await t.check('i49-a01: each game length says about how long it takes', async () => {
   await fresh();
-  for (const [k, want] of [['half', 'about 4 min'], ['two', 'about 11 min (7 with ⏩)'], ['five', 'about 25 min'], ['life', 'about 4 hours']])
+  for (const [k, want] of [['half', 'about 4 min'], ['two', 'about 11 min (7 with Auto)'], ['five', 'about 25 min'], ['life', 'about 4 hours']])
     assert((await page.textContent(`.len[data-len="${k}"]`)).includes(want), `${k} should say ${want}`);
 });
 

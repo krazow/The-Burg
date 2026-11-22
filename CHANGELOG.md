@@ -22,6 +22,7 @@ a one-time hand from the neighbors. Players on an older life get one offer to tr
 ### Fixed
 - Closing a pop-up no longer makes the page jump a moment later, which could leave the button you just reached with
   the keyboard under the bottom bars. After a reload the page now opens at the top.
+- The 2-year game length now says "7 with Auto" instead of naming the old ⏩ button.
 
 ## 0.2.1 (2026-11-20)
 

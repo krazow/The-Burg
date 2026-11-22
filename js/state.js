@@ -128,7 +128,7 @@ const LENGTHS = {
   // no price growth, no business, no report cards). Easy has no Lifetime.
   // wave 1 (b-idle): in 26 weeks a full-time paycheck alone brings in about half the target, so net worth counts only above that (free)
   half: { label:'6 Months', sub:'26 weeks',  turns:26,       target:16000,   easy:12600,  free:0.5, mins:'about 4 min' },
-  two:  { label:'2 Years',  sub:'104 weeks', turns:104,      target:90000,   easy:72000,  mins:'about 11 min (7 with ⏩)' },
+  two:  { label:'2 Years',  sub:'104 weeks', turns:104,      target:90000,   easy:72000,  mins:'about 11 min (7 with Auto)' },
   five: { label:'5 Years',  sub:'260 weeks', turns:260,      target:400000,  easy:430000, mins:'about 25 min' },   // B1: raised so careless long games don't coast on pay growth
   life: { label:'Lifetime', sub:'18 to the end', turns:Infinity, target:4000000, mins:'about 4 hours, over many sittings' }
 };
