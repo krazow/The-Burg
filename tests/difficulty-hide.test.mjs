@@ -167,7 +167,7 @@ await t.check("What's new, unlocks and badges: nothing for a switched-off system
       localStorage.clear(); newGame('New', 'two', 0, { diff: d }); save();
       const o = {};
       o.wnOff = Object.keys(WHATS_NEW).flatMap(v => whatsNewOn(v)).filter(b => b[3] && ![].concat(b[3]).every(k => on(k))).map(b => b[1]);
-      store.set(SEEN_KEY, '0.1.0'); closeSheet(); whatsNew(); o.wn = document.querySelector('#sheet') ? document.querySelector('#sheet').textContent : ''; closeSheet();
+      store.set(SEEN_KEY, '0.1.0'); closeSheet(); whatsNew(); o.wn = (document.querySelector('#sheet') ? document.querySelector('#sheet').textContent : '') + ' ' + whatsNewOn('0.2.1').map(b => b[1] + ': ' + b[2]).join(' '); closeSheet();   // the 0.2.1 list holds the tagged bullets, whatever the current version
       // unlocks: run a year of checks with everything due
       S.money = 90000; S.skills = { cook: 5 }; startJob('farmhand'); S.turn = 80;
       unlockCheck(true); o.opened = Object.keys(S.opened || {});

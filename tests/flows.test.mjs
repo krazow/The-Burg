@@ -557,10 +557,10 @@ await t.check('What\'s new shows once to returning players after an update, neve
     const first = whatsNew(), text = document.querySelector('#sheet').textContent; closeSheet();
     const again = whatsNew();
     store.set(SEEN_KEY, '0.1.0'); TUT = { i: 0 }; const tut = whatsNew(); TUT = null;
-    return { fresh, freshSeen, first, text, again, tut, v: baseVersion() }; });
+    return { fresh, freshSeen, first, text, again, tut, v: baseVersion(), titles: (WHATS_NEW[baseVersion()] || []).filter(b => !b[3] || [].concat(b[3]).every(k => on(k))).map(b => b[1]) }; });
   assert(!r.fresh && r.freshSeen === r.v, 'a brand-new player should not see it (but it counts as seen)');
   // a 0.1.0 player sees the newest list they haven't seen (this version's)
-  assert(r.first && new RegExp(`What's new in ${r.v.replace(/\./g, '\\.')}`).test(r.text) && /Safer saves/.test(r.text) && /Weather and hard years/.test(r.text), r.text.slice(0, 200));
+  assert(r.first && new RegExp(`What's new in ${r.v.replace(/\./g, '\\.')}`).test(r.text) && r.titles.length > 0 && r.titles.every(x => r.text.includes(x)), r.text.slice(0, 200));
   assert(!r.again && !r.tut, JSON.stringify(r));
   await page.evaluate(() => closeSheet());
 });
