@@ -154,7 +154,13 @@ function applyOwnerNow(){
   save(); return true;
 }
 let OWNER_VIEW = null;
+// the Developer button in Settings: it shows on a device once the panel has been opened the hidden way
+const DEV_KEY = 'burg-dev';
+const devUnlocked = () => { try { return localStorage.getItem(DEV_KEY) === '1'; } catch (e) { return false; } };
+let OWNER_FROM = null;                            // null, or { menu } when opened from Settings: Done goes back there
+function devPanel(fromMenu = false){ OWNER_FROM = { menu: fromMenu }; ownerPanel(); }
 function ownerPanel(keep = null){
+  try { localStorage.setItem(DEV_KEY, '1'); } catch (e) {}
   const o = ownerFlags(), view = DIFFS[OWNER_VIEW] ? OWNER_VIEW : S ? diff() : 'normal';
   OWNER_VIEW = view;
   const ctx = { diff: view, flags: o, flagsEdited: true };
@@ -174,7 +180,7 @@ function ownerPanel(keep = null){
   };
   const n = Object.keys(o).length, free = ownerFree();
   const life = !S ? OWNER_TEXT.noLife : !free ? OWNER_TEXT.lifeLocked : lifeFlagged() || S.flagsEdited ? OWNER_TEXT.lifeOn : OWNER_TEXT.lifeOff;
-  sheet(`<h2>🔧 Owner panel</h2><p class="muted">${OWNER_TEXT.intro}</p>
+  sheet(`<h2>🛠️ Developer</h2><h3 style="margin-top:0">🚩 Feature flags</h3><p class="muted">${OWNER_TEXT.intro}</p>
     <div class="card tip" id="ownstate" role="status">${n ? `<b>${n} ${n === 1 ? 'part is' : 'parts are'} forced.</b>` : '<b>Everything is on Default.</b>'} ${life}</div>
     <div class="setrow"><div class="setl">${OWNER_TEXT.view}</div><div class="seg" role="group" aria-label="Mode">${DIFF_LIST.map(d =>
       `<button data-ownview="${d}" class="${d === view ? 'on' : ''}" aria-pressed="${d === view}">${DIFFS[d].ic} ${DIFFS[d].label}</button>`).join('')}</div></div>
@@ -182,7 +188,7 @@ function ownerPanel(keep = null){
     <button class="btn ghost" id="ownreset"${n ? '' : ' disabled'}>Reset all to defaults</button>
     ${OWNER_AREAS.map((a, i) => { const ks = Object.keys(FEATURE_INFO).filter(k => FEATURE_INFO[k].a === i);
       return ks.length ? `<h3 style="margin-top:14px" data-area="${i}">${esc(a)}</h3>${ks.map(row).join('')}` : ''; }).join('')}
-    <button class="btn ghost" id="ownclose">Done</button>`);
+    <button class="btn ghost" id="ownclose">${OWNER_FROM ? '← Back to Settings' : 'Done'}</button>`);
   $('#sheet').classList.add('owner');
   document.querySelectorAll('#sheet [data-own]').forEach(b => b.onclick = () => {
     const k = b.dataset.own, v = b.dataset.v, cur = ownerFlags();
@@ -193,7 +199,7 @@ function ownerPanel(keep = null){
   document.querySelectorAll('#sheet [data-ownview]').forEach(b => b.onclick = () => { OWNER_VIEW = b.dataset.ownview; ownerPanel({ sel: `[data-ownview="${OWNER_VIEW}"]`, top: $('#sheet').scrollTop }); });
   $('#ownreset').onclick = () => { setOwnerFlags({}); ownerPanel({ sel: '#ownclose' }); announce(OWNER_TEXT.reset); toast(OWNER_TEXT.reset); };
   if ($('#ownapply')) $('#ownapply').onclick = () => { if (applyOwnerNow()) { toast(OWNER_TEXT.applied); announce(OWNER_TEXT.applied); } ownerPanel({ sel: '#ownapply' }); };
-  $('#ownclose').onclick = () => { closeSheet(); if (S) render(); else renderTitle(); };
+  $('#ownclose').onclick = () => { const from = OWNER_FROM; OWNER_FROM = null; if (from) { if (S) render(); else renderTitle(); settingsSheet(from.menu, { sel: '#devbtn' }); return; } closeSheet(); if (S) render(); else renderTitle(); };
   if (keep) { if (keep.top != null) $('#sheet').scrollTop = keep.top; const b = keep.sel && $(`#sheet ${keep.sel}`); setTimeout(() => { if (b && !b.disabled) b.focus({ preventScroll: true }); }, 40); }
 }
 // 7 quick taps on the version line open the panel (a pause of more than a second starts the count again)

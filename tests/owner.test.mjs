@@ -30,7 +30,7 @@ await t.check('?owner in the address opens the panel: every feature, grouped by 
       deps: document.querySelector('#sheet .ownrow[data-key="family.kids"]').textContent,
       missing: Object.keys(FEATURE_TIER).filter(k => !FEATURE_INFO[k]), inline: document.querySelectorAll('#sheet [onclick]').length };
   });
-  assert(/Owner panel/.test(r.title), r.title);
+  assert(/Developer/.test(r.title), r.title);
   assert(r.rows === 95 && r.keys === 95 && !r.missing.length, `rows ${r.rows} keys ${r.keys} missing ${r.missing}`);
   assert(r.areas === 16, `areas ${r.areas}`);
   assert(r.core === 6 && !r.coreSeg && r.coreLock && r.segs === 89 && r.tiers, JSON.stringify(r));
@@ -228,6 +228,24 @@ await t.check('26 weeks with several features forced off: every tab draws and no
   assert(r.marked && r.offs === 12, JSON.stringify(r));
   assert(r.weeks === 26, `played ${r.weeks} weeks`);
   assert(errors.length === before, errors.slice(before, before + 3).join(' | '));
+  await reset();
+});
+
+await t.check('Settings shows a Developer button only after the panel was opened once; it opens the flags and Back returns to Settings', async () => {
+  await reset();
+  const r = await ev(() => {
+    localStorage.removeItem('burg-dev'); closeSheet();
+    settingsSheet(true); const before = !!document.querySelector('#devbtn');
+    ownerPanel(); closeSheet();
+    settingsSheet(true); const btn = document.querySelector('#devbtn'), after = !!btn;
+    btn.click(); const title = document.querySelector('#sheet h2').textContent, flags = /Feature flags/.test(document.querySelector('#sheet').textContent),
+      back = document.querySelector('#ownclose').textContent;
+    document.querySelector('#ownclose').click();
+    const home = document.querySelector('#sheet h2').textContent;
+    return { before, after, title, flags, back, home };
+  });
+  assert(!r.before && r.after, JSON.stringify(r));
+  assert(/Developer/.test(r.title) && r.flags && /Back to Settings/.test(r.back) && /Settings/.test(r.home), JSON.stringify(r));
   await reset();
 });
 

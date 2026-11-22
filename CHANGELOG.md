@@ -16,6 +16,7 @@ a one-time hand from the neighbors. Players on an older life get one offer to tr
   your cash drops below $0.
 
 ### Added
+- A 🛠️ Developer button at the top of Settings opens the feature flags. It shows on a device only after the hidden owner panel has been opened there once (7 quick taps on the version line, or `?owner`). The panel is now titled Developer.
 - **🗝️ Try a fresh start on Easy:** players on an older Classic or Hard life who never played Easy see one card on
   Home offering an Easy life. It never deletes a life: with all 5 slots full it says how to replace one.
 

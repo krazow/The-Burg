@@ -2055,7 +2055,7 @@ const SETTING_ROWS = [
 ];
 function settingsSheet(fromMenu = false, keep = null){
   const canBuzz = typeof navigator !== 'undefined' && 'vibrate' in navigator;
-  sheet(`<h2>⚙️ Settings</h2><p class="muted">These are saved on this device for every life. They don't change the game.</p>
+  sheet(`<div class="sethead"><h2>⚙️ Settings</h2>${devUnlocked() ? '<button class="btn ghost" id="devbtn">🛠️ Developer</button>' : ''}</div><p class="muted">These are saved on this device for every life. They don't change the game.</p>
     ${SETTING_ROWS.filter(([k]) => k !== 'vibrate' || canBuzz).map(([k, label, desc]) => `<div class="setrow" role="group" aria-labelledby="set-${k}">
       <div class="setl" id="set-${k}">${label}</div>
       <div class="seg">${SETTINGS[k].opts.map(([v, l]) => `<button data-set="${k}" data-v="${v}" class="${setting(k) === v ? 'on' : ''}" aria-pressed="${setting(k) === v}">${l}</button>`).join('')}</div>
@@ -2070,7 +2070,8 @@ function settingsSheet(fromMenu = false, keep = null){
     announce(`${SETTING_ROWS.find(r => r[0] === k)[1].replace(/^\S+ /, '')}: ${b.textContent.replace(/^[^\w]+/u, '')}`);
   });
   $('#back').onclick = () => fromMenu ? showMenu() : closeSheet();
-  if (keep) { const b = $(`#sheet [data-set="${keep.k}"][data-v="${keep.v}"]`); $('#sheet').scrollTop = keep.top; setTimeout(() => { if (b) b.focus({ preventScroll: true }); }, 40); }
+  if ($('#devbtn')) $('#devbtn').onclick = () => devPanel(fromMenu);
+  if (keep) { const b = keep.sel ? $(`#sheet ${keep.sel}`) : $(`#sheet [data-set="${keep.k}"][data-v="${keep.v}"]`); $('#sheet').scrollTop = keep.top || 0; setTimeout(() => { if (b) b.focus({ preventScroll: true }); }, 40); }
 }
 
 // H2: ending a life early asks first, with the score so far and 'Keep playing' as the safe choice (Escape = keep playing)
